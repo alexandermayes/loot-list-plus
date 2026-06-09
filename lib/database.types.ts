@@ -2056,6 +2056,7 @@ export type Database = {
           last_verified_at: string | null
           notify_loot_deadline: boolean | null
           notify_new_raids: boolean | null
+          notify_resubmit_reminder: boolean | null
           notify_submission_status: boolean | null
           preferred_display_name: string | null
           show_attendance_stats: boolean | null
@@ -2076,6 +2077,7 @@ export type Database = {
           last_verified_at?: string | null
           notify_loot_deadline?: boolean | null
           notify_new_raids?: boolean | null
+          notify_resubmit_reminder?: boolean | null
           notify_submission_status?: boolean | null
           preferred_display_name?: string | null
           show_attendance_stats?: boolean | null
@@ -2096,6 +2098,7 @@ export type Database = {
           last_verified_at?: string | null
           notify_loot_deadline?: boolean | null
           notify_new_raids?: boolean | null
+          notify_resubmit_reminder?: boolean | null
           notify_submission_status?: boolean | null
           preferred_display_name?: string | null
           show_attendance_stats?: boolean | null

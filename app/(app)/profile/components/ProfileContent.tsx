@@ -76,6 +76,7 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
 
   // Notification preferences
   const [notifySubmissionStatus, setNotifySubmissionStatus] = useState(true)
+  const [notifyResubmitReminder, setNotifyResubmitReminder] = useState(true)
 
   // Discord connection state (verified + live OAuth token availability)
   const [discordVerified, setDiscordVerified] = useState<boolean | null>(null)
@@ -139,12 +140,13 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
   const loadNotificationPrefs = async (userId: string) => {
     const { data } = await supabase
       .from('user_preferences')
-      .select('notify_submission_status, discord_verified')
+      .select('notify_submission_status, notify_resubmit_reminder, discord_verified')
       .eq('user_id', userId)
       .single()
 
     if (data) {
       setNotifySubmissionStatus(data.notify_submission_status ?? true)
+      setNotifyResubmitReminder(data.notify_resubmit_reminder ?? true)
       setDiscordVerified(Boolean(data.discord_verified))
     } else {
       setDiscordVerified(false)
@@ -188,6 +190,30 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
       showNotification('error', 'Couldn\'t update preference. Try again.')
     } else {
       showNotification('success', newValue ? 'Review notifications enabled.' : 'Review notifications disabled.')
+    }
+  }
+
+  const toggleResubmitReminder = async () => {
+    if (!user) return
+    const newValue = !notifyResubmitReminder
+    setNotifyResubmitReminder(newValue)
+
+    const { error } = await supabase
+      .from('user_preferences')
+      .upsert(
+        {
+          user_id: user.id,
+          notify_resubmit_reminder: newValue,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' }
+      )
+
+    if (error) {
+      setNotifyResubmitReminder(!newValue)
+      showNotification('error', 'Couldn\'t update preference. Try again.')
+    } else {
+      showNotification('success', newValue ? 'Resubmit reminders enabled.' : 'Resubmit reminders disabled.')
     }
   }
 
@@ -550,6 +576,17 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
                 <Switch
                   checked={notifySubmissionStatus}
                   onCheckedChange={toggleSubmissionStatus}
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-[14px] font-medium text-foreground">Resubmit reminders</p>
+                  <p className="text-[13px] text-muted-foreground">Get a DM when you have a loot list that needs resubmitting (edited after approval, or sent back by officers)</p>
+                </div>
+                <Switch
+                  checked={notifyResubmitReminder}
+                  onCheckedChange={toggleResubmitReminder}
                 />
               </div>
 
