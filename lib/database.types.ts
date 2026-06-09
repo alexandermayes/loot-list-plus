@@ -1498,6 +1498,7 @@ export type Database = {
           raid_tier_id: string | null
           resubmission_count: number
           resubmit_reminded_at: string | null
+          resubmit_reminder_count: number
           review_notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -1519,6 +1520,7 @@ export type Database = {
           raid_tier_id?: string | null
           resubmission_count?: number
           resubmit_reminded_at?: string | null
+          resubmit_reminder_count?: number
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -1540,6 +1542,7 @@ export type Database = {
           raid_tier_id?: string | null
           resubmission_count?: number
           resubmit_reminded_at?: string | null
+          resubmit_reminder_count?: number
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
