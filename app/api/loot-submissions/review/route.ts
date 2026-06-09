@@ -100,10 +100,9 @@ export async function POST(request: NextRequest) {
         status,
         review_notes: review_notes || null,
         reviewed_at: new Date().toISOString(),
-        // A clean approval clears any prior "your change was rejected" flag so
-        // the raider's banner doesn't linger after they're back in good standing
-        // (GH #123 pass 2).
-        ...(status === 'approved' ? { change_rejected_at: null } : {}),
+        // A genuine review outcome (approve or reject) supersedes any prior
+        // reverted-change marker, so clear it (GH #123 pass 2).
+        change_rejected_at: null,
       })
       .eq('id', submission_id)
       .select()

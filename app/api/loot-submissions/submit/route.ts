@@ -122,13 +122,16 @@ export async function POST(request: NextRequest) {
         .eq('id', submission_id)
     }
 
-    // Promote to pending
+    // Promote to pending. Clear any prior rejected-change marker — the raider
+    // has acted on the feedback and resubmitted, so the callout should go away
+    // (GH #123 pass 2).
     const { error: updateError } = await serviceSupabase
       .from('loot_submissions')
       .update({
         status: 'pending',
         submitted_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        change_rejected_at: null,
       })
       .eq('id', submission_id)
 

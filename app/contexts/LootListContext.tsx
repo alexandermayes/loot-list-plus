@@ -774,7 +774,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
           phase: selectedPhase,
           status: targetStatus,
           // Drop the stale review trail when an edit reverts a reviewed list to draft.
-          ...(revertedFromReview ? { review_notes: null, reviewed_at: null, reviewed_by: null } : {}),
+          ...(revertedFromReview ? { review_notes: null, reviewed_at: null, reviewed_by: null, change_rejected_at: null } : {}),
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'character_id,guild_id,expansion_id,phase'
