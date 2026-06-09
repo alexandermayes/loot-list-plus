@@ -1497,6 +1497,7 @@ export type Database = {
           phase: number | null
           raid_tier_id: string | null
           resubmission_count: number
+          resubmit_reminded_at: string | null
           review_notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -1517,6 +1518,7 @@ export type Database = {
           phase?: number | null
           raid_tier_id?: string | null
           resubmission_count?: number
+          resubmit_reminded_at?: string | null
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -1537,6 +1539,7 @@ export type Database = {
           phase?: number | null
           raid_tier_id?: string | null
           resubmission_count?: number
+          resubmit_reminded_at?: string | null
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
