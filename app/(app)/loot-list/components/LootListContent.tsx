@@ -1891,11 +1891,21 @@ export default function LootListContent({
                   )}
                 </div>
               </div>
-              {submission?.review_notes && (
+              {submission?.status === 'approved' && submission?.change_rejected_at ? (
+                <Alert variant="destructive" className="mt-3 flex items-start gap-2">
+                  <AlertFilledIcon size={16} className="mt-0.5 shrink-0" />
+                  <AlertDescription>
+                    <span className="font-semibold">Your recent changes were rejected.</span>{' '}
+                    Your last approved list is still active.
+                    {submission.review_notes ? <> Reason: {submission.review_notes}</> : null}{' '}
+                    Edit your list and resubmit to try again.
+                  </AlertDescription>
+                </Alert>
+              ) : submission?.review_notes ? (
                 <div className="mt-3 p-4 bg-black/20 rounded-xl">
                   <p className="text-sm"><strong>Officer Notes:</strong> {submission.review_notes}</p>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         )}

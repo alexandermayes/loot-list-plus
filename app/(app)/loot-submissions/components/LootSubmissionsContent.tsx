@@ -597,6 +597,24 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
       } else {
         showNotification('success', 'Changes rejected. List reverted to previously approved state.')
       }
+
+      // Tell the raider their change was rejected (the revert leaves them at
+      // 'approved', so without this they'd never know). Fire and forget.
+      const reverted = submissions.find(s => s.id === submissionId)
+      const phaseNumber = typeof activePhase === 'object' ? activePhase?.phase : null
+      fetch('/api/discord/send-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submission_id: submissionId,
+          status: data.fallback === 'rejected' ? 'rejected' : 'changes_reverted',
+          review_notes: trimmedNotes,
+          guild_name: activeGuild?.name,
+          character_name: reverted?.member?.character_name,
+          phase: phaseNumber,
+        })
+      }).catch(err => console.error('Failed to send Discord notification:', err))
+
       notifySubmissionChanged()
 
       if (guildId && activePhase !== null && activeGuild?.active_expansion_id) {

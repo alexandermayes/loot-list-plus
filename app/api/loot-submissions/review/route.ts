@@ -100,6 +100,9 @@ export async function POST(request: NextRequest) {
         status,
         review_notes: review_notes || null,
         reviewed_at: new Date().toISOString(),
+        // A genuine review outcome (approve or reject) supersedes any prior
+        // reverted-change marker, so clear it (GH #123 pass 2).
+        change_rejected_at: null,
       })
       .eq('id', submission_id)
       .select()

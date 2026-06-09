@@ -134,6 +134,11 @@ export async function POST(request: NextRequest) {
       .update({
         status: 'approved',
         review_notes: reason,
+        // Flag that the raider's most recent change was rejected even though the
+        // active list is back to 'approved', so the loot-list UI can show a
+        // banner instead of a silent green badge (GH #123 pass 2). Cleared on
+        // the next approval.
+        change_rejected_at: new Date().toISOString(),
       })
       .eq('id', submission_id)
 

@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     // Get submission - either by tier_id (legacy) or by phase+expansion_id (new)
     let submissionQuery = supabase
       .from('loot_submissions')
-      .select('id, status, submitted_at, review_notes, expansion_id, phase')
+      .select('id, status, submitted_at, review_notes, expansion_id, phase, change_rejected_at')
       .eq('character_id', characterId)
       .eq('guild_id', guildId)
 
