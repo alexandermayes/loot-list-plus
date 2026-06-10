@@ -58,6 +58,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
     }
 
+    // When no team is specified but the guild HAS teams, never auto-create
+    // unassigned (null-team) events. Raids belong to teams in a team guild, so a
+    // guild-wide auto-create (e.g. from the "All teams" attendance view) would
+    // spawn a phantom event on every scheduled date alongside each team's real
+    // event — tripling the columns and fragmenting attendance. Intentional
+    // guild-wide/bonus raids are created through their own flows, not here.
+    let allowCreate = true
+    if (!raid_team_id) {
+      const { count: teamCount } = await serviceSupabase
+        .from('raid_teams')
+        .select('id', { count: 'exact', head: true })
+        .eq('guild_id', guild_id)
+      if ((teamCount ?? 0) > 0) {
+        allowCreate = false
+      }
+    }
+
     // 1. Check which events already exist (service role — no RLS concern)
     // When a team is specified, only check for events on that team (not guild-wide)
     let existingQuery = serviceSupabase
@@ -74,7 +91,7 @@ export async function POST(request: NextRequest) {
     const newDates = dates.filter(d => !existingDates.has(d))
 
     // 2. If there are new dates, look up the tier and create events
-    if (newDates.length > 0 && expansion_id) {
+    if (newDates.length > 0 && expansion_id && allowCreate) {
       // Get current phase
       const { data: expData } = await serviceSupabase
         .from('expansions')
