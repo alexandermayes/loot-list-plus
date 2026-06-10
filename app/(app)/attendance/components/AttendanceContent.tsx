@@ -16,9 +16,22 @@ import { getWclReportUrl } from '@/lib/warcraftlogs'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { parseDate, toDateString } from '@/utils/date'
 import { isDateScheduled } from '@/domain/raid-team/schedule-history'
+import { detectScheduleMismatch, type ScheduleMismatchEvent } from '@/domain/raid-team/schedule-mismatch'
 import { useRaidTeam } from '@/app/hooks/useRaidTeam'
 import { TeamSelector } from '@/app/components/TeamSelector'
 import { paginatedSelect } from '@/utils/supabase/paginate'
+import { useRouter } from 'next/navigation'
+
+// Day-of-week names for the schedule-mismatch banner (0=Sun..6=Sat).
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+/** Join day names with no Oxford comma: "Friday", "Friday and Monday", "Friday, Monday and Sunday". */
+function formatDayList(days: number[]): string {
+  const names = days.map(d => DAY_NAMES[d] ?? `day ${d}`)
+  if (names.length <= 1) return names[0] ?? ''
+  if (names.length === 2) return `${names[0]} and ${names[1]}`
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+}
 
 interface RaidEvent {
   id: string
@@ -85,7 +98,8 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { user } = useGuildContext()
+  const { user, isOfficer } = useGuildContext()
+  const router = useRouter()
   const [activeCharacter, setActiveCharacter] = useState<any>(null)
   const [guildId, setGuildId] = useState<string | null>(null)
   const [attendanceScore, setAttendanceScore] = useState(0)
@@ -107,6 +121,8 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
   // Guild attendance state
   const [guildRaiders, setGuildRaiders] = useState<GuildRaider[]>([])
   const [guildRaidEvents, setGuildRaidEvents] = useState<RaidEvent[]>([])
+  // GH #119: tracked raids in the window that fall outside the scored schedule.
+  const [scheduleMismatch, setScheduleMismatch] = useState<{ count: number; days: number[] } | null>(null)
   const [sortBy, setSortBy] = useState<'score' | 'name'>('score')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
 
@@ -591,6 +607,27 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
 
         setGuildRaidEvents(filteredRaidEvents)
 
+        // GH #119: flag tracked raids that fall outside the scored schedule.
+        // Mirror the engine's own determination (resolveRaidDays + isDateScheduled)
+        // over in-window events that actually hold attendance, so we never warn
+        // about a raid that genuinely counts (team overrides, schedule history)
+        // or about empty off-schedule auto-events nobody recorded.
+        const winStart = getAttendanceWindowStart(undefined, weeks, settingsData?.week_reset_day)
+        const winEnd = getAttendanceWindowEnd(undefined, settingsData?.week_reset_day)
+        const trackedInWindow = deduplicatedRaidEvents.filter(e =>
+          e.raid_date >= winStart && e.raid_date <= winEnd && raidIdsWithAttendance.has(e.id)
+        )
+        const mismatch = detectScheduleMismatch(
+          trackedInWindow as unknown as ScheduleMismatchEvent[],
+          raidDays as number[],
+          activeTeam?.schedule_history ?? null,
+        )
+        setScheduleMismatch(
+          mismatch.offScheduleEvents.length > 0
+            ? { count: mismatch.offScheduleEvents.length, days: mismatch.unscheduledDays }
+            : null
+        )
+
         // Get attendance records for personal view (use same tracked window)
         const { data: recordsData } = await supabase
           .from('attendance_records')
@@ -978,6 +1015,33 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
           />
         )}
       </div>
+
+      {/* GH #119: schedule-mismatch warning. Officer-only — raiders can't change
+          the schedule, so there's nothing for them to act on. */}
+      {isOfficer && scheduleMismatch && (
+        <div className="bg-warning/10 border border-warning/30 rounded-xl px-4 py-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-2.5">
+              <span className="text-sm mt-0.5">⚠️</span>
+              <div>
+                <p className="text-sm font-semibold text-warning">
+                  {scheduleMismatch.count} tracked {scheduleMismatch.count === 1 ? 'raid' : 'raids'} fall outside your raid schedule
+                </p>
+                <p className="text-sm text-foreground-secondary text-pretty">
+                  {scheduleMismatch.count === 1 ? 'A raid' : 'Raids'} in the current window {scheduleMismatch.count === 1 ? 'lands' : 'land'} on {formatDayList(scheduleMismatch.days)}, which {scheduleMismatch.days.length === 1 ? "isn't" : "aren't"} in your schedule, so {scheduleMismatch.count === 1 ? "it doesn't" : "they don't"} count toward attendance or Loot Score. Add {scheduleMismatch.days.length === 1 ? 'that day' : 'those days'} to your raid schedule, or move the {scheduleMismatch.count === 1 ? 'raid' : 'raids'} to a scheduled day.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/guild-settings')}
+              className="shrink-0"
+            >
+              Update raid schedule
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Show skeleton while loading */}
       {loading ? (
