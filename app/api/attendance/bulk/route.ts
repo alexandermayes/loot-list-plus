@@ -5,6 +5,7 @@ import { resolveStatus } from '@/domain/scoring'
 import { trackEvent } from '@/utils/analytics/server'
 import { revalidateCharacterAttendance } from '@/lib/cache/dashboard-attendance'
 import { recomputeBlpForEvents } from '@/utils/blp/recompute'
+import { routeRecordsToTeamEvents } from '@/utils/raid-events/team-routing'
 
 interface AttendanceRecord {
   raid_event_id: string
@@ -62,6 +63,11 @@ export const POST = withPermission<{
       status: resolveStatus(r),
     }))
 
+    // Team guilds: route each raider onto THEIR team's event for the night, so a
+    // combined import doesn't pile everyone onto one team's event (no-op for
+    // single-team / no-team guilds). Mutates raid_event_id in place.
+    await routeRecordsToTeamEvents(serviceSupabase, guild_id, stampedRecords)
+
     if (action === 'upsert') {
       const { data, error } = await serviceSupabase
         .from('attendance_records')
@@ -73,7 +79,7 @@ export const POST = withPermission<{
       }
 
       const count = data?.length || 0
-      const raidEventId = records[0]?.raid_event_id
+      const raidEventId = stampedRecords[0]?.raid_event_id
       logAudit({
         supabase: serviceSupabase,
         guildId: guild_id,
@@ -102,7 +108,7 @@ export const POST = withPermission<{
       // Attendance changed — recompute BLP for the items awarded at each
       // affected raid event so award-before-attendance credits get filled in
       // and benched/absent edits are reflected (GH #98 race).
-      const blpEventIds = [...new Set((records as AttendanceRecord[]).map(r => r.raid_event_id).filter(Boolean))]
+      const blpEventIds = [...new Set(stampedRecords.map(r => r.raid_event_id).filter(Boolean))]
       if (blpEventIds.length > 0) {
         after(() => recomputeBlpForEvents(serviceSupabase, guild_id, blpEventIds))
       }
@@ -119,7 +125,7 @@ export const POST = withPermission<{
       }
 
       const count = data?.length || 0
-      const raidEventId = records[0]?.raid_event_id
+      const raidEventId = stampedRecords[0]?.raid_event_id
       logAudit({
         supabase: serviceSupabase,
         guildId: guild_id,
@@ -147,7 +153,7 @@ export const POST = withPermission<{
       // Attendance changed — recompute BLP for the items awarded at each
       // affected raid event so award-before-attendance credits get filled in
       // and benched/absent edits are reflected (GH #98 race).
-      const blpEventIds = [...new Set((records as AttendanceRecord[]).map(r => r.raid_event_id).filter(Boolean))]
+      const blpEventIds = [...new Set(stampedRecords.map(r => r.raid_event_id).filter(Boolean))]
       if (blpEventIds.length > 0) {
         after(() => recomputeBlpForEvents(serviceSupabase, guild_id, blpEventIds))
       }
