@@ -5,6 +5,7 @@ import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError, trackEvent } from '@/utils/analytics/server'
 import { notifyLootAward, type LootAward } from '@/lib/discord-loot-announcements'
 import { recomputeBlpForEvents } from '@/utils/blp/recompute'
+import { importAttendanceByTeam } from '@/utils/raid-events/team-routing'
 import { inflateRawSync } from 'zlib'
 
 interface AddonAward {
@@ -118,8 +119,8 @@ export async function POST(request: NextRequest) {
     const attendanceEventIds = new Set<string>()
     for (const record of payload.attendance || []) {
       try {
-        const raidEventId = await processAttendance(supabase, payload.guildId, record)
-        if (raidEventId) attendanceEventIds.add(raidEventId)
+        const raidEventIds = await processAttendance(supabase, payload.guildId, record)
+        for (const id of raidEventIds) attendanceEventIds.add(id)
         results.attendance.processed++
       } catch (err) {
         console.error('Failed to process attendance:', err)
@@ -217,75 +218,21 @@ async function processAttendance(
   supabase: ReturnType<typeof createServiceRoleClient>,
   guildId: string,
   record: AddonAttendanceRecord
-): Promise<string> {
-  // Create or find the raid event
-  const { data: existingEvent } = await supabase
-    .from('raid_events')
-    .select('id')
-    .eq('guild_id', guildId)
-    .eq('raid_date', record.raidDate)
-    .eq('raid_name', record.raidName)
-    .limit(1)
-    .single()
-
-  let raidEventId: string
-
-  if (existingEvent) {
-    raidEventId = existingEvent.id
-  } else {
-    const { data: newEvent, error } = await supabase
-      .from('raid_events')
-      .insert({
-        guild_id: guildId,
-        raid_date: record.raidDate,
-        raid_name: record.raidName,
-      })
-      .select('id')
-      .single()
-
-    if (error || !newEvent) throw error || new Error('Failed to create raid event')
-    raidEventId = newEvent.id
-  }
-
-  // Resolve character names to IDs
+): Promise<string[]> {
+  // Resolve active members → character ids + names.
   const { data: memberships } = await supabase
     .from('character_guild_memberships')
     .select('character_id, characters(id, name)')
     .eq('guild_id', guildId)
     .eq('is_active', true)
 
-  const nameToCharId: Record<string, string> = {}
-  if (memberships) {
-    for (const m of memberships) {
-      const char = Array.isArray(m.characters) ? m.characters[0] : m.characters
-      if (char) {
-        nameToCharId[(char as { name: string }).name.toLowerCase()] = m.character_id
-      }
-    }
+  const members: Array<{ charId: string; name: string }> = []
+  for (const m of memberships ?? []) {
+    const char = Array.isArray(m.characters) ? m.characters[0] : m.characters
+    if (char) members.push({ charId: m.character_id, name: (char as { name: string }).name.toLowerCase() })
   }
 
-  // Insert attendance records
   const attendedSet = new Set(record.attended.map(n => n.toLowerCase()))
-
-  for (const [name, charId] of Object.entries(nameToCharId)) {
-    const attended = attendedSet.has(name)
-
-    const { error } = await supabase
-      .from('attendance_records')
-      .upsert({
-        raid_event_id: raidEventId,
-        character_id: charId,
-        attended,
-        signed_up: false,
-        status: attended ? 'attended' : 'absent',
-      }, {
-        onConflict: 'raid_event_id,character_id',
-      })
-
-    if (error) {
-      console.error(`Failed to upsert attendance for ${name}:`, error)
-    }
-  }
-
-  return raidEventId
+  const { eventIds } = await importAttendanceByTeam(supabase, guildId, record.raidDate, members, attendedSet)
+  return eventIds
 }

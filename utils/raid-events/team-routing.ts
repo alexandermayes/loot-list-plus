@@ -46,22 +46,22 @@ export async function getGuildTeamRouting(
 /**
  * Find the raid_event for (guild, date, team), creating it if absent. A newly
  * created team event copies raid_tier_id from any sibling event already on that
- * date so the whole night stays on the same tier.
+ * date so the whole night stays on the same tier. Pass teamId=null for guilds
+ * that don't use raid teams (the single null-team event for the night).
  */
 export async function findOrCreateTeamEvent(
   service: Service,
   guildId: string,
   raidDate: string,
-  teamId: string,
+  teamId: string | null,
 ): Promise<string | null> {
-  const { data: existing } = await service
+  let findQuery = service
     .from('raid_events')
     .select('id')
     .eq('guild_id', guildId)
     .eq('raid_date', raidDate)
-    .eq('raid_team_id', teamId)
-    .limit(1)
-    .maybeSingle()
+  findQuery = teamId ? findQuery.eq('raid_team_id', teamId) : findQuery.is('raid_team_id', null)
+  const { data: existing } = await findQuery.limit(1).maybeSingle()
   if (existing) return existing.id
 
   const { data: sibling } = await service
@@ -88,6 +88,75 @@ export async function findOrCreateTeamEvent(
     return null
   }
   return created.id
+}
+
+/**
+ * Import a night's attendance, routed by team. Given the night's date and the
+ * full active roster (charId + lowercased name), writes each raider's
+ * attended/absent record onto THEIR team's event for the date (creating it if
+ * needed). Only teams that fielded an attendee get an event + absent marks.
+ *
+ * Used by the addon import routes, which start from a raid date rather than an
+ * existing raid_event_id. Non-team guilds get a single null-team event.
+ *
+ * Returns the affected event ids plus attended/absent counts (for callers that
+ * surface them, e.g. the addon response).
+ */
+export async function importAttendanceByTeam(
+  service: Service,
+  guildId: string,
+  raidDate: string,
+  members: Array<{ charId: string; name: string }>,
+  attendedSet: Set<string>,
+): Promise<{ eventIds: string[]; attendedCount: number; absentCount: number }> {
+  let attendedCount = 0
+  let absentCount = 0
+
+  const writeRoster = async (eventId: string, roster: Array<{ charId: string; name: string }>) => {
+    for (const m of roster) {
+      const attended = attendedSet.has(m.name)
+      const { error } = await service
+        .from('attendance_records')
+        .upsert({
+          raid_event_id: eventId,
+          character_id: m.charId,
+          attended,
+          signed_up: false,
+          status: attended ? 'attended' : 'absent',
+        }, { onConflict: 'raid_event_id,character_id' })
+      if (error) { console.error(`Failed to upsert attendance for ${m.name}:`, error); continue }
+      if (attended) attendedCount++; else absentCount++
+    }
+  }
+
+  const { charTeam, hasTeams } = await getGuildTeamRouting(service, guildId)
+
+  if (!hasTeams) {
+    const eventId = await findOrCreateTeamEvent(service, guildId, raidDate, null)
+    if (!eventId) return { eventIds: [], attendedCount: 0, absentCount: 0 }
+    await writeRoster(eventId, members)
+    return { eventIds: [eventId], attendedCount, absentCount }
+  }
+
+  const byTeam = new Map<string, Array<{ charId: string; name: string }>>()
+  for (const m of members) {
+    const teamId = charTeam.get(m.charId)
+    if (!teamId) continue // not on a team — don't force onto a wrong/null-team event
+    const arr = byTeam.get(teamId) ?? []
+    arr.push(m)
+    byTeam.set(teamId, arr)
+  }
+
+  const eventIds: string[] = []
+  for (const [teamId, roster] of byTeam) {
+    if (!roster.some(m => attendedSet.has(m.name))) continue // team didn't raid tonight
+    const eventId = await findOrCreateTeamEvent(service, guildId, raidDate, teamId)
+    if (!eventId) continue
+    await writeRoster(eventId, roster)
+    eventIds.push(eventId)
+  }
+
+  return { eventIds, attendedCount, absentCount }
 }
 
 /**
