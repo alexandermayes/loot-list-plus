@@ -6,6 +6,7 @@ import { logAudit } from '@/utils/audit/log'
 import { trackEvent, setUserMilestone } from '@/utils/analytics/server'
 import { notifyLootAward, type LootAward } from '@/lib/discord-loot-announcements'
 import { recomputeBlpForItems } from '@/utils/blp/recompute'
+import { routeRecordsToTeamEvents } from '@/utils/raid-events/team-routing'
 import type { AwardReason, AwardOutcomeType } from '@/domain/types'
 
 const AWARD_REASON_VALUES = new Set<AwardReason>(['', 'score', 'loot_council', 'override', 'offspec', 'roll'])
@@ -119,6 +120,11 @@ export async function POST(request: NextRequest) {
     if (!hasPermission) {
       return NextResponse.json({ error: permError || 'Insufficient permissions' }, { status: 403 })
     }
+
+    // Team guilds: route each award onto the winner's team event for the night,
+    // so loot lands where that raider's attendance lives (no-op for single-team /
+    // no-team guilds). Mutates each item's raid_event_id in place before insert.
+    await routeRecordsToTeamEvents(serviceSupabase, guild_id, items as Array<{ raid_event_id?: string | null; character_id?: string | null }>)
 
     const results: { index: number; success: boolean; error?: string; id?: string }[] = []
     // Parallel array of sanitized award metadata, used by the audit-log pass below.
