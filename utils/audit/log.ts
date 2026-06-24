@@ -9,16 +9,16 @@ export interface AuditLogParams {
   recordId: string
   action: AuditAction
   userId: string
-  oldData?: Record<string, any> | null
-  newData?: Record<string, any> | null
+  oldData?: Record<string, unknown> | null
+  newData?: Record<string, unknown> | null
 }
 
 /**
  * Calculate which fields changed between old and new data
  */
 function getChangedFields(
-  oldData: Record<string, any> | null | undefined,
-  newData: Record<string, any> | null | undefined
+  oldData: Record<string, unknown> | null | undefined,
+  newData: Record<string, unknown> | null | undefined
 ): string[] {
   if (!oldData || !newData) return []
 
@@ -102,7 +102,7 @@ export async function logAudit({
  * Helper to create a sanitized copy of data for audit logging
  * Removes sensitive fields that shouldn't be stored in audit logs
  */
-export function sanitizeForAudit<T extends Record<string, any>>(
+export function sanitizeForAudit<T extends Record<string, unknown>>(
   data: T,
   sensitiveFields: string[] = []
 ): Partial<T> {
@@ -139,7 +139,7 @@ export async function logStatusChange({
   userId: string
   oldStatus: string
   newStatus: string
-  additionalData?: Record<string, any>
+  additionalData?: Record<string, unknown>
 }): Promise<void> {
   await logAudit({
     supabase,

@@ -158,7 +158,16 @@ async function setupLootDatabase() {
       totalRaids++
 
       // Prepare loot items for batch insert
-      const lootItems: any[] = []
+      const lootItems: {
+        raid_tier_id: string
+        name: string
+        boss_name: string
+        item_slot: string
+        wowhead_id: number | string | null
+        is_available: boolean
+        classification: string
+        allocation_cost: number
+      }[] = []
 
       for (const boss of raid.bosses) {
         totalBosses++

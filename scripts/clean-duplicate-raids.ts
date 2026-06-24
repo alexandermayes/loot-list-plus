@@ -57,7 +57,8 @@ async function cleanDuplicates(guildId: string) {
     if (!tiers || tiers.length === 0) continue
 
     // Group by name
-    const tiersByName: Record<string, any[]> = {}
+    type RaidTier = { id: string; name: string; is_active: boolean | null }
+    const tiersByName: Record<string, RaidTier[]> = {}
     tiers.forEach(tier => {
       if (!tiersByName[tier.name]) {
         tiersByName[tier.name] = []

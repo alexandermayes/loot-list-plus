@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
-import { useGuildMembers } from '@/app/hooks/use-api'
+import { useGuildMembers, type GuildMember } from '@/app/hooks/use-api'
 import { hasFeature } from '@/domain/guild/feature-flags'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserBlock01Icon, Time01Icon, CheckmarkSquare01Icon, Search01Icon, SortingAZ02Icon, ArrowRight01Icon } from '@hugeicons/core-free-icons'
@@ -111,7 +111,7 @@ export default function MemberManager() {
     const newTeam = teamId ? raidTeams.find(t => t.id === teamId) : null
     const optimisticData = {
       ...membersData,
-      members: membersData!.members.map((m: any) =>
+      members: membersData!.members.map((m: GuildMember) =>
         m.user_id === member.user_id
           ? { ...m, raid_team: newTeam ? { id: newTeam.id, name: newTeam.name, color: newTeam.color_hex } : null }
           : m
@@ -160,11 +160,11 @@ export default function MemberManager() {
 
     const optimisticData = {
       ...membersData,
-      members: membersData!.members.map((m: any) =>
+      members: membersData!.members.map((m: GuildMember) =>
         m.user_id === member.user_id
           ? {
               ...m,
-              characters: m.characters.map((c: any) =>
+              characters: m.characters.map((c: GuildMember['characters'][number]) =>
                 c.id === character.id
                   ? { ...c, raid_team: newTeam ? { id: newTeam.id, name: newTeam.name, color: newTeam.color_hex } : null }
                   : c
@@ -217,7 +217,7 @@ export default function MemberManager() {
 
   const members: Member[] = useMemo(() => {
     if (!membersData?.members) return []
-    return membersData.members.map((m: any) => ({
+    return membersData.members.map((m: GuildMember) => ({
       user_id: m.user_id,
       role: m.role,
       joined_at: m.joined_at,
@@ -260,11 +260,11 @@ export default function MemberManager() {
 
     const optimisticData = {
       ...membersData,
-      members: membersData!.members.map((m: any) =>
+      members: membersData!.members.map((m: GuildMember) =>
         m.user_id === member.user_id
           ? {
               ...m,
-              characters: m.characters.map((c: any) =>
+              characters: m.characters.map((c: GuildMember['characters'][number]) =>
                 c.id === character.id ? { ...c, role: newRole } : c
               ),
             }
@@ -450,11 +450,11 @@ export default function MemberManager() {
     const member = members.find(m => m.user_id === userId)
     if (!member) { showNotification('error', 'Member not found'); return }
     const characterIds = member.characters.map(c => c.id)
-    let updatedMembers = membersData!.members.map((m: any) =>
+    let updatedMembers = membersData!.members.map((m: GuildMember) =>
       m.user_id === userId ? { ...m, role: newRole } : m
     )
     if (newRole === 'Guild Master') {
-      updatedMembers = updatedMembers.map((m: any) =>
+      updatedMembers = updatedMembers.map((m: GuildMember) =>
         m.role === 'Guild Master' && m.user_id !== userId ? { ...m, role: 'Officer' } : m
       )
     }
@@ -470,7 +470,7 @@ export default function MemberManager() {
         showNotification('success', `Role changed to ${newRole}`)
         return optimisticData
       }, { optimisticData, rollbackOnError: true, revalidate: false })
-    } catch (error: any) { showNotification('error', error.message || 'Couldn\'t update role. Try again.') }
+    } catch (error: unknown) { showNotification('error', error instanceof Error ? error.message : 'Couldn\'t update role. Try again.') }
   }
 
   const handleChangeRole = (userId: string, newRole: string) => {
@@ -499,7 +499,7 @@ export default function MemberManager() {
         const member = members.find(m => m.user_id === userId)
         if (!member) { showNotification('error', 'Member not found'); return }
         const characterIds = member.characters.map(c => c.id)
-        const optimisticData = { ...membersData, members: membersData!.members.filter((m: any) => m.user_id !== userId) }
+        const optimisticData = { ...membersData, members: membersData!.members.filter((m: GuildMember) => m.user_id !== userId) }
         try {
           await refreshMembers(async () => {
             const res = await fetch(`/api/guild-members?guild_id=${activeGuild!.id}&target_user_id=${userId}&character_ids=${characterIds.join(',')}`, { method: 'DELETE' })
@@ -507,7 +507,7 @@ export default function MemberManager() {
             showNotification('success', `${memberName} removed from guild`)
             return optimisticData
           }, { optimisticData, rollbackOnError: true, revalidate: false })
-        } catch (error: any) { showNotification('error', error.message || 'Couldn\'t remove member. Try again.') }
+        } catch (error: unknown) { showNotification('error', error instanceof Error ? error.message : 'Couldn\'t remove member. Try again.') }
       }
     })
   }
@@ -525,7 +525,7 @@ export default function MemberManager() {
         const characterIds = member.characters.map(c => c.id)
         const optimisticData = {
           ...membersData,
-          members: membersData!.members.map((m: any) =>
+          members: membersData!.members.map((m: GuildMember) =>
             m.user_id === userId ? { ...m, membership_status: newStatus, trial_started_at: newStatus === 'trial' ? new Date().toISOString() : m.trial_started_at } : m
           )
         }
@@ -539,7 +539,7 @@ export default function MemberManager() {
             showNotification('success', `${memberName} ${newStatus === 'trial' ? 'set as trial' : 'promoted to full member'}`)
             return optimisticData
           }, { optimisticData, rollbackOnError: true, revalidate: false })
-        } catch (error: any) { showNotification('error', error.message || 'Couldn\'t update trial status. Try again.') }
+        } catch (error: unknown) { showNotification('error', error instanceof Error ? error.message : 'Couldn\'t update trial status. Try again.') }
       }
     })
   }

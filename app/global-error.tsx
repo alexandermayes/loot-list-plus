@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import Link from 'next/link'
 
 export default function GlobalError({
   error,
@@ -23,7 +24,7 @@ export default function GlobalError({
           <header className="border-b border-[#2a2a2e] bg-[#111114]">
             <div className="max-w-7xl mx-auto px-6 md:px-12 lg:px-20">
               <nav className="flex items-center h-16">
-                <a href="/" className="flex items-center hover:opacity-80 transition-opacity">
+                <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
                   <img
                     src="/logo.svg"
                     alt="LootList+"
@@ -31,7 +32,7 @@ export default function GlobalError({
                     height={16}
                     className="h-4 w-auto"
                   />
-                </a>
+                </Link>
               </nav>
             </div>
           </header>
@@ -67,7 +68,7 @@ export default function GlobalError({
                 >
                   Try again
                 </button>
-                <a
+                <Link
                   href="/"
                   className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-[#1f1f23] text-[#ffffff] font-medium hover:bg-[#2a2a2e] transition-colors border border-[#2a2a2e]"
                 >
@@ -77,7 +78,7 @@ export default function GlobalError({
                     className="w-5 h-5"
                   />
                   Hearth back home
-                </a>
+                </Link>
               </div>
             </div>
           </main>

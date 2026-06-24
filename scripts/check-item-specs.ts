@@ -51,12 +51,12 @@ async function main() {
       }
 
       const primary = specs?.filter(s => s.spec_type === 'primary').map(s => {
-        const spec = s.class_specs as any
+        const spec = s.class_specs as unknown as { name: string; wow_classes: { name: string } }
         return `${spec.wow_classes.name} ${spec.name}`
       }) || []
 
       const secondary = specs?.filter(s => s.spec_type === 'secondary').map(s => {
-        const spec = s.class_specs as any
+        const spec = s.class_specs as unknown as { name: string; wow_classes: { name: string } }
         return `${spec.wow_classes.name} ${spec.name}`
       }) || []
 

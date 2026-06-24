@@ -543,8 +543,8 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
       if (guildId && activePhase !== null && activeGuild?.active_expansion_id) {
         await loadSubmissions(guildId, activePhase, activeGuild.active_expansion_id)
       }
-    } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t update submission. Try again.')
+    } catch (error: unknown) {
+      showNotification('error', (error instanceof Error ? error.message : '') || 'Couldn\'t update submission. Try again.')
       setReviewing(null)
     }
   }
@@ -620,8 +620,8 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
       if (guildId && activePhase !== null && activeGuild?.active_expansion_id) {
         await loadSubmissions(guildId, activePhase, activeGuild.active_expansion_id)
       }
-    } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t revert changes. Try again.')
+    } catch (error: unknown) {
+      showNotification('error', (error instanceof Error ? error.message : '') || 'Couldn\'t revert changes. Try again.')
     } finally {
       setRevertingChanges(false)
     }
@@ -784,9 +784,9 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
 
       setShowDeleteConfirm(false)
       setDeleteTarget(null)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting submissions:', error)
-      showNotification('error', error.message || 'Couldn\'t delete submissions. Try again.')
+      showNotification('error', (error instanceof Error ? error.message : '') || 'Couldn\'t delete submissions. Try again.')
     } finally {
       setDeleting(false)
     }

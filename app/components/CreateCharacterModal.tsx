@@ -207,7 +207,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
           if (checkResponse.ok) {
             const { members } = await checkResponse.json()
             const existingNames = (members || [])
-              .flatMap((m: any) => m.characters?.map((c: any) => c.name?.toLowerCase()) || [])
+              .flatMap((m: { characters?: { name?: string | null }[] }) => m.characters?.map((c: { name?: string | null }) => c.name?.toLowerCase()) || [])
               .filter(Boolean)
 
             if (existingNames.includes(name.trim().toLowerCase())) {
@@ -251,7 +251,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
 
       // Check if there's a pending guild join from Discord flow
       const pendingGuildJoin = typeof window !== 'undefined' ? sessionStorage.getItem('pending_guild_join') : null
-      let targetGuildId = activeGuild?.id || pendingGuildJoin
+      const targetGuildId = activeGuild?.id || pendingGuildJoin
 
       // If user has a guild to join, add character to it
       if (targetGuildId && data.character) {

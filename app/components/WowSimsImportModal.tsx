@@ -156,7 +156,7 @@ export function WowSimsImportModal({
                 </li>
                 <li className="flex gap-2">
                   <span className="text-accent font-medium">4.</span>
-                  <span>Click "Copy to Clipboard" and paste below</span>
+                  <span>Click &quot;Copy to Clipboard&quot; and paste below</span>
                 </li>
               </ol>
             </div>

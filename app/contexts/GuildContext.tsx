@@ -236,12 +236,12 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       setUser(currentUser)
 
       // Use prefetched data or fetch from client
-      let characters: any[] | null
-      let charactersError: any = null
+      let characters: Character[] | null
+      let charactersError: { code?: string; message?: string; hint?: string } | null = null
       let activeCharData: { active_character_id: string | null; active_guild_id: string | null } | null
 
       if (usePrefetch) {
-        characters = prefetchedData!.characters
+        characters = (prefetchedData!.characters ?? null) as Character[] | null
         activeCharData = prefetchedData!.activePreferences
       } else {
         // Fetch characters and active character preference in parallel
@@ -271,7 +271,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
             .maybeSingle(),
         ])
 
-        characters = charactersResult.data
+        characters = charactersResult.data as Character[] | null
         charactersError = charactersResult.error
         activeCharData = activeCharResult.data
       }
@@ -288,8 +288,18 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       }
 
       // Fetch specs and memberships in parallel for better performance
+      type TransformedMembership = {
+        id: string
+        role: string
+        guild_id: string
+        joined_at: string
+        joined_via: string
+        guild: ({ id: string } & Record<string, unknown>) | null
+        character: ({ name?: string; class_id?: string; class?: unknown } & Record<string, unknown>) | null
+        [key: string]: unknown
+      }
       let enrichedCharacters: typeof characters = []
-      let transformedMemberships: any[] = []
+      let transformedMemberships: TransformedMembership[] = []
       let derivedGuilds: GuildMembership[] = []
 
       if (characters && characters.length > 0) {
@@ -301,11 +311,11 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         setUserCharacters(enrichedCharacters)
 
         // Use prefetched memberships or fetch from client
-        let memberships: any[] | null
-        let membershipsError: any = null
+        let memberships: Record<string, unknown>[] | null
+        let membershipsError: { code?: string; message?: string } | null = null
 
         if (usePrefetch && prefetchedData!.memberships) {
-          memberships = prefetchedData!.memberships
+          memberships = prefetchedData!.memberships as Record<string, unknown>[]
         } else {
           const membershipsResult = await supabase
             .from('character_guild_memberships')
@@ -362,7 +372,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
             `)
             .in('character_id', characterIds)
             .eq('is_active', true)
-          memberships = membershipsResult.data
+          memberships = membershipsResult.data as Record<string, unknown>[] | null
           membershipsError = membershipsResult.error
         }
 
@@ -378,9 +388,16 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           const guildRolePositions = new Map<string, Map<string, number>>()
           const guildRolePerms = new Map<string, Map<string, string[]>>()
 
+          type RawGuild = {
+            id?: string
+            guild_roles?: Array<{ name: string; position: number; permissions?: string[] | null }>
+            [key: string]: unknown
+          }
+          type RawChar = { class?: unknown; spec?: unknown; [key: string]: unknown }
+
           transformedMemberships = (memberships || []).map((m: { character: unknown; guild: unknown; [key: string]: unknown }) => {
-            const char = Array.isArray(m.character) ? m.character[0] : m.character
-            const rawGuild: any = Array.isArray(m.guild) ? m.guild[0] : m.guild
+            const char = (Array.isArray(m.character) ? m.character[0] : m.character) as RawChar | null
+            const rawGuild = (Array.isArray(m.guild) ? m.guild[0] : m.guild) as RawGuild | null
 
             // Extract guild_roles from the guild join and cache them
             if (rawGuild?.id && rawGuild.guild_roles) {
@@ -408,14 +425,14 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
               } : char,
               guild
             }
-          })
+          }) as TransformedMembership[]
           setCharacterMemberships(transformedMemberships)
 
           // Default positions for guilds without custom roles
           const defaultPositions = new Map([['Guild Master', 100], ['Officer', 50], ['Member', 0]])
 
           // Group by guild and take the highest role for each guild
-          const guildMap = new Map<string, { guild: any, role: string, membership: any }>()
+          const guildMap = new Map<string, { guild: { id: string } & Record<string, unknown>; role: string; membership: TransformedMembership }>()
           for (const m of transformedMemberships) {
             if (!m.guild) continue
             const existing = guildMap.get(m.guild.id)

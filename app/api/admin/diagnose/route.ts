@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
       .eq('guild_id', guildId)
 
     // Check submission item counts
-    let submissionItems: Record<string, number> = {}
+    const submissionItems: Record<string, number> = {}
     if (submissions?.length) {
       const subIds = submissions.map(s => s.id)
       const { data: items } = await serviceSupabase
@@ -197,7 +197,7 @@ export async function GET(request: NextRequest) {
       character: {
         id: charId,
         name: char.name,
-        class: (char.class as any)?.name,
+        class: (char.class as { name?: string } | null)?.name,
         user_id: char.user_id,
       },
       membership: {

@@ -384,13 +384,14 @@ async function main() {
   const specNameToId: Record<string, { id: string, class_id: string }> = {}
 
   for (const spec of classSpecs) {
-    const className = (spec as any).wow_classes?.name
-    const specName = spec.name
+    const specRow = spec as { id: string; name: string; class_id: string; wow_classes?: { name: string } | null }
+    const className = specRow.wow_classes?.name
+    const specName = specRow.name
 
     // Store combined name as "ClassName SpecName"
     if (className && specName) {
       const combinedName = `${className} ${specName}`
-      specNameToId[combinedName] = { id: spec.id, class_id: (spec as any).class_id }
+      specNameToId[combinedName] = { id: specRow.id, class_id: specRow.class_id }
     }
   }
 

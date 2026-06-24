@@ -91,7 +91,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Build validation input
-    const validationItems = (submissionItems || []).map((si: any) => ({
+    interface SubmissionItemRow {
+      rank: number
+      slot: string
+      loot_item_id: string
+      loot_item?: {
+        classification?: string | null
+        item_type?: string | null
+        item_slot?: string | null
+        allocation_cost?: number | null
+      } | null
+    }
+    const validationItems = ((submissionItems || []) as unknown as SubmissionItemRow[]).map((si) => ({
       rank: si.rank,
       slot: si.slot,
       item: {

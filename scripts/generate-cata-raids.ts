@@ -188,7 +188,7 @@ async function fetchPage(url: string): Promise<string> {
 // LISTVIEW DATA PARSER
 // =============================================
 
-function extractDropsData(html: string): any[] {
+function extractDropsData(html: string): WowheadDropItem[] {
   const dropsMarkerRegex = /id:\s*['"]drops['"]/
   const markerMatch = html.match(dropsMarkerRegex)
   if (!markerMatch || markerMatch.index === undefined) return []
@@ -238,7 +238,7 @@ interface WowheadDropItem {
   classs: number
   subclass: number
   level?: number
-  modes?: Record<string, any>
+  modes?: Record<string, unknown>
 }
 
 function getSlotName(item: WowheadDropItem): string | null {
@@ -254,7 +254,7 @@ function getSlotName(item: WowheadDropItem): string | null {
  * Check if an item is a 25-man item based on mode data.
  * Returns 'normal', 'heroic', or null (not 25-man).
  */
-function get25ManType(modes: Record<string, any>): 'normal' | 'heroic' | null {
+function get25ManType(modes: Record<string, unknown>): 'normal' | 'heroic' | null {
   const has25N = MODE_25N in modes
   const has25H = MODE_25H in modes
 
@@ -313,7 +313,7 @@ async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-async function fetchNpcDrops(npcId: number): Promise<{ items: any[]; source: string }> {
+async function fetchNpcDrops(npcId: number): Promise<{ items: WowheadDropItem[]; source: string }> {
   // Try Cata Classic page first
   try {
     const html = await fetchPage(`https://www.wowhead.com/cata/npc=${npcId}`)

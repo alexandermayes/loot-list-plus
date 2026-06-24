@@ -5,6 +5,7 @@ import { verifyPermission } from '@/utils/server-roles'
 import { requirePro } from '@/utils/feature-gate'
 import { logAudit } from '@/utils/audit/log'
 import { resolveRaidDays } from '@/domain/raid-team/settings'
+import type { RaidDaysOverride } from '@/domain/raid-team/types'
 import { toDateString } from '@/utils/date'
 
 /**
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     const initialDays = guildSettings
-      ? resolveRaidDays(guildSettings, (raid_days_override as any) || null)
+      ? resolveRaidDays(guildSettings, (raid_days_override as RaidDaysOverride | null) || null)
       : []
 
     const { data: team, error } = await serviceSupabase

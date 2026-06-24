@@ -31,6 +31,7 @@ import { RaidTrackingPageSkeleton } from '@/components/ui/skeletons'
 import { Heading, Text } from '@/components/ui/typography'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import type { GuildExpansion } from '@/app/contexts/ExpansionContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -81,6 +82,39 @@ const ImportModal = nextDynamic(
 import { RaidCard } from './components/RaidCard'
 import { WeekGroup } from './components/WeekGroup'
 
+interface GuildSettings {
+  raid_days_per_week?: number | null
+  first_raid_day?: number | null
+  second_raid_day?: number | null
+  third_raid_day?: number | null
+  fourth_raid_day?: number | null
+  fifth_raid_day?: number | null
+  use_signups?: boolean | null
+  raid_summary_channel_id?: string | null
+  wcl_guild_url?: string | null
+}
+
+interface LinkedAttendanceUpdate {
+  raid_event_id: string
+  character_id: string
+  user_id: string | null
+  signed_up: boolean
+  attended: boolean
+  no_call_no_show: boolean
+  was_late: boolean
+  was_benched: boolean
+}
+
+interface UnlinkedAttendanceUpdate {
+  raid_event_id: string
+  character_name: string
+  signed_up: boolean
+  attended: boolean
+  no_call_no_show: boolean
+  was_late: boolean
+  was_benched: boolean
+}
+
 export default function RaidTrackingPage() {
   const [members, setMembers] = useState<Member[]>([])
   const [raidDates, setRaidDates] = useState<RaidEvent[]>([])
@@ -91,7 +125,7 @@ export default function RaidTrackingPage() {
   const [expandedRaids, setExpandedRaids] = useState<Set<string>>(new Set())
   const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
-  const [guildSettings, setGuildSettings] = useState<any>(null)
+  const [guildSettings, setGuildSettings] = useState<GuildSettings | null>(null)
   const [showSkipModal, setShowSkipModal] = useState<{ raidId: string, date: string } | null>(null)
   const [skipReason, setSkipReason] = useState('')
   const [showImportModal, setShowImportModal] = useState<{ raidId: string, date: string, isEdit: boolean } | null>(null)
@@ -110,7 +144,7 @@ export default function RaidTrackingPage() {
   const [initialSignupsData, setInitialSignupsData] = useState('')
 
   const [lootItems, setLootItems] = useState<LootItem[]>([])
-  const [pendingLootImports, setPendingLootImports] = useState<{ date: string, itemId: number, characterName: string, matchedItem?: any, matchedCharacter?: any, needsItemSelection?: boolean }[]>([])
+  const [pendingLootImports, setPendingLootImports] = useState<{ date: string, itemId: number, characterName: string, matchedItem?: LootItem, matchedCharacter?: Member | null, needsItemSelection?: boolean }[]>([])
   const [showLootSelectionModal, setShowLootSelectionModal] = useState<{ index: number, itemId: number, characterName: string } | null>(null)
   const [lootSearchQuery, setLootSearchQuery] = useState('')
   const [characterAliases, setCharacterAliases] = useState<{ id: string; alias_name: string; character_id: string }[]>([])
@@ -293,7 +327,7 @@ export default function RaidTrackingPage() {
           ])
 
         // Settings
-        let settings: any = null
+        let settings: GuildSettings | null = null
         if (settingsResponse.ok) {
           const data = await settingsResponse.json()
           settings = data.settings
@@ -351,10 +385,10 @@ export default function RaidTrackingPage() {
     loadData().catch(console.error)
   }, [guildLoading, activeGuild, hasPermission, currentExpansion, activeTeamId])
 
-  const generateRaidDates = async (guildId: string, settings: any, expansion: any) => {
+  const generateRaidDates = async (guildId: string, settings: GuildSettings | null, expansion: GuildExpansion | null) => {
     // Use expansion raid schedule if available, fall back to guild settings for backwards compatibility
     const raidScheduleSource = expansion?.raid_days_per_week != null ? expansion : settings
-    const { raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day } = raidScheduleSource
+    const { raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day } = raidScheduleSource!
 
     const baseRaidDays = [first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day]
       .filter(day => day !== null && day !== undefined)
@@ -383,7 +417,7 @@ export default function RaidTrackingPage() {
         ? new Date(activeGuild.created_at)
         : new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000))
 
-    let currentDate = new Date(startDate)
+    const currentDate = new Date(startDate)
     currentDate.setHours(0, 0, 0, 0) // Normalize to start of day
     while (currentDate <= today) {
       const dateStr = toDateString(currentDate)
@@ -396,7 +430,7 @@ export default function RaidTrackingPage() {
     // Ensure raid events exist for all scheduled dates (server-side, bypasses RLS)
     // This single API call checks existing events, looks up the tier, creates missing
     // events, and returns all events in the date range.
-    let allEvents: any[] = []
+    let allEvents: (RaidEvent & { raid_team_id?: string | null })[] = []
     if (dates.length > 0) {
       try {
         const res = await fetch('/api/raid-events/ensure', {
@@ -423,7 +457,7 @@ export default function RaidTrackingPage() {
 
     // Filter events by team when a team is selected
     if (activeTeamId) {
-      allEvents = (allEvents || []).filter((e: any) => e.raid_team_id === activeTeamId)
+      allEvents = (allEvents || []).filter((e) => e.raid_team_id === activeTeamId)
     }
 
     // Check which events have attendance records (needed for filtering + dedup)
@@ -552,7 +586,7 @@ export default function RaidTrackingPage() {
     const currentDay = date.getDay()
 
     // Calculate how many days to subtract to get to the first raid day of this week
-    let daysToSubtract = (currentDay - firstRaidDay + 7) % 7
+    const daysToSubtract = (currentDay - firstRaidDay + 7) % 7
 
     const weekStart = new Date(date)
     weekStart.setDate(weekStart.getDate() - daysToSubtract)
@@ -571,7 +605,7 @@ export default function RaidTrackingPage() {
 
     // Build set of character_ids that have linked records in THIS raid
     const linkedCharIdsInRaid = new Set(
-      records?.filter((r: any) => r.character_id).map((r: any) => r.character_id)
+      records?.filter((r) => r.character_id).map((r) => r.character_id)
     )
 
     const currentMembers = latestRef.current.members
@@ -636,7 +670,7 @@ export default function RaidTrackingPage() {
           .filter((id: string | null): id is string => id !== null)
 
         // Fetch character info separately if there are linked characters
-        let characterMap: Record<string, { name: string, color_hex: string }> = {}
+        const characterMap: Record<string, { name: string, color_hex: string }> = {}
         if (characterIds.length > 0) {
           const { data: characters } = await supabase
             .from('characters')
@@ -644,7 +678,7 @@ export default function RaidTrackingPage() {
             .in('id', characterIds)
 
           if (characters) {
-            characters.forEach((char: any) => {
+            characters.forEach((char: { id: string; name: string; wow_classes?: { color_hex?: string | null } | null }) => {
               characterMap[char.id] = {
                 name: char.name,
                 color_hex: char.wow_classes?.color_hex || '#888888'
@@ -653,7 +687,7 @@ export default function RaidTrackingPage() {
           }
         }
 
-        const lootEntries: RaidLootEntry[] = lootRecords.map((r: any) => {
+        const lootEntries: RaidLootEntry[] = lootRecords.map((r: { id: string; character_id: string | null; character_name: string | null; awarded_date: string; loot_items?: { name?: string | null; wowhead_id?: number | null } | null }) => {
           const charInfo = r.character_id ? characterMap[r.character_id] : null
           return {
             id: r.id,
@@ -1073,8 +1107,8 @@ export default function RaidTrackingPage() {
       .map(name => name.trim())
       .filter(name => name.length > 0)
 
-    const linkedUpdates: any[] = []
-    const unlinkedUpdates: any[] = []
+    const linkedUpdates: LinkedAttendanceUpdate[] = []
+    const unlinkedUpdates: UnlinkedAttendanceUpdate[] = []
     let matchedCount = 0
     let unmatchedCount = 0
     const seenCharIds = new Set<string>()
@@ -1140,7 +1174,7 @@ export default function RaidTrackingPage() {
           guild_id: activeGuild.id,
           raid_event_id: showImportModal.raidId,
           character_id_is_null: true,
-          character_names: unlinkedUpdates.map((u: any) => u.character_name)
+          character_names: unlinkedUpdates.map((u) => u.character_name)
         })
       })
 
@@ -1489,8 +1523,8 @@ export default function RaidTrackingPage() {
       const names = parseMRTNames(attendanceData)
       const namesLower = names.map(n => n.toLowerCase())
 
-      const linkedUpdates: any[] = []
-      const unlinkedUpdates: any[] = []
+      const linkedUpdates: LinkedAttendanceUpdate[] = []
+      const unlinkedUpdates: UnlinkedAttendanceUpdate[] = []
       const linkedCharacterIds: string[] = []
       const seenCharacterIds = new Set<string>()
       const seenUnlinkedNames = new Set<string>()
@@ -2505,7 +2539,7 @@ export default function RaidTrackingPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-[24px] font-bold text-foreground">{currentExpansion.expansion_name} raids haven't started yet</h3>
+            <h3 className="text-[24px] font-bold text-foreground">{currentExpansion.expansion_name} raids haven&apos;t started yet</h3>
             <p className="text-muted-foreground text-[14px]">
               Your first raid week for <span className="text-accent">{currentExpansion.expansion_name}</span> is scheduled to begin on{' '}
               <span className="text-foreground font-medium">
@@ -2518,7 +2552,7 @@ export default function RaidTrackingPage() {
               </span>
             </p>
             <p className="text-foreground-muted text-[13px]">
-              Once raids begin, you'll be able to track attendance, signups, and manage raid days here.
+              Once raids begin, you&apos;ll be able to track attendance, signups, and manage raid days here.
             </p>
           </div>
         </div>

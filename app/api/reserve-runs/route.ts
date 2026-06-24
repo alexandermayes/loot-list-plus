@@ -38,7 +38,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Flatten submission count and raid tier name
-    const runsWithCounts = (runs || []).map((run: any) => ({
+    const runsWithCounts = (runs || []).map((run: {
+      reserve_submissions?: { count: number }[] | null
+      raid_tiers?: { name: string } | null
+      [key: string]: unknown
+    }) => ({
       ...run,
       submission_count: run.reserve_submissions?.[0]?.count ?? 0,
       raid_tier_name: run.raid_tiers?.name ?? null,

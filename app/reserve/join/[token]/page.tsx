@@ -1204,7 +1204,7 @@ export default function ReserveJoinPage() {
                 <HugeiconsIcon icon={CheckmarkCircle01Icon} size={18} className="text-success" />
               </div>
               <div className="flex-1 min-w-0">
-                <Heading level={3} className="mb-0.5">You're in</Heading>
+                <Heading level={3} className="mb-0.5">You&apos;re in</Heading>
                 <Text size="sm" color="muted">
                   {isOpen
                     ? 'You can edit your reserves anytime before the run locks.'
@@ -1316,7 +1316,7 @@ export default function ReserveJoinPage() {
                   {authUser && run.guild_name && userCharacters.length === 0 && (
                     <Alert className="border-accent/30 bg-accent/5">
                       <AlertDescription className="text-[12px]">
-                        You're logged in but don't have a character in{' '}
+                        You&apos;re logged in but don&apos;t have a character in{' '}
                         <span className="font-semibold">{run.guild_name}</span>. You can still submit as a guest below.
                       </AlertDescription>
                     </Alert>

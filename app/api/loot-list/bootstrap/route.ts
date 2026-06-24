@@ -179,8 +179,8 @@ export async function GET(request: NextRequest) {
     // If there's a submission, fetch its ranking items. Done sequentially
     // because we need the submission ID; this is fast (indexed lookup on
     // submission_id) compared to the bigger items fetch above.
-    let rankings: Record<string, string> = {}
-    let removedItems: Array<{ loot_item_id: string; rank: number; slot: number }> = []
+    const rankings: Record<string, string> = {}
+    const removedItems: Array<{ loot_item_id: string; rank: number; slot: number }> = []
     const submission = submissionRow.data ?? null
     if (submission) {
       const { data: rankingsData } = await supabase

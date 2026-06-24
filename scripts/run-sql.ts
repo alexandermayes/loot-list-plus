@@ -113,10 +113,11 @@ async function runMigrationSQL(sql: string, description: string): Promise<void> 
     })
     console.log(output)
     console.log('✅ SQL executed successfully!')
-  } catch (error: any) {
-    console.error('❌ Error executing migration:', error.message)
-    if (error.stderr) {
-      console.error(error.stderr)
+  } catch (error: unknown) {
+    const err = error as { message?: string; stderr?: unknown }
+    console.error('❌ Error executing migration:', err.message)
+    if (err.stderr) {
+      console.error(err.stderr)
     }
     // Clean up migration file on error
     if (existsSync(migrationFile)) {

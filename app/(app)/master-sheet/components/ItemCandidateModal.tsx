@@ -644,13 +644,13 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
               </Text>
             </div>
             {/* BLP status */}
-            {(guildSettings as any)?.blp_enabled && (
+            {guildSettings?.blp_enabled && (
               <Text size="xs" color="muted" className="mb-2">
                 {awardingCandidate.bad_luck_bonus > 0
                   ? `${awardingCandidate.player_name}'s BLP (+${awardingCandidate.bad_luck_bonus.toFixed(decimalPlaces)}) will reset.`
                   : `${awardingCandidate.player_name} has no BLP on this item.`
                 }
-                {' '}Other candidates' BLP will increase.
+                {' '}Other candidates&apos; BLP will increase.
               </Text>
             )}
             <div className="flex flex-wrap items-end gap-3">
@@ -702,7 +702,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
           {awardsLoading ? (
             <Text size="sm" color="muted">Loading...</Text>
           ) : recentAwards.length === 0 ? (
-            <Text size="sm" color="muted">This item hasn't been awarded yet.</Text>
+            <Text size="sm" color="muted">This item hasn&apos;t been awarded yet.</Text>
           ) : (
             <div className="space-y-1">
               {recentAwards.map((award) => (

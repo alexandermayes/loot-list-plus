@@ -116,7 +116,7 @@ type AuditEntry = {
   actor_user_id: string | null
   actor_label: string | null
   action: string
-  details: Record<string, any>
+  details: Record<string, unknown>
   created_at: string
 }
 

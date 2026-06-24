@@ -110,7 +110,7 @@ export async function GET(
       .single()
 
     // Redact the leader token from non-managers
-    const runPayload = { ...run } as Record<string, any>
+    const runPayload = { ...run } as Record<string, unknown>
     delete runPayload._canManage
     if (!canManageFinal) {
       delete runPayload.raid_leader_token
@@ -162,7 +162,7 @@ export async function PATCH(
     }
     const run = access.run
 
-    let updateData: Record<string, any> = {}
+    let updateData: Record<string, unknown> = {}
     let auditAction: string | null = null
     const auditDetails: Record<string, unknown> = {}
 

@@ -28,7 +28,7 @@ function ensurePostHogInitialized() {
       loaded: (ph) => {
         fetch('/a/static/recorder.js?v=check', { method: 'HEAD' })
           .then((res) => {
-            if (res.ok) (ph as any).set_config({ disable_session_recording: false })
+            if (res.ok) (ph as { set_config: (config: { disable_session_recording: boolean }) => void }).set_config({ disable_session_recording: false })
           })
           .catch(() => {})
       },

@@ -627,7 +627,12 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       const slotCoverage = buildSlotCoverageMap(gearData?.items || [])
 
       // Sort BIS items by upgrade tier (biggest upgrades first)
-      const sortedBisItems = [...data.items].sort((a: any, b: any) => {
+      interface BisImportItem {
+        loot_item_id: string
+        slot: string
+        priority: string
+      }
+      const sortedBisItems = ([...data.items] as BisImportItem[]).sort((a, b) => {
         const tierA = computeUpgradeTier(a.slot, a.priority, slotCoverage)
         const tierB = computeUpgradeTier(b.slot, b.priority, slotCoverage)
         if (tierA !== tierB) return tierA - tierB
@@ -928,7 +933,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         if (!response.ok) {
           const data = await response.json()
           if (data.violations) {
-            const violationMsg = data.violations.map((v: any) => `${v.bracket}: ${v.detail}`).join('. ')
+            const violationMsg = data.violations.map((v: { bracket: string; detail: string }) => `${v.bracket}: ${v.detail}`).join('. ')
             throw new Error(`Bracket rules violated. ${violationMsg}`)
           }
           throw new Error(data.error || 'Couldn\'t submit list')
@@ -970,7 +975,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
       // Optimistically update the SWR submission data so the status banner updates immediately
       mutateSubmission(
-        { submission: { ...submissionData?.submission, ...upsertedSub, status: finalStatus } as any, rankings },
+        { submission: { ...submissionData?.submission, ...upsertedSub, status: finalStatus } as LootSubmission, rankings },
         false // don't revalidate — we already have the correct data
       )
 

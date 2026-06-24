@@ -113,10 +113,10 @@ export default function GuardianConversionModal({
       </ModalBody>
       <ModalFooter>
         <Button variant="outline" onClick={keepFeral} loading={loading}>
-          I'm DPS (keep Feral)
+          I&apos;m DPS (keep Feral)
         </Button>
         <Button variant="primary" onClick={switchToGuardian} loading={loading}>
-          I'm a Tank (switch to Guardian)
+          I&apos;m a Tank (switch to Guardian)
         </Button>
       </ModalFooter>
     </Modal>

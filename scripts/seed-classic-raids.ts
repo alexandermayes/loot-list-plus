@@ -149,7 +149,13 @@ async function seedClassicRaids(guildId: string) {
       totalRaids++
 
       // Insert loot items for all bosses in this raid
-      const lootItems: any[] = []
+      const lootItems: Array<{
+        raid_tier_id: string
+        name: string
+        boss_name: string
+        item_slot: string
+        wowhead_id: number
+      }> = []
 
       for (const boss of raid.bosses) {
         totalBosses++

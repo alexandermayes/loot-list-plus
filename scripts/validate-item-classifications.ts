@@ -122,7 +122,7 @@ async function validateItems() {
 
     // Check token items
     if (isTokenSlot(item.item_slot)) {
-      const classes = item.loot_item_classes as any[] || []
+      const classes = item.loot_item_classes as unknown[] || []
 
       // Check if token has class restrictions
       if (classes.length === 0) {

@@ -153,7 +153,7 @@ export async function POST(request: Request) {
       }
 
       // Get the highest role and check position
-      const roles = memberships.map((m: any) => m.role as string)
+      const roles = memberships.map((m: { role: string }) => m.role as string)
       const { data: guildRoles } = await supabase
         .from('guild_roles')
         .select('name, position')
@@ -282,7 +282,7 @@ export async function DELETE(request: Request) {
       }
 
       // Get the highest role and check position
-      const roles = memberships.map((m: any) => m.role as string)
+      const roles = memberships.map((m: { role: string }) => m.role as string)
       const { data: guildRoles } = await supabase
         .from('guild_roles')
         .select('name, position')

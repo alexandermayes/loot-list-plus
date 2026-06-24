@@ -27,7 +27,7 @@ async function run() {
     const charName = 'GM_' + guild.name.split('_')[1]
 
     // Check if character exists
-    let { data: existingChar } = await supabase
+    const { data: existingChar } = await supabase
       .from('characters')
       .select('id')
       .eq('user_id', guild.created_by)

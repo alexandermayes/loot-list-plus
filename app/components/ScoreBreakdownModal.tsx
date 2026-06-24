@@ -79,7 +79,7 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
               </div>
             </div>
             <p className="text-foreground-secondary text-[13px]">
-              How much you want the item. Rank 50 means you want it most, rank 1 means it's a minor upgrade.
+              How much you want the item. Rank 50 means you want it most, rank 1 means it&apos;s a minor upgrade.
             </p>
           </div>
 

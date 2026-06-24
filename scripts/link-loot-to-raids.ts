@@ -54,7 +54,7 @@ async function linkLootToRaids() {
   // Create a map of guild_id + date -> raid_event_id
   const eventMap = new Map<string, string>()
   for (const event of raidEvents || []) {
-    const guildId = (event as any).raid_tiers?.expansions?.guild_id
+    const guildId = (event as { raid_tiers?: { expansions?: { guild_id?: string } | null } | null }).raid_tiers?.expansions?.guild_id
     if (guildId) {
       const key = `${guildId}:${event.raid_date}`
       eventMap.set(key, event.id)

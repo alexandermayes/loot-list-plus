@@ -105,7 +105,7 @@ export function CharacterSelector() {
       .from('raid_team_members')
       .select('character_id, raid_teams (name, color_hex)')
       .eq('guild_id', activeGuild.id)
-      .then(({ data }: { data: any[] | null }) => {
+      .then(({ data }: { data: { character_id: string; raid_teams: { name: string; color_hex: string } | null }[] | null }) => {
         if (!data) return
         const map: Record<string, { name: string; color_hex: string }[]> = {}
         for (const row of data) {
