@@ -25,5 +25,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+        env:
+          NPM_RC: ${{ secrets.NPM_RC }}
       - run: npm run lint
       - run: npm run test
