@@ -31,6 +31,7 @@ export interface LootHistoryEntry {
  * - character: Optional - Filter by character name (partial match)
  * - item: Optional - Filter by item name (partial match)
  * - raid_tier_id: Optional - Filter by raid tier
+ * - phase: Optional - Filter by content phase number (1-6); spans the guild's raids in that phase
  * - from: Optional - Start date (YYYY-MM-DD)
  * - to: Optional - End date (YYYY-MM-DD)
  */
@@ -50,6 +51,7 @@ export async function GET(request: NextRequest) {
     const itemFilter = searchParams.get('item')
     const lootItemId = searchParams.get('loot_item_id')
     const raidTierFilter = searchParams.get('raid_tier_id')
+    const phaseFilter = searchParams.get('phase')
     const expansionFilter = searchParams.get('expansion_id')
     const fromDate = searchParams.get('from')
     const toDate = searchParams.get('to')
@@ -118,78 +120,73 @@ export async function GET(request: NextRequest) {
       .order('awarded_date', { ascending: false })
       .order('created_at', { ascending: false })
 
-    // Apply filters
-    if (raidTierFilter && raidTierFilter !== 'all') {
-      // Resolve item IDs for the raid tier, then filter on the main table.
-      // PostgREST .eq on a joined table only filters the join, not parent rows.
-      const { data: tierItems } = await supabase
-        .from('loot_items')
+    const emptyResult = NextResponse.json({ data: [], pagination: { total: 0, limit, offset, filtered_count: 0 } })
+
+    // ── Resolve filters that need an ID lookup up front ──────────────────────
+    // loot_history.raid_tier_id is NOT NULL, so filtering on it directly is both
+    // reliable and cheap (no per-item resolution, unlike a joined column).
+
+    // Content phase (1-6) -> the guild's raid tiers in that phase.
+    let phaseTierIds: string[] | null = null
+    if (phaseFilter && phaseFilter !== 'all') {
+      const { data: guildExpansions } = await supabase
+        .from('expansions')
         .select('id')
-        .eq('raid_tier_id', raidTierFilter)
+        .eq('guild_id', guildId)
+      const expansionIds = guildExpansions?.map(e => e.id) || []
 
-      const tierItemIds = tierItems?.map(i => i.id) || []
-      if (tierItemIds.length > 0) {
-        query = query.in('loot_item_id', tierItemIds)
-      } else {
-        return NextResponse.json({ data: [], pagination: { total: 0, limit, offset, filtered_count: 0 } })
-      }
+      const { data: phaseTiers } = expansionIds.length > 0
+        ? await supabase
+            .from('raid_tiers')
+            .select('id')
+            .in('expansion_id', expansionIds)
+            .eq('phase', Number(phaseFilter))
+        : { data: [] as { id: string }[] }
+
+      phaseTierIds = phaseTiers?.map(t => t.id) || []
+      if (phaseTierIds.length === 0) return emptyResult
     }
 
-    // Filter by expansion (backfilled column, see migration 20260319000005)
-    if (expansionFilter && expansionFilter !== 'all') {
-      query = query.eq('expansion_id', expansionFilter)
-    }
-
-    if (fromDate) {
-      query = query.gte('awarded_date', fromDate)
-    }
-
-    if (toDate) {
-      query = query.lte('awarded_date', toDate)
-    }
-
-    // Exact character match (preferred for per-player views); name match as fallback
-    if (characterIdFilter) {
-      query = query.eq('character_id', characterIdFilter)
-    } else if (characterFilter) {
-      query = query.ilike('character_name', `%${characterFilter}%`)
-    }
-
-    if (lootItemId) {
-      query = query.eq('loot_item_id', lootItemId)
-    } else if (itemFilter) {
-      // Look up matching loot_item_ids first, then filter on the main table.
-      // Filtering via .ilike('loot_items.name', ...) only filters the join,
-      // not the parent rows, so we need to resolve IDs explicitly.
+    // Item name search -> matching loot_item_ids (the join column can't be
+    // filtered on the parent rows directly via PostgREST).
+    let itemIdFilter: string[] | null = null
+    if (!lootItemId && itemFilter) {
       const { data: matchingItems } = await supabase
         .from('loot_items')
         .select('id')
         .ilike('name', `%${itemFilter}%`)
         .limit(100)
 
-      const matchingIds = matchingItems?.map(i => i.id) || []
-      if (matchingIds.length > 0) {
-        query = query.in('loot_item_id', matchingIds)
-      } else {
-        // No items match, return empty
-        return NextResponse.json({ data: [], pagination: { total: 0, limit, offset, filtered_count: 0 } })
-      }
+      itemIdFilter = matchingItems?.map(i => i.id) || []
+      if (itemIdFilter.length === 0) return emptyResult
     }
 
-    // Filter by raid team (resolve character IDs on the team)
+    // Raid team -> the team's character_ids.
+    let teamCharIds: string[] | null = null
     if (raidTeamId) {
       const { data: teamMembers } = await supabase
         .from('raid_team_members')
         .select('character_id')
         .eq('raid_team_id', raidTeamId)
 
-      const teamCharIds = teamMembers?.map(m => m.character_id) || []
-      if (teamCharIds.length > 0) {
-        query = query.in('character_id', teamCharIds)
-      } else {
-        return NextResponse.json({ data: [], pagination: { total: 0, limit, offset, filtered_count: 0 } })
-      }
+      teamCharIds = teamMembers?.map(m => m.character_id) || []
+      if (teamCharIds.length === 0) return emptyResult
     }
+
+    // Apply filters. IMPORTANT: the fallback query below must apply this SAME
+    // set — keep the two blocks in sync so a join failure never silently drops
+    // filters (previously the fallback dropped raid/item/team filters).
+    if (raidTierFilter && raidTierFilter !== 'all') query = query.eq('raid_tier_id', raidTierFilter)
+    if (phaseTierIds) query = query.in('raid_tier_id', phaseTierIds)
+    if (expansionFilter && expansionFilter !== 'all') query = query.eq('expansion_id', expansionFilter)
+    if (fromDate) query = query.gte('awarded_date', fromDate)
+    if (toDate) query = query.lte('awarded_date', toDate)
+    // Exact character match (preferred for per-player views); name match as fallback
+    if (characterIdFilter) query = query.eq('character_id', characterIdFilter)
+    else if (characterFilter) query = query.ilike('character_name', `%${characterFilter}%`)
+    if (lootItemId) query = query.eq('loot_item_id', lootItemId)
+    else if (itemIdFilter) query = query.in('loot_item_id', itemIdFilter)
+    if (teamCharIds) query = query.in('character_id', teamCharIds)
 
     // Apply pagination
     query = query.range(offset, offset + limit - 1)
@@ -201,7 +198,7 @@ export async function GET(request: NextRequest) {
 
     if (historyError) {
       console.error('Error fetching loot history (primary query):', JSON.stringify(historyError))
-      console.error('Guild ID:', guildId, 'Filters:', { raidTierFilter, characterFilter, itemFilter, fromDate, toDate })
+      console.error('Guild ID:', guildId, 'Filters:', { raidTierFilter, phaseFilter, characterFilter, itemFilter, fromDate, toDate })
 
       // Fallback: simpler query without nested joins
       let fallbackQuery = supabase
@@ -220,12 +217,17 @@ export async function GET(request: NextRequest) {
         .order('awarded_date', { ascending: false })
         .order('created_at', { ascending: false })
 
-      if (lootItemId) fallbackQuery = fallbackQuery.eq('loot_item_id', lootItemId)
+      // Mirror of the primary filter block above — keep the two in sync.
+      if (raidTierFilter && raidTierFilter !== 'all') fallbackQuery = fallbackQuery.eq('raid_tier_id', raidTierFilter)
+      if (phaseTierIds) fallbackQuery = fallbackQuery.in('raid_tier_id', phaseTierIds)
       if (expansionFilter && expansionFilter !== 'all') fallbackQuery = fallbackQuery.eq('expansion_id', expansionFilter)
       if (fromDate) fallbackQuery = fallbackQuery.gte('awarded_date', fromDate)
       if (toDate) fallbackQuery = fallbackQuery.lte('awarded_date', toDate)
       if (characterIdFilter) fallbackQuery = fallbackQuery.eq('character_id', characterIdFilter)
       else if (characterFilter) fallbackQuery = fallbackQuery.ilike('character_name', `%${characterFilter}%`)
+      if (lootItemId) fallbackQuery = fallbackQuery.eq('loot_item_id', lootItemId)
+      else if (itemIdFilter) fallbackQuery = fallbackQuery.in('loot_item_id', itemIdFilter)
+      if (teamCharIds) fallbackQuery = fallbackQuery.in('character_id', teamCharIds)
 
       fallbackQuery = fallbackQuery.range(offset, offset + limit - 1)
 

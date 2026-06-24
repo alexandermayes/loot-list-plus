@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import ItemLink from '@/app/components/ItemLink'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useExpansionData } from '@/app/contexts/ExpansionContext'
@@ -24,6 +24,7 @@ interface RaidTier {
   id: string
   name: string
   expansion_id: string
+  phase: number | null
 }
 
 const ITEMS_PER_PAGE = 50
@@ -37,7 +38,7 @@ export default function LootHistoryTab() {
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
 
   // Filters
-  const [filterExpansion, setFilterExpansion] = useState<string>('all')
+  const [filterPhase, setFilterPhase] = useState<number | 'all'>('all')
   const [filterTier, setFilterTier] = useState<string>('all')
   const [characterSearch, setCharacterSearch] = useState('')
   const [itemSearch, setItemSearch] = useState('')
@@ -74,8 +75,8 @@ export default function LootHistoryTab() {
         offset: offset.toString()
       })
 
-      if (filterExpansion && filterExpansion !== 'all') {
-        params.append('expansion_id', filterExpansion)
+      if (filterPhase !== 'all') {
+        params.append('phase', String(filterPhase))
       }
       if (filterTier && filterTier !== 'all') {
         params.append('raid_tier_id', filterTier)
@@ -141,16 +142,14 @@ export default function LootHistoryTab() {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [activeGuild, filterExpansion, filterTier, characterSearch, itemSearch, fromDate, toDate, activeTeamId, showNotification])
+  }, [activeGuild, filterPhase, filterTier, characterSearch, itemSearch, fromDate, toDate, activeTeamId, showNotification])
 
   const loadRaidTiers = useCallback(async () => {
     if (!activeGuild) return
 
-    // Scope the raid dropdown to the selected phase, or to every guild phase
-    // when viewing "All phases" so past expansions' raids are selectable too.
-    const expansionIds = filterExpansion !== 'all'
-      ? [filterExpansion]
-      : guildExpansions.map(e => e.expansion_id)
+    // Load every guild expansion's tiers so the Phase dropdown can list all
+    // content phases that have loot, and the Raid dropdown can scope to them.
+    const expansionIds = guildExpansions.map(e => e.expansion_id)
 
     if (expansionIds.length === 0) {
       setRaidTiers([])
@@ -159,21 +158,35 @@ export default function LootHistoryTab() {
 
     const { data } = await supabase
       .from('raid_tiers')
-      .select('id, name, expansion_id')
+      .select('id, name, expansion_id, phase')
       .in('expansion_id', expansionIds)
       .order('name')
 
     if (data) {
       setRaidTiers(data)
     }
-  }, [activeGuild, filterExpansion, guildExpansions, supabase])
+  }, [activeGuild, guildExpansions, supabase])
 
-  // Load raid tiers when guild, phase filter, or expansion list changes
+  // Load raid tiers when the guild or its expansion list changes
   useEffect(() => {
     if (activeGuild) {
       loadRaidTiers()
     }
   }, [activeGuild, loadRaidTiers])
+
+  // Distinct content phases (1-6) that have raids, for the Phase dropdown.
+  // Mirrors the phase filter used across the rest of the app (PriorityListTab, etc.)
+  const availablePhases = useMemo(() => {
+    const phases = new Set<number>()
+    raidTiers.forEach(t => { if (t.phase !== null) phases.add(t.phase) })
+    return Array.from(phases).sort((a, b) => a - b)
+  }, [raidTiers])
+
+  // Raids to offer in the Raid dropdown, scoped to the selected phase.
+  const phaseTiers = useMemo(() => {
+    if (filterPhase === 'all') return raidTiers
+    return raidTiers.filter(t => t.phase === filterPhase)
+  }, [raidTiers, filterPhase])
 
   // Fetch history when filters change
   useEffect(() => {
@@ -181,7 +194,7 @@ export default function LootHistoryTab() {
       fetchHistory(0, false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeGuild, canManageLoot, filterExpansion, filterTier, fromDate, toDate, activeTeamId])
+  }, [activeGuild, canManageLoot, filterPhase, filterTier, fromDate, toDate, activeTeamId])
 
   // Debounce search filters
   useEffect(() => {
@@ -206,14 +219,14 @@ export default function LootHistoryTab() {
     fetchHistory(entries.length, true)
   }
 
-  const handleExpansionChange = (expansionId: string) => {
-    setFilterExpansion(expansionId)
+  const handlePhaseChange = (value: string) => {
+    setFilterPhase(value === 'all' ? 'all' : Number(value))
     // Raid options are phase-specific, so a tier from another phase no longer applies
     setFilterTier('all')
   }
 
   const handleClearFilters = () => {
-    setFilterExpansion('all')
+    setFilterPhase('all')
     setFilterTier('all')
     setCharacterSearch('')
     setItemSearch('')
@@ -221,7 +234,7 @@ export default function LootHistoryTab() {
     setToDate('')
   }
 
-  const hasActiveFilters = filterExpansion !== 'all' || filterTier !== 'all' || !!characterSearch || !!itemSearch || !!fromDate || !!toDate
+  const hasActiveFilters = filterPhase !== 'all' || filterTier !== 'all' || !!characterSearch || !!itemSearch || !!fromDate || !!toDate
 
   const expansionNames = new Map(guildExpansions.map(e => [e.expansion_id, e.expansion_name]))
 
@@ -345,13 +358,13 @@ export default function LootHistoryTab() {
             <Select
               variant="rounded"
               size="sm"
-              value={filterExpansion}
-              onChange={(e) => handleExpansionChange(e.target.value)}
+              value={filterPhase === 'all' ? 'all' : String(filterPhase)}
+              onChange={(e) => handlePhaseChange(e.target.value)}
             >
               <option value="all">All phases</option>
-              {guildExpansions.map(exp => (
-                <option key={exp.expansion_id} value={exp.expansion_id}>
-                  {exp.expansion_name}{exp.is_current ? ' (current)' : ''}
+              {availablePhases.map(phase => (
+                <option key={phase} value={phase}>
+                  Phase {phase}
                 </option>
               ))}
             </Select>
@@ -367,9 +380,9 @@ export default function LootHistoryTab() {
               onChange={(e) => setFilterTier(e.target.value)}
             >
               <option value="all">All raids</option>
-              {raidTiers.map(tier => (
+              {phaseTiers.map(tier => (
                 <option key={tier.id} value={tier.id}>
-                  {filterExpansion === 'all' && expansionNames.get(tier.expansion_id)
+                  {filterPhase === 'all' && expansionNames.get(tier.expansion_id)
                     ? `${tier.name} · ${expansionNames.get(tier.expansion_id)}`
                     : tier.name}
                 </option>
@@ -539,8 +552,8 @@ export default function LootHistoryTab() {
           characterId={selectedPlayer.character_id}
           characterName={selectedPlayer.character_name}
           classColor={selectedPlayer.character_class_color}
-          guildExpansions={guildExpansions}
-          initialExpansionId={filterExpansion}
+          availablePhases={availablePhases}
+          initialPhase={filterPhase}
         />
       )}
     </div>

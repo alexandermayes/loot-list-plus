@@ -11,7 +11,6 @@ import { FileSearchIcon } from '@hugeicons/core-free-icons'
 import ItemLink from '@/app/components/ItemLink'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { useNotification } from '@/app/contexts/NotificationContext'
-import type { GuildExpansion } from '@/app/contexts/ExpansionContext'
 import type { LootHistoryEntry } from '@/app/api/loot-history/route'
 
 // A player rarely has this many awards; cap defensively and flag if we hit it.
@@ -24,9 +23,10 @@ interface PlayerLootModalProps {
   characterId: string | null
   characterName: string
   classColor: string | null
-  guildExpansions: GuildExpansion[]
-  /** Phase the parent list is filtered to, used as the modal's initial scope */
-  initialExpansionId: string
+  /** Content phases (1-6) that have raids, for the phase dropdown */
+  availablePhases: number[]
+  /** Content phase the parent list is filtered to, used as the modal's initial scope */
+  initialPhase: number | 'all'
 }
 
 interface RaidGroup {
@@ -41,21 +41,21 @@ export default function PlayerLootModal({
   characterId,
   characterName,
   classColor,
-  guildExpansions,
-  initialExpansionId,
+  availablePhases,
+  initialPhase,
 }: PlayerLootModalProps) {
   const [entries, setEntries] = useState<LootHistoryEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [truncated, setTruncated] = useState(false)
-  const [phaseFilter, setPhaseFilter] = useState(initialExpansionId)
+  const [phaseFilter, setPhaseFilter] = useState<number | 'all'>(initialPhase)
   const { showNotification } = useNotification()
 
   // Reset the phase scope to the parent's whenever the modal reopens for a player
   useEffect(() => {
     if (open) {
-      setPhaseFilter(initialExpansionId)
+      setPhaseFilter(initialPhase)
     }
-  }, [open, initialExpansionId, characterId, characterName])
+  }, [open, initialPhase, characterId, characterName])
 
   const fetchPlayerLoot = useCallback(async () => {
     if (!open) return
@@ -72,8 +72,8 @@ export default function PlayerLootModal({
       } else {
         params.append('character', characterName)
       }
-      if (phaseFilter && phaseFilter !== 'all') {
-        params.append('expansion_id', phaseFilter)
+      if (phaseFilter !== 'all') {
+        params.append('phase', String(phaseFilter))
       }
 
       const response = await fetch(`/api/loot-history?${params}`)
@@ -141,13 +141,13 @@ export default function PlayerLootModal({
           <Select
             variant="rounded"
             size="sm"
-            value={phaseFilter}
-            onChange={(e) => setPhaseFilter(e.target.value)}
+            value={phaseFilter === 'all' ? 'all' : String(phaseFilter)}
+            onChange={(e) => setPhaseFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
           >
             <option value="all">All phases</option>
-            {guildExpansions.map(exp => (
-              <option key={exp.expansion_id} value={exp.expansion_id}>
-                {exp.expansion_name}{exp.is_current ? ' (current)' : ''}
+            {availablePhases.map(phase => (
+              <option key={phase} value={phase}>
+                Phase {phase}
               </option>
             ))}
           </Select>
