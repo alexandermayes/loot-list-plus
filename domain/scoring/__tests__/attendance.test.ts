@@ -845,4 +845,138 @@ describe('computeAttendance', () => {
       expect(result.raidsAttended).toBe(1)
     })
   })
+
+  // ─── Fill-in credit (cross-team) ───────────────────────────
+  // A raider rostered on team A who covers team B's raid earns "fill-in"
+  // credit. The guard that prevents double-counting must key on whether the
+  // raider ALREADY attended their own team that date, not merely on whether
+  // their team had an event that date — otherwise parallel-schedule guilds
+  // (both teams raid the same nights) silently drop every fill-in.
+  describe('fill-in credit (cross-team)', () => {
+    it('parallel-schedule regression: skips own team, covers other team same nights → credited', () => {
+      // Team A (home) and team B raid the SAME two nights. The raider attended
+      // NONE of team A's raids but filled team B both nights. Before the fix the
+      // home team's event-date collided with each fill-in and credit was dropped
+      // (0/2). After the fix the raider is credited for both nights raided.
+      const events: RaidEvent[] = [
+        { id: 'a-tue', raid_date: '2026-03-10', raid_team_id: 'A' },
+        { id: 'a-thu', raid_date: '2026-03-12', raid_team_id: 'A' },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [], // never attended own team
+        fillInEvents: [
+          { id: 'b-tue', raid_date: '2026-03-10', raid_team_id: 'B' },
+          { id: 'b-thu', raid_date: '2026-03-12', raid_team_id: 'B' },
+        ],
+        fillInRecords: [
+          { raid_event_id: 'b-tue', attended: true },
+          { raid_event_id: 'b-thu', attended: true },
+        ],
+        weeklyAttendanceCap: 2,
+        raidDays: [2, 4],
+        raiderTeamId: 'A',
+        asOfDate: '2026-03-18',
+      }))
+      expect(result.raidsInWindow).toBe(2)
+      expect(result.raidsAttended).toBe(2)
+    })
+
+    it('does not double-count: attended own team AND has a fill-in record same date → fill-in suppressed', () => {
+      // Guard preservation. The raider attended their own team's Tuesday raid;
+      // a stray fill-in record on the same date must not stack a second credit.
+      const events: RaidEvent[] = [
+        { id: 'a-tue', raid_date: '2026-03-10', raid_team_id: 'A' },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [{ raid_event_id: 'a-tue', signed_up: false, attended: true, no_call_no_show: false }],
+        fillInEvents: [{ id: 'b-tue', raid_date: '2026-03-10', raid_team_id: 'B' }],
+        fillInRecords: [{ raid_event_id: 'b-tue', attended: true }],
+        weeklyAttendanceCap: 2,
+        raidDays: [2],
+        raiderTeamId: 'A',
+        asOfDate: '2026-03-18',
+      }))
+      expect(result.raidsInWindow).toBe(1)
+      expect(result.raidsAttended).toBe(1)
+    })
+
+    it('missed own team that night (signed up only) but covered other team → credited', () => {
+      // Signing up is not attending, so the fill-in is the raider's only raid
+      // that night and must count.
+      const events: RaidEvent[] = [
+        { id: 'a-tue', raid_date: '2026-03-10', raid_team_id: 'A' },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [{ raid_event_id: 'a-tue', signed_up: true, attended: false, no_call_no_show: false }],
+        fillInEvents: [{ id: 'b-tue', raid_date: '2026-03-10', raid_team_id: 'B' }],
+        fillInRecords: [{ raid_event_id: 'b-tue', attended: true }],
+        weeklyAttendanceCap: 2,
+        raidDays: [2],
+        raiderTeamId: 'A',
+        asOfDate: '2026-03-18',
+      }))
+      expect(result.raidsInWindow).toBe(1)
+      expect(result.raidsAttended).toBe(1)
+    })
+
+    it('weekly cap still bounds fill-in credit (3 fill-ins, cap 2 → 2 credited)', () => {
+      // Home team raids 3 nights; raider attended none and filled the other team
+      // all 3. Cap=2 clamps both the denominator and the fill-in credit.
+      const events: RaidEvent[] = [
+        { id: 'a-tue', raid_date: '2026-03-10', raid_team_id: 'A' },
+        { id: 'a-thu', raid_date: '2026-03-12', raid_team_id: 'A' },
+        { id: 'a-sat', raid_date: '2026-03-14', raid_team_id: 'A' },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [],
+        fillInEvents: [
+          { id: 'b-tue', raid_date: '2026-03-10', raid_team_id: 'B' },
+          { id: 'b-thu', raid_date: '2026-03-12', raid_team_id: 'B' },
+          { id: 'b-sat', raid_date: '2026-03-14', raid_team_id: 'B' },
+        ],
+        fillInRecords: [
+          { raid_event_id: 'b-tue', attended: true },
+          { raid_event_id: 'b-thu', attended: true },
+          { raid_event_id: 'b-sat', attended: true },
+        ],
+        weeklyAttendanceCap: 2,
+        raidDays: [2, 4, 6],
+        raiderTeamId: 'A',
+        asOfDate: '2026-03-18',
+      }))
+      expect(result.raidsInWindow).toBe(2)
+      expect(result.raidsAttended).toBe(2)
+    })
+
+    it('fill-in on a genuinely off night (home team did not raid) still counts', () => {
+      // Pre-existing behavior must be preserved: home team raids Tue only; the
+      // raider attended Tue and also filled team B on Thursday (no home event).
+      const events: RaidEvent[] = [
+        { id: 'a-tue', raid_date: '2026-03-10', raid_team_id: 'A' },
+        { id: 'a-thu', raid_date: '2026-03-12', raid_team_id: 'A' },
+      ]
+      const result = computeAttendance(makeInput({
+        raidEvents: events,
+        records: [
+          { raid_event_id: 'a-tue', signed_up: false, attended: true, no_call_no_show: false },
+          { raid_event_id: 'a-thu', signed_up: false, attended: true, no_call_no_show: false },
+        ],
+        // Raider also covered team B on a bonus Saturday their own team skipped.
+        fillInEvents: [{ id: 'b-sat', raid_date: '2026-03-14', raid_team_id: 'B' }],
+        fillInRecords: [{ raid_event_id: 'b-sat', attended: true }],
+        weeklyAttendanceCap: 2,
+        raidDays: [2, 4, 6],
+        raiderTeamId: 'A',
+        asOfDate: '2026-03-18',
+      }))
+      // Cap=2 clamps the week; the raider already maxed their 2 own-team raids,
+      // so the Saturday fill-in does not inflate beyond the cap.
+      expect(result.raidsInWindow).toBe(2)
+      expect(result.raidsAttended).toBe(2)
+    })
+  })
 })

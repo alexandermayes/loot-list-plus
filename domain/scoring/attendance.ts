@@ -318,10 +318,25 @@ export function computeAttendance(input: AttendanceInput): AttendanceResult {
     const fillInsInWindow = input.fillInEvents.filter(e =>
       e.raid_date >= windowStartStr && e.raid_date <= windowEndStr
     )
-    // Only consider fill-in events on dates WITHOUT a team event (avoid double-counting)
-    const teamDates = new Set(dedupedEvents.map(e => e.raid_date))
+    // A fill-in only double-counts a night the raider ALREADY earned own-team
+    // credit for. Merely OWING a team event that date must not block it: a
+    // raider who skipped their own team's raid to cover another team still
+    // raided once and should be credited. Gating on the team's event *date*
+    // (rather than an *attended* own-team record) silently dropped every
+    // cross-team fill-in for guilds whose teams raid the same nights — the
+    // home team always has an event that date, so the credit vanished and the
+    // raider scored ~0 despite showing up. Match the per-week counter below:
+    // "attended and not NCNS" is what counts as own-team credit.
+    const attendedTeamDates = new Set(
+      dedupedEvents
+        .filter(e => {
+          const rec = input.records.find(r => r.raid_event_id === e.id)
+          return rec?.attended && !rec.no_call_no_show
+        })
+        .map(e => e.raid_date)
+    )
     const extraFillIns = fillInsInWindow.filter(e =>
-      !teamDates.has(e.raid_date) && fillInRecordIds.has(e.id)
+      !attendedTeamDates.has(e.raid_date) && fillInRecordIds.has(e.id)
     )
 
     if (extraFillIns.length > 0) {
