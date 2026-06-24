@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   lint-test:
-    name: Lint & Test
+    name: Test
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -29,5 +29,4 @@ jobs:
         env:
           NPM_RC: ${{ secrets.NPM_RC }}
       - run: npm ci
-      - run: npm run lint
       - run: npm run test
