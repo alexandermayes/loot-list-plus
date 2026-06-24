@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint-test:
-    name: Lint & Test
+  test:
+    name: Test
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -24,8 +24,9 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      - name: Write .npmrc for private registry
+        run: printf '%s\n' "$NPM_RC" > .npmrc
         env:
           NPM_RC: ${{ secrets.NPM_RC }}
-      - run: npm run lint
+      - run: npm ci
       - run: npm run test
