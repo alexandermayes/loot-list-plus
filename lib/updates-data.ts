@@ -14,6 +14,16 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'June 23, 2026',
+    items: [
+      {
+        category: 'fix',
+        title: 'Serpentshrine Cavern trash loot grouping',
+        description: 'Five SSC trash drops (Pendant of the Perilous, Totem of the Maelstrom, Serpentshrine Shuriken, Boots of Courage Unending, and Spyglass of the Hidden Fleet) were listed under Hydross and The Lurker Below. They now sit under Trash where they belong.',
+      },
+    ],
+  },
+  {
     date: 'June 1, 2026',
     items: [
       {
