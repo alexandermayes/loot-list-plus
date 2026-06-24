@@ -43,6 +43,7 @@ import { trackClientEvent, usePagePerf } from '@/utils/analytics/client'
 import { SetupGuide } from './SetupGuide'
 import { hasFeature } from '@/domain/guild/feature-flags'
 import type { RaidTeam } from '@/domain/raid-team/types'
+import type { Tables } from '@/lib/database.types'
 import { resolveRaidDays, resolveRollingWeeks } from '@/domain/raid-team/settings'
 import { paginatedSelect } from '@/utils/supabase/paginate'
 
@@ -462,7 +463,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
       .select('raid_team_id, raid_teams (id, name, color_hex, raid_days_override, rolling_weeks_override)')
       .eq('character_id', activeCharacter.id)
       .eq('guild_id', activeGuild.id)
-      .then(({ data }: { data: any[] | null }) => {
+      .then(({ data }: { data: Array<{ raid_teams: unknown }> | null }) => {
         if (!cancelled && data) {
           const teams = data
             .map(m => m.raid_teams)
@@ -827,11 +828,11 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
       let membershipStatus = 'full'
       let trialStartedAt: string | null = null
       let characterRole = 'Member'
-      let savedGuildSettings: any = null
+      let savedGuildSettings: Tables<'guild_settings'> | null = null
       let savedRaidDays: number[] = []
       let savedTimezone = 'UTC'
-      let savedDeduplicatedRaidEvents: Array<{ id: string; raid_date: string }> = []
-      let savedAttendanceRecords: Array<{ raid_event_id: string; attended: boolean }> = []
+      const savedDeduplicatedRaidEvents: Array<{ id: string; raid_date: string }> = []
+      const savedAttendanceRecords: Array<{ raid_event_id: string; attended: boolean }> = []
       let donationBonusForChar = 0
 
       // Start all independent fetches in parallel: submission items, guild settings, membership, expansion, raid events
@@ -931,22 +932,31 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
           // Get expansion's raid day configuration
           let raidDays: number[] = []
           const expansionData = expansionDataResult.data
-          const raidDaySource = expansionData || guildSettings
+          type RaidDaySource = {
+            raid_days_per_week?: number | null
+            first_raid_day?: number | null
+            second_raid_day?: number | null
+            third_raid_day?: number | null
+            fourth_raid_day?: number | null
+            fifth_raid_day?: number | null
+            timezone?: string | null
+          }
+          const raidDaySource = (expansionData || guildSettings) as RaidDaySource | null
           if (raidDaySource) {
             const baseSettings = {
-              raid_days_per_week: (raidDaySource as any).raid_days_per_week || 2,
-              first_raid_day: (raidDaySource as any).first_raid_day ?? null,
-              second_raid_day: (raidDaySource as any).second_raid_day ?? null,
-              third_raid_day: (raidDaySource as any).third_raid_day ?? null,
-              fourth_raid_day: (raidDaySource as any).fourth_raid_day ?? null,
-              fifth_raid_day: (raidDaySource as any).fifth_raid_day ?? null,
+              raid_days_per_week: raidDaySource.raid_days_per_week || 2,
+              first_raid_day: raidDaySource.first_raid_day ?? null,
+              second_raid_day: raidDaySource.second_raid_day ?? null,
+              third_raid_day: raidDaySource.third_raid_day ?? null,
+              fourth_raid_day: raidDaySource.fourth_raid_day ?? null,
+              fifth_raid_day: raidDaySource.fifth_raid_day ?? null,
             }
             // Apply team raid day overrides if character is on a team
             raidDays = activeTeam?.raid_days_override
               ? resolveRaidDays(baseSettings, activeTeam.raid_days_override)
               : resolveRaidDays(baseSettings, null)
             if (expansionData) {
-              savedTimezone = (expansionData as any).timezone || 'UTC'
+              savedTimezone = (expansionData as RaidDaySource).timezone || 'UTC'
             }
           }
           savedRaidDays = raidDays
@@ -985,7 +995,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
           // Fill-in: records on events NOT in team events (other teams' events)
           let fillInEvents: { id: string; raid_date: string }[] = []
           let fillInRecords: { raid_event_id: string; attended: boolean }[] = []
-          const raidDaysPerWeek = raidDays.length || (raidDaySource as any)?.raid_days_per_week || 2
+          const raidDaysPerWeek = raidDays.length || raidDaySource?.raid_days_per_week || 2
           const weeklyMin = (guildSettings as { weekly_attendance_minimum?: number | null }).weekly_attendance_minimum
           const weeklyCap = activeTeam
             ? Math.min(weeklyMin ?? raidDaysPerWeek, raidDaysPerWeek)
@@ -1209,11 +1219,11 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
       const filteredItemIds = [...new Set(filteredItems.map((i: { id: string }) => i.id))]
 
       // Fetch BLP data, competition data, and loot efficiency in parallel
-      let blpData: Record<string, number> = {}
-      let competitionMap: Record<string, { totalWanting: number; userRank: number }> = {}
+      const blpData: Record<string, number> = {}
+      const competitionMap: Record<string, { totalWanting: number; userRank: number }> = {}
       let totalReceivedCount = 0
       const receivedWowheadIds = new Set<number>()
-      let prioritiesMap: Record<string, ItemPriority> = {}
+      const prioritiesMap: Record<string, ItemPriority> = {}
 
       await Promise.all([
         // Priorities: fetch officer-set item priorities for score calculation
@@ -1291,7 +1301,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
               // Group by item, count unique characters, find user's rank position
               const itemMap = new Map<string, Array<{ character_id: string; rank: number }>>()
               for (const sub of allSubmissionsForItems) {
-                const submission = Array.isArray((sub as any).submission) ? (sub as any).submission[0] : (sub as any).submission
+                const submission = Array.isArray(sub.submission) ? sub.submission[0] : sub.submission
                 if (!submission) continue
                 const list = itemMap.get(sub.loot_item_id) || []
                 list.push({ character_id: submission.character_id, rank: sub.rank })
@@ -1732,7 +1742,13 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
         return
       }
 
-      const transformedItems: ReceivedItem[] = historyData.map((h: any) => ({
+      type LootHistoryRow = {
+        id: string
+        awarded_date: string
+        loot_item?: { name?: string; wowhead_id?: number; boss_name?: string; classification?: string } | null
+        raid_tier?: { name?: string } | null
+      }
+      const transformedItems: ReceivedItem[] = (historyData as unknown as LootHistoryRow[]).map((h) => ({
         id: h.id,
         item_name: h.loot_item?.name || 'Unknown Item',
         wowhead_id: h.loot_item?.wowhead_id || 0,
@@ -1750,16 +1766,11 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
     }
   }
 
-  // Show welcome screen if no active guild (after loading completes)
-  // Dev preview: ?welcome=true forces the welcome screen for testing
-  const forceWelcome = process.env.NODE_ENV === 'development' && searchParams.get('welcome') === 'true'
-  if ((!guildLoading && !activeGuild) || forceWelcome) {
-    return <WelcomeScreen />
-  }
-
   // Dynamic contextual subtitle for the overview greeting
   // Memoized, deterministic subtitle — avoids flicker as data loads in.
   // Picks the highest-priority contextual line rather than rolling randomly.
+  // NOTE: must be called unconditionally (before any early return) to satisfy
+  // the rules of hooks.
   const contextualSubtitle = useMemo(() => {
     const charName = activeCharacter?.name || 'adventurer'
 
@@ -1798,6 +1809,13 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
 
     return `Viewing loot for ${charName}`
   }, [activeCharacter?.name, nextRaidDates, lootListDeadline, hasPermission, actionsNeeded.length, lootPriority, receivedItems.length])
+
+  // Show welcome screen if no active guild (after loading completes)
+  // Dev preview: ?welcome=true forces the welcome screen for testing
+  const forceWelcome = process.env.NODE_ENV === 'development' && searchParams.get('welcome') === 'true'
+  if ((!guildLoading && !activeGuild) || forceWelcome) {
+    return <WelcomeScreen />
+  }
 
   // Hero section (greeting + character card) can render as soon as guild context is ready.
   // Dashboard data sections below the hero wait for the full data load.
@@ -1914,7 +1932,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
           <HugeiconsIcon icon={AlertCircleIcon} size={18} className="shrink-0" />
           <AlertDescription className="flex-1">
             You have {resubmitCount} loot {resubmitCount === 1 ? 'list' : 'lists'} that{' '}
-            {resubmitCount === 1 ? "isn't submitted" : "aren't submitted"}. Officers can't see{' '}
+            {resubmitCount === 1 ? "isn't submitted" : "aren't submitted"}. Officers can&apos;t see{' '}
             {resubmitCount === 1 ? 'it' : 'them'} until you resubmit.
           </AlertDescription>
           <Button

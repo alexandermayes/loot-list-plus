@@ -97,7 +97,7 @@ export default function UpdatesPage() {
           </div>
           <div>
             <Heading level={1}>Updates</Heading>
-            <Text color="muted" size="sm">What's new in LootList+</Text>
+            <Text color="muted" size="sm">What&apos;s new in LootList+</Text>
           </div>
         </div>
 

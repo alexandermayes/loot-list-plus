@@ -25,6 +25,7 @@ import { Badge } from '@/components/ui/badge'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { HugeiconsIcon } from '@hugeicons/react'
+import type { IconSvgElement } from '@hugeicons/react'
 import {
   UserIcon,
   Logout01Icon,
@@ -47,6 +48,23 @@ import { useAccentColor, ACCENT_COLORS, DEFAULT_ACCENT_COLOR } from '@/app/conte
 
 type TabId = 'account' | 'preferences' | 'guilds'
 
+interface GuildMembership {
+  id: string
+  role: string
+  joined_at: string
+  guild: {
+    id: string
+    name: string
+    realm: string | null
+    faction: string | null
+    created_by: string | null
+    icon_url: string | null
+  }
+  character: { id: string; name: string; is_main: boolean | null; user_id: string } | null
+  guild_id: string
+  user_id: string
+}
+
 interface ProfileContentProps {
   // Server-rendered profile header card from page.tsx. LCP target until
   // the client takes over with the full Discord-link state, etc.
@@ -54,7 +72,7 @@ interface ProfileContentProps {
 }
 
 export default function ProfileContent({ serverHeading }: ProfileContentProps = {}) {
-  const [allGuilds, setAllGuilds] = useState<any[]>([])
+  const [allGuilds, setAllGuilds] = useState<GuildMembership[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<TabId>('account')
   const [leaveGuildId, setLeaveGuildId] = useState<string | null>(null)
@@ -351,14 +369,14 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
         .eq('characters.user_id', user.id)
         .eq('is_active', true)
 
-      let derivedMemberships: any[] = []
+      let derivedMemberships: GuildMembership[] = []
 
       if (charMemberships && charMemberships.length > 0) {
         // Group by guild and pick the main character for each
-        const guildMap = new Map<string, any>()
+        const guildMap = new Map<string, GuildMembership>()
         for (const m of charMemberships) {
-          const guild = Array.isArray(m.guild) ? m.guild[0] : m.guild
-          const char = Array.isArray(m.character) ? m.character[0] : m.character
+          const guild = (Array.isArray(m.guild) ? m.guild[0] : m.guild) as GuildMembership['guild'] | null
+          const char = (Array.isArray(m.character) ? m.character[0] : m.character) as GuildMembership['character']
           if (!guild) continue
 
           const existing = guildMap.get(guild.id)
@@ -369,7 +387,7 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
               character: char,
               guild_id: guild.id,
               user_id: user.id
-            })
+            } as GuildMembership)
           }
         }
         derivedMemberships = Array.from(guildMap.values())
@@ -401,7 +419,7 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
 
   const displayName = user?.user_metadata?.custom_claims?.global_name || user?.user_metadata?.full_name || 'User'
 
-  const tabs: { id: TabId; label: string; icon: any }[] = [
+  const tabs: { id: TabId; label: string; icon: IconSvgElement }[] = [
     { id: 'account', label: 'Account', icon: UserIcon },
     { id: 'preferences', label: 'Preferences', icon: Settings01Icon },
     { id: 'guilds', label: 'My guilds', icon: Shield01Icon },
@@ -874,7 +892,7 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
           <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-border">
               <Heading level={4}>My guilds</Heading>
-              <p className="text-muted-foreground text-[13px] mt-1">Guilds you're a member of</p>
+              <p className="text-muted-foreground text-[13px] mt-1">Guilds you&apos;re a member of</p>
             </div>
             <div className="p-4 sm:p-6">
               {allGuilds.length > 0 ? (
@@ -975,10 +993,10 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
         </ModalHeader>
         <ModalBody>
           <p className="text-muted-foreground">
-            Are you sure you want to leave this guild? Your characters will be removed from this guild and you'll lose access to guild features.
+            Are you sure you want to leave this guild? Your characters will be removed from this guild and you&apos;ll lose access to guild features.
             {allGuilds.length === 1 && (
               <span className="block mt-2 text-destructive font-medium">
-                This is your only guild. You'll need to join another guild to continue using LootList+.
+                This is your only guild. You&apos;ll need to join another guild to continue using LootList+.
               </span>
             )}
           </p>

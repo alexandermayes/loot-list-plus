@@ -492,7 +492,7 @@ export async function seedExpansionForGuild(
     }
 
     return { expansionId: expansion.id }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Unexpected error in seedExpansionForGuild:', error)
     return {
       expansionId: '',

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import LandingNav from '@/app/components/landing/LandingNav'
 import LandingCTA from '@/app/components/landing/LandingCTA'
 import LandingFooter from '@/app/components/landing/LandingFooter'
@@ -126,7 +127,7 @@ export default function ComparePage() {
         <div className="max-w-4xl mx-auto">
           {/* Breadcrumb */}
           <nav className="mb-8 text-sm text-foreground-secondary">
-            <a href="/" className="hover:text-foreground transition-colors">Home</a>
+            <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
             <span className="mx-2 text-foreground-muted">/</span>
             <span className="text-foreground-muted">Compare</span>
           </nav>

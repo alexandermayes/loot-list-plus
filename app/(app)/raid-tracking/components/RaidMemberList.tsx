@@ -157,7 +157,7 @@ export function RaidMemberList({
             No raiders with loot lists
           </h4>
           <p className="text-foreground-muted text-[13px] max-w-md mx-auto">
-            Guild members with loot submissions will appear here. Use the "Import data"
+            Guild members with loot submissions will appear here. Use the &quot;Import data&quot;
             button to add attendance for this raid day.
           </p>
         </div>

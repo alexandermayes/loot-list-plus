@@ -86,7 +86,7 @@ type ClientEvent =
   | 'character_created'
   | 'character_deleted'
 
-export function trackClientEvent(event: ClientEvent, properties?: Record<string, any>): void {
+export function trackClientEvent(event: ClientEvent, properties?: Record<string, unknown>): void {
   try {
     posthog.capture(event, properties)
   } catch {

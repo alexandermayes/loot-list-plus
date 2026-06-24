@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
+import type { IconSvgElement } from '@hugeicons/react'
 import {
   Target01Icon,
   Calendar03Icon,
@@ -66,7 +67,7 @@ function rankingToScoreResult(r: PlayerRanking): ScoreResult {
 }
 
 /** Icon + color per component key (UI concern, not domain) */
-const COMPONENT_STYLES: Record<string, { icon: any; iconColor: string }> = {
+const COMPONENT_STYLES: Record<string, { icon: IconSvgElement; iconColor: string }> = {
   itemRank: { icon: Target01Icon, iconColor: 'bg-yellow-500/20 text-yellow-500' },
   attendance: { icon: Calendar03Icon, iconColor: 'bg-blue-500/20 text-blue-500' },
   rankModifier: { icon: UserIcon, iconColor: 'bg-purple-500/20 text-purple-500' },
@@ -84,7 +85,7 @@ function ScoreRow({
   winnerValue,
 }: {
   label: string
-  icon: any
+  icon: IconSvgElement
   iconColor: string
   userValue: number
   winnerValue: number
@@ -185,7 +186,7 @@ export default function ScoreComparisonModal({
   return (
     <Modal open={open} onClose={onClose} size="default">
       <ModalHeader onClose={onClose}>
-        <ModalTitle>Why didn't I get this item?</ModalTitle>
+        <ModalTitle>Why didn&apos;t I get this item?</ModalTitle>
         <ModalDescription>{itemName}</ModalDescription>
       </ModalHeader>
       <ModalBody className="space-y-4">
@@ -200,7 +201,7 @@ export default function ScoreComparisonModal({
           </div>
 
           <div className="flex-1 bg-accent/10 border border-accent/30 rounded-lg p-4 text-center">
-            <p className="text-muted-foreground text-[12px] uppercase tracking-wide mb-1">Winner's score</p>
+            <p className="text-muted-foreground text-[12px] uppercase tracking-wide mb-1">Winner&apos;s score</p>
             <p className="text-accent text-2xl font-semibold tabular-nums">{winnerRanking.loot_score.toFixed(1)}</p>
             <p className="text-foreground-secondary text-[13px]" style={{ color: winnerRanking.class_color }}>
               {winnerRanking.player_name}

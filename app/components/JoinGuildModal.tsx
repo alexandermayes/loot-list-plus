@@ -185,7 +185,7 @@ export function JoinGuildModal({ open, initialView = 'main', onClose, onError }:
                 />
                 <div>
                   <h3 className="text-[20px] font-bold text-foreground">Join a guild</h3>
-                  <p className="text-[12px] text-muted-foreground">Choose how you'd like to join</p>
+                  <p className="text-[12px] text-muted-foreground">Choose how you&apos;d like to join</p>
                 </div>
               </div>
               <Button
@@ -216,7 +216,7 @@ export function JoinGuildModal({ open, initialView = 'main', onClose, onError }:
                   <div className="flex flex-col gap-1 text-center w-full">
                     <h2 className="font-poppins font-bold text-lg text-foreground">Join with Discord</h2>
                     <p className="font-poppins font-normal text-sm text-muted-foreground">
-                      If your guild has Discord linked, you're in automatically.
+                      If your guild has Discord linked, you&apos;re in automatically.
                     </p>
                   </div>
                 </div>
@@ -362,14 +362,14 @@ export function JoinGuildModal({ open, initialView = 'main', onClose, onError }:
               <div className="text-center py-8">
                 <p className="font-bold text-[18px] text-foreground mb-2">No guilds found</p>
                 <p className="text-[14px] text-muted-foreground mb-4">
-                  We didn't find any LootList+ guilds linked to your Discord servers.
+                  We didn&apos;t find any LootList+ guilds linked to your Discord servers.
                 </p>
                 <div className="bg-background-elevated border border-border-strong rounded-xl p-4 text-left space-y-2">
                   <p className="text-[14px] text-foreground font-medium">Why this might happen:</p>
                   <ul className="text-[13px] text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>No servers you're in use LootList+</li>
-                    <li>You're already in all matching guilds</li>
-                    <li>Discord integration isn't set up yet</li>
+                    <li>No servers you&apos;re in use LootList+</li>
+                    <li>You&apos;re already in all matching guilds</li>
+                    <li>Discord integration isn&apos;t set up yet</li>
                   </ul>
                   <p className="text-[13px] text-muted-foreground mt-3">
                     Use an invite code, or ask a guild officer to enable Discord integration.
@@ -426,7 +426,7 @@ export function JoinGuildModal({ open, initialView = 'main', onClose, onError }:
                 <path d="M10 6v4M10 14h.01" strokeLinecap="round" />
               </svg>
               <p className="text-[12px] text-muted-foreground">
-                We check which Discord servers you're a member of and match them with LootList+ guilds that have Discord integration enabled.
+                We check which Discord servers you&apos;re a member of and match them with LootList+ guilds that have Discord integration enabled.
               </p>
             </div>
           </div>

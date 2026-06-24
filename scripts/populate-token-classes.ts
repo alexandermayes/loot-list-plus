@@ -78,7 +78,7 @@ async function populateTokenClasses() {
   // Filter to only tokens without existing class restrictions
   const tokensToProcess = tokens.filter(item => {
     if (!isTokenSlot(item.item_slot)) return false
-    const classes = item.loot_item_classes as any[] || []
+    const classes = item.loot_item_classes as unknown[] || []
     return classes.length === 0
   })
 

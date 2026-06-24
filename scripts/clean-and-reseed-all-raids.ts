@@ -101,7 +101,7 @@ async function cleanAndReseedAllRaids() {
       console.log(`   Current items: ${itemCount}`)
 
       // Find duplicates
-      const itemMap = new Map<string, any[]>()
+      const itemMap = new Map<string, { id: string }[]>()
       existingItems?.forEach(item => {
         const key = `${item.name}-${item.boss_name}-${item.wowhead_id}`
         if (!itemMap.has(key)) {
@@ -149,7 +149,7 @@ async function cleanAndReseedAllRaids() {
       }
 
       // Insert complete loot tables
-      const lootItems: any[] = []
+      const lootItems: Record<string, unknown>[] = []
 
       for (const boss of raidData.bosses) {
         for (const item of boss.items) {

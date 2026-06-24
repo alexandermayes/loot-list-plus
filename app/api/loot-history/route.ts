@@ -239,23 +239,23 @@ export async function GET(request: NextRequest) {
       }
 
       // Batch fetch loot_items data for fallback records
-      const itemIds = [...new Set((fallbackData || []).map((h: any) => h.loot_item_id).filter(Boolean))]
+      const itemIds = [...new Set((fallbackData || []).map((h: { loot_item_id?: string | null }) => h.loot_item_id).filter(Boolean))]
       const { data: itemsData } = itemIds.length > 0
         ? await supabase.from('loot_items').select('id, name, wowhead_id, boss_name, raid_tiers(id, name)').in('id', itemIds)
         : { data: [] }
 
-      const itemsMap = new Map((itemsData || []).map((i: any) => [i.id, i]))
+      const itemsMap = new Map((itemsData || []).map((i: { id: string }) => [i.id, i]))
 
       // Batch fetch character data
-      const charIds = [...new Set((fallbackData || []).map((h: any) => h.character_id).filter(Boolean))]
+      const charIds = [...new Set((fallbackData || []).map((h: { character_id?: string | null }) => h.character_id).filter(Boolean))]
       const { data: charsData } = charIds.length > 0
         ? await supabase.from('characters').select('id, name, wow_classes(color_hex)').in('id', charIds)
         : { data: [] }
 
-      const charsMap = new Map((charsData || []).map((c: any) => [c.id, c]))
+      const charsMap = new Map((charsData || []).map((c: { id: string }) => [c.id, c]))
 
       // Reassemble into the expected format
-      filteredData = (fallbackData || []).map((h: any) => ({
+      filteredData = (fallbackData || []).map((h: { character_id?: string | null; loot_item_id?: string | null }) => ({
         ...h,
         characters: h.character_id ? charsMap.get(h.character_id) || null : null,
         loot_items: itemsMap.get(h.loot_item_id) || null,

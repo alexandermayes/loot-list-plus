@@ -168,7 +168,7 @@ export default function HelpPage() {
       {searchQuery.trim() && (
         <div className="mb-10">
           <Text color="secondary" size="sm" className="mb-4">
-            {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for "{searchQuery}"
+            {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for &quot;{searchQuery}&quot;
           </Text>
           {searchResults.length > 0 ? (
             <div className="grid gap-3">
@@ -257,7 +257,7 @@ export default function HelpPage() {
       {/* Contact Support */}
       <div className="mt-12 text-center py-8 border-t border-border">
         <Text color="secondary" className="mb-2">
-          Can't find what you're looking for?
+          Can&apos;t find what you&apos;re looking for?
         </Text>
         <Text color="muted" size="sm">
           Reach out to your guild officers or contact us on Discord

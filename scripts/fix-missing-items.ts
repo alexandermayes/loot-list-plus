@@ -41,7 +41,7 @@ async function main() {
 
   const specNameToId: Record<string, { id: string, class_id: string }> = {}
   for (const spec of classSpecs || []) {
-    const className = (spec as any).wow_classes?.name
+    const className = (spec as { wow_classes?: { name?: string } | null }).wow_classes?.name
     const specName = spec.name
     if (className && specName) {
       specNameToId[`${className} ${specName}`] = { id: spec.id, class_id: spec.class_id }

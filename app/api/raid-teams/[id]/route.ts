@@ -5,6 +5,7 @@ import { verifyPermission } from '@/utils/server-roles'
 import { requirePro } from '@/utils/feature-gate'
 import { logAudit } from '@/utils/audit/log'
 import { resolveRaidDays } from '@/domain/raid-team/settings'
+import type { RaidDaysOverride } from '@/domain/raid-team/types'
 import { appendScheduleEntry } from '@/domain/raid-team/schedule-history'
 import { toDateString } from '@/utils/date'
 
@@ -29,7 +30,7 @@ export async function PATCH(
       color_hex?: string
       is_default?: boolean
       sort_order?: number
-      raid_days_override?: object | null
+      raid_days_override?: RaidDaysOverride | null
       rolling_weeks_override?: number | null
     }
 
@@ -56,7 +57,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Officers only' }, { status: 403 })
     }
 
-    const updates: Record<string, any> = { updated_at: new Date().toISOString() }
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
     if (name !== undefined) updates.name = name.trim()
     if (color_hex !== undefined) updates.color_hex = color_hex
     if (is_default !== undefined) updates.is_default = is_default
@@ -74,7 +75,7 @@ export async function PATCH(
         .single()
 
       if (guildSettings) {
-        const resolvedDays = resolveRaidDays(guildSettings, raid_days_override as any)
+        const resolvedDays = resolveRaidDays(guildSettings, raid_days_override)
         updates.schedule_history = appendScheduleEntry(
           team.schedule_history,
           resolvedDays,

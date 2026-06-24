@@ -52,7 +52,7 @@ async function main() {
   }
 
   console.log('Found loot item:', lootItem.name)
-  console.log('From expansion:', (lootItem.raid_tier as any).expansion.name)
+  console.log('From expansion:', (lootItem.raid_tier as unknown as { expansion: { name: string } }).expansion.name)
 
   // Since we're using the service role, we should be able to insert/delete
   // But the RLS policies might still affect regular users

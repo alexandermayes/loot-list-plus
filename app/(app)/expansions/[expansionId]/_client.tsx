@@ -378,9 +378,9 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       showNotification('success', !currentValue ? 'Raid added to loot lists' : 'Raid removed from loot lists')
       mutate((key: string) => typeof key === 'string' && (key.startsWith('/api/raid-tiers') || key.startsWith('/api/loot-items')), undefined, { revalidate: true })
       await loadData()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Toggle error:', error)
-      showNotification('error', error.message || 'Couldn\'t update raid. Try again.')
+      showNotification('error', (error instanceof Error && error.message) || 'Couldn\'t update raid. Try again.')
     } finally {
       setUpdating(null)
     }
@@ -406,9 +406,9 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       showNotification('success', !currentValue ? 'Rankings now visible to players' : 'Rankings hidden from players')
       mutate((key: string) => typeof key === 'string' && (key.startsWith('/api/raid-tiers') || key.startsWith('/api/loot-items')), undefined, { revalidate: true })
       await loadData()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Toggle visibility error:', error)
-      showNotification('error', error.message || 'Couldn\'t update visibility. Try again.')
+      showNotification('error', (error instanceof Error && error.message) || 'Couldn\'t update visibility. Try again.')
     } finally {
       setUpdating(null)
     }
@@ -447,8 +447,8 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
       showNotification('success', deadlineValue ? `Phase ${phase} deadline updated` : `Phase ${phase} deadline cleared`)
       await loadData()
-    } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t update phase deadline. Try again.')
+    } catch (error: unknown) {
+      showNotification('error', (error instanceof Error && error.message) || 'Couldn\'t update phase deadline. Try again.')
     } finally {
       setUpdating(null)
     }
@@ -474,8 +474,8 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       showNotification('success', `Phase ${phase} is now current`)
       mutate((key: string) => typeof key === 'string' && (key.startsWith('/api/raid-tiers') || key.startsWith('/api/loot-items')), undefined, { revalidate: true })
       await loadData()
-    } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t set current phase. Try again.')
+    } catch (error: unknown) {
+      showNotification('error', (error instanceof Error && error.message) || 'Couldn\'t set current phase. Try again.')
     } finally {
       setUpdating(null)
     }
@@ -517,8 +517,8 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       setNewGroupSelection(new Set())
       showNotification('success', config ? 'Phase groups updated' : 'Phases split into separate lists')
       mutate((key: string) => typeof key === 'string' && (key.startsWith('/api/raid-tiers') || key.startsWith('/api/loot-items')), undefined, { revalidate: true })
-    } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t update phase groups. Try again.')
+    } catch (error: unknown) {
+      showNotification('error', (error instanceof Error && error.message) || 'Couldn\'t update phase groups. Try again.')
     } finally {
       setUpdating(null)
     }

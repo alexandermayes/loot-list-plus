@@ -24,7 +24,7 @@ export default function LoginPage({ nextParam = null, isAuthenticated = false, a
   // Extract invite code from next param
   const inviteCode = nextParam?.match(/code=([A-Z0-9]+)/i)?.[1] || null
 
-  const [user, setUser] = useState<any>(isAuthenticated ? {} : null)
+  const [user, setUser] = useState<Record<string, unknown> | null>(isAuthenticated ? {} : null)
   const [guildInfo, setGuildInfo] = useState<{ guild: { name: string; realm: string | null; faction: string } } | null>(null)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [joining, setJoining] = useState(false)

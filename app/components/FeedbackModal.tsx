@@ -158,7 +158,7 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                 <HugeiconsIcon icon={SentIcon} size={32} className="text-success" />
               </div>
               <h4 className="text-[18px] font-semibold text-foreground mb-2">Thanks for your feedback!</h4>
-              <p className="text-[14px] text-muted-foreground">We'll look into this and get back to you if needed.</p>
+              <p className="text-[14px] text-muted-foreground">We&apos;ll look into this and get back to you if needed.</p>
             </ModalBody>
           </>
         ) : (

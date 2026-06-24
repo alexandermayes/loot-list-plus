@@ -21,8 +21,8 @@ type Step = 'upload' | 'preview' | 'result'
 
 interface SettingsChange {
   field: string
-  from: any
-  to: any
+  from: unknown
+  to: unknown
   enabled: boolean
 }
 
@@ -30,7 +30,7 @@ interface MatchedItemPreview {
   sheetName: string
   dbName: string
   dbId: string
-  updates: Record<string, any>
+  updates: Record<string, unknown>
   specCount: number
 }
 
@@ -123,7 +123,7 @@ export default function SheetImportPage() {
       // Process settings preview
       if (data.settings) {
         setSettingsChanges(
-          data.settings.changes.map((c: any) => ({ ...c, enabled: true }))
+          data.settings.changes.map((c: Omit<SettingsChange, 'enabled'>) => ({ ...c, enabled: true }))
         )
       }
 
@@ -134,8 +134,8 @@ export default function SheetImportPage() {
       }
 
       setStep('preview')
-    } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t preview import data.')
+    } catch (error: unknown) {
+      showNotification('error', error instanceof Error ? error.message : 'Couldn\'t preview import data.')
     } finally {
       setLoading(false)
     }
@@ -175,8 +175,8 @@ export default function SheetImportPage() {
 
       setStep('result')
       showNotification('success', 'Import complete.')
-    } catch (error: any) {
-      showNotification('error', error.message || 'Import failed. Check your CSV format.')
+    } catch (error: unknown) {
+      showNotification('error', error instanceof Error ? error.message : 'Import failed. Check your CSV format.')
     } finally {
       setLoading(false)
     }
@@ -225,7 +225,7 @@ export default function SheetImportPage() {
       <div>
         <Heading level={1}>Import from spreadsheet</Heading>
         <Text color="secondary" className="mt-1">
-          Migrate your guild's loot configuration from the Master Sheet system.
+          Migrate your guild&apos;s loot configuration from the Master Sheet system.
         </Text>
       </div>
 
@@ -278,7 +278,7 @@ export default function SheetImportPage() {
               <CardHeader>
                 <CardTitle>Information tab (settings)</CardTitle>
                 <CardDescription>
-                  Paste the CSV export from the "Information" tab of your Master Sheet,
+                  Paste the CSV export from the &quot;Information&quot; tab of your Master Sheet,
                   or upload a .csv file.
                 </CardDescription>
               </CardHeader>
@@ -309,7 +309,7 @@ export default function SheetImportPage() {
               <CardHeader>
                 <CardTitle>Items tab (loot configuration)</CardTitle>
                 <CardDescription>
-                  Paste the CSV export from the "Items" tab of the Loot List sheet (gid=821394787),
+                  Paste the CSV export from the &quot;Items&quot; tab of the Loot List sheet (gid=821394787),
                   or upload a .csv file. Items are matched to your existing loot database by name.
                 </CardDescription>
               </CardHeader>
@@ -544,7 +544,7 @@ function formatFieldName(field: string): string {
     .replace('Blp', 'BLP')
 }
 
-function formatValue(value: any): string {
+function formatValue(value: unknown): string {
   if (value === null || value === undefined) return '(not set)'
   if (typeof value === 'boolean') return value ? 'Yes' : 'No'
   if (typeof value === 'object') return JSON.stringify(value)

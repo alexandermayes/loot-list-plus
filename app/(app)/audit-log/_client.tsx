@@ -29,6 +29,24 @@ import {
 import { trackClientEvent } from '@/utils/analytics/client'
 import { hasFeature } from '@/domain/guild/feature-flags'
 
+interface AuditData {
+  status?: string
+  review_notes?: string
+  character_name?: string
+  points?: number
+  kind?: string
+  amount_text?: string
+  filters?: { character_ids?: string[]; character_id?: string } | null
+  character_id?: string
+  character_ids?: string[]
+  record_count?: number
+  ids?: string[]
+  new_role?: string
+  role?: string
+  incremented_count?: number
+  [key: string]: unknown
+}
+
 interface AuditLog {
   id: string
   table_name: string
@@ -36,8 +54,8 @@ interface AuditLog {
   action: 'INSERT' | 'UPDATE' | 'DELETE'
   user_id: string
   user_display_name: string
-  old_data: Record<string, any> | null
-  new_data: Record<string, any> | null
+  old_data: AuditData | null
+  new_data: AuditData | null
   changed_fields: string[] | null
   created_at: string
   _character_names: Record<string, string>
@@ -351,11 +369,11 @@ function describeActivity(log: AuditLog): { summary: string; detail?: string } {
         const newVal = new_data?.[field]
         const label = humanizeFieldName(field)
         if (oldVal !== undefined && newVal !== undefined) {
-          const fmt = (v: any) => v === true ? 'on' : v === false ? 'off' : String(v)
+          const fmt = (v: unknown) => v === true ? 'on' : v === false ? 'off' : String(v)
           return `${label}: ${fmt(oldVal)} → ${fmt(newVal)}`
         }
         if (newVal !== undefined) {
-          const fmt = (v: any) => v === true ? 'on' : v === false ? 'off' : String(v)
+          const fmt = (v: unknown) => v === true ? 'on' : v === false ? 'off' : String(v)
           return `${label}: ${fmt(newVal)}`
         }
         return label

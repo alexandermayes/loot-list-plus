@@ -92,7 +92,7 @@ export default function GuildSettingsContent() {
   const { data: membersData } = useGuildMembers(activeGuild?.id || null)
   const guildMembers = membersData?.members || []
   // Filter out current user from potential new owners
-  const eligibleNewOwners = guildMembers.filter((m: any) => m.user_id !== user?.id)
+  const eligibleNewOwners = guildMembers.filter((m) => m.user_id !== user?.id)
 
   // Set page title
   useEffect(() => {
@@ -142,7 +142,7 @@ export default function GuildSettingsContent() {
         setRealmRegion(derivedRegion || 'All')
         setFaction(activeGuild.faction as 'Alliance' | 'Horde')
         setDiscordServerId(activeGuild.discord_server_id || '')
-        setGuildIconUrl((activeGuild as any).icon_url || null)
+        setGuildIconUrl(activeGuild.icon_url || null)
 
         // Store initial values for change detection
         setInitialValues({
@@ -234,8 +234,9 @@ export default function GuildSettingsContent() {
       setTimeout(() => {
         window.location.reload()
       }, 800)
-    } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t update guild. Try again.')
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Couldn't update guild. Try again."
+      showNotification('error', message)
       setSaving(false)
     }
   }
@@ -259,8 +260,9 @@ export default function GuildSettingsContent() {
 
       // Force full page reload to guild select page
       window.location.href = '/guild-select'
-    } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t delete guild. Try again.')
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Couldn't delete guild. Try again."
+      showNotification('error', message)
       setDeleting(false)
     }
   }
@@ -294,8 +296,9 @@ export default function GuildSettingsContent() {
       setTimeout(() => {
         window.location.reload()
       }, 800)
-    } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t transfer ownership. Try again.')
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Couldn't transfer ownership. Try again."
+      showNotification('error', message)
       setTransferring(false)
     }
   }
@@ -393,8 +396,9 @@ export default function GuildSettingsContent() {
       }
       setRaidSummaryChannelId(channelId)
       showNotification('success', channelId ? 'Raid summary channel saved' : 'Raid summary channel removed')
-    } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t save channel. Try again.')
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Couldn't save channel. Try again."
+      showNotification('error', message)
     } finally {
       setSavingChannel(false)
     }
@@ -839,7 +843,7 @@ export default function GuildSettingsContent() {
                       className="w-full"
                     >
                       <option value="">Select a member...</option>
-                      {eligibleNewOwners.map((member: any) => (
+                      {eligibleNewOwners.map((member) => (
                         <option key={member.user_id} value={member.user_id}>
                           {member.mainCharacter?.name || member.discordName} ({member.role})
                         </option>

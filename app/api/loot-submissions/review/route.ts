@@ -69,12 +69,16 @@ export async function POST(request: NextRequest) {
         .is('removed_at', null)
 
       if (currentItems && currentItems.length > 0) {
-        const snapshotItems = currentItems.map((item: any) => ({
-          rank: item.rank,
-          slot: item.slot,
-          loot_item_id: item.loot_item_id,
-          item_name: item.loot_item?.name || 'Unknown',
-        }))
+        const snapshotItems = currentItems.map((item) => {
+          const lootItem = item.loot_item as { name?: string } | { name?: string }[] | null
+          const itemName = Array.isArray(lootItem) ? lootItem[0]?.name : lootItem?.name
+          return {
+            rank: item.rank,
+            slot: item.slot,
+            loot_item_id: item.loot_item_id,
+            item_name: itemName || 'Unknown',
+          }
+        })
 
         // Delete old snapshots and insert the new approved state
         // We only need the latest approved snapshot for diff comparison

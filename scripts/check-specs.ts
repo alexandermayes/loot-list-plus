@@ -17,7 +17,7 @@ async function main() {
 
   console.log('Class Specs in database:')
   classSpecs?.forEach(spec => {
-    const className = (spec as any).wow_classes?.name
+    const className = (spec as { wow_classes?: { name?: string } | null }).wow_classes?.name
     const specName = spec.name
     console.log(`  - ${className} ${specName}`)
   })

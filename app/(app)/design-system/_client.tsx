@@ -1617,7 +1617,7 @@ export default function DesignSystemPage() {
                     <AlertDescription>Your loot list has been submitted for review.</AlertDescription>
                   </Alert>
                   <Alert variant="destructive">
-                    <AlertDescription>Couldn't save changes. Check your connection and try again.</AlertDescription>
+                    <AlertDescription>Couldn&apos;t save changes. Check your connection and try again.</AlertDescription>
                   </Alert>
                   <Alert variant="warning">
                     <AlertDescription>This action cannot be undone.</AlertDescription>
@@ -1703,7 +1703,7 @@ export default function DesignSystemPage() {
                     <ul className="list-disc list-inside text-foreground-secondary space-y-1">
                       <li>One short sentence per tooltip. If it needs two, it probably belongs in the page.</li>
                       <li>Wrap label + tooltip in <code className="text-accent text-xs">inline-flex items-center gap-1</code> so the icon stays on the same line.</li>
-                      <li>Don't use for primary content. Tooltips are for explanation, not navigation or actions.</li>
+                      <li>Don&apos;t use for primary content. Tooltips are for explanation, not navigation or actions.</li>
                     </ul>
                   </div>
                 </div>
@@ -1734,7 +1734,7 @@ export default function DesignSystemPage() {
                   </PreviewCard>
                   <PreviewCard>
                     <LabelText className="mb-3">Without text-balance</LabelText>
-                    <h3 className="text-2xl font-semibold text-foreground max-w-[280px]" style={{ textWrap: 'wrap' as any }}>
+                    <h3 className="text-2xl font-semibold text-foreground max-w-[280px]" style={{ textWrap: 'wrap' } as React.CSSProperties}>
                       A longer heading that wraps across multiple lines evenly
                     </h3>
                   </PreviewCard>
@@ -1923,7 +1923,7 @@ export default function DesignSystemPage() {
                         <span className="text-sm text-foreground-secondary">outer 16px, padding 8px, inner 16px</span>
                       </div>
                     </div>
-                    <p className="text-xs text-destructive mt-2">Corners don't follow the same center point</p>
+                    <p className="text-xs text-destructive mt-2">Corners don&apos;t follow the same center point</p>
                   </PreviewCard>
                 </div>
               </div>

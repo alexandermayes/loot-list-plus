@@ -104,6 +104,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Group characters by user_id
+    interface RaidTeamRef {
+      id: string
+      name: string
+      color: string
+    }
+
     interface CharacterData {
       id: string
       name: string
@@ -111,6 +117,7 @@ export async function GET(request: NextRequest) {
       role: string
       class: { name: string; color_hex: string } | null
       spec: { name: string } | null
+      raid_team?: RaidTeamRef | null
     }
 
     const userCharacterMap = new Map<string, {
@@ -226,7 +233,7 @@ export async function GET(request: NextRequest) {
         for (const member of members) {
           // Attach team to each character individually
           for (const c of member.characters) {
-            ;(c as any).raid_team = charTeamMap.get(c.id) ?? null
+            c.raid_team = charTeamMap.get(c.id) ?? null
           }
           // Member-level aggregate: main's team, falling back to first alt with a team
           const mainId = member.mainCharacter?.id
@@ -241,7 +248,7 @@ export async function GET(request: NextRequest) {
               }
             }
           }
-          ;(member as any).raid_team = raidTeam
+          ;(member as typeof member & { raid_team?: RaidTeamRef | null }).raid_team = raidTeam
         }
       }
     }

@@ -33,7 +33,7 @@ export type AnalyticsEvent =
 interface TrackEventParams {
   event: AnalyticsEvent
   userId: string
-  properties?: Record<string, any>
+  properties?: Record<string, unknown>
   guildId?: string
 }
 
@@ -70,7 +70,7 @@ export async function trackEvent({ event, userId, properties = {}, guildId }: Tr
  */
 export async function identifyUser(
   userId: string,
-  properties: Record<string, any>
+  properties: Record<string, unknown>
 ): Promise<void> {
   const client = getPostHogServerClient()
   if (!client) return
@@ -119,7 +119,7 @@ export async function trackApiError(
   userId: string,
   endpoint: string,
   error: Error | string,
-  additionalContext?: Record<string, any>
+  additionalContext?: Record<string, unknown>
 ): Promise<void> {
   await trackEvent({
     event: 'api_error',

@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     // Build name -> { character_id, user_id } lookup (case-insensitive)
     const nameLookup = new Map<string, { character_id: string; user_id: string }>()
     for (const m of memberships) {
-      const char = m.characters as any
+      const char = m.characters as unknown as { name: string; user_id: string } | null
       if (char?.name) {
         nameLookup.set(char.name.toLowerCase(), {
           character_id: m.character_id,
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
         if (!nameLookup.has(alias.alias_name.toLowerCase())) {
           // Find the user_id for this character
           const membership = memberships.find(m => m.character_id === alias.character_id)
-          const char = membership?.characters as any
+          const char = membership?.characters as unknown as { user_id: string } | null
           if (char?.user_id) {
             nameLookup.set(alias.alias_name.toLowerCase(), {
               character_id: alias.character_id,

@@ -7,6 +7,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
+import type { IconSvgElement } from '@hugeicons/react'
 import {
   CheckmarkCircle01Icon,
   UserGroupIcon,
@@ -25,7 +26,7 @@ interface SetupStep {
   title: string
   description: string
   completedDescription: string
-  icon: any
+  icon: IconSvgElement
   complete: boolean
   href: string
   cta: string

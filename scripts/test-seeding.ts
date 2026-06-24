@@ -186,7 +186,7 @@ function testRaidDataIntegrity() {
   log(CYAN, '\n=== Testing Raid Data Integrity ===\n')
 
   let passed = 0
-  let failed = 0
+  const failed = 0
 
   // Count items in TBC raids
   let tbcItemCount = 0
