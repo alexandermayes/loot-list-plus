@@ -23,19 +23,66 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-require-imports": "off",
     },
   },
-  // The React Compiler-aware react-hooks rules (purity / set-state-in-effect /
-  // refs-during-render / immutability) are aggressive correctness hints. Many
-  // existing components trip them on benign patterns (e.g. Math.random in
-  // landing-page visual effects). Keep them visible as warnings rather than
-  // failing CI on the whole codebase; tighten back to "error" as they're fixed.
+  // The React Compiler-aware react-hooks rules are enforced as ERRORS for all
+  // code by default, so any NEW violation fails CI. The files listed in the
+  // overrides below still trip these rules on pre-existing patterns and are
+  // grandfathered down to "warn" until refactored. Ratchet: when a file's
+  // violations are fixed, remove it from its list; when a list is empty, drop
+  // the override so the rule is fully enforced. (Paths under app/(app) and
+  // [slug] escape the glob-special parens/brackets.)
   {
     rules: {
-      "react-hooks/purity": "warn",
-      "react-hooks/set-state-in-effect": "warn",
-      "react-hooks/refs": "warn",
-      "react-hooks/immutability": "warn",
-      "react-hooks/preserve-manual-memoization": "warn",
+      "react-hooks/purity": "error",
+      "react-hooks/set-state-in-effect": "error",
+      "react-hooks/refs": "error",
+      "react-hooks/immutability": "error",
+      "react-hooks/preserve-manual-memoization": "error",
     },
+  },
+  {
+    files: [
+      "app/components/landing/BlogTracker.tsx",
+      "app/components/landing/ClickEffects.tsx",
+      "app/components/landing/LandingFeatures.tsx",
+      "utils/analytics/client.ts",
+    ],
+    rules: { "react-hooks/purity": "warn" },
+  },
+  {
+    files: [
+      "app/\\(app\\)/help/\\[slug\\]/_client.tsx",
+      "app/\\(app\\)/help/_client.tsx",
+      "app/\\(app\\)/master-sheet/components/BossSection.tsx",
+      "app/components/ItemLink.tsx",
+      "app/components/NotificationContainer.tsx",
+      "app/components/Sidebar.tsx",
+      "app/components/ThemeSelector.tsx",
+      "app/contexts/ExpansionContext.tsx",
+      "app/contexts/SidebarContext.tsx",
+      "app/hooks/usePendingSubmissionCount.ts",
+      "app/hooks/useRaidTeam.ts",
+      "app/hooks/useResubmitCount.ts",
+      "utils/feature-flags.ts",
+    ],
+    rules: { "react-hooks/set-state-in-effect": "warn" },
+  },
+  {
+    files: ["app/\\(app\\)/loot-list/components/LootListContent.tsx"],
+    rules: { "react-hooks/refs": "warn" },
+  },
+  {
+    files: [
+      "app/components/CreateCharacterModal.tsx",
+      "app/components/JoinGuildModal.tsx",
+      "app/components/WelcomeScreen.tsx",
+      "app/contexts/NotificationContext.tsx",
+      "companion/src/renderer/components/Settings.tsx",
+    ],
+    rules: { "react-hooks/immutability": "warn" },
+  },
+  {
+    files: ["app/contexts/ExpansionContext.tsx"],
+    rules: { "react-hooks/preserve-manual-memoization": "warn" },
   },
 ]);
 
