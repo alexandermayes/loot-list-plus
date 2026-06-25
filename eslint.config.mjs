@@ -23,6 +23,20 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/no-require-imports": "off",
     },
   },
+  // The React Compiler-aware react-hooks rules (purity / set-state-in-effect /
+  // refs-during-render / immutability) are aggressive correctness hints. Many
+  // existing components trip them on benign patterns (e.g. Math.random in
+  // landing-page visual effects). Keep them visible as warnings rather than
+  // failing CI on the whole codebase; tighten back to "error" as they're fixed.
+  {
+    rules: {
+      "react-hooks/purity": "warn",
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/refs": "warn",
+      "react-hooks/immutability": "warn",
+      "react-hooks/preserve-manual-memoization": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;

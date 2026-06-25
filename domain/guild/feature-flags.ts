@@ -12,12 +12,14 @@ export type ProFeature = 'raid_teams' | 'audit_log'
 
 const PRO_FEATURES: ProFeature[] = ['raid_teams', 'audit_log']
 
+/** Minimal shape needed to evaluate gating — any guild_settings-like row. */
+type GuildLike = { subscription_tier?: string | null } | null | undefined
+
 /**
  * Check if a guild has access to a Pro feature.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function hasFeature(
-  guild: any,
+  guild: GuildLike,
   feature: ProFeature
 ): boolean {
   if (!guild) return false
@@ -29,8 +31,7 @@ export function hasFeature(
 /**
  * Check if a guild is on the Pro tier.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isPro(guild: any): boolean {
+export function isPro(guild: GuildLike): boolean {
   if (!guild) return false
   return (String(guild.subscription_tier || 'free')) === 'pro'
 }

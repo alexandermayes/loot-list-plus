@@ -29,4 +29,5 @@ jobs:
         env:
           NPM_RC: ${{ secrets.NPM_RC }}
       - run: npm ci
+      - run: npm run lint
       - run: npm run test
