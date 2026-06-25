@@ -1529,7 +1529,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
               membershipStatus,
             },
             attendance: { score: attendanceScore },
-            config: savedGuildSettings || {},
+            config: (savedGuildSettings || {}) as Parameters<typeof computeScore>[0]['config'],
             itemPriority: prioritiesMap[item.id] || null,
             timesPassed: blpData[item.id] || 0,
             donationBonus: donationBonusForChar,
@@ -1566,7 +1566,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
       setScoreExplanation(baseExplanation)
 
       // BLP range is item-dependent (varies across the player's list), so computed separately
-      const blpValues = Object.values(blpData).map(tp => calculateBadLuckBonus(tp, savedGuildSettings || {}))
+      const blpValues = Object.values(blpData).map(tp => calculateBadLuckBonus(tp, (savedGuildSettings || {}) as Parameters<typeof calculateBadLuckBonus>[1]))
       setBlpInfo({
         enabled: !!savedGuildSettings?.blp_enabled,
         range: savedGuildSettings?.blp_enabled && blpValues.length > 0
@@ -1668,7 +1668,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
       if (savedGuildSettings?.blp_enabled && Object.keys(blpData).length > 0) {
         const blpMap: Record<string, { timesPassed: number; bonus: number }> = {}
         for (const [itemId, tp] of Object.entries(blpData)) {
-          const bonus = calculateBadLuckBonus(tp, savedGuildSettings || {})
+          const bonus = calculateBadLuckBonus(tp, (savedGuildSettings || {}) as unknown as Parameters<typeof calculateBadLuckBonus>[1])
           if (bonus > 0) {
             blpMap[itemId] = { timesPassed: tp, bonus }
           }

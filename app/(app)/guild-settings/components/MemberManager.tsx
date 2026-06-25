@@ -228,7 +228,7 @@ export default function MemberManager() {
       mainCharacter: m.mainCharacter as unknown as Character | null,
       discordName: m.discordName,
       raid_team: m.raid_team ?? null,
-    }))
+    })) as Member[]
   }, [membersData])
 
   useEffect(() => {
@@ -527,7 +527,7 @@ export default function MemberManager() {
           ...membersData,
           members: membersData!.members.map((m: GuildMember) =>
             m.user_id === userId ? { ...m, membership_status: newStatus, trial_started_at: newStatus === 'trial' ? new Date().toISOString() : m.trial_started_at } : m
-          )
+          ) as GuildMember[]
         }
         try {
           await refreshMembers(async () => {
