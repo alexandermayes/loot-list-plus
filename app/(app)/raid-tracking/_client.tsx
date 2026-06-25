@@ -392,7 +392,7 @@ export default function RaidTrackingPage() {
 
     const baseRaidDays = [first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day]
       .filter(day => day !== null && day !== undefined)
-      .slice(0, raid_days_per_week)
+      .slice(0, raid_days_per_week as number)
     // Apply team raid day overrides if a team is selected
     const raidDays = activeTeam?.raid_days_override
       ? resolveRaidDays({
@@ -556,7 +556,7 @@ export default function RaidTrackingPage() {
       }
 
       // Auto-expand the two most recent weeks (covers "this week + last week")
-      const effectiveFirstRaidDay = raidScheduleSource.first_raid_day ?? 0
+      const effectiveFirstRaidDay = raidScheduleSource?.first_raid_day ?? 0
       const topWeekStarts: string[] = []
       for (const event of deduplicatedEvents) {
         const ws = getWeekStart(event.raid_date, effectiveFirstRaidDay)
@@ -605,7 +605,7 @@ export default function RaidTrackingPage() {
 
     // Build set of character_ids that have linked records in THIS raid
     const linkedCharIdsInRaid = new Set(
-      records?.filter((r) => r.character_id).map((r) => r.character_id)
+      records?.filter((r: { character_id: string | null }) => r.character_id).map((r: { character_id: string | null }) => r.character_id)
     )
 
     const currentMembers = latestRef.current.members
@@ -2361,7 +2361,7 @@ export default function RaidTrackingPage() {
     const { raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day } = raidScheduleSource
     const configuredRaidDays = [first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day]
       .filter(day => day !== null && day !== undefined)
-      .slice(0, raid_days_per_week)
+      .slice(0, raid_days_per_week as number)
 
     if (configuredRaidDays.length === 0) return []
 

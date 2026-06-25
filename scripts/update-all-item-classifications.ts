@@ -384,7 +384,7 @@ async function main() {
   const specNameToId: Record<string, { id: string, class_id: string }> = {}
 
   for (const spec of classSpecs) {
-    const specRow = spec as { id: string; name: string; class_id: string; wow_classes?: { name: string } | null }
+    const specRow = spec as unknown as { id: string; name: string; class_id: string; wow_classes?: { name: string } | null }
     const className = specRow.wow_classes?.name
     const specName = specRow.name
 

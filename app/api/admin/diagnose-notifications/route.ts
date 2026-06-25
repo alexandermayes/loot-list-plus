@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
         .eq('is_active', true)
 
       type GuildMembershipRow = { guild_id: string; guilds?: { name?: string } | null }
-      const unique = [...new Map((guilds || []).map((g: GuildMembershipRow) => [g.guild_id, g])).values()]
+      const unique = [...new Map(((guilds || []) as unknown as GuildMembershipRow[]).map((g): [string, GuildMembershipRow] => [g.guild_id, g])).values()]
       if (unique.length === 0) {
         return NextResponse.json({ error: 'No active guild memberships found' }, { status: 404 })
       }

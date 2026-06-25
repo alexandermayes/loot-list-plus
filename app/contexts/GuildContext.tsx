@@ -304,7 +304,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
 
       if (characters && characters.length > 0) {
         type CharacterData = { id: string; spec_id: string | null; name: string; [key: string]: unknown }
-        const characterIds = characters.map((c: CharacterData) => c.id)
+        const characterIds = (characters as unknown as CharacterData[]).map((c) => c.id)
 
         // Characters query already joins specs, so no separate specs query needed
         enrichedCharacters = characters
@@ -395,7 +395,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
           }
           type RawChar = { class?: unknown; spec?: unknown; [key: string]: unknown }
 
-          transformedMemberships = (memberships || []).map((m: { character: unknown; guild: unknown; [key: string]: unknown }) => {
+          transformedMemberships = ((memberships || []) as Array<{ character: unknown; guild: unknown; [key: string]: unknown }>).map((m) => {
             const char = (Array.isArray(m.character) ? m.character[0] : m.character) as RawChar | null
             const rawGuild = (Array.isArray(m.guild) ? m.guild[0] : m.guild) as RawGuild | null
 
@@ -426,7 +426,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
               guild
             }
           }) as TransformedMembership[]
-          setCharacterMemberships(transformedMemberships)
+          setCharacterMemberships(transformedMemberships as unknown as CharacterGuildMembership[])
 
           // Default positions for guilds without custom roles
           const defaultPositions = new Map([['Guild Master', 100], ['Officer', 50], ['Member', 0]])
@@ -454,7 +454,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
 
           // Build userGuilds array from character memberships
           derivedGuilds = Array.from(guildMap.values()).map(({ guild, role, membership }) => ({
-            guild: guild as Guild,
+            guild: guild as unknown as Guild,
             member: {
               id: membership.id,
               user_id: currentUser.id,
@@ -466,7 +466,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
               joined_at: membership.joined_at,
               joined_via: membership.joined_via
             } as GuildMember,
-            class: membership.character?.class || { name: 'Unknown', color_hex: '#808080' }
+            class: (membership.character?.class || { name: 'Unknown', color_hex: '#808080' }) as { name: string; color_hex: string }
           }))
 
           setUserGuilds(derivedGuilds)
@@ -503,7 +503,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         // Find the guild from memberships
         const membershipWithGuild = transformedMemberships.find(m => m.guild_id === activeCharData.active_guild_id)
         if (membershipWithGuild?.guild) {
-          setActiveGuildAndMember(membershipWithGuild.guild as Guild)
+          setActiveGuildAndMember(membershipWithGuild.guild as unknown as Guild)
         } else {
           // No active membership found for this guild
           // This could mean: 1) User left the guild, or 2) User joined guild but hasn't created a character yet
@@ -542,7 +542,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
 
             // If user has other guild memberships, set the first one as active
             if (transformedMemberships.length > 0 && transformedMemberships[0]?.guild) {
-              setActiveGuildAndMember(transformedMemberships[0].guild as Guild)
+              setActiveGuildAndMember(transformedMemberships[0].guild as unknown as Guild)
 
               await supabase
                 .from('user_active_characters')
@@ -559,7 +559,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         }
       } else if (transformedMemberships.length > 0 && transformedMemberships[0]?.guild) {
         // If no saved active guild, use first guild from character memberships
-        setActiveGuildAndMember(transformedMemberships[0].guild as Guild)
+        setActiveGuildAndMember(transformedMemberships[0].guild as unknown as Guild)
 
         // Also save this as the active guild
         await supabase

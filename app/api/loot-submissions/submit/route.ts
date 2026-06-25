@@ -115,7 +115,11 @@ export async function POST(request: NextRequest) {
     }))
 
     // Validate bracket rules
-    const violations = validateBracketRules(validationItems, enforceSlotRestrictions, bracketLimits)
+    const violations = validateBracketRules(
+      validationItems as unknown as Parameters<typeof validateBracketRules>[0],
+      enforceSlotRestrictions,
+      bracketLimits
+    )
 
     if (violations.length > 0) {
       return NextResponse.json({

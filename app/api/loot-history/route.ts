@@ -256,8 +256,8 @@ export async function GET(request: NextRequest) {
       filteredData = (fallbackData || []).map((h: { character_id?: string | null; loot_item_id?: string | null }) => ({
         ...h,
         characters: h.character_id ? charsMap.get(h.character_id) || null : null,
-        loot_items: itemsMap.get(h.loot_item_id) || null,
-      }))
+        loot_items: h.loot_item_id ? itemsMap.get(h.loot_item_id) || null : null,
+      })) as unknown as typeof filteredData
       totalCount = fallbackCount || 0
     }
 

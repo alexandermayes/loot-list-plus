@@ -443,8 +443,8 @@ export default function SheetImportPage() {
                             )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            {item.updates.classification && (
-                              <ClassificationBadge classification={item.updates.classification} />
+                            {!!item.updates.classification && (
+                              <ClassificationBadge classification={item.updates.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
                             )}
                             {item.updates.is_available === false && (
                               <Badge variant="outline" className="text-xs">Unavailable</Badge>

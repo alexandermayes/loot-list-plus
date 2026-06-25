@@ -224,8 +224,8 @@ export default function MemberManager() {
       joined_via: m.joined_via,
       membership_status: m.membership_status || 'full',
       trial_started_at: m.trial_started_at || null,
-      characters: m.characters,
-      mainCharacter: m.mainCharacter,
+      characters: m.characters as unknown as Character[],
+      mainCharacter: m.mainCharacter as unknown as Character | null,
       discordName: m.discordName,
       raid_team: m.raid_team ?? null,
     }))
