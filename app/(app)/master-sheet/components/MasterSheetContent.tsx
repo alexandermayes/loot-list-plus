@@ -276,7 +276,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
     const newMemberMode = (guildSettings.new_member_mode || 'raw') as 'raw' | 'fair' | 'minimum_gate'
 
     // Query 1: Fetch ALL memberships in one query (for join dates in fair/minimum_gate modes)
-    let membershipsByCharacter = new Map<string, { joined_at: string | null }>()
+    const membershipsByCharacter = new Map<string, { joined_at: string | null }>()
     if (newMemberMode === 'fair' || newMemberMode === 'minimum_gate') {
       const { data: memberships } = await supabase
         .from('character_guild_memberships')
@@ -406,8 +406,8 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
     }
 
     // Fill-in credit: fetch all guild attendance for fill-in detection (team mode only)
-    let fillInEventMap = new Map<string, { id: string; raid_date: string }>()
-    let fillInRecordsByChar: Record<string, { raid_event_id: string; attended: boolean }[]> = {}
+    const fillInEventMap = new Map<string, { id: string; raid_date: string }>()
+    const fillInRecordsByChar: Record<string, { raid_event_id: string; attended: boolean }[]> = {}
     if (activeTeamId) {
       // Paginated — same truncation risk as Query 4 above (and on a guild with
       // long history, this set is even bigger because there's no event-id filter).
@@ -553,7 +553,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
           const currentPhase = expansionData?.current_phase ?? 1
           const phaseGroupsConfig = (expansionData?.phase_groups as number[][] | null) || null
 
-          let tiersQuery = supabase
+          const tiersQuery = supabase
             .from('raid_tiers')
             .select(`
               id,
@@ -815,7 +815,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
 
         let subsData = visibility.submissions
         let charactersData = visibility.characters
-        let membershipsData = visibility.memberships
+        const membershipsData = visibility.memberships
 
         // Team filter: when a team is selected, scope the master sheet to that
         // team's members only. The RLS-bypassing visibility API above returns
@@ -1981,7 +1981,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
                   <div>
                     <p className="text-amber-200 font-semibold">Some raid tiers disabled</p>
                     <p className="text-amber-300 text-sm">
-                      One or more raid tiers in this phase are disabled. Their items won't appear in member views.
+                      One or more raid tiers in this phase are disabled. Their items won&apos;t appear in member views.
                     </p>
                   </div>
                 </div>

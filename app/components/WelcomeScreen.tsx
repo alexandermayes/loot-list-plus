@@ -18,6 +18,16 @@ import { CreateGuildModal } from '@/app/components/CreateGuildModal'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon, InformationCircleIcon } from '@hugeicons/core-free-icons'
 
+interface AvailableGuild {
+  id: string
+  name: string
+  realm?: string | null
+  faction?: string | null
+  discord_icon?: string | null
+  discord_server_id?: string | null
+  discord_name?: string | null
+}
+
 export default function WelcomeScreen() {
   const [inviteCode, setInviteCode] = useState('')
   const [modalInviteCode, setModalInviteCode] = useState('')
@@ -25,7 +35,7 @@ export default function WelcomeScreen() {
   const [error, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [discordLoading, setDiscordLoading] = useState(false)
-  const [availableGuilds, setAvailableGuilds] = useState<any[]>([])
+  const [availableGuilds, setAvailableGuilds] = useState<AvailableGuild[]>([])
   const [discordError, setDiscordError] = useState('')
   const [joiningGuildId, setJoiningGuildId] = useState<string | null>(null)
   const [showCreateGuild, setShowCreateGuild] = useState(false)
@@ -170,8 +180,8 @@ export default function WelcomeScreen() {
 
       trackClientEvent('onboarding_guild_joined', { join_method: 'invite_code' })
       window.location.href = '/overview'
-    } catch (err: any) {
-      setError(err.message || 'Couldn\'t join guild. Check your connection.')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Couldn\'t join guild. Check your connection.')
       setLoading(false)
     }
   }
@@ -196,8 +206,8 @@ export default function WelcomeScreen() {
 
       trackClientEvent('onboarding_guild_joined', { join_method: 'invite_code' })
       window.location.href = '/overview'
-    } catch (err: any) {
-      setDiscordError(err.message || 'Couldn\'t join guild. Check your connection.')
+    } catch (err: unknown) {
+      setDiscordError(err instanceof Error ? err.message : 'Couldn\'t join guild. Check your connection.')
       setJoiningGuildId(null)
     }
   }
@@ -232,7 +242,7 @@ export default function WelcomeScreen() {
               Welcome to LootList+
             </h1>
             <p className="font-poppins font-normal text-base text-muted-foreground text-pretty">
-              You're not in any guilds yet. Join an existing guild or start a new one.
+              You&apos;re not in any guilds yet. Join an existing guild or start a new one.
             </p>
           </div>
 
@@ -347,7 +357,7 @@ export default function WelcomeScreen() {
 
           {/* Help text */}
           <p className="font-poppins font-normal text-xs text-muted-foreground text-center">
-            Not sure which to pick? Ask your guild officer for an invite code, or create a guild if you're the leader.
+            Not sure which to pick? Ask your guild officer for an invite code, or create a guild if you&apos;re the leader.
           </p>
         </div>
       </div>
@@ -415,7 +425,7 @@ export default function WelcomeScreen() {
             // Improved empty state: CTA to create + inline code input
             <div className="space-y-6 py-4">
               <div className="text-center">
-                <p className="font-bold text-[18px] text-foreground mb-2">Your guild isn't on LootList+ yet</p>
+                <p className="font-bold text-[18px] text-foreground mb-2">Your guild isn&apos;t on LootList+ yet</p>
                 <p className="text-[14px] text-muted-foreground">
                   None of your Discord servers match a LootList+ guild. You can create one or join with a code.
                 </p>
@@ -507,7 +517,7 @@ export default function WelcomeScreen() {
           <div className="flex items-start gap-2">
             <HugeiconsIcon icon={InformationCircleIcon} size={16} className="text-muted-foreground shrink-0 mt-0.5" />
             <p className="text-[12px] text-muted-foreground">
-              We check which Discord servers you're in and match them with LootList+ guilds.
+              We check which Discord servers you&apos;re in and match them with LootList+ guilds.
             </p>
           </div>
         </div>

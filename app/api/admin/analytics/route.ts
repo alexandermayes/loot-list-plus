@@ -5,7 +5,9 @@ import { paginatedSelect } from '@/utils/supabase/paginate'
 
 // ─── PostHog HogQL query helper ─────────────────────────────
 
-async function queryPostHog(hogql: string): Promise<any[]> {
+type PostHogRow = (string | number)[]
+
+async function queryPostHog(hogql: string): Promise<PostHogRow[]> {
   const apiKey = process.env.POSTHOG_PERSONAL_API_KEY
   if (!apiKey) return []
   try {
@@ -36,7 +38,7 @@ async function getBlogAnalytics() {
     top_posts: topPosts.map(r => ({ path: r[0], views: r[1], uniques: r[2] })),
     weekly_trend: weeklyTrend.map(r => ({ week: r[0], views: r[1], uniques: r[2] })),
     referrers: referrers.map(r => ({ referrer: r[0], views: r[1] })),
-    engagement: engagement.map(r => ({ slug: r[0], avg_seconds: Math.round(r[1] || 0), completed: r[2], total: r[3] })),
+    engagement: engagement.map(r => ({ slug: r[0], avg_seconds: Math.round(Number(r[1]) || 0), completed: r[2], total: r[3] })),
   }
 }
 

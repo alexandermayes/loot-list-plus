@@ -43,7 +43,15 @@ async function fetchUserCharactersForGuild(
 
   if (!ownedCharacters || ownedCharacters.length === 0) return []
 
-  const ownedIds = ownedCharacters.map((c: any) => c.id)
+  type OwnedCharacterRow = {
+    id: string
+    name: string
+    is_main: boolean | null
+    class: { name: string | null; color_hex: string | null } | null
+    spec: { name: string | null } | null
+  }
+  const ownedRows = ownedCharacters as unknown as OwnedCharacterRow[]
+  const ownedIds = ownedRows.map((c) => c.id)
   const { data: memberships } = await serviceSupabase
     .from('character_guild_memberships')
     .select('character_id')
@@ -53,11 +61,13 @@ async function fetchUserCharactersForGuild(
 
   if (!memberships || memberships.length === 0) return []
 
-  const memberIds = new Set(memberships.map((m: any) => m.character_id))
+  const memberIds = new Set(
+    (memberships as { character_id: string }[]).map((m) => m.character_id)
+  )
 
-  return ownedCharacters
-    .filter((c: any) => memberIds.has(c.id))
-    .map((c: any) => ({
+  return ownedRows
+    .filter((c) => memberIds.has(c.id))
+    .map((c) => ({
       id: c.id,
       name: c.name,
       class_name: c.class?.name ?? null,
@@ -161,7 +171,14 @@ export async function GET(
     }
 
     // Fetch submissions based on visibility (or unconditionally for managers)
-    let submissions: any[] = []
+    let submissions: {
+      id: string
+      character_name: string
+      character_class: string | null
+      character_spec: string | null
+      items: string[] | null
+      created_at: string
+    }[] = []
     if (
       canManage ||
       run.status === 'locked' ||
@@ -174,7 +191,7 @@ export async function GET(
         .eq('reserve_run_id', run.id)
         .eq('status', 'submitted')
         .order('created_at', { ascending: true })
-      submissions = data || []
+      submissions = (data || []) as typeof submissions
     }
 
     // Fetch awards
@@ -293,7 +310,7 @@ export async function POST(
         )
       }
       // Verify user owns the character
-      const { data: character } = await serviceSupabase
+      const { data: characterData } = await serviceSupabase
         .from('characters')
         .select(`
           id,
@@ -305,6 +322,15 @@ export async function POST(
         .eq('id', rawCharacterId)
         .eq('user_id', user.id)
         .maybeSingle()
+
+      type LinkedCharacterRow = {
+        id: string
+        name: string
+        user_id: string
+        class: { name: string | null } | null
+        spec: { name: string | null } | null
+      }
+      const character = characterData as unknown as LinkedCharacterRow | null
 
       if (!character) {
         return NextResponse.json(
@@ -318,7 +344,7 @@ export async function POST(
         .from('character_guild_memberships')
         .select('id')
         .eq('guild_id', run.guild_id)
-        .eq('character_id', (character as any).id)
+        .eq('character_id', character.id)
         .eq('is_active', true)
         .maybeSingle()
 
@@ -329,7 +355,7 @@ export async function POST(
         )
       }
 
-      const c = character as any
+      const c = character
       linkedCharacterId = c.id
       character_name = c.name
       character_class = c.class?.name || character_class
@@ -366,7 +392,9 @@ export async function POST(
     }
 
     // Check items are not hard-reserved
-    const hardReservedIds = (run.hard_reserves as any[] || []).map((hr: any) => hr.loot_item_id)
+    const hardReservedIds = ((run.hard_reserves as { loot_item_id: string }[] | null) || []).map(
+      (hr) => hr.loot_item_id
+    )
     const reservingHardReserved = items.some((id: string) => hardReservedIds.includes(id))
     if (reservingHardReserved) {
       return NextResponse.json({ error: 'One or more items are hard-reserved' }, { status: 400 })

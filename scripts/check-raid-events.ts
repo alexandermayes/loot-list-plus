@@ -50,7 +50,7 @@ async function checkRaidEvents(guildId: string) {
   }
 
   console.log(`⚠️  Found ${events.length} raid events:`)
-  events.forEach((event: any) => {
+  events.forEach((event: { id: string; raid_date: string; raid_tier_id?: string | null }) => {
     console.log(`  - Event ID: ${event.id}`)
     console.log(`    Raid Date: ${event.raid_date}`)
     console.log(`    Raid Tier ID: ${event.raid_tier_id || 'NULL'}`)

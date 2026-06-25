@@ -22,6 +22,28 @@ import { TeamSelector } from '@/app/components/TeamSelector'
 import { paginatedSelect } from '@/utils/supabase/paginate'
 import { useRouter } from 'next/navigation'
 
+// Guild settings row shape used by the attendance views. Mirrors the guild
+// settings shape used elsewhere (e.g. MasterSheetContent): the explicit fields
+// are the ones read here, and the index signature carries the remaining
+// guild_settings columns (and satisfies the scoring engine's config param).
+interface GuildSettingsRow {
+  first_raid_day?: number | null
+  second_raid_day?: number | null
+  third_raid_day?: number | null
+  fourth_raid_day?: number | null
+  fifth_raid_day?: number | null
+  raid_days_per_week?: number
+  weekly_attendance_minimum?: number | null
+  week_reset_day?: number | null
+  new_member_mode?: 'raw' | 'fair' | 'minimum_gate'
+  rolling_attendance_weeks?: number
+  max_attendance_bonus?: number
+  decimal_places?: number
+  wcl_guild_url?: string | null
+  // Allow additional fields from the guild_settings table
+  [key: string]: unknown
+}
+
 // Day-of-week names for the schedule-mismatch banner (0=Sun..6=Sat).
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -100,13 +122,17 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
   const [error, setError] = useState<string | null>(null)
   const { user, isOfficer } = useGuildContext()
   const router = useRouter()
-  const [activeCharacter, setActiveCharacter] = useState<any>(null)
+  const [activeCharacter, setActiveCharacter] = useState<{
+    id: string
+    name: string
+    class: { name: string; color_hex: string } | { name: string; color_hex: string }[] | null
+  } | null>(null)
   const [guildId, setGuildId] = useState<string | null>(null)
   const [attendanceScore, setAttendanceScore] = useState(0)
   const [trackedRaidCount, setTrackedRaidCount] = useState<number | null>(null)
   const [roleModifier, setRoleModifier] = useState(0)
   const [memberRole, setMemberRole] = useState('')
-  const [guildSettings, setGuildSettings] = useState<any>(null)
+  const [guildSettings, setGuildSettings] = useState<GuildSettingsRow | null>(null)
   const [expansionStartDate, setExpansionStartDate] = useState<string | null>(null)
   const [expansionRaidSchedule, setExpansionRaidSchedule] = useState<{
     raid_days_per_week: number
@@ -144,7 +170,7 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
   const getWeekStart = (dateString: string, firstRaidDay: number) => {
     const date = parseDate(dateString)
     const currentDay = date.getDay()
-    let daysToSubtract = (currentDay - firstRaidDay + 7) % 7
+    const daysToSubtract = (currentDay - firstRaidDay + 7) % 7
     const weekStart = new Date(date)
     weekStart.setDate(weekStart.getDate() - daysToSubtract)
     return toDateString(weekStart)
@@ -648,12 +674,15 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
           .lte('raid_event.raid_date', toDateString(periodEnd))
 
         if (recordsData) {
-          const sorted = [...recordsData].sort((a: any, b: any) => {
-            const dateA = (a.raid_event as any)?.raid_date ?? ''
-            const dateB = (b.raid_event as any)?.raid_date ?? ''
-            return dateB.localeCompare(dateA)
-          })
-          setAttendanceRecords(sorted as any)
+          type SortableRecord = { raid_event?: { raid_date?: string } | { raid_date?: string }[] | null }
+          const getRaidDate = (rec: SortableRecord): string => {
+            const ev = Array.isArray(rec.raid_event) ? rec.raid_event[0] : rec.raid_event
+            return ev?.raid_date ?? ''
+          }
+          const sorted = [...recordsData].sort((a, b) =>
+            getRaidDate(b as SortableRecord).localeCompare(getRaidDate(a as SortableRecord))
+          )
+          setAttendanceRecords(sorted as unknown as AttendanceRecord[])
         }
 
         // Load guild-wide attendance data (includes score for all characters)
@@ -675,7 +704,7 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
     })
   }, [user, activeTeamId])
 
-  const loadGuildAttendance = async (guildId: string, raidEvents: RaidEvent[], settings: any, activeCharacterId?: string, raidDays: number[] = [], raidStartDate: string | null = null) => {
+  const loadGuildAttendance = async (guildId: string, raidEvents: RaidEvent[], settings: GuildSettingsRow | null, activeCharacterId?: string, raidDays: number[] = [], raidStartDate: string | null = null) => {
     try {
       const raidEventIds = raidEvents.map(r => r.id)
       const raidDaysPerWeek = raidDays.length || settings?.raid_days_per_week || 2
@@ -812,8 +841,8 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
 
       // Build fill-in data: attendance records on events NOT in the team event set
       // This enables cross-team fill-in credit
-      let fillInEventMap = new Map<string, { id: string; raid_date: string }>()
-      let fillInRecordsByCharacter: Record<string, { raid_event_id: string; attended: boolean }[]> = {}
+      const fillInEventMap = new Map<string, { id: string; raid_date: string }>()
+      const fillInRecordsByCharacter: Record<string, { raid_event_id: string; attended: boolean }[]> = {}
       if (activeTeamId && allGuildAttendance) {
         // Find all raid_event_ids that are NOT in the team events
         const teamEventIdSet = new Set(raidEventIds)
@@ -842,8 +871,8 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
       const newMemberMode = (settings?.new_member_mode || 'raw') as 'raw' | 'fair' | 'minimum_gate'
       const todayStr = toDateString(new Date())
 
-      const raiders: GuildRaider[] = filteredRaiders.map((s: any) => {
-        const char = s.character as any
+      const raiders: GuildRaider[] = filteredRaiders.map((s) => {
+        const char = s.character
         const charAttendance = attendanceByCharacter[s.character_id] || new Map()
 
         // Build records array from the attendance map
@@ -1062,7 +1091,7 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
           {activeCharacter && (
         <>
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[14px] font-medium" style={{ color: (activeCharacter.class as any)?.color_hex || '#fff' }}>
+            <span className="text-[14px] font-medium" style={{ color: (activeCharacter.class as { color_hex?: string } | null)?.color_hex || '#fff' }}>
               {activeCharacter.name}
             </span>
             <span className="text-foreground-muted text-[13px]">• Your attendance</span>

@@ -54,7 +54,8 @@ async function syncNaxxTokens() {
   console.log(`Data file has ${allDataItems.length} total items\n`)
 
   for (const tier of naxxTiers) {
-    const guildName = (tier as any).expansions?.guilds?.name || 'Unknown Guild'
+    const expansions = (tier as unknown as { expansions?: { guilds?: { name?: string } | null } | null }).expansions
+    const guildName = expansions?.guilds?.name || 'Unknown Guild'
     console.log(`\n📦 Processing: ${tier.name} (Guild: ${guildName})`)
 
     // Get existing items for this tier

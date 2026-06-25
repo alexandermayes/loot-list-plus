@@ -896,7 +896,7 @@ export function SettingsModal({
                             ))}
                           </div>
                           <p className="text-[11px] text-accent mt-2">
-                            Roles are determined by each raider's spec. Make sure specs are set correctly.
+                            Roles are determined by each raider&apos;s spec. Make sure specs are set correctly.
                           </p>
                         </div>
                       )}

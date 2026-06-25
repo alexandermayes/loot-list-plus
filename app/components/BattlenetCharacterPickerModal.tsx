@@ -223,7 +223,7 @@ export function BattlenetCharacterPickerModal({
           {specPicker ? (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Couldn't detect the spec for <span className="font-semibold text-foreground">{specPicker.char.name}</span>. Select their specialization to continue.
+                Couldn&apos;t detect the spec for <span className="font-semibold text-foreground">{specPicker.char.name}</span>. Select their specialization to continue.
               </p>
               <div>
                 <Label htmlFor="spec-select" size="sm" className="block text-foreground-muted mb-2">Specialization</Label>

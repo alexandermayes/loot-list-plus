@@ -49,16 +49,16 @@ export async function POST(request: Request) {
 
     const result: {
       settings?: {
-        parsed: Record<string, any>
-        current: Record<string, any> | null
-        changes: Array<{ field: string; from: any; to: any }>
+        parsed: Record<string, unknown>
+        current: Record<string, unknown> | null
+        changes: Array<{ field: string; from: unknown; to: unknown }>
       }
       items?: {
         matched: Array<{
           sheetName: string
           dbName: string
           dbId: string
-          updates: Record<string, any>
+          updates: Record<string, unknown>
           specCount: number
         }>
         unmatched: Array<{ name: string; raid: string; category: string }>
@@ -73,10 +73,10 @@ export async function POST(request: Request) {
       const parsed = parseInformationTab(settingsCSV)
 
       // Filter to allowed fields only
-      const sanitized: Record<string, any> = {}
+      const sanitized: Record<string, unknown> = {}
       for (const field of ALLOWED_SETTINGS_FIELDS) {
         if (field in parsed) {
-          sanitized[field] = (parsed as any)[field]
+          sanitized[field] = (parsed as Record<string, unknown>)[field]
         }
       }
 
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
         .single()
 
       // Build changes list
-      const changes: Array<{ field: string; from: any; to: any }> = []
+      const changes: Array<{ field: string; from: unknown; to: unknown }> = []
       for (const [field, newValue] of Object.entries(sanitized)) {
         const currentValue = currentSettings?.[field]
         const isDifferent = JSON.stringify(currentValue) !== JSON.stringify(newValue)
@@ -209,9 +209,10 @@ export async function POST(request: Request) {
         // Build spec name → { spec_id, class_id } lookup
         const specLookup = new Map<string, { specId: string; classId: string }>()
         for (const spec of classSpecs) {
-          const className = Array.isArray(spec.wow_classes)
-            ? (spec.wow_classes as any)[0]?.name
-            : (spec.wow_classes as any)?.name
+          const wowClassRel = spec.wow_classes as { name: string } | { name: string }[] | null
+          const className = Array.isArray(wowClassRel)
+            ? wowClassRel[0]?.name
+            : wowClassRel?.name
           const combinedName = spec.name === className ? spec.name : `${spec.name} ${className}`
           specLookup.set(combinedName, { specId: spec.id, classId: spec.class_id })
         }

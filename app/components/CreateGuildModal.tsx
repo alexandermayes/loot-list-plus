@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
+import type { User } from '@supabase/supabase-js'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Tick01Icon, ArrowRight01Icon, Link01Icon, File01Icon, Settings01Icon } from '@hugeicons/core-free-icons'
 import { Spinner, LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -60,7 +61,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
   const [creating, setCreating] = useState(false)
 
   // User state
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [discordVerified, setDiscordVerified] = useState(false)
 
   // Discord state
@@ -156,7 +157,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
     try {
       const cacheKey = `discord_servers_${userId}`
       const cached = localStorage.getItem(cacheKey)
-      let cachedData: any[] | null = null
+      let cachedData: DiscordGuild[] | null = null
 
       if (cached) {
         try {

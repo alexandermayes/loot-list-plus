@@ -96,9 +96,9 @@ export function useRaidTeam(): UseRaidTeamResult {
       .eq('guild_id', activeGuild.id)
       .order('sort_order', { ascending: true })
       .order('created_at', { ascending: true })
-      .then(({ data }: { data: any }) => {
+      .then(({ data }: { data: RaidTeam[] | null }) => {
         if (!cancelled) {
-          setTeams((data as RaidTeam[]) || [])
+          setTeams(data || [])
           setLoading(false)
         }
       })

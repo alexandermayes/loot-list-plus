@@ -99,8 +99,8 @@ export default function InviteCodeManager() {
       setExpiresAt('')
       setMaxUses('')
       await loadInviteCodes()
-    } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t generate invite code. Try again.')
+    } catch (error: unknown) {
+      showNotification('error', error instanceof Error ? error.message : 'Couldn\'t generate invite code. Try again.')
     } finally {
       setGenerating(false)
     }
@@ -125,8 +125,8 @@ export default function InviteCodeManager() {
 
           showNotification('success', 'Invite code removed')
           await loadInviteCodes()
-        } catch (error: any) {
-          showNotification('error', error.message || 'Couldn\'t remove code. Try again.')
+        } catch (error: unknown) {
+          showNotification('error', error instanceof Error ? error.message : 'Couldn\'t remove code. Try again.')
         }
       }
     })

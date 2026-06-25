@@ -91,7 +91,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Build validation input
-    const validationItems = (submissionItems || []).map((si: any) => ({
+    interface SubmissionItemRow {
+      rank: number
+      slot: string
+      loot_item_id: string
+      loot_item?: {
+        classification?: string | null
+        item_type?: string | null
+        item_slot?: string | null
+        allocation_cost?: number | null
+      } | null
+    }
+    const validationItems = ((submissionItems || []) as unknown as SubmissionItemRow[]).map((si) => ({
       rank: si.rank,
       slot: si.slot,
       item: {
@@ -104,7 +115,11 @@ export async function POST(request: NextRequest) {
     }))
 
     // Validate bracket rules
-    const violations = validateBracketRules(validationItems, enforceSlotRestrictions, bracketLimits)
+    const violations = validateBracketRules(
+      validationItems as unknown as Parameters<typeof validateBracketRules>[0],
+      enforceSlotRestrictions,
+      bracketLimits
+    )
 
     if (violations.length > 0) {
       return NextResponse.json({

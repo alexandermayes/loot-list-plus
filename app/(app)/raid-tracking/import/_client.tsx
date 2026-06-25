@@ -93,8 +93,8 @@ export default function ImportPage() {
       }
 
       showNotification('success', 'Import complete')
-    } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t import data. Try again.')
+    } catch (error: unknown) {
+      showNotification('error', (error instanceof Error && error.message) || 'Couldn\'t import data. Try again.')
     }
 
     setLoading(false)
@@ -276,7 +276,7 @@ export default function ImportPage() {
                 variant="rounded"
                 size="sm"
                 value={importType}
-                onChange={(e) => setImportType(e.target.value as any)}
+                onChange={(e) => setImportType(e.target.value as 'attendance' | 'loot_items' | 'members')}
               >
                 <option value="attendance">Attendance records</option>
                 <option value="loot_items">Loot items</option>

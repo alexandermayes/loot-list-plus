@@ -10,20 +10,20 @@ import { verifyPermission } from '../server-roles'
  * The builder is thenable so `await sb.from(t).select().eq()` resolves to the
  * configured result for table `t`.
  */
-function mockSupabase(tableResults: Record<string, { data: any; error?: any }>) {
+function mockSupabase(tableResults: Record<string, { data: unknown; error?: unknown }>) {
   function builder(table: string) {
     const result = tableResults[table] ?? { data: null, error: null }
-    const chain: any = {
+    const chain: Record<string, unknown> = {
       select: () => chain,
       eq: () => chain,
       in: () => chain,
       single: () => Promise.resolve(result),
       maybeSingle: () => Promise.resolve(result),
-      then: (resolve: (v: any) => any) => Promise.resolve(result).then(resolve),
+      then: (resolve: (v: unknown) => unknown) => Promise.resolve(result).then(resolve),
     }
     return chain
   }
-  return { from: (table: string) => builder(table) } as any
+  return { from: (table: string) => builder(table) } as unknown as Parameters<typeof verifyPermission>[0]
 }
 
 const USER = 'user-1'

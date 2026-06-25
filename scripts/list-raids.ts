@@ -59,7 +59,7 @@ async function listRaids(guildId: string) {
       continue
     }
 
-    tiers.forEach((tier: any) => {
+    tiers.forEach((tier) => {
       const status = tier.is_active ? '⭐ ACTIVE' : '  inactive'
       console.log(`   ${status} - ${tier.name} (ID: ${tier.id})`)
     })

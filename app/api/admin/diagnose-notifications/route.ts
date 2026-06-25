@@ -45,7 +45,8 @@ export async function GET(request: NextRequest) {
         .in('character_id', charIds)
         .eq('is_active', true)
 
-      const unique = [...new Map((guilds || []).map((g: any) => [g.guild_id, g])).values()]
+      type GuildMembershipRow = { guild_id: string; guilds?: { name?: string } | null }
+      const unique = [...new Map(((guilds || []) as unknown as GuildMembershipRow[]).map((g): [string, GuildMembershipRow] => [g.guild_id, g])).values()]
       if (unique.length === 0) {
         return NextResponse.json({ error: 'No active guild memberships found' }, { status: 404 })
       }
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
       if (unique.length > 1) {
         return NextResponse.json({
           error: 'Multiple guilds found, specify ?guild_id=<id>',
-          guilds: unique.map((g: any) => ({ guild_id: g.guild_id, name: g.guilds?.name })),
+          guilds: unique.map((g) => ({ guild_id: g.guild_id, name: g.guilds?.name })),
         }, { status: 400 })
       }
 

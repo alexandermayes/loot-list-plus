@@ -78,9 +78,10 @@ export async function GET(request: NextRequest) {
         '/profile/user/wow',
         namespace
       )
-    } catch (tokenError: any) {
-      console.error('Battle.net token/fetch error:', tokenError.message)
-      const needsReauth = tokenError.message?.includes('re-authenticate') || tokenError.message?.includes('refresh')
+    } catch (tokenError: unknown) {
+      const tokenErrorMessage = tokenError instanceof Error ? tokenError.message : String(tokenError)
+      console.error('Battle.net token/fetch error:', tokenErrorMessage)
+      const needsReauth = tokenErrorMessage.includes('re-authenticate') || tokenErrorMessage.includes('refresh')
       return NextResponse.json(
         { error: needsReauth ? 'Battle.net session expired. Please reconnect your account in profile settings.' : 'Could not connect to Battle.net. Try again.' },
         { status: needsReauth ? 401 : 502 }

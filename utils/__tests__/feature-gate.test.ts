@@ -2,14 +2,14 @@ import { describe, it, expect, vi } from 'vitest'
 import { checkSubscriptionTier, requirePro } from '../feature-gate'
 
 // Lightweight supabase mock: chainable query builder
-function mockSupabase(result: { data: any; error: any }) {
+function mockSupabase(result: { data: unknown; error: unknown }) {
   const chain = {
     from: vi.fn().mockReturnThis(),
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     single: vi.fn().mockResolvedValue(result),
   }
-  return chain as any
+  return chain as unknown as Parameters<typeof checkSubscriptionTier>[0]
 }
 
 // ─── checkSubscriptionTier ────────────────────────────────────

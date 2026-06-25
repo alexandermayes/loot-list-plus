@@ -1,6 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
+import type { User } from '@supabase/supabase-js'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -26,7 +27,7 @@ interface DiscordGuild {
 export default function CreateGuildPage() {
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [discordVerified, setDiscordVerified] = useState(false)
   const [discordGuilds, setDiscordGuilds] = useState<DiscordGuild[]>([])
   const [error, setError] = useState('')
@@ -98,7 +99,7 @@ export default function CreateGuildPage() {
           // Check cache first (15 minute cache to reduce rate limiting)
           const cacheKey = `discord_servers_${currentUser.id}`
           const cached = localStorage.getItem(cacheKey)
-          let cachedData: any[] | null = null
+          let cachedData: DiscordGuild[] | null = null
           let cacheTimestamp = 0
 
           if (cached) {
@@ -610,7 +611,7 @@ export default function CreateGuildPage() {
                     <div className="flex-1">
                       <p className="font-semibold text-success text-lg">Bot installed</p>
                       <p className="text-sm text-success/80 mt-1">
-                        The LootList+ bot is active in your Discord server. You're all set.
+                        The LootList+ bot is active in your Discord server. You&apos;re all set.
                       </p>
                     </div>
                   </div>
@@ -658,7 +659,7 @@ export default function CreateGuildPage() {
                       </div>
 
                       <p className="text-xs text-muted-foreground">
-                        You'll need admin permissions on your Discord server to add the bot. After adding, return here and click "Recheck" or the page will automatically verify.
+                        You&apos;ll need admin permissions on your Discord server to add the bot. After adding, return here and click &quot;Recheck&quot; or the page will automatically verify.
                       </p>
                     </div>
                   </div>

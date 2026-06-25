@@ -168,7 +168,7 @@ export async function fetchFilteredLootItems(
   // Armor/weapon proficiency is ALWAYS enforced — a Druid can never equip
   // plate regardless of officer assignments. Officer assignments only
   // control bracket visibility, not physical equippability.
-  const filtered = items.filter((item: any) => {
+  const filtered = items.filter((item: LootItemRow) => {
     // Tokens have their own class eligibility rules.
     if (isTokenSlot(item.item_slot)) {
       if (className && !canClassUseToken(item.name, className)) return false
@@ -204,7 +204,7 @@ export async function fetchFilteredLootItems(
   })
 
   // Attach bracket-filtering helper fields.
-  const withBracketFields = filtered.map((item: any) => {
+  const withBracketFields = filtered.map((item: LootItemRow) => {
     const classes = item.loot_item_classes as LootItemClassRestriction[] | null
     const isAllocated = !!(classes && classes.length > 0)
 
@@ -239,7 +239,7 @@ export async function fetchFilteredLootItems(
   })
 
   // Final shape: enrich class restrictions with display metadata.
-  const enriched = withBracketFields.map((item: any) => {
+  const enriched = withBracketFields.map((item) => {
     const raidTier = item.raid_tiers as { name: string } | { name: string }[] | null
     const raidTierName = Array.isArray(raidTier) ? raidTier[0]?.name : raidTier?.name
     const classes = (item.loot_item_classes as LootItemClassRestriction[]) || []

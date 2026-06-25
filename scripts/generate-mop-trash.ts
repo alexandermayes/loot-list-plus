@@ -79,7 +79,19 @@ function isTokenItem(name: string, slotId: number): boolean {
   return TOKEN_PATTERNS.some(p => name.includes(p))
 }
 
-function getSlotName(item: any): string | null {
+interface WowheadDrop {
+  id: number
+  name: string
+  slot: number
+  classs?: number
+  subclass?: number
+  quality?: number
+  thunderforged?: number
+  namedesc?: string
+  modes?: { mode?: number[] }
+}
+
+function getSlotName(item: WowheadDrop): string | null {
   if (isTokenItem(item.name, item.slot)) return 'Token'
   if (item.classs === 15 && item.subclass === 5) return 'Mount'
   const slotName = SLOT_MAP[item.slot]
@@ -148,7 +160,7 @@ function sleep(ms: number): Promise<void> {
 // PARSE
 // =============================================
 
-function extractDrops(html: string): any[] {
+function extractDrops(html: string): WowheadDrop[] {
   const markerMatch = html.match(/id:\s*['"]drops['"]/)
   if (!markerMatch || markerMatch.index === undefined) return []
   const afterMarker = html.substring(markerMatch.index)
@@ -185,14 +197,14 @@ interface OutItem {
   wowhead_id: number
 }
 
-function getModeArray(item: any): number[] {
+function getModeArray(item: WowheadDrop): number[] {
   // Zone-page shape: { modes: { mode: [3,4,5,6] } }
   if (item.modes && Array.isArray(item.modes.mode)) return item.modes.mode
   // Fallback: empty
   return []
 }
 
-function processZoneItems(rawItems: any[], existingIds: Set<number>): OutItem[] {
+function processZoneItems(rawItems: WowheadDrop[], existingIds: Set<number>): OutItem[] {
   const out: OutItem[] = []
   const seen = new Set<number>()
 

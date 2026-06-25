@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import nextDynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useGuildContext } from '@/app/contexts/GuildContext'
+import { useGuildContext, type GuildMember } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { LootSettingsPageSkeleton } from '@/components/ui/skeletons'
@@ -17,7 +17,7 @@ import { toDateString } from '@/utils/date'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import StyledSelect from '@/app/components/StyledSelect'
-import { specMapping, allRoles } from '@/domain/loot/spec-role-mapping'
+import { specMapping, allRoles, getSpecsForRole } from '@/domain/loot/spec-role-mapping'
 import { Search01Icon } from '@hugeicons/core-free-icons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ErrorState } from '@/components/ui/error-state'
@@ -88,7 +88,7 @@ interface ClassSpec {
   name: string
   class_name?: string
   combined_name?: string
-  wow_classes?: { name: string }
+  wow_classes?: { name: string } | { name: string }[] | null
 }
 
 interface ItemClassRelation {
@@ -149,7 +149,7 @@ export default function LootSettingsContent({
   const [classSpecs, setClassSpecs] = useState<ClassSpec[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [member, setMember] = useState<any>(null)
+  const [member, setMember] = useState<GuildMember | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('')
   const [filterTier, setFilterTier] = useState<string>('all')
@@ -157,7 +157,7 @@ export default function LootSettingsContent({
   const [filterClassification, setFilterClassification] = useState<string>('all')
   const [sortField, setSortField] = useState<'name' | 'boss' | 'slot' | 'raid' | 'classification' | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
-  const [raidTiers, setRaidTiers] = useState<any[]>([])
+  const [raidTiers, setRaidTiers] = useState<{ id: string; name: string }[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(100)
 
@@ -573,9 +573,14 @@ export default function LootSettingsContent({
       if (classesData.length > 0) setClasses(classesData)
 
       // Process specs
-      let transformedSpecs: any[] = []
+      let transformedSpecs: ClassSpec[] = []
       if (specsResult.data) {
-        transformedSpecs = specsResult.data.map((spec: any) => {
+        transformedSpecs = specsResult.data.map((spec: {
+          id: string
+          class_id: string
+          name: string
+          wow_classes?: { name: string } | { name: string }[] | null
+        }): ClassSpec => {
           const className = Array.isArray(spec.wow_classes)
             ? spec.wow_classes[0]?.name
             : spec.wow_classes?.name
@@ -587,17 +592,17 @@ export default function LootSettingsContent({
               : `${spec.name} ${className}`
           }
         })
-        setClassSpecs(transformedSpecs as any)
+        setClassSpecs(transformedSpecs)
       }
 
       // Filter classes by expansion exclusions
       if (expansionResult.data) {
         const excluded = EXPANSION_CLASS_EXCLUSIONS[expansionResult.data.name] || []
         if (excluded.length > 0) {
-          classesData = classesData.filter((c: any) => !excluded.includes(c.name))
+          classesData = classesData.filter((c: WowClass) => !excluded.includes(c.name))
           setClasses(classesData)
-          transformedSpecs = transformedSpecs.filter((s: any) => !excluded.includes(s.class_name))
-          setClassSpecs(transformedSpecs as any)
+          transformedSpecs = transformedSpecs.filter((s) => !excluded.includes(s.class_name ?? ''))
+          setClassSpecs(transformedSpecs)
         }
       }
 
@@ -630,14 +635,14 @@ export default function LootSettingsContent({
 
     if (!tiersData || tiersData.length === 0) return
 
-    const tierIds = tiersData.map((t: any) => t.id)
+    const tierIds = tiersData.map((t: { id: string }) => t.id)
 
     // Load loot items in pages. PostgREST silently caps unpaginated queries
     // at 1000 rows, which truncated late-alphabet items for guilds whose
     // active expansion has >1000 items (e.g. MoP at 1705). Order by 'id' so
     // successive pages are stable — 'name' alone isn't unique across tiers
     // and can cause Postgres to skip / duplicate rows between range() calls.
-    const itemsData = await paginatedSelect<any>((start, end) =>
+    const itemsData = await paginatedSelect<LootItem>((start, end) =>
       supabase
         .from('loot_items')
         .select(`
@@ -661,25 +666,25 @@ export default function LootSettingsContent({
     )
 
     if (itemsData.length > 0) {
-      setLootItems(itemsData as any)
+      setLootItems(itemsData)
 
       // Initialize item roles state
       const rolesState: Record<string, Set<string>> = {}
-      itemsData.forEach((item: any) => {
+      itemsData.forEach((item) => {
         rolesState[item.id] = new Set(item.roles || [])
       })
       setItemRoles(rolesState)
 
       // Initialize item notes state
       const notesState: Record<string, string> = {}
-      itemsData.forEach((item: any) => {
+      itemsData.forEach((item) => {
         notesState[item.id] = item.officer_notes || ''
       })
       setItemNotes(notesState)
 
       // Load all spec relations for all items in a single query
       // Supabase sends .in() filters via POST body, so URL length is not a concern
-      const itemIds = itemsData.map((item: any) => item.id)
+      const itemIds = itemsData.map((item) => item.id)
       const specs: Record<string, { primary: Set<string>, secondary: Set<string> }> = {}
 
       // Initialize all items with empty spec sets
@@ -703,7 +708,7 @@ export default function LootSettingsContent({
       )
 
       if (specRelations.length > 0) {
-        specRelations.forEach((rel: any) => {
+        specRelations.forEach((rel) => {
           if (rel.spec_id && rel.loot_item_id) {
             if (rel.spec_type === 'primary') {
               specs[rel.loot_item_id].primary.add(rel.spec_id)
@@ -1109,8 +1114,6 @@ export default function LootSettingsContent({
 
   // Get role group specs - returns spec IDs for each role - MEMOIZED
   const getRoleGroupSpecs = useMemo(() => {
-    const { getSpecsForRole } = require('@/domain/loot/spec-role-mapping')
-
     const roles = ['tank', 'healer', 'physical', 'caster'] as const
     const roleGroups: Record<string, Set<string>> = {}
 
@@ -1242,7 +1245,7 @@ export default function LootSettingsContent({
     let items = lootItems.filter(item => {
       const matchesSearch = item.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
                            item.boss_name.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-      const matchesTier = filterTier === 'all' || (item.raid_tier as any)?.name === filterTier
+      const matchesTier = filterTier === 'all' || (item.raid_tier as { name?: string } | null)?.name === filterTier
       const matchesSlot = filterSlot === 'all' || item.item_slot === filterSlot
       const matchesClassification = filterClassification === 'all' || item.classification === filterClassification
       return matchesSearch && matchesTier && matchesSlot && matchesClassification
@@ -1268,8 +1271,8 @@ export default function LootSettingsContent({
             bValue = (b.item_slot || '').toLowerCase()
             break
           case 'raid':
-            aValue = ((a.raid_tier as any)?.name || '').toLowerCase()
-            bValue = ((b.raid_tier as any)?.name || '').toLowerCase()
+            aValue = ((a.raid_tier as { name?: string } | null)?.name || '').toLowerCase()
+            bValue = ((b.raid_tier as { name?: string } | null)?.name || '').toLowerCase()
             break
           case 'classification':
             aValue = a.classification.toLowerCase()
@@ -1493,7 +1496,7 @@ export default function LootSettingsContent({
                     variant="pill"
                     size="sm"
                     value={sortField || ''}
-                    onChange={(e) => setSortField(e.target.value as any || null)}
+                    onChange={(e) => setSortField(e.target.value as 'name' | 'boss' | 'slot' | 'raid' | 'classification' || null)}
                     className="bg-background-elevated"
                   >
                     <option value="" className="bg-background-elevated text-foreground">Default</option>

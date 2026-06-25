@@ -71,9 +71,9 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
       }
 
       setRoles(data || [])
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error loading roles:', error)
-      showNotification('error', error.message || 'Couldn\'t load roles. Try again.')
+      showNotification('error', error instanceof Error ? error.message : 'Couldn\'t load roles. Try again.')
     } finally {
       setLoading(false)
     }
@@ -115,8 +115,8 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
       setIsAddingRole(false)
       await loadRoles()
       onRolesChanged?.()
-    } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t create role. Try again.')
+    } catch (error: unknown) {
+      showNotification('error', error instanceof Error ? error.message : 'Couldn\'t create role. Try again.')
     }
   }
 
@@ -157,8 +157,8 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
       setEditingPermissions([])
       await loadRoles()
       onRolesChanged?.()
-    } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t save role. Try again.')
+    } catch (error: unknown) {
+      showNotification('error', error instanceof Error ? error.message : 'Couldn\'t save role. Try again.')
     }
   }
 
@@ -192,8 +192,8 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
           showNotification('success', 'Role deleted')
           await loadRoles()
           onRolesChanged?.()
-        } catch (error: any) {
-          showNotification('error', error.message || 'Couldn\'t delete role. Try again.')
+        } catch (error: unknown) {
+          showNotification('error', error instanceof Error ? error.message : 'Couldn\'t delete role. Try again.')
         }
       }
     })
@@ -231,8 +231,8 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
 
       await loadRoles()
       onRolesChanged?.()
-    } catch (error: any) {
-      showNotification('error', error.message || 'Couldn\'t reorder roles. Try again.')
+    } catch (error: unknown) {
+      showNotification('error', error instanceof Error ? error.message : 'Couldn\'t reorder roles. Try again.')
     }
   }
 

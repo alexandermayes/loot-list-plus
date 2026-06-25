@@ -75,8 +75,8 @@ async function main() {
       } else {
         console.log(`    Updated: ${iconUrl}`)
       }
-    } catch (err: any) {
-      console.log(`    Error: ${err.message}`)
+    } catch (err: unknown) {
+      console.log(`    Error: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 

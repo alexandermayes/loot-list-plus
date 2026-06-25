@@ -19,7 +19,7 @@ const MIN_INTERVAL_MS = 1000 // Don't refresh more than once per second
 export function refreshWowheadTooltips(immediate = false): void {
   if (typeof window === 'undefined') return
 
-  const wowhead = (window as any).$WowheadPower
+  const wowhead = (window as Window & { $WowheadPower?: { refreshLinks: () => void } }).$WowheadPower
   if (!wowhead) return
 
   const now = Date.now()
@@ -60,5 +60,5 @@ export function refreshWowheadTooltips(immediate = false): void {
  * Check if Wowhead script is loaded
  */
 export function isWowheadLoaded(): boolean {
-  return typeof window !== 'undefined' && !!(window as any).$WowheadPower
+  return typeof window !== 'undefined' && !!(window as Window & { $WowheadPower?: unknown }).$WowheadPower
 }

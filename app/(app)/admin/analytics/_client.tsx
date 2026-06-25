@@ -364,8 +364,15 @@ type Tab = 'guilds' | 'blog' | 'funnel' | 'traffic' | 'revenue'
 
 // ─── PostHog-backed section components ──────────────────────
 
+interface BlogData {
+  top_posts: { path: string; views: number; uniques: number }[]
+  weekly_trend: { views: number; week: string }[]
+  referrers: { referrer: string; views: number }[]
+  engagement: { slug: string; avg_seconds: number; completed: number; total: number }[]
+}
+
 function BlogSection() {
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<BlogData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -387,7 +394,7 @@ function BlogSection() {
             <Text color="muted" size="sm">No blog views yet.</Text>
           ) : (
             <div className="space-y-2">
-              {data.top_posts.map((p: any, i: number) => (
+              {data.top_posts.map((p, i: number) => (
                 <div key={i} className="flex items-center justify-between py-1.5">
                   <Text size="sm" className="truncate flex-1 mr-4">{p.path.replace('/blog/', '')}</Text>
                   <div className="flex items-center gap-4 shrink-0">
@@ -407,8 +414,8 @@ function BlogSection() {
           <CardHeader><CardTitle>Weekly blog traffic</CardTitle></CardHeader>
           <CardContent>
             <div className="flex items-end gap-[3px] h-20">
-              {data.weekly_trend.map((w: any, i: number) => {
-                const max = Math.max(...data.weekly_trend.map((w: any) => w.views), 1)
+              {data.weekly_trend.map((w, i: number) => {
+                const max = Math.max(...data.weekly_trend.map((w) => w.views), 1)
                 const height = Math.max((w.views / max) * 100, w.views > 0 ? 6 : 0)
                 return (
                   <div key={i} className="flex-1 h-full flex items-end group relative">
@@ -430,7 +437,7 @@ function BlogSection() {
           <CardHeader><CardTitle>Referrer sources</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-1.5">
-              {data.referrers.map((r: any, i: number) => (
+              {data.referrers.map((r, i: number) => (
                 <div key={i} className="flex items-center justify-between py-1">
                   <Text size="sm" className="truncate flex-1 mr-4">{r.referrer === '$direct' ? 'Direct / Bookmark' : r.referrer}</Text>
                   <Text size="sm" color="secondary" className="tabular-nums shrink-0">{r.views}</Text>
@@ -447,7 +454,7 @@ function BlogSection() {
           <CardHeader><CardTitle>Engagement (scroll + time)</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {data.engagement.map((e: any, i: number) => (
+              {data.engagement.map((e, i: number) => (
                 <div key={i} className="flex items-center justify-between py-1">
                   <Text size="sm" className="truncate flex-1 mr-4">{e.slug}</Text>
                   <div className="flex items-center gap-4 shrink-0">
@@ -464,8 +471,13 @@ function BlogSection() {
   )
 }
 
+interface FunnelData {
+  steps?: { name: string; count: number }[]
+  weekly_signups?: { signups: number; week: string }[]
+}
+
 function FunnelSection() {
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<FunnelData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -485,7 +497,7 @@ function FunnelSection() {
       <Card>
         <CardHeader><CardTitle>Signup funnel (30 days)</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          {steps.map((step: any, i: number) => {
+          {steps.map((step: { name: string; count: number }, i: number) => {
             const pct = topCount > 0 ? Math.round((step.count / topCount) * 100) : 0
             const width = topCount > 0 ? Math.max((step.count / topCount) * 100, 8) : 8
             return (
@@ -503,13 +515,13 @@ function FunnelSection() {
         </CardContent>
       </Card>
 
-      {data.weekly_signups?.length > 0 && (
+      {(data.weekly_signups?.length ?? 0) > 0 && (
         <Card>
           <CardHeader><CardTitle>Weekly signups</CardTitle></CardHeader>
           <CardContent>
             <div className="flex items-end gap-[3px] h-20">
-              {data.weekly_signups.map((w: any, i: number) => {
-                const max = Math.max(...data.weekly_signups.map((w: any) => w.signups), 1)
+              {(data.weekly_signups ?? []).map((w, i: number) => {
+                const max = Math.max(...(data.weekly_signups ?? []).map((w) => w.signups), 1)
                 const height = Math.max((w.signups / max) * 100, w.signups > 0 ? 6 : 0)
                 return (
                   <div key={i} className="flex-1 h-full flex items-end group relative">
@@ -528,8 +540,14 @@ function FunnelSection() {
   )
 }
 
+interface TrafficData {
+  by_domain?: { host: string; views: number; uniques: number }[]
+  top_pages?: { path: string; views: number; uniques: number }[]
+  weekly_trend?: { views: number; uniques: number; week: string }[]
+}
+
 function TrafficSection() {
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<TrafficData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -548,7 +566,7 @@ function TrafficSection() {
         <CardHeader><CardTitle>Traffic by domain (30 days)</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {(data.by_domain || []).map((d: any, i: number) => (
+            {(data.by_domain || []).map((d, i: number) => (
               <div key={i} className="flex items-center justify-between py-1.5">
                 <Text size="sm" className="font-medium">{d.host}</Text>
                 <div className="flex items-center gap-4 shrink-0">
@@ -566,7 +584,7 @@ function TrafficSection() {
         <CardHeader><CardTitle>Top pages</CardTitle></CardHeader>
         <CardContent>
           <div className="space-y-1.5">
-            {(data.top_pages || []).map((p: any, i: number) => (
+            {(data.top_pages || []).map((p, i: number) => (
               <div key={i} className="flex items-center justify-between py-1">
                 <Text size="sm" className="truncate flex-1 mr-4">{p.path}</Text>
                 <div className="flex items-center gap-4 shrink-0">
@@ -585,8 +603,8 @@ function TrafficSection() {
           <CardHeader><CardTitle>Weekly traffic</CardTitle></CardHeader>
           <CardContent>
             <div className="flex items-end gap-[3px] h-20">
-              {data.weekly_trend.map((w: any, i: number) => {
-                const max = Math.max(...data.weekly_trend.map((w: any) => w.views), 1)
+              {(data.weekly_trend ?? []).map((w, i: number) => {
+                const max = Math.max(...(data.weekly_trend ?? []).map((w) => w.views), 1)
                 const height = Math.max((w.views / max) * 100, w.views > 0 ? 6 : 0)
                 return (
                   <div key={i} className="flex-1 h-full flex items-end group relative">
@@ -605,8 +623,16 @@ function TrafficSection() {
   )
 }
 
+interface RevenueData {
+  tiers?: Record<string, number>
+  total_active: number
+  pro_count: number
+  pro_rate: number
+  upgrade_clicks_30d: number
+}
+
 function RevenueSection() {
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<RevenueData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

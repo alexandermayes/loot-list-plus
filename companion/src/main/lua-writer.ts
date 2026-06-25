@@ -11,6 +11,8 @@
  * }
  */
 
+import { parseLuaTable } from './lua-parser'
+
 export function toLuaTable(varName: string, data: unknown): string {
   return `${varName} = ${toLuaValue(data, 0)}\n`
 }
@@ -110,7 +112,6 @@ export function updateSavedVarsField(
   // For simplicity, we regenerate the entire variable assignment.
   // A more sophisticated approach would patch in-place,
   // but for our use case the file is small enough.
-  const { parseLuaTable } = require('./lua-parser')
   const data = parseLuaTable(existingContent)
 
   let target = data[varName] as Record<string, unknown>

@@ -1,6 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
+import type { User } from '@supabase/supabase-js'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -25,7 +26,7 @@ interface AvailableGuild {
 export default function DiscordJoinPage() {
   const [loading, setLoading] = useState(true)
   const [joining, setJoining] = useState(false)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [availableGuilds, setAvailableGuilds] = useState<AvailableGuild[]>([])
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
@@ -193,7 +194,7 @@ export default function DiscordJoinPage() {
           <Card>
             <CardContent className="pt-6">
               <p className="text-sm text-muted-foreground mb-4">
-                To use the Discord auto-join feature, please verify your Discord account first. This allows LootList+ to check which Discord servers you're in and automatically match them with available guilds.
+                To use the Discord auto-join feature, please verify your Discord account first. This allows LootList+ to check which Discord servers you&apos;re in and automatically match them with available guilds.
               </p>
               <Button
                 onClick={() => router.push('/profile')}
@@ -264,12 +265,12 @@ export default function DiscordJoinPage() {
             <CardHeader>
               <CardTitle>No guilds found</CardTitle>
               <CardDescription>
-                We couldn't find any LootList+ guilds that match your Discord servers.
+                We couldn&apos;t find any LootList+ guilds that match your Discord servers.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Make sure you're a member of a Discord server that has a LootList+ guild set up. Contact your guild officer to set up Discord integration.
+                Make sure you&apos;re a member of a Discord server that has a LootList+ guild set up. Contact your guild officer to set up Discord integration.
               </p>
               <Button
                 onClick={() => router.push('/guild-select')}
@@ -331,7 +332,7 @@ export default function DiscordJoinPage() {
           <CardContent className="pt-6">
             <h3 className="font-medium text-foreground mb-2">How does this work?</h3>
             <p className="text-sm text-muted-foreground">
-              We check which Discord servers you're a member of and match them with LootList+ guilds that have Discord integration enabled. You can only join guilds for Discord servers you're already in.
+              We check which Discord servers you&apos;re a member of and match them with LootList+ guilds that have Discord integration enabled. You can only join guilds for Discord servers you&apos;re already in.
             </p>
           </CardContent>
         </Card>

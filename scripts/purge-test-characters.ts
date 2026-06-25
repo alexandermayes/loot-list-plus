@@ -78,7 +78,7 @@ async function main() {
   if (e2) console.error('Error fetching Gm_* characters:', e2.message)
 
   // Combine and deduplicate
-  const allTestChars = new Map<string, any>()
+  const allTestChars = new Map<string, { id: string; name: string; user_id: string | null; is_main: boolean; class_id: string | null }>()
   for (const char of [...(testCharsPrefix || []), ...(testCharsGm || [])]) {
     allTestChars.set(char.id, char)
   }

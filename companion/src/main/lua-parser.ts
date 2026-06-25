@@ -37,7 +37,7 @@ interface ParseResult {
 }
 
 function parseLuaValue(lua: string, start: number): ParseResult | undefined {
-  let pos = skipWhitespace(lua, start)
+  const pos = skipWhitespace(lua, start)
   if (pos >= lua.length) return undefined
 
   const ch = lua[pos]
@@ -174,7 +174,7 @@ function parseLuaString(lua: string, start: number): ParseResult {
 
 function parseLuaLongString(lua: string, start: number): ParseResult {
   // [[...]] string
-  let pos = start + 2
+  const pos = start + 2
   const endMarker = ']]'
   const endIdx = lua.indexOf(endMarker, pos)
   if (endIdx === -1) {
