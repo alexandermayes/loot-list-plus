@@ -1,0 +1,43 @@
+name: Deploy Migrations
+
+# Applies pending Supabase migrations to the production database.
+#
+# Runs automatically when migration files change on main, and can be triggered
+# manually (workflow_dispatch) to apply a backlog of already-merged migrations.
+#
+# Required repo secrets (Settings -> Secrets and variables -> Actions):
+#   SUPABASE_ACCESS_TOKEN  - a Supabase personal access token (supabase.com/dashboard/account/tokens)
+#   SUPABASE_DB_PASSWORD   - the production project's database password
+# The project ref below is the same one used by `npm run gen:types`.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-migrations
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: supabase db push
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_ID: zjnhjstbqekudlsozsvi
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Link project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
+      - name: Apply pending migrations
+        run: supabase db push
