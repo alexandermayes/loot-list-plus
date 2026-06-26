@@ -402,9 +402,6 @@ export const serpentshrinecavern: Raid = {
         { name: 'Living Root of the Wildheart', slot: 'Trinket', wowhead_id: 30664 },
         { name: 'Wraps of Purification', slot: 'Wrist', wowhead_id: 32516 },
         { name: 'Band of Vile Aggression', slot: 'Finger', wowhead_id: 33055 },
-        { name: 'Pendant of the Perilous', slot: 'Neck', wowhead_id: 30022 },
-        { name: 'Totem of the Maelstrom', slot: 'Relic', wowhead_id: 30023 },
-        { name: 'Serpentshrine Shuriken', slot: 'Thrown', wowhead_id: 30025 },
       ],
     },
     {
@@ -423,8 +420,6 @@ export const serpentshrinecavern: Raid = {
         { name: 'Velvet Boots of the Guardian', slot: 'Feet', wowhead_id: 30067 },
         { name: 'Earring of Soulful Meditation', slot: 'Trinket', wowhead_id: 30665 },
         { name: 'The Seal of Danzalar', slot: 'Finger', wowhead_id: 33054 },
-        { name: 'Boots of Courage Unending', slot: 'Feet', wowhead_id: 30027 },
-        { name: 'Spyglass of the Hidden Fleet', slot: 'Trinket', wowhead_id: 30620 },
       ],
     },
     {
@@ -502,6 +497,11 @@ export const serpentshrinecavern: Raid = {
       name: 'Trash',
       items: [
         { name: 'Wildfury Greatstaff', slot: 'Two-Hand', wowhead_id: 30021 },
+        { name: 'Pendant of the Perilous', slot: 'Neck', wowhead_id: 30022 },
+        { name: 'Totem of the Maelstrom', slot: 'Relic', wowhead_id: 30023 },
+        { name: 'Serpentshrine Shuriken', slot: 'Thrown', wowhead_id: 30025 },
+        { name: 'Boots of Courage Unending', slot: 'Feet', wowhead_id: 30027 },
+        { name: 'Spyglass of the Hidden Fleet', slot: 'Trinket', wowhead_id: 30620 },
       ],
     },
     {
