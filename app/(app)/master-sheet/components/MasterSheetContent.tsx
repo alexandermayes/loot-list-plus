@@ -1055,6 +1055,18 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
           .select('id, name, class:wow_classes(name, color_hex)')
           .in('id', characterIds)
 
+        // Team filter: scope the Summary to the active team's members, keeping
+        // unassigned raiders, so it matches the Rankings view and Gargul
+        // export. See buildTeamVisibility and issue #165.
+        let isTeamVisible: (characterId: string) => boolean = () => true
+        if (activeTeamId) {
+          const { data: teamMembers } = await supabase
+            .from('raid_team_members')
+            .select('character_id, raid_team_id')
+            .eq('guild_id', guildId)
+          isTeamVisible = buildTeamVisibility(teamMembers || [], activeTeamId)
+        }
+
         // Get loot history for awarded count (match by wowhead_id so cross-tier awards are counted)
         // Paginated + ordered to defeat Supabase's 1000-row response cap.
         const wowheadIdSet = new Set(itemsData.map((i: { wowhead_id: number }) => i.wowhead_id))
@@ -1108,6 +1120,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
 
           const character = submission.character_id ? aggregateCharacterById.get(submission.character_id) : undefined
           if (!character) continue
+          if (!isTeamVisible(character.id)) continue
 
           const aggregate = aggregateMap[si.loot_item_id]
           if (!aggregate) continue
@@ -1147,7 +1160,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
     }
 
     loadAggregateData()
-  }, [viewMode, selectedPhase, phaseTiers, guildId, canManageLoot])
+  }, [viewMode, selectedPhase, phaseTiers, guildId, canManageLoot, activeTeamId])
 
   // Handle phase switching from query params
   useEffect(() => {
