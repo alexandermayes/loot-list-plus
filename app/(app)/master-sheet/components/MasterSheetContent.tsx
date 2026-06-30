@@ -11,6 +11,7 @@ import { calculateDonationsBatch } from '@/lib/donations/batch'
 import { getSpecRoles } from '@/domain/loot/spec-role-mapping'
 import { formatRankingsForGargul } from '@/domain/loot/gargul-dft'
 import { applyGlobalReceiveSkip } from '@/domain/loot/apply-receive-skip'
+import { buildTeamVisibility } from '@/domain/loot/apply-team-filter'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
@@ -818,18 +819,20 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
         const membershipsData = visibility.memberships
 
         // Team filter: when a team is selected, scope the master sheet to that
-        // team's members only. The RLS-bypassing visibility API above returns
-        // every approved-list raider in the guild; this narrows the visible
-        // set without re-introducing the silent-drop bug (anyone in the team
-        // shows up even with inactive CGM).
+        // team's members. The RLS-bypassing visibility API above returns every
+        // approved-list raider in the guild; this narrows the visible set
+        // without re-introducing the silent-drop bug (anyone in the team shows
+        // up even with inactive CGM). Unassigned raiders (on no team) are kept
+        // so new members who haven't been rostered yet don't vanish — see
+        // buildTeamVisibility and issue #165.
         if (activeTeamId && charactersData.length > 0) {
           const { data: teamMembers } = await supabase
             .from('raid_team_members')
-            .select('character_id')
-            .eq('raid_team_id', activeTeamId)
-          const teamCharIds = new Set((teamMembers || []).map((m: { character_id: string }) => m.character_id))
-          charactersData = charactersData.filter(c => teamCharIds.has(c.id))
-          subsData = subsData.filter(s => !!s.character_id && teamCharIds.has(s.character_id))
+            .select('character_id, raid_team_id')
+            .eq('guild_id', guildId)
+          const isTeamVisible = buildTeamVisibility(teamMembers || [], activeTeamId)
+          charactersData = charactersData.filter(c => isTeamVisible(c.id))
+          subsData = subsData.filter(s => !!s.character_id && isTeamVisible(s.character_id))
         }
 
         if (subsData.length === 0 || charactersData.length === 0) {
@@ -1463,16 +1466,17 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
     let charactersData = tierVisibility.characters
     const tierMembershipsData = tierVisibility.memberships
 
-    // Team filter: scope to the selected team's members. See the matching
-    // block in loadAllRankings for the reasoning.
+    // Team filter: scope to the selected team's members, but keep unassigned
+    // raiders (on no team) so new members who haven't been rostered yet still
+    // export — see buildTeamVisibility and the matching block in loadAllRankings.
     if (activeTeamId && charactersData.length > 0) {
       const { data: teamMembers } = await supabase
         .from('raid_team_members')
-        .select('character_id')
-        .eq('raid_team_id', activeTeamId)
-      const teamCharIds = new Set((teamMembers || []).map((m: { character_id: string }) => m.character_id))
-      charactersData = charactersData.filter(c => teamCharIds.has(c.id))
-      subsData = subsData.filter(s => !!s.character_id && teamCharIds.has(s.character_id))
+        .select('character_id, raid_team_id')
+        .eq('guild_id', guildId)
+      const isTeamVisible = buildTeamVisibility(teamMembers || [], activeTeamId)
+      charactersData = charactersData.filter(c => isTeamVisible(c.id))
+      subsData = subsData.filter(s => !!s.character_id && isTeamVisible(s.character_id))
     }
 
     if (subsData.length === 0 || charactersData.length === 0) {
