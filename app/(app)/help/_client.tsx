@@ -99,16 +99,35 @@ const TIPS = [
   'Your #1 priority item has the best chance of being awarded.',
 ]
 
+type ArticleWithCategory = HelpArticle & { categoryId: string; categoryTitle: string }
+
 export default function HelpPage() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<
-    Array<HelpArticle & { categoryId: string; categoryTitle: string }>
-  >([])
+  const [searchResults, setSearchResults] = useState<ArticleWithCategory[]>([])
+  // Approved community answers grown from Discord /help questions (DB-only).
+  const [extraArticles, setExtraArticles] = useState<ArticleWithCategory[]>([])
   const [tip] = useState(() => TIPS[Math.floor(Math.random() * TIPS.length)])
 
   useEffect(() => {
     document.title = 'LootList+ • Help Center'
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    fetch('/api/help/articles')
+      .then((r) => (r.ok ? r.json() : { articles: [] }))
+      .then((d) => {
+        if (!active) return
+        const rows: Array<HelpArticle> = d.articles || []
+        setExtraArticles(
+          rows.map((a) => ({ ...a, categoryId: 'community', categoryTitle: 'Community Answers' }))
+        )
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
   }, [])
 
   useEffect(() => {
@@ -118,7 +137,7 @@ export default function HelpPage() {
     }
 
     const query = searchQuery.toLowerCase()
-    const allArticles = getAllArticles()
+    const allArticles = [...getAllArticles(), ...extraArticles]
     const filtered = allArticles.filter(
       (article) =>
         article.title.toLowerCase().includes(query) ||
@@ -126,7 +145,18 @@ export default function HelpPage() {
         article.content.toLowerCase().includes(query)
     )
     setSearchResults(filtered)
-  }, [searchQuery])
+  }, [searchQuery, extraArticles])
+
+  const communityCategory: HelpCategory | null =
+    extraArticles.length > 0
+      ? {
+          id: 'community',
+          title: 'Community Answers',
+          description: 'Answers grown from questions people asked the help bot',
+          icon: 'HelpCircleIcon',
+          articles: extraArticles,
+        }
+      : null
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
@@ -195,6 +225,9 @@ export default function HelpPage() {
             {helpCategories.map((category) => (
               <CategoryCard key={category.id} category={category} />
             ))}
+            {communityCategory && (
+              <CategoryCard key={communityCategory.id} category={communityCategory} />
+            )}
           </div>
 
           {/* Popular Articles */}

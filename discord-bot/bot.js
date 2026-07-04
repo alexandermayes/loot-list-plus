@@ -10,6 +10,8 @@ const { scheduleDigest } = require('./digest');
 const { scheduleClosureSweep } = require('./closures');
 const { registerCommands } = require('./commands');
 const { handleInteractionCreate } = require('./interactions');
+const { isHelpConfigured } = require('./help');
+const { handleHelpReviewReaction } = require('./help-review');
 
 const client = new Client({
   intents: [
@@ -46,17 +48,20 @@ client.once('clientReady', () => {
   scheduleDigest(client);
   scheduleClosureSweep(client);
 
-  // Slash commands are independent of the feedback flow — register them as
-  // long as BOT_API_KEY is set so /score and /priority work in any linked guild.
-  if (process.env.BOT_API_KEY) {
+  // Slash commands are independent of the feedback flow. /score and /priority
+  // need BOT_API_KEY; /help needs ANTHROPIC_API_KEY. Register the whole set if
+  // either is configured (Discord ignores commands whose handler no-ops, and
+  // the individual handlers already guard on their own env vars).
+  if (process.env.BOT_API_KEY || isHelpConfigured()) {
     registerCommands(client);
   } else {
-    console.warn('[commands] BOT_API_KEY not set — slash commands disabled');
+    console.warn('[commands] neither BOT_API_KEY nor ANTHROPIC_API_KEY set — slash commands disabled');
   }
 });
 
 client.on(Events.MessageCreate, handleMessageCreate);
 client.on(Events.MessageReactionAdd, handleReactionAdd);
+client.on(Events.MessageReactionAdd, handleHelpReviewReaction);
 client.on(Events.InteractionCreate, handleInteractionCreate);
 
 client.on('error', error => {

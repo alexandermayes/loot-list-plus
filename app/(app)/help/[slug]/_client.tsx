@@ -218,9 +218,37 @@ export default function HelpArticlePage() {
     if (found) {
       setArticleData(found)
       document.title = `LootList+ • ${found.article.title}`
-    } else {
-      // Redirect to help home if article not found
-      router.push('/help')
+      return
+    }
+
+    // Not in the static corpus — try the DB-backed community answers (approved
+    // articles grown from Discord /help questions).
+    let active = true
+    fetch('/api/help/articles')
+      .then((r) => (r.ok ? r.json() : { articles: [] }))
+      .then((d) => {
+        if (!active) return
+        const rows: HelpArticle[] = d.articles || []
+        const match = rows.find((a) => a.slug === slug)
+        if (match) {
+          setArticleData({
+            article: match,
+            category: {
+              id: 'community',
+              title: 'Community Answers',
+              description: '',
+              icon: 'HelpCircleIcon',
+              articles: rows,
+            },
+          })
+          document.title = `LootList+ • ${match.title}`
+        } else {
+          router.push('/help')
+        }
+      })
+      .catch(() => router.push('/help'))
+    return () => {
+      active = false
     }
   }, [slug, router])
 

@@ -1,4 +1,5 @@
 const { fetchScore, fetchPriority } = require('./lootlist-api');
+const { handleHelp } = require('./help');
 
 const EMBED_COLOR_ORANGE = 0xff8000;
 const EMBED_COLOR_RED = 0xd73a4a;
@@ -124,6 +125,9 @@ async function handleInteractionCreate(interaction) {
         break;
       case 'priority':
         await handlePriority(interaction);
+        break;
+      case 'help':
+        await handleHelp(interaction);
         break;
       default:
         await interaction.editReply({ embeds: [errorEmbed(`Unknown command: ${interaction.commandName}`)] });

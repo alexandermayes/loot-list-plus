@@ -32,7 +32,8 @@
     "test:users:clean": "tsx scripts/create-test-users.ts --clean",
     "seed:test:multi": "tsx scripts/seed-test-data-multiuser.ts",
     "seed:test:multi:clean": "tsx scripts/seed-test-data-multiuser.ts --clean",
-    "sync:feedback": "tsx scripts/sync-feedback-inbox.ts"
+    "sync:feedback": "tsx scripts/sync-feedback-inbox.ts",
+    "seed:help": "tsx scripts/seed-help-articles.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
