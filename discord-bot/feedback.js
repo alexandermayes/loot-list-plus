@@ -468,6 +468,7 @@ module.exports = {
   fileFeedback,
   getSupabase,
   isFeedbackConfigured,
+  isAllowedReactor,
   warnMissingOnce,
   TRIGGER_EMOJI,
 };

@@ -176,6 +176,53 @@ Your accent color applies to buttons, links, active states and focus rings acros
 View all guilds you belong to, your role in each and leave guilds you no longer need. Guild Masters can't leave directly. Transfer ownership or delete the guild from Guild Settings first.
         `,
       },
+      {
+        slug: 'multiple-characters-and-guilds',
+        title: 'Multiple characters and guilds',
+        description: 'How characters, alts and multiple guilds fit together',
+        content: `
+# Multiple characters and guilds
+
+LootList+ is built around characters, so mains and alts each keep their own Loot Lists, attendance and Loot Score.
+
+## Switching characters
+
+Use the character switcher in the top bar to move between your characters. Everything on screen — Loot List, Overview, scores — follows the character you have selected.
+
+## Mains and alts
+
+When you create a character you can mark it as a **main** or an **alt**. Some guilds apply different rules to alts (for example a separate raid team or attendance handling), so check with your officers how alts are treated.
+
+## Belonging to multiple guilds
+
+A single character can belong to more than one guild. Each guild has its own loot rules, scoring and Master Sheet, so your Loot Score in one guild is independent of another. Use the guild switcher to change which guild you're viewing.
+
+Your list of guilds (and the ability to leave one) lives under **Profile → Guilds**.
+        `,
+      },
+      {
+        slug: 'linking-battlenet',
+        title: 'Linking Battle.net',
+        description: 'Connect Battle.net to import your characters and gear',
+        content: `
+# Linking Battle.net
+
+Linking your Battle.net account lets LootList+ pull your character list and current gear straight from Blizzard, so you don't have to enter everything by hand.
+
+## How to link
+
+1. Go to **Profile → Account**
+2. Click **Connect Battle.net**
+3. Authorize LootList+ on Blizzard's login page (scope: \`wow.profile\`)
+
+## What it's used for
+
+- Importing your characters (name, class, level) so you can add them quickly
+- Pulling your equipped gear to help build a Best-in-Slot list
+
+Battle.net is optional — you can always create characters manually. Linking it just saves typing.
+        `,
+      },
     ],
   },
   {
@@ -308,6 +355,74 @@ When players have the same Loot Score, they're tied for the item. Ties are broke
 - **Show up to raids.** Attendance is the easiest way to boost your score.
 - **Rank items thoughtfully.** High ranks on fewer items beats spreading thin.
 - **Be patient.** Priority naturally improves as others receive items and your Bad Luck Protection builds up.
+        `,
+      },
+      {
+        slug: 'item-classifications',
+        title: 'Reserved, Limited and Unlimited items',
+        description: 'What the three item classifications mean and cost',
+        content: `
+# Reserved, Limited and Unlimited items
+
+Every item on your Loot List has a **classification** set by your officers. It controls how much it "costs" to rank the item and whether you can pair it with another.
+
+## The three types
+
+- **Reserved** — high-demand items. Costs **1 allocation point**, and it must sit **alone at its rank** (no companion item in the second slot).
+- **Limited** — also costs **1 allocation point**, but it *can* share a rank with another item.
+- **Unlimited** — costs **0 points**. Rank as many as you like; there's no allocation cost.
+
+## Allocation points
+
+Each bracket gives you a limited pool of allocation points (default **3** per bracket, configurable by your guild). Reserved and Limited items draw from that pool; Unlimited items don't. This forces you to choose which high-demand items matter most at your top ranks.
+
+## Why it matters
+
+Classifications keep everyone from stacking every big-ticket item at the top. Spend your points where you most want priority, and fill the rest with Unlimited items.
+        `,
+      },
+      {
+        slug: 'submission-statuses',
+        title: 'Loot List submission statuses',
+        description: 'What draft, pending, approved, revision and rejected mean',
+        content: `
+# Loot List submission statuses
+
+After you submit a Loot List it moves through a review workflow. Here's what each status means:
+
+- **Draft** — you're still editing. Nothing is submitted yet.
+- **Pending review** — submitted and waiting for an officer to look at it.
+- **Approved** — an officer accepted it. It now counts on the Master Sheet.
+- **Revision requested** — an officer wants changes. Open the list to read their notes, edit, and resubmit.
+- **Rejected** — the list wasn't accepted. Check the review notes for why.
+
+## Review notes
+
+When an officer requests a revision or rejects a list, they can leave notes explaining what to fix. You'll see them at the top of the list.
+
+## Do I get notified?
+
+If your guild has Discord notifications enabled, you'll get a message when your list needs attention (for example, a revision request or a reminder to resubmit). You can also check the status any time on your **Loot List** page and **Overview**.
+        `,
+      },
+      {
+        slug: 'importing-bis',
+        title: 'Importing a Best-in-Slot list',
+        description: 'Quickly build your Loot List from a BiS import',
+        content: `
+# Importing a Best-in-Slot list
+
+Instead of adding items one at a time, you can bulk-import a Best-in-Slot (BiS) set and rank from there.
+
+## How to import
+
+1. Open your **Loot List**
+2. Click **Import BiS** (the BiS import modal)
+3. Follow the prompts to bring your items in
+
+Imported items land on your list so you can drag them into the ranks and brackets you want. Importing doesn't submit anything — you still arrange your priorities and submit for review when you're ready.
+
+Remember allocation points still apply: Reserved and Limited items cost points in each bracket, so a raw BiS import may need trimming at the top ranks.
         `,
       },
     ],
@@ -517,6 +632,149 @@ The top of the page shows:
 Use the search bar to find items by name or boss, and filter by raid tier.
         `,
       },
+      {
+        slug: 'raid-teams',
+        title: 'Raid teams',
+        description: 'Split a guild into multiple teams with their own lists and scoring',
+        content: `
+# Raid teams
+
+Raid teams let a single guild run more than one roster — for example a Tuesday team and a Thursday team, or a main team and an alt team — each with its own Loot Lists, attendance and Loot Score.
+
+## Creating a team
+
+Officers with the **Manage roster** permission can create teams from **Raid Teams** in the sidebar, then assign members to each team.
+
+## What's separate per team
+
+- Loot Lists and the Master Sheet
+- Attendance tracking and the rolling window
+- Loot Score
+
+## Can someone be on multiple teams?
+
+Yes. A character can belong to more than one team; their priority is calculated separately for each. If you don't see your team on the Loot List, ask an officer to confirm you're assigned to it.
+        `,
+      },
+      {
+        slug: 'custom-roles-and-permissions',
+        title: 'Custom roles and permissions',
+        description: 'Grant granular officer permissions with custom roles',
+        content: `
+# Custom roles and permissions
+
+Beyond Guild Master and Officer, you can create **custom roles** with exactly the permissions you want, so trusted members can help without full officer access.
+
+## Granular permissions
+
+Roles can grant any combination of:
+
+- **Manage submissions** — review and approve Loot Lists
+- **Manage loot** — award loot, edit history, set item classifications
+- **Manage attendance** — record attendance, create raid events
+- **Manage members** — change roles, set trial status, remove members
+- **Manage settings** — edit guild rules and loot config
+- **Manage roster** — create raid teams and assign members
+- **Manage reserves** — create and manage reserve runs
+- **View audit log** and **View hidden Master Sheet**
+
+## Setting it up
+
+Go to **Guild Settings → Roles** to create a role, tick its permissions, and set its position in the hierarchy. Then assign the role to members under **Guild Settings → Members**.
+
+The **Guild Master** always has every permission and can't be locked out.
+        `,
+      },
+      {
+        slug: 'inviting-members',
+        title: 'Inviting members',
+        description: 'Invite codes vs. Discord auto-join',
+        content: `
+# Inviting members
+
+There are two ways for players to join your guild on LootList+.
+
+## Invite codes
+
+Generate a code under **Guild Settings → Invite Codes** and share it. New members paste it into the **Join with code** field on the welcome screen. You can set usage limits and expiry, and revoke a code any time.
+
+## Discord auto-join
+
+If your Discord server is linked, members of that server can discover and join your guild automatically — no code needed. This is the easiest path for guilds that already live in Discord.
+
+Use invite codes when you want tight control over who joins, and Discord auto-join when you want your whole server to onboard quickly.
+        `,
+      },
+      {
+        slug: 'reserve-runs',
+        title: 'Reserve runs (soft reserves)',
+        description: 'Create and share soft-reserve runs for a raid night',
+        content: `
+# Reserve runs (soft reserves)
+
+Reserve runs let raiders soft-reserve items for a specific raid, separate from their standing Loot List — handy for pug nights or one-off runs.
+
+## Creating a run
+
+Officers with **Manage reserves** create a run from the **Reserve** page for a given raid date, then share it.
+
+## Locking and completing
+
+- **Lock** a run to freeze submissions once reserves are in.
+- Mark it **Complete** after the raid.
+- Filter runs by status (open / locked / completed).
+
+## Sharing and joining
+
+Each run has a share link (token). Send it to your raiders — including people who aren't full guild members — and they can submit their reserves through it without needing full access.
+        `,
+      },
+      {
+        slug: 'discord-integration',
+        title: 'Discord integration',
+        description: 'Link Discord, use the bot, and configure announcements',
+        content: `
+# Discord integration
+
+Linking Discord connects your guild to the LootList+ bot for slash commands, announcements and feedback.
+
+## Linking your server
+
+An officer links the server under **Guild Settings → Discord**. This also requires the bot to be installed in your Discord server so it can post and read commands.
+
+## Slash commands
+
+- \`/score <character>\` — show a raider's Loot Score breakdown
+- \`/priority <item>\` — show who ranks an item highest
+- \`/help <question>\` — ask the help bot a question
+
+## Announcements
+
+Under **Guild Settings → Discord** you can pick channels for **loot announcements** and **raid summaries**, and turn notifications on or off.
+
+## Bug reports and feedback
+
+Officers can react to any message with 🐛 (bug) or 💡 (feature) to file it to the LootList+ tracker, and the bot replies with a link and follows up when it's resolved.
+        `,
+      },
+      {
+        slug: 'guild-transfer-and-deletion',
+        title: 'Transferring or deleting a guild',
+        description: 'Hand off ownership or remove a guild entirely',
+        content: `
+# Transferring or deleting a guild
+
+Both actions live under **Guild Settings** and are limited to the guild's owner.
+
+## Transferring ownership
+
+Use **Transfer ownership** to make another officer the Guild Master — for example when a guild leader steps down. The new owner gains full permissions; you become a regular officer.
+
+## Deleting a guild
+
+**Delete guild** permanently removes the guild and its data (Loot Lists, attendance, history). This can't be undone, so export anything you want to keep first. Only the guild creator can delete it, and if you're the Guild Master you must transfer ownership or delete the guild before you can leave it.
+        `,
+      },
     ],
   },
   {
@@ -709,6 +967,72 @@ Officers see additional views:
 ## Visibility
 
 Officers control which raid tiers are visible on the Master Sheet using the **Loot** and **Ranks** toggles in Guild Settings. This lets you phase out old content or hide upcoming tiers.
+        `,
+      },
+      {
+        slug: 'attendance-window',
+        title: 'The attendance window',
+        description: 'How the rolling window and reset weeks affect your score',
+        content: `
+# The attendance window
+
+Your attendance score is based on a **rolling window** — a recent stretch of raids (for example the last 4 weeks) rather than your entire history. This keeps scores reflecting who's showing up *now*.
+
+## How it works
+
+Only raids inside the window count toward your attendance score. As new weeks pass, old raids drop out the back. Your officers set the window length in **Guild Settings → Attendance**.
+
+## Joining mid-expansion
+
+If you join partway through, your window starts counting from the raids that fall inside it — you're not penalized for raids that happened before you joined.
+
+## Reset weeks
+
+Some scoring modes (fair and minimum-gate) support **reset weeks**, which restart attendance accumulation at a chosen point — useful at the start of a new tier or season so everyone begins fresh.
+
+## Excused absences
+
+An **excused absence** set by an officer is excluded from your score entirely, so it doesn't drag down your attendance percentage.
+        `,
+      },
+      {
+        slug: 'attendance-statuses',
+        title: 'Attendance statuses',
+        description: 'Present, absent, bench, standby and excused explained',
+        content: `
+# Attendance statuses
+
+Officers mark each raider with a status per raid, and the status determines how the raid affects your score.
+
+- **Present / Attended** — you were there. Full attendance credit.
+- **Absent** — you missed it. Counts against your attendance percentage.
+- **Bench / Standby** — you were available but not in the active roster. Whether bench counts toward your score (and Bad Luck Protection) is a guild setting.
+- **Excused** — an officer excused you. Excluded from scoring entirely.
+
+If a status looks wrong, ask an officer — they can adjust it, and Loot Scores recalculate automatically.
+        `,
+      },
+      {
+        slug: 'importing-attendance-warcraftlogs',
+        title: 'Importing attendance from WarcraftLogs',
+        description: 'Pull raid attendance from a WCL report',
+        content: `
+# Importing attendance from WarcraftLogs
+
+Instead of marking everyone by hand, officers can import attendance straight from a WarcraftLogs (WCL) report.
+
+## How to import
+
+1. Go to **Raid Tracking → Import**
+2. Paste the WarcraftLogs report URL (or code)
+3. LootList+ reads the participants and matches them to your roster
+4. Review the matches and confirm to log attendance for that raid
+
+## Tips
+
+- Add your guild's WCL page under **Guild Settings → WarcraftLogs** for quicker import hints.
+- If a raider doesn't match automatically (name spelling, server), match them manually before confirming.
+- Importing creates or updates the raid event, so attendance and Loot Scores update right after.
         `,
       },
     ],
@@ -969,6 +1293,58 @@ Once the tier is active:
 3. Rank items and submit for review
 
 You can have separate Loot Lists for each phase. Your Phase 1 list stays active while you work on Phase 2.
+        `,
+      },
+      {
+        slug: 'exporting-to-gargul',
+        title: 'Exporting your list to Gargul',
+        description: 'Get your Loot List into the Gargul addon in-game',
+        content: `
+# Exporting your list to Gargul
+
+LootList+ produces a Gargul-compatible export so your priorities show up in-game.
+
+## How to export
+
+1. Open your team's **Loot List** (or the Master Sheet, for officers)
+2. Click **Export → Gargul**
+3. Copy the export string
+4. In-game, open Gargul's import window and paste it
+
+Re-export and re-import whenever lists change so the addon stays current.
+
+## A new raider is missing from the export
+
+New members are included even before they're fully rostered. If someone's missing:
+
+- Confirm they've actually **joined the team** in the app (Guild → Members / Raid Teams)
+- Make sure you **re-exported** after they joined — an old export won't have them
+- Check they have an **approved** Loot List if your export only includes approved lists
+
+If they're in the guild and still absent from a fresh export, file it with 🐛 in Discord so an officer can take a look.
+        `,
+      },
+      {
+        slug: 'addon-and-companion',
+        title: 'The addon and companion app',
+        description: 'Install the in-game addon and keep it in sync',
+        content: `
+# The addon and companion app
+
+LootList+ has an in-game **addon** that surfaces loot suggestions during raids, and a desktop **companion app** that keeps it in sync with the website.
+
+## What each does
+
+- **Addon** (in-game) — shows master-loot suggestions based on your guild's live rankings, so officers can award quickly.
+- **Companion app** (desktop) — syncs data between the website and the addon's saved variables, and can auto-detect your WoW install.
+
+## Do I need the companion?
+
+The addon shows your latest synced data. The companion app automates keeping that data fresh; without it you'd rely on manual export/import. For most officers running loot in real time, the companion makes life easier.
+
+## "Out of sync"
+
+If the addon says it's out of sync, run the companion app (or re-import your export) to refresh, and make sure you're on the current addon version — update it if a newer one is available.
         `,
       },
     ],

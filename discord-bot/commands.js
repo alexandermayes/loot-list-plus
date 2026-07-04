@@ -19,6 +19,15 @@ const COMMANDS = [
         .setRequired(true)
     )
     .toJSON(),
+  new SlashCommandBuilder()
+    .setName('help')
+    .setDescription('Ask a question — answered from the LootList+ FAQ and known issues')
+    .addStringOption((opt) =>
+      opt.setName('question')
+        .setDescription('What do you need help with?')
+        .setRequired(true)
+    )
+    .toJSON(),
 ];
 
 // Registers slash commands globally. Global commands can take up to an hour
