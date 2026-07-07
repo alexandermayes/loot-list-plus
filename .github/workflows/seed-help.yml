@@ -1,0 +1,39 @@
+name: Seed Help Articles
+
+# Manually re-seed the Discord help bot's knowledge base (help_articles) from
+# the shared corpus in lib/help-content.ts. Run this from the Actions tab after
+# editing help articles/glossary, or after the help_articles migration first
+# deploys. Upsert-on-slug, so it's safe to run repeatedly; only 'seed' rows are
+# touched (auto/approved community articles are left alone).
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seed-help
+  cancel-in-progress: true
+
+jobs:
+  seed:
+    name: Seed help_articles
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Write .npmrc for private registry
+        run: printf '%s\n' "$NPM_RC" > .npmrc
+        env:
+          NPM_RC: ${{ secrets.NPM_RC }}
+      - run: npm ci
+      - name: Seed help articles
+        run: npm run seed:help
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
