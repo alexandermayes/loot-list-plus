@@ -25,7 +25,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Node 22 for a native global WebSocket (@supabase/supabase-js needs
+          # one at client creation; Node 20 doesn't provide it).
+          node-version: 22
           cache: npm
       - name: Write .npmrc for private registry
         run: printf '%s\n' "$NPM_RC" > .npmrc
