@@ -102,11 +102,14 @@ describe('fetchWclReportForDate', () => {
 
     expect(report?.code).toBe('aBc123')
 
-    // The GraphQL report query must have gone to the classic host.
-    const apiCalls = fetchMock.mock.calls.filter(([u]) => String(u).includes('/api/v2/client'))
+    // The GraphQL report query must have gone to the classic API host.
+    const apiCalls = fetchMock.mock.calls.filter(
+      ([u]) => new URL(String(u)).pathname === '/api/v2/client'
+    )
     expect(apiCalls).toHaveLength(1)
     expect(String(apiCalls[0][0])).toBe('https://classic.warcraftlogs.com/api/v2/client')
     // Regression assertion: the dead fresh host must never be contacted.
-    expect(fetchMock.mock.calls.every(([u]) => !String(u).includes('fresh.warcraftlogs.com'))).toBe(true)
+    const hosts = fetchMock.mock.calls.map(([u]) => new URL(String(u)).hostname)
+    expect(hosts).not.toContain('fresh.warcraftlogs.com')
   })
 })
