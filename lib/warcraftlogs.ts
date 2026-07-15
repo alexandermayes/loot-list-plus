@@ -109,9 +109,12 @@ export function parseWclGuildUrl(url: string): WclGuildRef | null {
 
     if (hostname !== 'warcraftlogs.com' && !hostname.endsWith('.warcraftlogs.com')) return null
 
-    const isClassic = hostname.startsWith('classic.') || hostname.startsWith('fresh.')
     // Preserve the original subdomain (e.g. "classic", "fresh", "www")
     const subdomain = hostname.replace('.warcraftlogs.com', '') || 'www'
+    // Every non-retail subdomain (classic, fresh, vanilla, sod, era, cata, …)
+    // is a classic flavor. Retail is the only thing served from www. Keep this
+    // in lockstep with wclApiUrlForSubdomain so routing and this flag agree.
+    const isClassic = subdomain !== 'www'
 
     // Path segments: /guild/...
     const segments = parsed.pathname.split('/').filter(Boolean)
@@ -154,18 +157,24 @@ function isGuildById(ref: WclGuildRef): ref is WclGuildById {
 // ---------------------------------------------------------------------------
 
 /**
- * WCL has separate GraphQL endpoints for classic and retail. A classic guild
- * is not visible on www.warcraftlogs.com and vice-versa, so we must route to
- * the subdomain implied by the guild URL the user pasted.
+ * WCL exposes exactly two GraphQL API hosts, and they don't share data:
  *
- *   classic.warcraftlogs.com  -> classic API
- *   fresh.warcraftlogs.com    -> fresh classic API
  *   www.warcraftlogs.com      -> retail API
+ *   classic.warcraftlogs.com  -> ALL classic flavors (Era, Hardcore, SoD,
+ *                                Cata Classic, and Anniversary/"Fresh")
+ *
+ * The website has extra frontend subdomains (fresh., vanilla., sod., …) so
+ * users can browse a specific flavor, but those subdomains have NO
+ * `/api/v2/client` endpoint — their logs are queried through the classic API.
+ * So we must collapse any non-retail website subdomain to `classic` before
+ * building the API URL; routing to e.g. fresh.warcraftlogs.com/api/v2/client
+ * just fails and surfaces as a misleading "no matching report found". (#124)
  *
  * OAuth token issuance is shared across all subdomains via www.
  */
-function wclApiUrlForSubdomain(subdomain: string): string {
-  return `https://${subdomain}.warcraftlogs.com/api/v2/client`
+export function wclApiUrlForSubdomain(subdomain: string): string {
+  const apiHost = subdomain === 'www' ? 'www' : 'classic'
+  return `https://${apiHost}.warcraftlogs.com/api/v2/client`
 }
 
 /**
