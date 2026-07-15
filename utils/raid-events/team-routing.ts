@@ -84,7 +84,7 @@ export async function findOrCreateTeamEvent(
     .single()
 
   if (error || !created) {
-    console.error(`findOrCreateTeamEvent failed (guild ${guildId}, date ${raidDate}, team ${teamId}):`, error)
+    console.error('findOrCreateTeamEvent failed:', { guildId, raidDate, teamId }, error)
     return null
   }
   return created.id
