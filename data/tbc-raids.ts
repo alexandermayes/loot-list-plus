@@ -828,6 +828,7 @@ export const blacktemple: Raid = {
         { name: 'Gauntlets of Enforcement', slot: 'Hands', wowhead_id: 32280 },
         { name: 'Botanist\'s Gloves of Growth', slot: 'Hands', wowhead_id: 32328 },
         { name: 'Totem of Ancestral Guidance', slot: 'Relic', wowhead_id: 32330 },
+        { name: 'Cowl of Benevolence', slot: 'Head', wowhead_id: 32329 },
       ],
     },
     {
@@ -1065,6 +1066,8 @@ export const sunwellplateau: Raid = {
         { name: 'Dragonscale-Encrusted Longblade', slot: 'One-Hand', wowhead_id: 34164 },
         { name: 'Pantaloons of Calming Strife', slot: 'Legs', wowhead_id: 34170 },
         { name: 'Skyshatter Bracers', slot: 'Wrist', wowhead_id: 34438 },
+        { name: 'Breeches of Natural Aggression', slot: 'Legs', wowhead_id: 34169 },
+        { name: 'Legplates of the Holy Juggernaut', slot: 'Legs', wowhead_id: 34167 },
       ],
     },
     {
@@ -1110,6 +1113,11 @@ export const sunwellplateau: Raid = {
         { name: 'Spaulders of Reclamation', slot: 'Shoulder', wowhead_id: 34209 },
         { name: 'Golden Bow of Quel\'Thalas', slot: 'Ranged', wowhead_id: 34196 },
         { name: 'Shoulderpads of Vehemence', slot: 'Shoulder', wowhead_id: 34195 },
+        { name: 'Amulet of Unfettered Magics', slot: 'Neck', wowhead_id: 34204 },
+        { name: 'Archon\'s Gavel', slot: 'Main Hand', wowhead_id: 34199 },
+        { name: 'Stanchion of Primal Instinct', slot: 'Two-Hand', wowhead_id: 34198 },
+        { name: 'Amice of the Convoker', slot: 'Shoulder', wowhead_id: 34210 },
+        { name: 'Shawl of Wonderment', slot: 'Shoulder', wowhead_id: 34202 },
       ],
     },
     {
@@ -1125,6 +1133,11 @@ export const sunwellplateau: Raid = {
         { name: 'Harness of Carnal Instinct', slot: 'Chest', wowhead_id: 34211 },
         { name: 'Slayer\'s Boots', slot: 'Feet', wowhead_id: 34575 },
         { name: 'Shifting Naaru Sliver', slot: 'Trinket', wowhead_id: 34429 },
+        { name: 'Ring of Hardened Resolve', slot: 'Finger', wowhead_id: 34213 },
+        { name: 'Ring of Omnipotence', slot: 'Finger', wowhead_id: 34230 },
+        { name: 'Blackened Naaru Sliver', slot: 'Trinket', wowhead_id: 34427 },
+        { name: 'Steely Naaru Sliver', slot: 'Trinket', wowhead_id: 34428 },
+        { name: 'Muramasa', slot: 'One-Hand', wowhead_id: 34214 },
       ],
     },
     {
@@ -1151,6 +1164,13 @@ export const sunwellplateau: Raid = {
         { name: 'Crown of Anasterian', slot: 'Head', wowhead_id: 34345 },
         { name: 'Dark Conjuror\'s Collar', slot: 'Head', wowhead_id: 34340 },
         { name: 'Thori\'dal, the Stars\' Fury', slot: 'Ranged', wowhead_id: 34334 },
+      ],
+    },
+    {
+      name: 'Trash',
+      items: [
+        { name: 'Gauntlets of the Ancient Shadowmoon', slot: 'Hands', wowhead_id: 34350 },
+        { name: 'Tranquil Majesty Wraps', slot: 'Hands', wowhead_id: 34351 },
       ],
     },
     {
