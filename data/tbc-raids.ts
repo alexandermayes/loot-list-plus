@@ -732,6 +732,17 @@ export const mounthyjal: Raid = {
       ],
     },
     {
+      name: 'Trash',
+      items: [
+        { name: 'Pepe\'s Shroud of Pacification', slot: 'Back', wowhead_id: 32611 },
+        { name: 'Hellfire-Encased Pendant', slot: 'Neck', wowhead_id: 32589 },
+        { name: 'Claw of Molten Fury', slot: 'Main Hand', wowhead_id: 32945 },
+        { name: 'Fist of Molten Fury', slot: 'Off Hand', wowhead_id: 32946 },
+        { name: 'Hammer of Judgement', slot: 'Main Hand', wowhead_id: 32947 },
+        { name: 'Chestguard of Relentless Storms', slot: 'Chest', wowhead_id: 32593 },
+      ],
+    },
+    {
       name: 'Crafting Materials',
       items: [
         { name: 'Heart of Darkness', slot: 'Crafting', wowhead_id: 32428 },
@@ -909,6 +920,15 @@ export const blacktemple: Raid = {
         // Warglaives of Azzinoth (Legendary)
         { name: 'Warglaive of Azzinoth (Main Hand)', slot: 'Legendary', wowhead_id: 32837 },
         { name: 'Warglaive of Azzinoth (Off Hand)', slot: 'Legendary', wowhead_id: 32838 },
+      ],
+    },
+    {
+      name: 'Trash',
+      items: [
+        { name: 'Ring of Ancient Knowledge', slot: 'Finger', wowhead_id: 32527 },
+        { name: 'Cloak of Fiends', slot: 'Back', wowhead_id: 32590 },
+        { name: 'Pillager\'s Gauntlets', slot: 'Hands', wowhead_id: 32528 },
+        { name: 'Illidari Runeshield', slot: 'Off Hand', wowhead_id: 32523 },
       ],
     },
     {
