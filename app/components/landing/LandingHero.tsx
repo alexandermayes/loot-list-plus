@@ -114,15 +114,15 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
             {/* NEW badge */}
             <a
               href="/changelog"
-              className="flex items-center gap-2 bg-[#17151b] rounded-[60px] pl-1 pr-3 py-1 no-underline hover:bg-[#1f1d25] transition-colors"
+              className="flex items-center gap-2 bg-[#17151b] rounded-[60px] pl-1 pr-3 py-1 no-underline hover:bg-[#1f1d25] transition-colors max-w-full"
             >
-              <span className="flex items-center justify-center px-2 py-1 bg-[#9940ec] rounded-[60px] font-poppins font-semibold text-[10px] text-white">
+              <span className="flex items-center justify-center px-2 py-1 bg-[#9940ec] rounded-[60px] font-poppins font-semibold text-[10px] text-white shrink-0">
                 NEW
               </span>
-              <span className="font-poppins text-[14px] text-white whitespace-nowrap">
+              <span className="font-poppins text-[14px] text-white whitespace-nowrap truncate min-w-0">
                 {recentFeatures}
               </span>
-              <Image src="/images/landing/icons/arrow-right-02.svg" alt="" width={16} height={16} />
+              <Image src="/images/landing/icons/arrow-right-02.svg" alt="" width={16} height={16} className="shrink-0" />
             </a>
 
             {/* Headline */}
