@@ -14,6 +14,41 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'July 16, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Discord /help command',
+        description: 'Ask questions in your guild\'s Discord with /help and get answers from a searchable knowledge base that grows as officers add to it.',
+      },
+      {
+        category: 'fix',
+        title: 'Black Temple, Hyjal, and Sunwell loot',
+        description: 'Trash loot now shows for Black Temple and Hyjal Summit, and 15 missing Black Temple and Sunwell Plateau items were added to their loot lists.',
+      },
+      {
+        category: 'fix',
+        title: 'WoWSims website gear imports',
+        description: 'Importing gear from a WoWSims website export now works. It previously failed with an unknown class error or reported no gear selected.',
+      },
+      {
+        category: 'fix',
+        title: 'Warcraft Logs linking for Anniversary guilds',
+        description: 'Auto-linking a Warcraft Logs report by date now works for TBC Anniversary and Fresh Classic guilds, which used to return no matching report.',
+      },
+      {
+        category: 'fix',
+        title: 'Gargul export keeps new members',
+        description: 'The Gargul export no longer drops newly added raiders who are not on a roster yet.',
+      },
+      {
+        category: 'fix',
+        title: 'Loot History phase filter',
+        description: 'Filter Loot History by content phase from a dropdown, with more reliable results.',
+      },
+    ],
+  },
+  {
     date: 'June 23, 2026',
     items: [
       {
