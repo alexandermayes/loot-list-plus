@@ -294,7 +294,11 @@ export function parseWowSimsExport(jsonString: string): ParseResult {
     }
   }
 
-  const className = WOWSIMS_CLASS_MAP[classValue.toUpperCase()]
+  // WowSims JSON comes in two flavors: the addon uses bare class names
+  // ("Shaman"), while the website / full-sim export uses the protobuf enum
+  // form ("ClassShaman"). Strip the enum prefix so both resolve. (#172)
+  const normalizedClass = classValue.toUpperCase().replace(/^CLASS/, '')
+  const className = WOWSIMS_CLASS_MAP[normalizedClass]
   if (!className) {
     return {
       success: false,
@@ -314,17 +318,26 @@ export function parseWowSimsExport(jsonString: string): ParseResult {
   const items: ParsedGearItem[] = []
   const seenSlots = new Set<string>()
 
-  for (const item of itemsSource) {
+  for (let index = 0; index < itemsSource.length; index++) {
+    const item = itemsSource[index]
     if (!item || typeof item !== 'object') continue
 
     const itemData = item as Record<string, unknown>
 
     // Validate required item fields
     if (typeof itemData.id !== 'number' || itemData.id <= 0) continue
-    if (typeof itemData.slot !== 'string') continue
 
-    const slot = itemData.slot.toUpperCase() as WowSimsSlot
-    if (!VALID_SLOTS.includes(slot)) continue
+    // The addon and website object forms carry an explicit `slot`. The
+    // full-sim export instead stores gear as a positional array in WowSims
+    // ItemSlot order (Head, Neck, … Ranged — the same order as VALID_SLOTS)
+    // with no `slot` field, so fall back to the slot implied by the array
+    // index. Empty slots are serialized as `{}` and dropped by the id check
+    // above, which keeps the remaining indices aligned. (#172)
+    const slot =
+      typeof itemData.slot === 'string'
+        ? (itemData.slot.toUpperCase() as WowSimsSlot)
+        : VALID_SLOTS[index]
+    if (!slot || !VALID_SLOTS.includes(slot)) continue
 
     // Normalize slot name for storage
     const normalizedSlot = NORMALIZED_SLOT_MAP[slot]
@@ -380,7 +393,9 @@ export function parseWowSimsExport(jsonString: string): ParseResult {
       characterName: character.name as string,
       className,
       level: typeof character.level === 'number' ? character.level : 70,
-      race: typeof character.race === 'string' ? character.race : 'Unknown',
+      // Same enum-prefix story as class: the full-sim export uses "RaceDraenei"
+      // where the addon uses "Draenei". Strip the prefix for clean display. (#172)
+      race: typeof character.race === 'string' ? character.race.replace(/^Race/, '') : 'Unknown',
       items,
     },
   }
