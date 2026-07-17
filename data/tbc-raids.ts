@@ -734,12 +734,13 @@ export const mounthyjal: Raid = {
     {
       name: 'Trash',
       items: [
-        { name: 'Pepe\'s Shroud of Pacification', slot: 'Back', wowhead_id: 32611 },
+        { name: 'Pepe\'s Shroud of Pacification', slot: 'Back', wowhead_id: 34010 },
         { name: 'Hellfire-Encased Pendant', slot: 'Neck', wowhead_id: 32589 },
-        { name: 'Claw of Molten Fury', slot: 'Main Hand', wowhead_id: 32945 },
-        { name: 'Fist of Molten Fury', slot: 'Off Hand', wowhead_id: 32946 },
-        { name: 'Hammer of Judgement', slot: 'Main Hand', wowhead_id: 32947 },
-        { name: 'Chestguard of Relentless Storms', slot: 'Chest', wowhead_id: 32593 },
+        { name: 'Claw of Molten Fury', slot: 'One-Hand', wowhead_id: 32946 },
+        { name: 'Fist of Molten Fury', slot: 'One-Hand', wowhead_id: 32945 },
+        { name: 'Hammer of Judgement', slot: 'One-Hand', wowhead_id: 34009 },
+        { name: 'Chestguard of Relentless Storms', slot: 'Chest', wowhead_id: 32592 },
+        { name: 'Nethervoid Cloak', slot: 'Back', wowhead_id: 32590 },
       ],
     },
     {
@@ -927,9 +928,13 @@ export const blacktemple: Raid = {
       name: 'Trash',
       items: [
         { name: 'Ring of Ancient Knowledge', slot: 'Finger', wowhead_id: 32527 },
-        { name: 'Cloak of Fiends', slot: 'Back', wowhead_id: 32590 },
-        { name: 'Pillager\'s Gauntlets', slot: 'Hands', wowhead_id: 32528 },
-        { name: 'Illidari Runeshield', slot: 'Off Hand', wowhead_id: 32523 },
+        { name: 'Band of Devastation', slot: 'Finger', wowhead_id: 32526 },
+        { name: 'Blessed Band of Karabor', slot: 'Finger', wowhead_id: 32528 },
+        { name: 'Pillager\'s Gauntlets', slot: 'Hands', wowhead_id: 32608 },
+        { name: 'Treads of the Den Mother', slot: 'Feet', wowhead_id: 32593 },
+        { name: 'Shroud of the Final Stand', slot: 'Back', wowhead_id: 34012 },
+        { name: 'Swiftsteel Bludgeon', slot: 'One-Hand', wowhead_id: 32943 },
+        { name: 'Illidari Runeshield', slot: 'Off Hand', wowhead_id: 34011 },
       ],
     },
     {

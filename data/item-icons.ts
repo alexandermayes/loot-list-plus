@@ -5255,7 +5255,32 @@ export const ITEM_ICONS: Record<number, string> = {
   71998: 'spell_fire_felfirenova',
   94289: 'ability_rogue_envelopingshadows',
   98717: 'inv_ingot_trillium_balanced',
-  102218: 'ability_deathknight_sanguinfortitude'
+  102218: 'ability_deathknight_sanguinfortitude',
+  // Manually added (icon map was stale since 2026-03-09): #171 trash-ID
+  // corrections and #177 Sunwell/Black Temple additions. Verified via the
+  // Wowhead item XML <icon> field. Preserved on next fetch-item-icons run.
+  32526: 'inv_jewelry_ring_35',
+  32527: 'inv_jewelry_ring_35',
+  32528: 'inv_jewelry_ring_35',
+  32589: 'inv_jewelry_necklace_17',
+  32590: 'inv_misc_cape_10',
+  32592: 'inv_chest_chain_11',
+  32593: 'inv_boots_wolf',
+  32608: 'inv_gauntlets_62',
+  32943: 'inv_mace_44',
+  32945: 'inv_weapon_hand_14',
+  32946: 'inv_weapon_hand_14',
+  34009: 'inv_mace_57',
+  34010: 'inv_misc_cape_16',
+  34011: 'inv_shield_01',
+  34012: 'inv_misc_cape_16',
+  34169: 'inv_pants_leather_23',
+  34198: 'inv_staff_12',
+  34213: 'inv_jewelry_ring_72',
+  34350: 'inv_gauntlets_41',
+  34351: 'inv_gauntlets_48',
+  34427: 'inv_jewelry_talisman_16',
+  34428: 'inv_jewelry_talisman_18'
 }
 
 /**
