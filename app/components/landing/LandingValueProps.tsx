@@ -162,6 +162,11 @@ export default function LandingValueProps() {
             author={{ name: '2laxs', guild: 'Bad Guys' }}
             className="h-[250px] md:h-[300px] md:flex-1"
           />
+          <QuoteCard
+            quote="The best feature I never expected was the community support from the creators. Honestly, it's a 10/10 and the best loot management system I've ever used."
+            author={{ name: 'Xx_', guild: 'Soul Stoned' }}
+            className="h-[250px] md:h-[300px] md:flex-1"
+          />
         </motion.div>
       </div>
     </section>
