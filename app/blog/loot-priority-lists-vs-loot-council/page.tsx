@@ -7,7 +7,7 @@ import BlogTracker from '@/app/components/landing/BlogTracker'
 
 export const metadata: Metadata = {
   title:
-    'Loot Priority Lists vs Loot Council: An Honest Comparison | LootList+',
+    'Loot Priority Lists vs Loot Council: An Honest Comparison',
   description:
     'Two of the most popular loot systems in WoW, compared honestly. When priority lists win, when council wins, and when you should use both.',
   keywords: [

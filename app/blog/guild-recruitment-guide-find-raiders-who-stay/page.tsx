@@ -7,7 +7,7 @@ import BlogTracker from '@/app/components/landing/BlogTracker'
 
 export const metadata: Metadata = {
   title:
-    'Guild Recruitment Guide: How to Find Raiders Who Actually Stay | LootList+',
+    'Guild Recruitment Guide: How to Find Raiders Who Actually Stay',
   description:
     'Most guild recruitment fills seats with raiders who quit in 4 weeks. Here\'s how to write apps, run trials, and build a roster that survives the tier.',
   keywords: [

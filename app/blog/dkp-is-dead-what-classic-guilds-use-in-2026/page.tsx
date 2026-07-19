@@ -7,7 +7,7 @@ import BlogTracker from '@/app/components/landing/BlogTracker'
 
 export const metadata: Metadata = {
   title:
-    'DKP Is Dead: What Classic Guilds Use in 2026 | LootList+',
+    'DKP Is Dead: What Classic Guilds Use in 2026',
   description:
     'DKP had its time, but Classic guilds in 2026 have moved on. Here\'s what replaced it, why, and what the best guilds are running today.',
   keywords: [

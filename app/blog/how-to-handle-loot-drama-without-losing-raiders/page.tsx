@@ -7,7 +7,7 @@ import BlogTracker from '@/app/components/landing/BlogTracker'
 
 export const metadata: Metadata = {
   title:
-    'How to Handle Loot Drama Without Losing Raiders | LootList+',
+    'How to Handle Loot Drama Without Losing Raiders',
   description:
     'Loot drama kills more guilds than bad mechanics. Here\'s how to prevent it, defuse it when it happens, and build a system raiders actually trust.',
   keywords: [
