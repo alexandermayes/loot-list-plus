@@ -6,7 +6,7 @@ import BlogRelatedPosts from '@/app/components/landing/BlogRelatedPosts'
 import BlogTracker from '@/app/components/landing/BlogTracker'
 
 export const metadata: Metadata = {
-  title: 'How to Set Up a Fair Loot System for Your WoW Guild | LootList+',
+  title: 'How to Set Up a Fair Loot System for Your WoW Guild',
   description:
     'Compare DKP, EPGP, Loot Council, and Suicide Kings. Learn what makes a loot system fair and how to set one up for your WoW Classic guild.',
   keywords: [

@@ -5,7 +5,7 @@ import LandingCTA from '@/app/components/landing/LandingCTA'
 import LandingFooter from '@/app/components/landing/LandingFooter'
 
 export const metadata: Metadata = {
-  title: 'Blog | LootList+',
+  title: 'Blog',
   description:
     'Guides and tips for WoW guild management, loot systems, and raid organization.',
   alternates: {

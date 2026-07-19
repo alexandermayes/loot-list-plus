@@ -7,7 +7,7 @@ import BlogTracker from '@/app/components/landing/BlogTracker'
 
 export const metadata: Metadata = {
   title:
-    'How to Onboard New Raiders Without Killing Morale | LootList+',
+    'How to Onboard New Raiders Without Killing Morale',
   description:
     'New raiders quit in the first two weeks more than at any other point. Here\'s how to run a guild onboarding process that keeps them excited instead of overwhelmed.',
   keywords: [

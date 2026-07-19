@@ -7,7 +7,7 @@ import BlogTracker from '@/app/components/landing/BlogTracker'
 
 export const metadata: Metadata = {
   title:
-    'The Officer Burnout Problem (and How to Fix It) | LootList+',
+    'The Officer Burnout Problem (and How to Fix It)',
   description:
     'Guild officers burn out quietly and take the guild down with them. Here\'s why it happens, what accelerates it, and how to build an officer structure that lasts.',
   keywords: [

@@ -7,7 +7,7 @@ import BlogTracker from '@/app/components/landing/BlogTracker'
 
 export const metadata: Metadata = {
   title:
-    'How to Run Loot in WoW Classic Without a Spreadsheet | LootList+',
+    'How to Run Loot in WoW Classic Without a Spreadsheet',
   description:
     'Spreadsheets were the default for Classic loot tracking, but they break at scale. Here\'s how to run a clean loot system without one.',
   keywords: [

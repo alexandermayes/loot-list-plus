@@ -5,7 +5,7 @@ import LandingCTA from '@/app/components/landing/LandingCTA'
 import LandingFooter from '@/app/components/landing/LandingFooter'
 
 export const metadata: Metadata = {
-  title: 'LootList+ vs TMB, DKP, EPGP, and Loot Council | LootList+',
+  title: 'LootList+ vs TMB, DKP, EPGP, and Loot Council',
   description:
     'An honest comparison of WoW Classic loot systems. See how LootList+ stacks up against That\'s My BiS, DKP, EPGP, and traditional loot council.',
   keywords: [

@@ -7,7 +7,7 @@ import BlogTracker from '@/app/components/landing/BlogTracker'
 
 export const metadata: Metadata = {
   title:
-    'Why Attendance Tracking Matters More Than Loot Rules | LootList+',
+    'Why Attendance Tracking Matters More Than Loot Rules',
   description:
     'Your loot system is only as good as your attendance data. Learn why tracking attendance consistently is the single most important thing a WoW guild can do for fair loot.',
   keywords: [
