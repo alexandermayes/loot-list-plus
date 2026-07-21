@@ -12,7 +12,10 @@ export const metadata: Metadata = {
   title: 'About LootList+',
   description: 'Learn about LootList+, the loot management system built for WoW Classic guilds. Fair loot distribution, attendance tracking, and Discord integration.',
   alternates: {
-    canonical: 'https://www.getlootlist.com/about',
+    // /about renders the same marketing landing as the homepage; canonicalize
+    // to the homepage so Google consolidates the duplicate instead of splitting
+    // authority between two near-identical URLs.
+    canonical: 'https://www.getlootlist.com',
   },
 }
 
