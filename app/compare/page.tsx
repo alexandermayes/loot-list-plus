@@ -5,14 +5,17 @@ import LandingCTA from '@/app/components/landing/LandingCTA'
 import LandingFooter from '@/app/components/landing/LandingFooter'
 
 export const metadata: Metadata = {
-  title: 'LootList+ vs TMB, DKP, EPGP, and Loot Council',
+  title: { absolute: 'LootList+ vs TMB, DKP, EPGP, Suicide Kings & Loot Council' },
   description:
-    'An honest comparison of WoW Classic loot systems. See how LootList+ stacks up against That\'s My BiS, DKP, EPGP, and traditional loot council.',
+    'An honest comparison of WoW Classic loot systems. See how LootList+ stacks up against That\'s My BiS (TMB), DKP, EPGP, Suicide Kings, and traditional loot council.',
   keywords: [
     'lootlist vs tmb',
     'thatsmybis alternative',
     'wow loot system comparison',
     'dkp vs epgp vs loot council',
+    'suicide kings loot system',
+    'tmb loot system',
+    'epgp loot system',
     'best wow classic loot system',
     'wow guild loot management',
     'loot priority list wow',
@@ -21,9 +24,9 @@ export const metadata: Metadata = {
     canonical: 'https://www.getlootlist.com/compare',
   },
   openGraph: {
-    title: 'LootList+ vs TMB, DKP, EPGP, and Loot Council',
+    title: 'LootList+ vs TMB, DKP, EPGP, Suicide Kings & Loot Council',
     description:
-      'An honest comparison of WoW Classic loot systems. See how LootList+ stacks up against the alternatives.',
+      'An honest comparison of WoW Classic loot systems. See how LootList+ stacks up against TMB, DKP, EPGP, Suicide Kings, and loot council.',
     type: 'article',
     url: 'https://www.getlootlist.com/compare',
   },
@@ -34,9 +37,9 @@ const APP_URL = 'https://www.getlootlist.com'
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  headline: 'LootList+ vs TMB, DKP, EPGP, and Loot Council',
+  headline: 'LootList+ vs TMB, DKP, EPGP, Suicide Kings & Loot Council',
   description:
-    'An honest comparison of WoW Classic loot systems. See how LootList+ stacks up against the alternatives.',
+    'An honest comparison of WoW Classic loot systems. See how LootList+ stacks up against TMB, DKP, EPGP, Suicide Kings, and loot council.',
   datePublished: '2026-04-03T00:00:00Z',
   dateModified: '2026-07-21T00:00:00Z',
   author: {
@@ -84,20 +87,21 @@ interface Feature {
   tmb: CellValue
   dkp: CellValue
   epgp: CellValue
+  sk: CellValue
   council: CellValue
 }
 
 const features: Feature[] = [
-  { name: 'Ranked loot lists', lootlist: true, tmb: true, dkp: false, epgp: false, council: false },
-  { name: 'Automated scoring formula', lootlist: true, tmb: false, dkp: true, epgp: true, council: false },
-  { name: 'Built-in attendance tracking', lootlist: true, tmb: true, dkp: 'via points', epgp: 'via points', council: false },
-  { name: 'Attendance feeds the loot score', lootlist: true, tmb: 'shown only', dkp: true, epgp: true, council: false },
-  { name: 'Score breakdown per item', lootlist: true, tmb: false, dkp: false, epgp: false, council: false },
-  { name: 'Bad luck protection', lootlist: true, tmb: false, dkp: false, epgp: false, council: false },
-  { name: 'Bracket system with point costs', lootlist: true, tmb: 'item cap only', dkp: false, epgp: false, council: false },
-  { name: 'Compiled per-item score rankings', lootlist: true, tmb: 'wishlists only', dkp: false, epgp: false, council: false },
-  { name: 'First-party in-game addon', lootlist: true, tmb: 'third-party', dkp: true, epgp: true, council: false },
-  { name: 'Free to use', lootlist: true, tmb: true, dkp: true, epgp: true, council: true },
+  { name: 'Ranked loot lists', lootlist: true, tmb: true, dkp: false, epgp: false, sk: false, council: false },
+  { name: 'Automated scoring formula', lootlist: true, tmb: false, dkp: true, epgp: true, sk: false, council: false },
+  { name: 'Built-in attendance tracking', lootlist: true, tmb: true, dkp: 'via points', epgp: 'via points', sk: false, council: false },
+  { name: 'Attendance feeds the loot score', lootlist: true, tmb: 'shown only', dkp: true, epgp: true, sk: false, council: false },
+  { name: 'Score breakdown per item', lootlist: true, tmb: false, dkp: false, epgp: false, sk: false, council: false },
+  { name: 'Bad luck protection', lootlist: true, tmb: false, dkp: false, epgp: false, sk: false, council: false },
+  { name: 'Bracket system with point costs', lootlist: true, tmb: 'item cap only', dkp: false, epgp: false, sk: false, council: false },
+  { name: 'Compiled per-item score rankings', lootlist: true, tmb: 'wishlists only', dkp: false, epgp: false, sk: false, council: false },
+  { name: 'First-party in-game addon', lootlist: true, tmb: 'third-party', dkp: true, epgp: true, sk: 'community', council: false },
+  { name: 'Free to use', lootlist: true, tmb: true, dkp: true, epgp: true, sk: true, council: true },
 ]
 
 function Check() {
@@ -162,6 +166,7 @@ export default function ComparePage() {
                     <th className="text-center py-3 px-3 font-semibold text-foreground-secondary min-w-[90px]">TMB</th>
                     <th className="text-center py-3 px-3 font-semibold text-foreground-secondary min-w-[90px]">DKP</th>
                     <th className="text-center py-3 px-3 font-semibold text-foreground-secondary min-w-[90px]">EPGP</th>
+                    <th className="text-center py-3 px-3 font-semibold text-foreground-secondary min-w-[90px]">Suicide Kings</th>
                     <th className="text-center py-3 px-3 font-semibold text-foreground-secondary min-w-[90px]">Loot Council</th>
                   </tr>
                 </thead>
@@ -173,6 +178,7 @@ export default function ComparePage() {
                       <td className="py-3 px-3 text-center">{f.tmb === true ? <Check /> : f.tmb === false ? <Cross /> : <Partial label={String(f.tmb)} />}</td>
                       <td className="py-3 px-3 text-center">{f.dkp === true ? <Check /> : f.dkp === false ? <Cross /> : <Partial label={String(f.dkp)} />}</td>
                       <td className="py-3 px-3 text-center">{f.epgp === true ? <Check /> : f.epgp === false ? <Cross /> : <Partial label={String(f.epgp)} />}</td>
+                      <td className="py-3 px-3 text-center">{f.sk === true ? <Check /> : f.sk === false ? <Cross /> : <Partial label={String(f.sk)} />}</td>
                       <td className="py-3 px-3 text-center">{f.council === true ? <Check /> : f.council === false ? <Cross /> : <Partial label={String(f.council)} />}</td>
                     </tr>
                   ))}
@@ -207,7 +213,7 @@ export default function ComparePage() {
               Let&apos;s start with the obvious question. What&apos;s wrong with the loot systems guilds already use?
             </h3>
             <p>
-              Nothing&apos;s &quot;wrong&quot; with them, they just solve part of the problem. DKP tracks attendance but creates hoarding. EPGP fixes hoarding but ignores what raiders actually want. Loot council gives officers total control but zero transparency. TMB lets raiders rank items but doesn&apos;t help you decide who gets what.
+              Nothing&apos;s &quot;wrong&quot; with them, they just solve part of the problem. DKP tracks attendance but creates hoarding. EPGP fixes hoarding but ignores what raiders actually want. Suicide Kings keeps it simple with a rotation, but one global list can&apos;t tell whether the person next in line even wants the drop. Loot council gives officers total control but zero transparency. TMB lets raiders rank items but doesn&apos;t help you decide who gets what.
             </p>
             <p>
               Every guild I&apos;ve been in ended up duct-taping 2 or 3 of these together. TMB for wishlists and attendance, a spreadsheet to weigh it all up, Discord for the loot council argument. It works until it doesn&apos;t, and it usually stops working when someone feels like they got screwed.
@@ -266,6 +272,20 @@ export default function ComparePage() {
             </p>
             <p>
               LootList+ combines the decay concept (rolling attendance windows) with item-level priority (ranked lists). You get the fairness of EPGP with the specificity of wishlists.
+            </p>
+
+            {/* Q: Suicide Kings */}
+            <h3 className="!text-accent">
+              How does LootList+ compare to the Suicide Kings loot system?
+            </h3>
+            <p>
+              Suicide Kings is the simplest of the bunch, and that&apos;s its whole appeal. Everyone sits on one ordered list. When you win an item you &quot;suicide&quot; to the bottom and everyone below moves up a spot. No points, no bidding, no spreadsheets. For a small guild that just wants a fair rotation, it genuinely works.
+            </p>
+            <p>
+              Where it breaks down is that it&apos;s a single list for everything. Being next in line doesn&apos;t mean the item that dropped is even an upgrade for you, so guilds end up house-ruling exceptions (main-spec only, weapons don&apos;t count, tokens are separate) until the &quot;simple&quot; system has a page of caveats. It also doesn&apos;t care whether you&apos;ve raided every week or showed up once, your list position is your list position.
+            </p>
+            <p>
+              LootList+ keeps the part Suicide Kings gets right, a transparent order everyone can see, and fixes the part it doesn&apos;t. Raiders rank the specific items they actually want, attendance and history feed the score, and every item has its own ranking instead of one global queue. You get the fairness of a rotation without the &quot;I&apos;m next but I don&apos;t even want this&quot; problem.
             </p>
 
             {/* Q7 */}
