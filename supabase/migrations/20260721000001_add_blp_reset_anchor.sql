@@ -179,3 +179,10 @@ END;
 $$;
 
 ALTER FUNCTION "public"."recompute_blp_for_guild"("p_guild_id" "uuid") OWNER TO "postgres";
+
+-- Called only via the service-role client (guild-settings route, after()). Revoke
+-- the default PUBLIC EXECUTE so it isn't reachable with the anon key, and grant
+-- service_role explicitly. See migration 20260722000001 for the same treatment of
+-- the sibling recompute_* functions.
+REVOKE ALL ON FUNCTION "public"."recompute_blp_for_guild"("p_guild_id" "uuid") FROM PUBLIC, "anon", "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."recompute_blp_for_guild"("p_guild_id" "uuid") TO "service_role";

@@ -75,8 +75,9 @@ $$;
 
 ALTER FUNCTION "public"."reset_guild_season"("p_guild_id" "uuid", "p_clear_raids" boolean, "p_clear_loot" boolean, "p_clear_donations" boolean) OWNER TO "postgres";
 
--- Called only from the API route, which checks guild ownership first. No direct
--- grant to anon/authenticated: the route uses the service role client.
-REVOKE ALL ON FUNCTION "public"."reset_guild_season"("uuid", boolean, boolean, boolean) FROM PUBLIC;
-REVOKE ALL ON FUNCTION "public"."reset_guild_season"("uuid", boolean, boolean, boolean) FROM "anon";
-REVOKE ALL ON FUNCTION "public"."reset_guild_season"("uuid", boolean, boolean, boolean) FROM "authenticated";
+-- Called only from the API route, which checks guild ownership first. Revoke the
+-- default PUBLIC/anon/authenticated EXECUTE and grant service_role explicitly, so
+-- the route's service-role client keeps access regardless of what the PUBLIC
+-- default was.
+REVOKE ALL ON FUNCTION "public"."reset_guild_season"("uuid", boolean, boolean, boolean) FROM PUBLIC, "anon", "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."reset_guild_season"("uuid", boolean, boolean, boolean) TO "service_role";
