@@ -14,6 +14,7 @@ export type AnalyticsEvent =
   | 'loot_item_awarded'
   | 'loot_awarded_bulk'
   | 'guild_settings_updated'
+  | 'guild_season_reset'
   | 'member_role_changed'
   | 'attendance_recorded'
   | 'attendance_bulk_recorded'
