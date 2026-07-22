@@ -653,6 +653,49 @@ export function SettingsModal({
                               <option value="yes">Yes</option>
                             </Select>
                           </div>
+
+                          <div>
+                            <Label className="block mb-2 inline-flex items-center gap-1">Hard reset <InfoTooltip content="Hides every raid before this anchor from bad luck protection, so accrued BLP restarts at zero. Loot and attendance history are untouched — clear the anchor to bring the old values back." iconSize={12} /></Label>
+                            {settings.blp_reset_at && (
+                              <p className="text-foreground-secondary text-[12px] mt-1 mb-1">
+                                Anchor: <span className="tabular-nums">{settings.blp_reset_at}</span>
+                              </p>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              disabled={!settings.blp_enabled}
+                              onClick={() => {
+                                const today = toDateString(new Date())
+                                confirm({
+                                  title: 'Reset bad luck protection?',
+                                  description: `Raids before ${today} will no longer count toward BLP, so every raider's accrued bonus restarts at zero. Loot and attendance history stay intact — this is non-destructive and can be undone.`,
+                                  confirmLabel: 'Reset BLP',
+                                  variant: 'danger',
+                                  onConfirm: () => {
+                                    setSettings({ ...settings, blp_reset_at: today })
+                                    showNotification('success', `Bad luck protection reset to ${today}.`)
+                                  },
+                                })
+                              }}
+                            >
+                              {settings.blp_reset_at ? 'Reset again' : 'Reset now'}
+                            </Button>
+                            {settings.blp_reset_at && (
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="mt-1 text-[11px] h-auto p-0"
+                                onClick={() => {
+                                  setSettings({ ...settings, blp_reset_at: null })
+                                  showNotification('success', 'BLP anchor cleared — full history counts again.')
+                                }}
+                              >
+                                Clear anchor
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>

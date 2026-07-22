@@ -889,6 +889,7 @@ export type Database = {
           blp_includes_benched: boolean | null
           blp_increment: number | null
           blp_maximum: number | null
+          blp_reset_at: string | null
           bottom_attendance_bonus: number
           bottom_attendance_threshold: number
           class_bonus_priority_single_item: boolean | null
@@ -958,6 +959,7 @@ export type Database = {
           blp_includes_benched?: boolean | null
           blp_increment?: number | null
           blp_maximum?: number | null
+          blp_reset_at?: string | null
           bottom_attendance_bonus?: number
           bottom_attendance_threshold?: number
           class_bonus_priority_single_item?: boolean | null
@@ -1027,6 +1029,7 @@ export type Database = {
           blp_includes_benched?: boolean | null
           blp_increment?: number | null
           blp_maximum?: number | null
+          blp_reset_at?: string | null
           bottom_attendance_bonus?: number
           bottom_attendance_threshold?: number
           class_bonus_priority_single_item?: boolean | null
@@ -2330,6 +2333,10 @@ export type Database = {
         Args: { p_guild_id: string; p_raid_event_id: string }
         Returns: number
       }
+      recompute_blp_for_guild: {
+        Args: { p_guild_id: string }
+        Returns: number
+      }
       recompute_blp_for_item: {
         Args: { p_guild_id: string; p_loot_item_id: string }
         Returns: number
@@ -2353,6 +2360,15 @@ export type Database = {
           p_loot_item_id: string
         }
         Returns: undefined
+      }
+      reset_guild_season: {
+        Args: {
+          p_clear_donations?: boolean
+          p_clear_loot?: boolean
+          p_clear_raids?: boolean
+          p_guild_id: string
+        }
+        Returns: Json
       }
       save_submission_items: {
         Args: { p_items: Json; p_submission_id: string }

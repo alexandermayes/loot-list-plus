@@ -1252,6 +1252,14 @@ Officers enable BLP in **Guild Settings** under the scoring section:
 - **Increment** - How many points to add each time (e.g., 0.5)
 - **Maximum** - The cap on BLP bonus (e.g., 5)
 
+## Resetting BLP
+
+If your guild accrued BLP during testing, officers can zero it with **Hard reset** in the bad luck prevention settings. It sets an anchor date — raids before it stop counting toward BLP, so everyone restarts at zero.
+
+Nothing is deleted: loot and attendance history stay intact, and clearing the anchor brings the old values back.
+
+To wipe the underlying test data as well, the guild owner can use **Reset guild data** in the Guild Settings danger zone. That clears raid history, attendance, loot awards and donations while keeping members, their loot lists, roles and settings.
+
 ## Where to see BLP
 
 - **Overview** page - Your "Next in line" items show individual BLP values (e.g., "+1.50 BLP")

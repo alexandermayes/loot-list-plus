@@ -1,7 +1,7 @@
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { logAudit } from '@/utils/audit/log'
 import { trackEvent, trackApiError } from '@/utils/analytics/server'
 import { toDateString } from '@/utils/date'
@@ -81,6 +81,7 @@ const ALLOWED_SETTINGS_FIELDS = [
   'blp_increment',
   'blp_maximum',
   'blp_includes_benched',
+  'blp_reset_at',
 
   // Loot List Rules
   'enforce_slot_restrictions',
@@ -343,6 +344,23 @@ export async function PUT(request: Request) {
         return NextResponse.json({ error: 'Failed to create guild settings' }, { status: 500 })
       }
       result = data
+    }
+
+    // The BLP reset anchor is read inside recompute_blp_for_item, so moving it
+    // only changes scores once each item is recomputed. Without this the new
+    // anchor would trickle in item-by-item as loot happens to be re-awarded.
+    // Deferred like every other recompute call site — it walks every awarded
+    // item and shouldn't hold up the settings save.
+    const previousBlpReset = existingSettings?.blp_reset_at ?? null
+    if (result && (result.blp_reset_at ?? null) !== previousBlpReset) {
+      after(async () => {
+        const { error: recomputeError } = await serviceSupabase.rpc('recompute_blp_for_guild', {
+          p_guild_id: guild_id,
+        })
+        if (recomputeError) {
+          console.error('BLP recompute after reset-anchor change failed:', recomputeError)
+        }
+      })
     }
 
     // Audit logging - track settings changes

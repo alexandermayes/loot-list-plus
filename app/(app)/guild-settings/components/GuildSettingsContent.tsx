@@ -80,6 +80,10 @@ export default function GuildSettingsContent() {
   const [showTransferModal, setShowTransferModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('')
+  const [showResetModal, setShowResetModal] = useState(false)
+  const [resetConfirmInput, setResetConfirmInput] = useState('')
+  const [resetting, setResetting] = useState(false)
+  const [resetScope, setResetScope] = useState({ raids: true, loot: true, donations: true })
   const [roleRefreshKey, setRoleRefreshKey] = useState(0)
   const [transferring, setTransferring] = useState(false)
   const [selectedNewOwner, setSelectedNewOwner] = useState<string>('')
@@ -268,6 +272,51 @@ export default function GuildSettingsContent() {
   }
 
   const deleteConfirmText = activeGuild ? `DELETE ${activeGuild.name}` : ''
+
+  // Wipes the history scores are computed from, keeps the guild itself (GH #148).
+  const handleResetSeason = async () => {
+    if (!activeGuild) return
+
+    setResetting(true)
+
+    try {
+      const response = await fetch('/api/guilds/reset-season', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guild_id: activeGuild.id,
+          clear_raids: resetScope.raids,
+          clear_loot: resetScope.loot,
+          clear_donations: resetScope.donations,
+        })
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || "Couldn't reset guild data. Try again.")
+      }
+
+      const s = data.summary || {}
+      const parts = [
+        s.raid_events_deleted ? `${s.raid_events_deleted} raids` : null,
+        s.loot_awards_deleted ? `${s.loot_awards_deleted} loot awards` : null,
+        s.donation_records_deleted ? `${s.donation_records_deleted} donations` : null,
+      ].filter(Boolean)
+
+      showNotification('success', parts.length ? `Cleared ${parts.join(', ')}.` : 'Nothing to clear.')
+      setShowResetModal(false)
+      setResetConfirmInput('')
+      setResetting(false)
+      router.refresh()
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Couldn't reset guild data. Try again."
+      showNotification('error', message)
+      setResetting(false)
+    }
+  }
+
+  const resetConfirmText = activeGuild ? `RESET ${activeGuild.name}` : ''
+  const resetScopeSelected = resetScope.raids || resetScope.loot || resetScope.donations
 
   const handleTransferOwnership = async () => {
     if (!activeGuild || !selectedNewOwner) return
@@ -739,6 +788,25 @@ export default function GuildSettingsContent() {
                 </div>
               </div>
 
+              {/* Reset Guild Data */}
+              <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h3 className="text-[16px] font-semibold text-warning mb-1">Reset guild data</h3>
+                    <p className="text-[13px] text-muted-foreground">
+                      Clear raid history, attendance, loot awards and donations so every raider starts from zero. Members, their loot lists, roles and settings are kept. Use this after testing, before going live.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowResetModal(true)}
+                    className="shrink-0 border-warning/50 text-warning hover:bg-warning/10 w-full sm:w-auto"
+                  >
+                    Reset data
+                  </Button>
+                </div>
+              </div>
+
               {/* Delete Guild */}
               <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -770,6 +838,77 @@ export default function GuildSettingsContent() {
               <ModalBody className="p-0">
                 <RoleManager onRolesChanged={() => setRoleRefreshKey(k => k + 1)} />
               </ModalBody>
+            </Modal>
+
+            {/* Reset Guild Data Confirmation Modal */}
+            <Modal open={showResetModal} onClose={() => { setShowResetModal(false); setResetConfirmInput(''); }} size="default">
+              <ModalHeader onClose={() => { setShowResetModal(false); setResetConfirmInput(''); }}>
+                <ModalTitle>Reset {activeGuild?.name} data?</ModalTitle>
+                <ModalDescription>
+                  Choose what to clear. Members, loot lists, roles, raid teams and settings are always kept. This cannot be undone.
+                </ModalDescription>
+              </ModalHeader>
+              <ModalBody className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <Label>Raid events &amp; attendance</Label>
+                      <p className="text-[12px] text-muted-foreground">Zeroes attendance-based Loot Score. Loot awards are kept but lose their raid night.</p>
+                    </div>
+                    <Switch
+                      checked={resetScope.raids}
+                      onCheckedChange={(v) => setResetScope(s => ({ ...s, raids: v }))}
+                    />
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <Label>Loot award history</Label>
+                      <p className="text-[12px] text-muted-foreground">Removes every awarded item and the bad luck protection built from it.</p>
+                    </div>
+                    <Switch
+                      checked={resetScope.loot}
+                      onCheckedChange={(v) => setResetScope(s => ({ ...s, loot: v }))}
+                    />
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <Label>Donation records</Label>
+                      <p className="text-[12px] text-muted-foreground">Removes donation points. Only matters if donation bonuses are enabled.</p>
+                    </div>
+                    <Switch
+                      checked={resetScope.donations}
+                      onCheckedChange={(v) => setResetScope(s => ({ ...s, donations: v }))}
+                    />
+                  </div>
+                </div>
+                <Alert variant="destructive">
+                  <AlertDescription className="text-muted-foreground">
+                    Type <span className="font-mono font-semibold text-destructive">{resetConfirmText}</span> to confirm.
+                  </AlertDescription>
+                </Alert>
+                <Input
+                  value={resetConfirmInput}
+                  onChange={(e) => setResetConfirmInput(e.target.value)}
+                  placeholder={resetConfirmText}
+                  className="font-mono"
+                />
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => { setShowResetModal(false); setResetConfirmInput(''); }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleResetSeason}
+                  disabled={resetConfirmInput !== resetConfirmText || !resetScopeSelected}
+                  loading={resetting}
+                >
+                  Reset data
+                </Button>
+              </ModalFooter>
             </Modal>
 
             {/* Delete Guild Confirmation Modal */}
