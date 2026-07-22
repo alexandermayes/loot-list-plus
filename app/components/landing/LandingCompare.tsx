@@ -7,13 +7,15 @@ import Image from 'next/image'
 import { fadeInUp, staggerContainerSlow } from '@/lib/animations'
 import { trackClientEvent } from '@/utils/analytics/client'
 
-const features = [
+type CellValue = boolean | string
+
+const features: { name: string; tip: string; lootlist: CellValue; tmb: CellValue; dkp: CellValue; epgp: CellValue; council: CellValue }[] = [
   { name: 'Ranked loot lists', tip: 'Raiders rank up to 50 items by priority. Officers see exactly what everyone wants.', lootlist: true, tmb: true, dkp: false, epgp: false, council: false },
   { name: 'Automated scoring', tip: 'A 7-component formula computes who should get each item based on rank, attendance, role, and more.', lootlist: true, tmb: false, dkp: true, epgp: true, council: false },
-  { name: 'Attendance tracking', tip: 'Built-in tracking with 7 statuses (attended, late, benched, excused, etc.) that rolls directly into loot scores.', lootlist: true, tmb: false, dkp: false, epgp: false, council: false },
+  { name: 'Attendance feeds the loot score', tip: 'TMB does track attendance (percentages, decay, Warcraft Logs import) but only displays it next to a raider\'s name. In LootList+ it is a weighted component of the score itself.', lootlist: true, tmb: 'shown only', dkp: true, epgp: true, council: false },
   { name: 'Score breakdown per item', tip: 'Every raider can see exactly why they\'re ranked #1 or #5 for any item, with a full component-by-component explanation.', lootlist: true, tmb: false, dkp: false, epgp: false, council: false },
   { name: 'Bad luck protection', tip: 'Raiders who keep getting passed on an item get an incremental score boost automatically. Configurable by officers.', lootlist: true, tmb: false, dkp: false, epgp: false, council: false },
-  { name: 'Master Sheet rankings', tip: 'A compiled view of every raider\'s score for every item, sortable by boss, with a raid-mode view for use during pulls.', lootlist: true, tmb: false, dkp: false, epgp: false, council: false },
+  { name: 'Compiled per-item rankings', tip: 'A compiled view of every raider\'s score for every item, sortable by boss, with a raid-mode view for use during pulls. TMB compiles wishlists and prios per item, but without computed scores.', lootlist: true, tmb: 'wishlists only', dkp: false, epgp: false, council: false },
 ]
 
 function Check() {
@@ -21,6 +23,11 @@ function Check() {
 }
 function Cross() {
   return <span className="text-red-400/50">&#10005;</span>
+}
+function Cell({ value }: { value: CellValue }) {
+  if (value === true) return <Check />
+  if (value === false) return <Cross />
+  return <span className="text-yellow-400 text-[11px] font-medium">{value}</span>
 }
 
 function FeatureTip({ name, tip }: { name: string; tip: string }) {
@@ -109,11 +116,11 @@ export default function LandingCompare() {
                       <td className="py-3 px-4 text-left text-white">
                         <FeatureTip name={f.name} tip={f.tip} />
                       </td>
-                      <td className="py-3 px-3 text-center">{f.lootlist ? <Check /> : <Cross />}</td>
-                      <td className="py-3 px-3 text-center">{f.tmb ? <Check /> : <Cross />}</td>
-                      <td className="py-3 px-3 text-center">{f.dkp ? <Check /> : <Cross />}</td>
-                      <td className="py-3 px-3 text-center">{f.epgp ? <Check /> : <Cross />}</td>
-                      <td className="py-3 px-3 text-center">{f.council ? <Check /> : <Cross />}</td>
+                      <td className="py-3 px-3 text-center"><Cell value={f.lootlist} /></td>
+                      <td className="py-3 px-3 text-center"><Cell value={f.tmb} /></td>
+                      <td className="py-3 px-3 text-center"><Cell value={f.dkp} /></td>
+                      <td className="py-3 px-3 text-center"><Cell value={f.epgp} /></td>
+                      <td className="py-3 px-3 text-center"><Cell value={f.council} /></td>
                     </tr>
                   ))}
                 </tbody>
