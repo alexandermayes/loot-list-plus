@@ -14,6 +14,16 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'July 21, 2026',
+    items: [
+      {
+        category: 'fix',
+        title: 'List the same ring or trinket twice',
+        description: 'Rings and trinkets that are not Unique-Equipped can now appear twice on your loot list, since you equip two of each. In TBC that means the three Black Temple rings: Blessed Band of Karabor, Ring of Ancient Knowledge, and Band of Devastation. Previously only one-handed weapons could be listed twice.',
+      },
+    ],
+  },
+  {
     date: 'July 16, 2026',
     items: [
       {
