@@ -264,6 +264,7 @@ export default function LootSettingsContent({
     blp_increment: 1.0,
     blp_maximum: 5.0,
     blp_includes_benched: false,
+    blp_reset_at: null as string | null,
 
     // Loot List Rules
     enforce_slot_restrictions: false,
@@ -354,6 +355,8 @@ export default function LootSettingsContent({
           blp_enabled: settings.blp_enabled,
           blp_increment: settings.blp_increment,
           blp_maximum: settings.blp_maximum,
+          blp_includes_benched: settings.blp_includes_benched,
+          blp_reset_at: settings.blp_reset_at,
           enforce_slot_restrictions: settings.enforce_slot_restrictions,
           max_allocation_points_per_bracket: settings.max_allocation_points_per_bracket,
           max_tokens_per_bracket: settings.max_tokens_per_bracket,
