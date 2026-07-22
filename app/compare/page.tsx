@@ -38,7 +38,7 @@ const jsonLd = {
   description:
     'An honest comparison of WoW Classic loot systems. See how LootList+ stacks up against the alternatives.',
   datePublished: '2026-04-03T00:00:00Z',
-  dateModified: '2026-04-03T00:00:00Z',
+  dateModified: '2026-07-21T00:00:00Z',
   author: {
     '@type': 'Person',
     name: 'Zev',
@@ -90,12 +90,12 @@ interface Feature {
 const features: Feature[] = [
   { name: 'Ranked loot lists', lootlist: true, tmb: true, dkp: false, epgp: false, council: false },
   { name: 'Automated scoring formula', lootlist: true, tmb: false, dkp: true, epgp: true, council: false },
-  { name: 'Built-in attendance tracking', lootlist: true, tmb: false, dkp: false, epgp: false, council: false },
-  { name: 'Attendance affects loot priority', lootlist: true, tmb: false, dkp: true, epgp: true, council: false },
+  { name: 'Built-in attendance tracking', lootlist: true, tmb: true, dkp: 'via points', epgp: 'via points', council: false },
+  { name: 'Attendance feeds the loot score', lootlist: true, tmb: 'shown only', dkp: true, epgp: true, council: false },
   { name: 'Score breakdown per item', lootlist: true, tmb: false, dkp: false, epgp: false, council: false },
   { name: 'Bad luck protection', lootlist: true, tmb: false, dkp: false, epgp: false, council: false },
-  { name: 'Bracket system with guardrails', lootlist: true, tmb: false, dkp: false, epgp: false, council: false },
-  { name: 'Master Sheet (compiled rankings)', lootlist: true, tmb: false, dkp: false, epgp: false, council: false },
+  { name: 'Bracket system with point costs', lootlist: true, tmb: 'item cap only', dkp: false, epgp: false, council: false },
+  { name: 'Compiled per-item score rankings', lootlist: true, tmb: 'wishlists only', dkp: false, epgp: false, council: false },
   { name: 'First-party in-game addon', lootlist: true, tmb: 'third-party', dkp: true, epgp: true, council: false },
   { name: 'Free to use', lootlist: true, tmb: true, dkp: true, epgp: true, council: true },
 ]
@@ -179,6 +179,18 @@ export default function ComparePage() {
                 </tbody>
               </table>
             </div>
+
+            <div className="mt-4 space-y-2 text-sm text-foreground-muted">
+              <p>
+                A few notes, because we&apos;d rather be accurate than flattering: <strong className="text-foreground-secondary">TMB does track raid attendance.</strong> It has raid groups, attendance percentages, a configurable decay window, per-raid remarks (late, benched, no-show, gave notice), and it can pull attendees straight from Warcraft Logs. What it doesn&apos;t do is turn any of that into loot priority. The percentage is shown next to a raider&apos;s name while officers assign prios; the officers still do the math.
+              </p>
+              <p>
+                TMB also caps how many items a raider can wishlist and supports multiple lists, so it isn&apos;t a free-for-all, it just doesn&apos;t use per-item point costs the way brackets do. And its loot page compiles every raider&apos;s wishlists and prios per item, which is the closest thing to a Master Sheet outside LootList+, minus the computed scores.
+              </p>
+              <p>
+                &quot;Via points&quot; for DKP and EPGP means attendance is tracked as points earned per raid rather than as a separate attendance record. Something wrong here? <a href="https://discord.gg/JNJewThYAB" target="_blank" rel="noopener noreferrer" className="text-accent underline underline-offset-2 hover:text-accent/80">Tell us on Discord</a> and we&apos;ll fix it.
+              </p>
+            </div>
           </div>
 
           {/* Q&A Interview */}
@@ -198,7 +210,7 @@ export default function ComparePage() {
               Nothing&apos;s &quot;wrong&quot; with them, they just solve part of the problem. DKP tracks attendance but creates hoarding. EPGP fixes hoarding but ignores what raiders actually want. Loot council gives officers total control but zero transparency. TMB lets raiders rank items but doesn&apos;t help you decide who gets what.
             </p>
             <p>
-              Every guild I&apos;ve been in ended up duct-taping 2 or 3 of these together. TMB for wishlists, a spreadsheet for attendance, Discord for loot council discussions. It works until it doesn&apos;t, and it usually stops working when someone feels like they got screwed.
+              Every guild I&apos;ve been in ended up duct-taping 2 or 3 of these together. TMB for wishlists and attendance, a spreadsheet to weigh it all up, Discord for the loot council argument. It works until it doesn&apos;t, and it usually stops working when someone feels like they got screwed.
             </p>
 
             {/* Q2 */}
@@ -228,7 +240,10 @@ export default function ComparePage() {
               TMB doesn&apos;t track attendance at all?
             </h3>
             <p>
-              No. If you use TMB, you need a separate system for attendance. Most guilds use a spreadsheet. Some use a DKP addon. Some just eyeball it. LootList+ tracks attendance natively with support for different statuses like attended, late, benched, excused, no-show. And it rolls directly into your loot score. Show up consistently, your score reflects it. Miss raids, same thing. No spreadsheet needed.
+              It does, and I want to be careful here because people repeat that it doesn&apos;t. TMB has raid groups, attendance percentages, a decay window so old raids stop counting, remarks like late, benched, and no-show, and it can pull the attendee list straight out of a Warcraft Logs report. That&apos;s a real attendance system, and it&apos;s better than the spreadsheet most guilds were using before it.
+            </p>
+            <p>
+              The difference is what happens to that number. In TMB, attendance is a number displayed next to a raider&apos;s name while your officers assign prios. It informs the decision, but a human still has to weigh it against everyone else&apos;s attendance, their list position, and what they&apos;ve already received. In LootList+, attendance is a weighted component of the score itself, so a raider at 95% and a raider at 60% are already separated before anyone opens Discord, and both of them can see exactly how many points that gap was worth.
             </p>
 
             {/* Q5 */}
