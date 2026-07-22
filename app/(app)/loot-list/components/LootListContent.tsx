@@ -38,6 +38,7 @@ import { InformationCircleIcon } from '@hugeicons/core-free-icons'
 import { useLootList, type LootItem } from '@/app/contexts/LootListContext'
 import { getPhaseGroupShortLabel } from '@/domain/expansion/phase-groups'
 import { isTokenSlot } from '@/data/token-class-mapping'
+import { maxCopiesForItem } from '@/domain/loot/slot-capacity'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent, usePagePerf } from '@/utils/analytics/client'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
@@ -970,11 +971,13 @@ export default function LootListContent({
 
   // Create bracket-specific disabled sets for tokens
   // Tokens can be selected once per bracket section (Brackets 1-4, No Bracket, Off-spec)
-  // Non-tokens are disabled everywhere once selected, except One-Hand weapons
-  // which dual-wielders can list twice.
+  // Non-tokens are disabled everywhere once selected, except paired slots
+  // (one-handers, rings, trinkets) which can be listed twice.
   const { bracket14DisabledItems, noBracketDisabledItems, offSpecDisabledItems } = useMemo(() => {
     // Create a map of itemId -> item_slot for checking if an item is a token
     const itemSlotMap = new Map(lootItems.map(item => [item.id, item.item_slot]))
+    // Per-item copy cap: paired slot AND not Unique-Equipped means two copies.
+    const maxCopiesMap = new Map(lootItems.map(item => [item.id, maxCopiesForItem(item)]))
 
     // Separate items by bracket section based on rank
     // Rankings key format: "{rank}-{slot}" e.g., "50-1", "38-2"
@@ -999,17 +1002,15 @@ export default function LootListContent({
         }
       } else {
         // Non-tokens: track how many times they appear.
-        // One-Hand items are allowed up to 2 occurrences (dual-wielders).
+        // Paired, non-unique items allow up to 2 occurrences (see maxCopiesForItem).
         nonTokenCounts.set(itemId, (nonTokenCounts.get(itemId) || 0) + 1)
       }
     })
 
-    // A non-token item is fully used (disabled) once it hits its per-slot cap.
+    // A non-token item is fully used (disabled) once it hits its copy cap.
     const nonTokenItems = new Set<string>()
     nonTokenCounts.forEach((count, itemId) => {
-      const slot = itemSlotMap.get(itemId)
-      const maxAllowed = slot === 'One-Hand' ? 2 : 1
-      if (count >= maxAllowed) nonTokenItems.add(itemId)
+      if (count >= (maxCopiesMap.get(itemId) ?? 1)) nonTokenItems.add(itemId)
     })
 
     // Build disabled sets for each section
@@ -1021,11 +1022,10 @@ export default function LootListContent({
     }
   }, [rankings, lootItems])
 
-  // Legacy: Keep selectedItems for duplicate detection (checks ALL selected items)
-  const selectedItems = useMemo(() => new Set(Object.values(rankings)), [rankings])
   // Token-aware duplicate detection:
   // - Non-token items are duplicates if they appear more than once globally,
-  //   except One-Hand items which dual-wielders can list up to twice.
+  //   except non-unique paired-slot items (one-handers, rings, trinkets),
+  //   which can appear twice because you equip two of them.
   // - Token items are duplicates if they appear more than once in the SAME bracket section.
   const duplicateItems = useMemo(() => {
     // If loot items haven't loaded yet, we can't determine token vs non-token.
@@ -1033,6 +1033,7 @@ export default function LootListContent({
     if (lootItems.length === 0) return []
 
     const itemSlotMap = new Map(lootItems.map(item => [item.id, item.item_slot]))
+    const maxCopiesMap = new Map(lootItems.map(item => [item.id, maxCopiesForItem(item)]))
 
     // Track token appearances per bracket section
     const bracket14Tokens: string[] = []
@@ -1059,16 +1060,14 @@ export default function LootListContent({
 
     const dupes: string[] = []
 
-    // Non-token items: count occurrences and flag when exceeding the per-slot cap.
-    // One-Hand items allow up to 2 (dual-wield); everything else caps at 1.
+    // Non-token items: count occurrences and flag when exceeding the copy cap.
+    // Non-unique paired-slot items allow up to 2; everything else caps at 1.
     const nonTokenCounts = new Map<string, number>()
     nonTokenItemIds.forEach(itemId => {
       nonTokenCounts.set(itemId, (nonTokenCounts.get(itemId) || 0) + 1)
     })
     nonTokenCounts.forEach((count, itemId) => {
-      const slot = itemSlotMap.get(itemId)
-      const maxAllowed = slot === 'One-Hand' ? 2 : 1
-      if (count > maxAllowed) dupes.push(itemId)
+      if (count > (maxCopiesMap.get(itemId) ?? 1)) dupes.push(itemId)
     })
 
     // Token items: only flag duplicates within the same bracket section
@@ -1131,9 +1130,18 @@ export default function LootListContent({
 
   // Compute unranked items (all spec items not yet on the list, excluding LC items)
   // unrankedItemsAll is the full unfiltered set, used to derive stable filter options.
+  // Items that can be listed twice stay draggable until they hit their cap, so
+  // a second copy can be dragged in rather than only picked from the dropdown.
   const unrankedItemsAll = useMemo(() => {
-    const rankedItemIds = new Set(Object.values(rankings))
-    return lootItems.filter(item => !rankedItemIds.has(item.id) && !item.is_loot_council)
+    const rankedCounts = new Map<string, number>()
+    Object.values(rankings).forEach(itemId => {
+      rankedCounts.set(itemId, (rankedCounts.get(itemId) || 0) + 1)
+    })
+    return lootItems.filter(
+      item =>
+        (rankedCounts.get(item.id) || 0) < maxCopiesForItem(item) &&
+        !item.is_loot_council
+    )
   }, [lootItems, rankings])
 
   // Slot order matches gear-layout convention (head down to weapons).
@@ -1978,7 +1986,7 @@ export default function LootListContent({
           <div className="overflow-hidden">
             <div className="pb-4">
               <div className="bg-red-900/50 border border-red-500 rounded-xl p-4 text-red-300">
-                <strong>Warning:</strong> You have duplicate items on your list. Most items can only appear once. One-handed weapons can appear up to twice for dual-wielders. Tokens can appear once per bracket section.
+                <strong>Warning:</strong> You have duplicate items on your list. Most items can only appear once. Rings, trinkets and one-handed weapons can appear twice, since you equip two of them &mdash; unless they&apos;re Unique-Equipped, which most raid rings and trinkets are. Tokens can appear once per bracket section.
               </div>
             </div>
           </div>

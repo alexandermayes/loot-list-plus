@@ -12,6 +12,7 @@
     "gen:types": "supabase gen types typescript --project-id zjnhjstbqekudlsozsvi 2>/dev/null > lib/database.types.ts",
     "gen:seed": "tsx scripts/generate-seed-reference-data.ts",
     "icons:fetch": "tsx scripts/fetch-item-icons.ts",
+    "unique:fetch": "tsx scripts/fetch-item-unique.ts",
     "db:local:seed": "bash scripts/seed-local.sh",
     "dev:local": "bash scripts/dev-local.sh",
     "test": "vitest run",
