@@ -422,6 +422,7 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   28826: { weapon_type: 'Thrown' },            // Shuriken of Negation
   30025: { weapon_type: 'Thrown' },            // Serpentshrine Shuriken
   32326: { weapon_type: 'Thrown' },            // Twisted Blades of Zarak
+  32325: { weapon_type: 'Gun' },               // Rifle of the Stoic Guardian
   32254: { weapon_type: 'One-Handed Axe' },   // The Brutalizer
   32330: { armor_type: 'Leather' },           // Totem of Ancestral Guidance
   32345: { armor_type: 'Plate' },             // Dreadboots of the Legion

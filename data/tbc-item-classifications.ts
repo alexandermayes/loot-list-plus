@@ -247,6 +247,8 @@ export const TBC_ITEM_CLASSIFICATIONS: Record<string, 'Reserved' | 'Limited' | '
   'Legionkiller': 'Limited',
   'Nether Shadow Tunic': 'Limited',
   'Halberd of Desolation': 'Limited',
+  'Rifle of the Stoic Guardian': 'Limited',
+  'Twisted Blades of Zarak': 'Limited',
 
   // ============================================================================
   // SUNWELL PLATEAU - Limited Items
