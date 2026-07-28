@@ -185,7 +185,10 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
   const [resolvedGroups, setResolvedGroups] = useState<PhaseGroup[]>([])
   const [selectedPhase, setSelectedPhase] = useState<number | null>(null)
   const [masterSheetVisible, setMasterSheetVisible] = useState<boolean>(false)
-  const [hasApprovedSubmission, setHasApprovedSubmission] = useState<boolean>(false)
+  // Phases this character has an approved submission for. The gate is
+  // per-phase, not per-expansion (GH #202) — an approved P1 list must not
+  // unlock the P3 rankings.
+  const [approvedPhases, setApprovedPhases] = useState<Set<number>>(new Set())
   const [itemPriorities, setItemPriorities] = useState<Record<string, ItemPriority>>({})
   const [collapsedBosses, setCollapsedBosses] = useState<Set<string>>(new Set())
   const [collapsedRaidTiers, setCollapsedRaidTiers] = useState<Set<string>>(new Set())
@@ -528,18 +531,19 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
                 .eq('id', expansionId)
                 .single()
             : Promise.resolve({ data: null as null | { current_phase: number | null; phase_groups: unknown } }),
-          // Pre-fetch the "has approved submission" check so it doesn't
-          // block initial render. Officers bypass this entirely.
+          // Pre-fetch the approved phases so the gate doesn't block initial
+          // render. Selects every approved phase rather than a bare existence
+          // check: the gate is evaluated per selected phase (GH #202).
+          // Officers bypass this entirely.
           !canManageLoot && activeCharacter?.id && expansionId
             ? supabase
                 .from('loot_submissions')
-                .select('id')
+                .select('phase')
                 .eq('character_id', activeCharacter.id)
                 .eq('guild_id', activeGuild.id)
                 .eq('expansion_id', expansionId)
                 .eq('status', 'approved')
-                .limit(1)
-            : Promise.resolve({ data: null as null | { id: string }[] }),
+            : Promise.resolve({ data: null as null | { phase: number | null }[] }),
         ])
 
         if (settingsData) {
@@ -618,14 +622,16 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
           }
         }
 
-        // Wire up the has-approved-submission check from the parallel batch.
-        // Officers bypass this.
-        if (canManageLoot) {
-          setHasApprovedSubmission(true)
-        } else {
-          const approvedSubs = (approvedSubsResult as { data: { id: string }[] | null }).data
-          setHasApprovedSubmission(!!(approvedSubs && approvedSubs.length > 0))
-        }
+        // Wire up the approved-phase set from the parallel batch. Officers
+        // bypass the gate entirely (see hasApprovedSubmission below).
+        const approvedSubs = (approvedSubsResult as { data: { phase: number | null }[] | null }).data
+        setApprovedPhases(
+          new Set(
+            (approvedSubs || [])
+              .map(s => s.phase)
+              .filter((p): p is number => p != null),
+          ),
+        )
       } catch (error) {
         console.error('Error loading master sheet data:', error)
       } finally {
@@ -643,6 +649,18 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
     const phaseSet = new Set(group.phases)
     return raidTiers.filter(t => t.phase != null && phaseSet.has(t.phase))
   }, [raidTiers, selectedPhase, resolvedGroups])
+
+  // Whether the raider has earned the right to see THIS phase's rankings.
+  // Scoped to the selected phase group, so an approved list for an earlier
+  // phase no longer unlocks a later one (GH #202). Merged phases share a
+  // group, so an approved list for any phase in the group counts.
+  const hasApprovedSubmission = useMemo(() => {
+    if (canManageLoot) return true
+    if (selectedPhase === null) return false
+    const group = resolvedGroups.find(g => g.canonicalPhase === selectedPhase)
+    const groupPhases = group ? group.phases : [selectedPhase]
+    return groupPhases.some(p => approvedPhases.has(p))
+  }, [canManageLoot, selectedPhase, resolvedGroups, approvedPhases])
 
   // Update master sheet visibility when selected phase changes
   // Master sheet is visible if ANY tier in the phase has it visible
