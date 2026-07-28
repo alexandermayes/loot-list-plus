@@ -741,6 +741,15 @@ export const mounthyjal: Raid = {
         { name: 'Hammer of Judgement', slot: 'One-Hand', wowhead_id: 34009 },
         { name: 'Chestguard of Relentless Storms', slot: 'Chest', wowhead_id: 32592 },
         { name: 'Nethervoid Cloak', slot: 'Back', wowhead_id: 32590 },
+        // Jewelcrafting Designs
+        { name: 'Design: Flashing Crimson Spinel', slot: 'Recipe', wowhead_id: 32285 },
+        { name: 'Design: Stormy Empyrean Sapphire', slot: 'Recipe', wowhead_id: 32289 },
+        { name: 'Design: Mystic Lionseye', slot: 'Recipe', wowhead_id: 32295 },
+        { name: 'Design: Great Lionseye', slot: 'Recipe', wowhead_id: 32296 },
+        { name: 'Design: Sovereign Shadowsong Amethyst', slot: 'Recipe', wowhead_id: 32297 },
+        { name: 'Design: Shifting Shadowsong Amethyst', slot: 'Recipe', wowhead_id: 32298 },
+        { name: 'Design: Inscribed Pyrestone', slot: 'Recipe', wowhead_id: 32303 },
+        { name: 'Design: Veiled Pyrestone', slot: 'Recipe', wowhead_id: 32307 },
       ],
     },
     {
@@ -830,6 +839,8 @@ export const blacktemple: Raid = {
         { name: 'Botanist\'s Gloves of Growth', slot: 'Hands', wowhead_id: 32328 },
         { name: 'Totem of Ancestral Guidance', slot: 'Relic', wowhead_id: 32330 },
         { name: 'Cowl of Benevolence', slot: 'Head', wowhead_id: 32329 },
+        { name: 'Rifle of the Stoic Guardian', slot: 'Ranged', wowhead_id: 32325 },
+        { name: 'Twisted Blades of Zarak', slot: 'Ranged', wowhead_id: 32326 },
       ],
     },
     {
