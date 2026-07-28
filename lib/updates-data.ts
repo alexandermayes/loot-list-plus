@@ -14,6 +14,21 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'July 22, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Reset bad luck protection',
+        description: 'Clear the BLP your raiders banked while testing the loot system. A hard reset sets an anchor date, so raids before it stop counting and everyone starts from zero. It is non-destructive and reversible: your loot and attendance history stay intact, and clearing the anchor brings the old values back. Officers set it under bad luck prevention in loot settings.',
+      },
+      {
+        category: 'feature',
+        title: 'Reset guild data',
+        description: 'Wipe the raid history, attendance, loot awards, and donations left over from testing so every raider starts fresh, while keeping your members, their loot lists, roles, and settings. Choose exactly what to clear. Guild Masters do this from the Danger Zone in guild settings, and it cannot be undone.',
+      },
+    ],
+  },
+  {
     date: 'July 21, 2026',
     items: [
       {
