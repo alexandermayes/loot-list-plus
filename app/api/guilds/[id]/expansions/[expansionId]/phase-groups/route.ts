@@ -81,17 +81,28 @@ export async function PATCH(
       }
     }
 
-    // Null = clear merge config (revert to independent phases)
+    // Null = clear merge config (revert to independent phases).
+    //
+    // This goes through the RPC rather than updating expansions directly:
+    // un-merging has to send previously-migrated submissions back to the phase
+    // they were submitted for, or they stay stranded on the group's canonical
+    // phase and drop out of every phase-filtered view (GH #207).
     if (phaseGroups === null) {
       const serviceSupabase = createServiceRoleClient()
-      const { error } = await serviceSupabase
-        .from('expansions')
-        .update({ phase_groups: null })
-        .eq('id', expansionId)
-        .eq('guild_id', guildId)
+      const { error } = await serviceSupabase.rpc('merge_phase_groups', {
+        p_expansion_id: expansionId,
+        p_guild_id: guildId,
+        p_phase_groups: null,
+        p_merged_groups: [],
+      })
 
       if (error) {
         console.error('Error clearing phase_groups:', error)
+        if (error.message?.includes('CONFLICT')) {
+          return NextResponse.json({
+            error: 'A new submission was created while un-merging. Refresh and try again.',
+          }, { status: 409 })
+        }
         return NextResponse.json({ error: 'Failed to clear phase groups' }, { status: 500 })
       }
 

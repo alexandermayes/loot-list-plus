@@ -1497,6 +1497,7 @@ export type Database = {
           guild_id: string | null
           id: string
           is_late: boolean | null
+          original_phase: number | null
           phase: number | null
           raid_tier_id: string | null
           resubmission_count: number
@@ -1519,6 +1520,7 @@ export type Database = {
           guild_id?: string | null
           id?: string
           is_late?: boolean | null
+          original_phase?: number | null
           phase?: number | null
           raid_tier_id?: string | null
           resubmission_count?: number
@@ -1541,6 +1543,7 @@ export type Database = {
           guild_id?: string | null
           id?: string
           is_late?: boolean | null
+          original_phase?: number | null
           phase?: number | null
           raid_tier_id?: string | null
           resubmission_count?: number
