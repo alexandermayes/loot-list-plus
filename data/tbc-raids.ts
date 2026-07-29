@@ -754,6 +754,19 @@ export const mounthyjal: Raid = {
         { name: 'Pattern: Living Earth Shoulders', slot: 'Recipe', wowhead_id: 32751 },
         { name: 'Pattern: Swiftheal Wraps', slot: 'Recipe', wowhead_id: 32752 },
         { name: 'Pattern: Mantle of Nimble Thought', slot: 'Recipe', wowhead_id: 32755 },
+      ],
+    },
+    {
+      // Drops from ALL FIVE Hyjal bosses rather than any one of them, so they
+      // belong to no single encounter. A loot_items row carries one boss_name,
+      // hence this shared bucket instead of duplicating each design five times
+      // (which would also break the one-row-per-wowhead_id-per-tier assumption
+      // the backfill migrations rely on).
+      //
+      // Same group name as Siege of Orgrimmar's pool in data/mop-raids.ts,
+      // which exists for the same reason (GH #65).
+      name: 'Shared Boss Loot',
+      items: [
         // Jewelcrafting Designs
         { name: 'Design: Flashing Crimson Spinel', slot: 'Recipe', wowhead_id: 32285 },
         { name: 'Design: Stormy Empyrean Sapphire', slot: 'Recipe', wowhead_id: 32289 },

@@ -201,6 +201,12 @@ const bossIconNames: Record<string, string> = {
   'Kael\'thas Sunstrider': 'achievement_boss_kael-thassunstrider_01',
   'Trash': 'inv_misc_bag_10_blue',
   'Crafting Materials': 'trade_engineering',
+  // Non-encounter buckets shared across expansions. getBossImage returns null
+  // for unmapped names, so without these the group header renders iconless —
+  // which is what Siege of Orgrimmar's 'Shared Boss Loot' and Naxxramas'
+  // 'Tier 3 Tokens' did until now.
+  'Shared Boss Loot': 'inv_misc_bag_10_black',
+  'Tier 3 Tokens': 'inv_misc_desecrated_platechest',
 
   // Mount Hyjal
   'Rage Winterchill': 'spell_frost_glacier',
