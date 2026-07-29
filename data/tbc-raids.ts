@@ -741,6 +741,19 @@ export const mounthyjal: Raid = {
         { name: 'Hammer of Judgement', slot: 'One-Hand', wowhead_id: 34009 },
         { name: 'Chestguard of Relentless Storms', slot: 'Chest', wowhead_id: 32592 },
         { name: 'Nethervoid Cloak', slot: 'Back', wowhead_id: 32590 },
+        // Tier 6 crafting recipes. Hyjal drops the half of the bracers/shoulders
+        // pairs that Black Temple doesn't — verified per item against Wowhead's
+        // drop tables (the Hyjal wave mobs carry no zone tag, so they're matched
+        // by NPC id: Ghoul, Crypt Fiend, Abomination, Shadowy Necromancer,
+        // Banshee, Gargoyle, Frost Wyrm, Giant Infernal, Fel Stalker).
+        { name: 'Plans: Swiftsteel Bracers', slot: 'Recipe', wowhead_id: 32736 },
+        { name: 'Plans: Dawnsteel Shoulders', slot: 'Recipe', wowhead_id: 32739 },
+        { name: 'Pattern: Shoulderpads of Renewed Life', slot: 'Recipe', wowhead_id: 32745 },
+        { name: 'Pattern: Swiftstrike Bracers', slot: 'Recipe', wowhead_id: 32746 },
+        { name: 'Pattern: Bindings of Lightning Reflexes', slot: 'Recipe', wowhead_id: 32748 },
+        { name: 'Pattern: Living Earth Shoulders', slot: 'Recipe', wowhead_id: 32751 },
+        { name: 'Pattern: Swiftheal Wraps', slot: 'Recipe', wowhead_id: 32752 },
+        { name: 'Pattern: Mantle of Nimble Thought', slot: 'Recipe', wowhead_id: 32755 },
         // Jewelcrafting Designs
         { name: 'Design: Flashing Crimson Spinel', slot: 'Recipe', wowhead_id: 32285 },
         { name: 'Design: Stormy Empyrean Sapphire', slot: 'Recipe', wowhead_id: 32289 },
@@ -946,6 +959,26 @@ export const blacktemple: Raid = {
         { name: 'Shroud of the Final Stand', slot: 'Back', wowhead_id: 34012 },
         { name: 'Swiftsteel Bludgeon', slot: 'One-Hand', wowhead_id: 32943 },
         { name: 'Illidari Runeshield', slot: 'Off Hand', wowhead_id: 34011 },
+        // Tier 6 crafting recipes. All 16 drop in Black Temple, off both bosses
+        // and trash (verified per item against Wowhead's drop tables); the 8
+        // marked "also Hyjal" additionally drop from the Hyjal wave trash and
+        // are listed under Hyjal Summit too.
+        { name: 'Plans: Swiftsteel Bracers', slot: 'Recipe', wowhead_id: 32736 },      // also Hyjal
+        { name: 'Plans: Swiftsteel Shoulders', slot: 'Recipe', wowhead_id: 32737 },
+        { name: 'Plans: Dawnsteel Bracers', slot: 'Recipe', wowhead_id: 32738 },
+        { name: 'Plans: Dawnsteel Shoulders', slot: 'Recipe', wowhead_id: 32739 },     // also Hyjal
+        { name: 'Pattern: Bracers of Renewed Life', slot: 'Recipe', wowhead_id: 32744 },
+        { name: 'Pattern: Shoulderpads of Renewed Life', slot: 'Recipe', wowhead_id: 32745 }, // also Hyjal
+        { name: 'Pattern: Swiftstrike Bracers', slot: 'Recipe', wowhead_id: 32746 },   // also Hyjal
+        { name: 'Pattern: Swiftstrike Shoulders', slot: 'Recipe', wowhead_id: 32747 },
+        { name: 'Pattern: Bindings of Lightning Reflexes', slot: 'Recipe', wowhead_id: 32748 }, // also Hyjal
+        { name: 'Pattern: Shoulders of Lightning Reflexes', slot: 'Recipe', wowhead_id: 32749 },
+        { name: 'Pattern: Living Earth Bindings', slot: 'Recipe', wowhead_id: 32750 },
+        { name: 'Pattern: Living Earth Shoulders', slot: 'Recipe', wowhead_id: 32751 }, // also Hyjal
+        { name: 'Pattern: Swiftheal Wraps', slot: 'Recipe', wowhead_id: 32752 },        // also Hyjal
+        { name: 'Pattern: Swiftheal Mantle', slot: 'Recipe', wowhead_id: 32753 },
+        { name: 'Pattern: Bracers of Nimble Thought', slot: 'Recipe', wowhead_id: 32754 },
+        { name: 'Pattern: Mantle of Nimble Thought', slot: 'Recipe', wowhead_id: 32755 }, // also Hyjal
       ],
     },
     {
