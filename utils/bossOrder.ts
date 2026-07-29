@@ -335,7 +335,18 @@ export function getBossOrder(bossName: string): number {
     'Thok the Bloodthirsty': 460,
     'Siegecrafter Blackfuse': 461,
     'Paragons of the Klaxxi': 462,
-    'Garrosh Hellscream': 463
+    'Garrosh Hellscream': 463,
+
+    // Non-encounter buckets, sorted after every real boss in any raid.
+    // Previously all four fell through to the 999 default and tied with each
+    // other, leaving their relative order unspecified. Boss-drop pools come
+    // first, then trash, then crafting mats — matching the order they're
+    // written in the raid data files. 999 stays the unknown-name fallback, so
+    // an unrecognised boss still sorts after these.
+    'Shared Boss Loot': 995,
+    'Tier 3 Tokens': 996,
+    'Trash': 997,
+    'Crafting Materials': 998
   }
 
   return order[normalizedName] || 999 // Unknown bosses go to the end
