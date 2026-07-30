@@ -25,9 +25,17 @@ jobs:
           node-version: 20
           cache: npm
       - name: Write .npmrc for private registry
-        run: printf '%s\n' "$NPM_RC" > .npmrc
         env:
           NPM_RC: ${{ secrets.NPM_RC }}
+        run: |
+          if [ -z "$NPM_RC" ]; then
+            echo "::error::The NPM_RC secret is empty, so npm ci cannot authenticate to npm.hugeicons.com (required by @hugeicons-pro/*) and will fail with E401."
+            if [ "$GITHUB_ACTOR" = "dependabot[bot]" ]; then
+              echo "::error::Dependabot runs read the Dependabot secret store, not Actions secrets. Copy the secret over with: gh secret set NPM_RC --app dependabot"
+            fi
+            exit 1
+          fi
+          printf '%s\n' "$NPM_RC" > .npmrc
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
