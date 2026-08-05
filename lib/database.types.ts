@@ -2318,10 +2318,6 @@ export type Database = {
       is_guild_master: { Args: { target_guild_id: string }; Returns: boolean }
       is_guild_officer: { Args: { target_guild_id: string }; Returns: boolean }
       is_invite_code_valid: { Args: { code_input: string }; Returns: boolean }
-      is_officer_of_guild: {
-        Args: { guild_id_to_check: string; user_id_to_check: string }
-        Returns: boolean
-      }
       is_past_deadline: { Args: { p_raid_tier_id: string }; Returns: boolean }
       merge_phase_groups: {
         Args: {
@@ -2382,10 +2378,6 @@ export type Database = {
         Args: { p_guild_id: string }
         Returns: undefined
       }
-      set_guild_active_expansion: {
-        Args: { p_expansion_id: string; p_guild_id: string }
-        Returns: undefined
-      }
       update_guild_icon: {
         Args: { p_guild_id: string; p_icon_url: string }
         Returns: undefined
@@ -2399,14 +2391,6 @@ export type Database = {
           p_realm: string
         }
         Returns: undefined
-      }
-      user_is_in_guild: {
-        Args: { p_guild_id: string; p_user_id: string }
-        Returns: boolean
-      }
-      user_is_officer_in_guild: {
-        Args: { p_guild_id: string; p_user_id: string }
-        Returns: boolean
       }
     }
     Enums: {
