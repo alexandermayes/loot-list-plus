@@ -1,6 +1,5 @@
 import { BrowserWindow } from 'electron'
 import { randomBytes, createHash } from 'crypto'
-import Store from 'electron-store' // peer dep, added in package.json if needed
 
 /**
  * OAuth 2.0 PKCE flow for authenticating with LootList+ web app.
