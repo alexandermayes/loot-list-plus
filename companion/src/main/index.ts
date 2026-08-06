@@ -60,9 +60,8 @@ function createTray() {
       click: () => syncEngine?.syncNow(),
     },
     {
-      label: 'Status',
+      label: `Status: ${syncEngine?.getStatusText() || 'Not connected'}`,
       enabled: false,
-      label: syncEngine?.getStatusText() || 'Not connected',
     },
     { type: 'separator' },
     {
