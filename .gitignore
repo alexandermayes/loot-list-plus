@@ -3,6 +3,7 @@
 # dependencies
 /node_modules
 discord-bot/node_modules
+companion/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -25,6 +26,10 @@ loadtest/*.html
 
 # production
 /build
+
+# companion (electron-vite build output + electron-builder artifacts)
+companion/out/
+companion/release/
 
 # misc
 .DS_Store

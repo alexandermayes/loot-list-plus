@@ -40,3 +40,37 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test
+
+  companion:
+    name: Companion
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Electron 43's toolchain (@electron/get, @electron/rebuild,
+          # @electron-internal/extract-zip) declares node >= 22.12.0, so this
+          # job can't share the Node 20 the web app uses.
+          node-version: 22
+          cache: npm
+          cache-dependency-path: companion/package-lock.json
+      # No .npmrc step: the companion's dependencies are all public, so unlike
+      # the web app it doesn't need the npm.hugeicons.com credentials.
+      - run: npm ci
+        working-directory: companion
+      - run: npm run typecheck
+        working-directory: companion
+      # electron-vite only bundles here — it never launches Electron, so this
+      # doesn't pull the ~100MB platform binary.
+      - run: npm run build
+        working-directory: companion
+      - name: Verify build output
+        working-directory: companion
+        run: |
+          for f in out/main/index.js out/preload/index.js out/renderer/index.html; do
+            [ -f "$f" ] || { echo "::error::missing build artifact $f"; exit 1; }
+          done
+          # main/index.js resolves these at runtime relative to out/main
+          [ -f out/preload/index.js ]   || exit 1
+          [ -f assets/tray-icon.png ]   || { echo "::error::missing assets/tray-icon.png"; exit 1; }
