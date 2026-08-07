@@ -20,15 +20,17 @@ function createWindow() {
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#141416',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       nodeIntegration: false,
     },
     show: false,
   })
 
-  if (isDev) {
-    mainWindow.loadURL('http://localhost:5173')
+  // electron-vite's dev server publishes its address here; the port is not
+  // fixed, so reading it beats hardcoding one that drifts.
+  if (isDev && process.env.ELECTRON_RENDERER_URL) {
+    mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'))
   }

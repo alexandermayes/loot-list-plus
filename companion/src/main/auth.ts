@@ -1,5 +1,7 @@
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, app, safeStorage } from 'electron'
 import { randomBytes, createHash } from 'crypto'
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'fs'
+import path from 'path'
 
 /**
  * OAuth 2.0 PKCE flow for authenticating with LootList+ web app.
@@ -19,8 +21,46 @@ interface StoredAuth {
   expiresAt: string
 }
 
-// Simple file-based store for auth tokens
 let storedAuth: StoredAuth | null = null
+let loadedFromDisk = false
+
+// The sync token is a guild-scoped API credential, so it goes through
+// safeStorage (OS keychain on macOS/Windows, libsecret on Linux) rather than
+// plaintext JSON in userData.
+function authFile(): string {
+  return path.join(app.getPath('userData'), 'auth.dat')
+}
+
+function persist(auth: StoredAuth | null): void {
+  const file = authFile()
+  if (!auth) {
+    rmSync(file, { force: true })
+    return
+  }
+  // No keychain (e.g. a Linux box with no secret service) — keep the token in
+  // memory for this session instead of writing a credential out in the clear.
+  if (!safeStorage.isEncryptionAvailable()) return
+  writeFileSync(file, safeStorage.encryptString(JSON.stringify(auth)))
+}
+
+// Read lazily: app.getPath('userData') isn't valid until the app is ready.
+function load(): StoredAuth | null {
+  if (loadedFromDisk) return storedAuth
+  loadedFromDisk = true
+
+  const file = authFile()
+  try {
+    if (existsSync(file) && safeStorage.isEncryptionAvailable()) {
+      storedAuth = JSON.parse(safeStorage.decryptString(readFileSync(file)))
+    }
+  } catch {
+    // Corrupt, or encrypted under a key this machine no longer has. Drop it
+    // and let the user log in again.
+    rmSync(file, { force: true })
+    storedAuth = null
+  }
+  return storedAuth
+}
 
 export class AuthManager {
   /**
@@ -93,6 +133,8 @@ export class AuthManager {
               guildName: data.guild_name,
               expiresAt: data.expires_at,
             }
+            loadedFromDisk = true
+            persist(storedAuth)
 
             resolve({ success: true })
           } catch (err) {
@@ -108,17 +150,20 @@ export class AuthManager {
   }
 
   static getToken(): StoredAuth | null {
-    return storedAuth
+    return load()
   }
 
   static logout() {
     storedAuth = null
+    loadedFromDisk = true
+    persist(null)
   }
 
   static isAuthenticated(): boolean {
-    if (!storedAuth) return false
-    if (new Date(storedAuth.expiresAt) < new Date()) {
-      storedAuth = null
+    const auth = load()
+    if (!auth) return false
+    if (new Date(auth.expiresAt) < new Date()) {
+      this.logout()
       return false
     }
     return true

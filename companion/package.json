@@ -2,7 +2,7 @@
   "name": "lootlist-companion",
   "version": "1.0.0",
   "description": "LootList+ Companion App - Syncs data between the web app and WoW addon",
-  "main": "dist/main/index.js",
+  "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
@@ -10,7 +10,11 @@
     "package": "electron-builder",
     "package:mac": "electron-builder --mac",
     "package:win": "electron-builder --win",
-    "package:linux": "electron-builder --linux"
+    "package:linux": "electron-builder --linux",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   },
   "dependencies": {
     "chokidar": "^3.6.0"
@@ -37,17 +41,24 @@
     "directories": {
       "output": "release"
     },
+    "files": [
+      "out/**",
+      "assets/**",
+      "package.json"
+    ],
     "mac": {
       "target": ["dmg", "zip"],
-      "icon": "assets/icon.icns"
+      "icon": "assets/icon.png",
+      "category": "public.app-category.utilities"
     },
     "win": {
       "target": ["nsis", "portable"],
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.png"
     },
     "linux": {
       "target": ["AppImage", "deb"],
-      "icon": "assets/icon.png"
+      "icon": "assets/icon.png",
+      "category": "Utility"
     }
   }
 }
