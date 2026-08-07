@@ -1,0 +1,224 @@
+name: Release Companion
+
+# Builds the LootList+ Companion desktop app for macOS, Windows and Linux and
+# drafts a GitHub Release with the installers attached.
+#
+# Trigger either way:
+#   * push a tag matching companion-v*  (e.g. companion-v1.0.0)
+#   * run it manually from the Actions tab (workflow_dispatch)
+#
+# The tag version must match companion/package.json — electron-builder names
+# artifacts from package.json, so a mismatch would ship files that disagree with
+# the tag. The build-info job fails fast on that.
+#
+# Releases are created as DRAFTS. Nothing is public until you review the
+# artifacts and hit publish.
+#
+# Signing (optional — builds are unsigned without it)
+# ---------------------------------------------------
+# Add these repo secrets and the relevant steps activate automatically; no
+# workflow edit needed.
+#   macOS:    CSC_LINK (base64 .p12), CSC_KEY_PASSWORD
+#             APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID  (notarization)
+#   Windows:  WIN_CSC_LINK (base64 .pfx), WIN_CSC_KEY_PASSWORD
+#
+# Until then, macOS users must right-click -> Open on first launch (Gatekeeper)
+# and Windows users will see a SmartScreen warning.
+
+on:
+  push:
+    tags: ["companion-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-companion-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-info:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        name: Resolve and validate version
+        run: |
+          pkg_version=$(node -p "require('./companion/package.json').version")
+          echo "package.json version: $pkg_version"
+
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            tag_version="${GITHUB_REF_NAME#companion-v}"
+            if [ "$tag_version" != "$pkg_version" ]; then
+              echo "::error::Tag ${GITHUB_REF_NAME} implies version ${tag_version}, but companion/package.json says ${pkg_version}. Bump package.json (and its lockfile) to match, or retag."
+              exit 1
+            fi
+          fi
+
+          echo "version=$pkg_version" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.name }}
+    needs: build-info
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Each Mac arch builds on its own runner rather than cross-compiling.
+          # chokidar pulls in fsevents, a native module, and cross-arch rebuilds
+          # of it are a common source of packaging failures.
+          - os: macos-latest
+            name: macOS-arm64
+            platform: mac
+            args: --mac --arm64
+          - os: macos-13
+            name: macOS-x64
+            platform: mac
+            args: --mac --x64
+          - os: windows-latest
+            name: Windows
+            platform: win
+            args: --win
+          - os: ubuntu-latest
+            name: Linux
+            platform: linux
+            args: --linux
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Electron 43's toolchain declares node >= 22.12.0.
+          node-version: 22
+          cache: npm
+          cache-dependency-path: companion/package-lock.json
+
+      # The companion's dependencies are all public, so unlike the web app this
+      # needs no npm.hugeicons.com credentials.
+      - run: npm ci
+        working-directory: companion
+
+      - run: npm run build
+        working-directory: companion
+
+      - name: Package ${{ matrix.name }}
+        working-directory: companion
+        shell: bash
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          BUILD_ARGS: ${{ matrix.args }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          # Stops electron-builder adopting an unrelated identity from the
+          # runner keychain when we have no cert of our own.
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.CSC_LINK != '' }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          extra=""
+          case "$PLATFORM" in
+            mac)
+              if [ -n "$APPLE_ID" ] && [ -n "$CSC_LINK" ]; then
+                echo "Apple credentials present — signing and notarizing."
+                extra="--config.mac.notarize=true"
+              else
+                echo "::warning::No macOS signing secrets — building unsigned. Users must right-click -> Open on first launch."
+              fi
+              ;;
+            win)
+              if [ -z "$WIN_CSC_LINK" ]; then
+                echo "::warning::No Windows signing cert — building unsigned. Users will see a SmartScreen warning."
+              fi
+              ;;
+          esac
+
+          npx electron-builder $BUILD_ARGS --publish never $extra
+
+      - name: List artifacts
+        working-directory: companion
+        shell: bash
+        run: ls -la release/ || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: companion-${{ matrix.name }}
+          retention-days: 7
+          if-no-files-found: error
+          # latest*.yml (not *.yml) is update metadata for a future
+          # electron-updater; builder-debug.yml is excluded because it embeds
+          # local build paths.
+          path: |
+            companion/release/*.dmg
+            companion/release/*.zip
+            companion/release/*.exe
+            companion/release/*.AppImage
+            companion/release/latest*.yml
+            companion/release/*.blockmap
+
+  release:
+    name: Draft release
+    needs: [build-info, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: companion-*
+          merge-multiple: true
+
+      - name: Show collected files
+        run: ls -la artifacts/
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build-info.outputs.version }}
+        run: |
+          tag="companion-v${VERSION}"
+
+          notes=$(cat <<NOTES
+          LootList+ Companion v${VERSION}
+
+          Syncs loot data between the LootList+ web app and the WoW addon.
+
+          ## Downloads
+          - **macOS (Apple Silicon)** — \`*-mac-arm64.dmg\`
+          - **macOS (Intel)** — \`*-mac-x64.dmg\`
+          - **Windows** — \`*-win-x64.exe\` (installer) or the portable build
+          - **Linux** — \`*.AppImage\`
+
+          ## First launch
+          These builds are **not code-signed yet**.
+
+          - **macOS**: Gatekeeper will refuse the app on first open. Right-click the app → **Open** → **Open**, once. Subsequent launches are normal.
+          - **Windows**: SmartScreen shows "Windows protected your PC". Click **More info** → **Run anyway**.
+
+          The app does not update itself yet — check back here for new versions.
+          NOTES
+          )
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag exists — uploading artifacts to it."
+            gh release upload "$tag" artifacts/* --clobber
+          else
+            gh release create "$tag" \
+              --draft \
+              --title "LootList+ Companion v${VERSION}" \
+              --notes "$notes" \
+              --target "$GITHUB_SHA" \
+              artifacts/*
+          fi
+
+          echo "::notice::Draft release $tag created. Review the artifacts, then publish it from the Releases page."

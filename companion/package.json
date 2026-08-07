@@ -2,6 +2,8 @@
   "name": "lootlist-companion",
   "version": "1.0.0",
   "description": "LootList+ Companion App - Syncs data between the web app and WoW addon",
+  "author": "LootList+",
+  "license": "UNLICENSED",
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -46,6 +48,14 @@
       "assets/**",
       "package.json"
     ],
+    "artifactName": "LootListPlus-Companion-${version}-${os}-${arch}.${ext}",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "alexandermayes",
+        "repo": "loot-list-plus"
+      }
+    ],
     "mac": {
       "target": ["dmg", "zip"],
       "icon": "assets/icon.png",
@@ -55,8 +65,14 @@
       "target": ["nsis", "portable"],
       "icon": "assets/icon.png"
     },
+    "nsis": {
+      "artifactName": "LootListPlus-Companion-${version}-win-${arch}-setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "LootListPlus-Companion-${version}-win-${arch}-portable.${ext}"
+    },
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": ["AppImage"],
       "icon": "assets/icon.png",
       "category": "Utility"
     }
