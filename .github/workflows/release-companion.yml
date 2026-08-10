@@ -123,6 +123,15 @@ jobs:
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
         run: |
+          # GitHub sets an absent secret to the empty string rather than leaving
+          # the variable unset, and electron-builder treats a *defined* CSC_LINK
+          # as a certificate path — an empty one resolves to the working
+          # directory and dies with "<dir> not a file". Drop the empties so it
+          # sees genuinely-unset variables, as it would locally.
+          for v in CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID WIN_CSC_LINK WIN_CSC_KEY_PASSWORD; do
+            [ -z "${!v}" ] && unset "$v"
+          done
+
           extra=""
           case "$PLATFORM" in
             mac)

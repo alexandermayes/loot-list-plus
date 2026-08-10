@@ -132,3 +132,9 @@ Linux ships as AppImage only. A `.deb` needs a `Name <email>` maintainer in the
 package metadata, and there's no contact address to put there yet — adding
 `build.linux.maintainer` and putting `"deb"` back in `build.linux.target` is all
 it takes.
+
+`build.linux.executableName` is set to `lootlistplus-companion` deliberately.
+electron-builder derives a filename from `productName`, and the `+` in
+"LootList+ Companion" is rejected as unsafe for file paths, which fails the
+AppImage build. Setting the executable name explicitly keeps the `+` in the
+user-visible product name.

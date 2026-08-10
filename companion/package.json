@@ -74,7 +74,8 @@
     "linux": {
       "target": ["AppImage"],
       "icon": "assets/icon.png",
-      "category": "Utility"
+      "category": "Utility",
+      "executableName": "lootlistplus-companion"
     }
   }
 }
