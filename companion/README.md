@@ -59,8 +59,9 @@ on — a full cross-platform set comes from CI.
 
 ## Cutting a release
 
-Releases are built by `.github/workflows/release-companion.yml` on four runners
-(macOS arm64, macOS x64, Windows, Linux) and land as a **draft** GitHub Release.
+Releases are built by `.github/workflows/release-companion.yml` on three runners
+(macOS, Windows, Linux) and land as a **draft** GitHub Release. The macOS leg
+produces both Apple Silicon and Intel builds.
 
 1. Bump the version in `companion/package.json`, then refresh the lockfile so
    they agree:
@@ -83,9 +84,12 @@ You can also run the workflow manually (**Actions → Release Companion → Run
 workflow**) to test packaging without tagging; it drafts a release at the
 current `package.json` version.
 
-Each Mac architecture builds on its own runner instead of cross-compiling.
-`chokidar` pulls in `fsevents`, a native module, and cross-arch rebuilds of it
-are a common packaging failure.
+Both Mac architectures are cross-built on the one arm64 runner. GitHub's Intel
+runner (`macos-13`) is retired — a job targeting it sat queued for 75 minutes
+while every other leg finished, which would stall every release. Cross-building
+is safe here because `fsevents`, the only native dependency, ships prebuilt
+binaries for both architectures, so there is nothing for `@electron/rebuild` to
+compile.
 
 ## Code signing
 
