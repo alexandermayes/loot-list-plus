@@ -70,17 +70,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Each Mac arch builds on its own runner rather than cross-compiling.
-          # chokidar pulls in fsevents, a native module, and cross-arch rebuilds
-          # of it are a common source of packaging failures.
+          # Both Mac architectures build on the one arm64 runner. The Intel
+          # runner (macos-13) is retired — a job targeting it sat queued for
+          # 75 minutes while every other leg finished, which would stall every
+          # release indefinitely. Cross-building x64 from arm64 is verified to
+          # work: fsevents, the only native dependency, ships prebuilt binaries
+          # for both architectures, so @electron/rebuild has nothing to compile.
           - os: macos-latest
-            name: macOS-arm64
+            name: macOS
             platform: mac
-            args: --mac --arm64
-          - os: macos-13
-            name: macOS-x64
-            platform: mac
-            args: --mac --x64
+            args: --mac --x64 --arm64
           - os: windows-latest
             name: Windows
             platform: win
