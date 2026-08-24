@@ -918,24 +918,40 @@ export default function RaidTrackingPage() {
         setShowSkipModal({ raidId, date: raid.raid_date })
       }
     } else {
-      await supabase
+      const { data: updated, error } = await supabase
         .from('raid_events')
         .update({ is_skipped: false, skip_reason: null })
         .eq('id', raidId)
+        .select('id')
+
+      // RLS-blocked updates return no error but zero rows — treat both as failure.
+      if (error || !updated?.length) {
+        console.error('Failed to unskip raid:', error)
+        showNotification('error', 'Couldn\'t restore the raid day. Try again.')
+        return
+      }
 
       setRaidDates(prev => prev.map(r =>
         r.id === raidId ? { ...r, is_skipped: false, skip_reason: null } : r
       ))
     }
-  }, [supabase])
+  }, [supabase, showNotification])
 
   const confirmSkipDay = async () => {
     if (!showSkipModal) return
 
-    await supabase
+    const { data: updated, error } = await supabase
       .from('raid_events')
       .update({ is_skipped: true, skip_reason: skipReason || 'Holiday/Cancelled' })
       .eq('id', showSkipModal.raidId)
+      .select('id')
+
+    // RLS-blocked updates return no error but zero rows — treat both as failure.
+    if (error || !updated?.length) {
+      console.error('Failed to skip raid:', error)
+      showNotification('error', 'Couldn\'t skip the raid day. Try again.')
+      return
+    }
 
     setRaidDates(prev => prev.map(r =>
       r.id === showSkipModal.raidId ? { ...r, is_skipped: true, skip_reason: skipReason || 'Holiday/Cancelled' } : r
