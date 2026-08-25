@@ -33,7 +33,9 @@ export const metadata: Metadata = {
     default: "LootList+ - Loot Management for WoW Classic Guilds",
     template: "%s | LootList+",
   },
-  description: "The ultimate loot management system for World of Warcraft Classic guilds. Track attendance, manage loot priority lists, and streamline raid loot distribution with Discord integration.",
+  // The one definitive product description — keep identical across the
+  // homepage, About page, GitHub README, JSON-LD, and directory listings.
+  description: "LootList+ is a free, transparent loot-management system for World of Warcraft Classic guilds. Raiders submit ranked loot lists, officers track attendance, and the platform calculates item-priority scores to help guilds distribute raid loot fairly.",
   keywords: ["WoW Classic", "loot management", "guild management", "raid loot", "loot tracking", "World of Warcraft", "loot council", "DKP alternative", "TBC Classic", "WotLK Classic"],
   authors: [{ name: "LootList+" }],
   creator: "LootList+",
@@ -94,7 +96,7 @@ const jsonLd = {
       "@id": "https://www.getlootlist.com/#website",
       "url": "https://www.getlootlist.com",
       "name": "LootList+",
-      "description": "Loot management system for World of Warcraft Classic guilds",
+      "description": "LootList+ is a free, transparent loot-management system for World of Warcraft Classic guilds. Raiders submit ranked loot lists, officers track attendance, and the platform calculates item-priority scores to help guilds distribute raid loot fairly.",
       "publisher": {
         "@id": "https://www.getlootlist.com/#organization"
       }
@@ -111,7 +113,9 @@ const jsonLd = {
         "height": 512
       },
       "sameAs": [
-        "https://discord.gg/JNJewThYAB"
+        "https://discord.gg/JNJewThYAB",
+        "https://github.com/alexandermayes/loot-list-plus",
+        "https://www.lootlistplus.com"
       ]
     },
     {
@@ -120,7 +124,9 @@ const jsonLd = {
       "operatingSystem": "Web",
       "applicationCategory": "GameApplication",
       "url": "https://www.getlootlist.com",
-      "description": "The ultimate loot management system for World of Warcraft Classic guilds. Track attendance, manage loot priority lists, and streamline raid loot distribution with Discord integration.",
+      "sameAs": ["https://www.lootlistplus.com"],
+      "installUrl": "https://www.lootlistplus.com",
+      "description": "LootList+ is a free, transparent loot-management system for World of Warcraft Classic guilds. Raiders submit ranked loot lists, officers track attendance, and the platform calculates item-priority scores to help guilds distribute raid loot fairly.",
       "offers": {
         "@type": "Offer",
         "price": "0",

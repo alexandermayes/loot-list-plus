@@ -10,7 +10,7 @@ import LandingFooter from '@/app/components/landing/LandingFooter'
 
 export const metadata: Metadata = {
   title: 'About LootList+',
-  description: 'Learn about LootList+, the loot management system built for WoW Classic guilds. Fair loot distribution, attendance tracking, and Discord integration.',
+  description: 'LootList+ is a free, transparent loot-management system for World of Warcraft Classic guilds. Raiders submit ranked loot lists, officers track attendance, and the platform calculates item-priority scores to help guilds distribute raid loot fairly.',
   alternates: {
     // /about renders the same marketing landing as the homepage; canonicalize
     // to the homepage so Google consolidates the duplicate instead of splitting

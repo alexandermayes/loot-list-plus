@@ -3,6 +3,19 @@ import { MetadataRoute } from 'next'
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
+      // OpenAI's crawlers, allowed explicitly: OAI-SearchBot determines
+      // whether pages can appear in ChatGPT Search; GPTBot is the separate
+      // training crawler. Only auth-only and API paths are excluded.
+      {
+        userAgent: 'OAI-SearchBot',
+        allow: '/',
+        disallow: ['/api/', '/auth/', '/admin/'],
+      },
+      {
+        userAgent: 'GPTBot',
+        allow: '/',
+        disallow: ['/api/', '/auth/', '/admin/'],
+      },
       {
         userAgent: '*',
         allow: '/',
