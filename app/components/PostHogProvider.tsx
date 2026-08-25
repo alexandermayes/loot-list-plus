@@ -21,6 +21,9 @@ function ensurePostHogInitialized() {
       capture_pageview: false,
       capture_pageleave: true,
       persistence: 'localStorage+cookie',
+      // Error tracking: report unhandled errors and promise rejections, not
+      // just the ones that reach an error boundary (client_error events).
+      capture_exceptions: true,
       bootstrap: {
         featureFlags: {},
       },

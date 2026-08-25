@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Heading, Text } from '@/components/ui/typography'
 import { useEffect } from 'react'
 import posthog from 'posthog-js'
+import { isChunkLoadError, reloadOnceForStaleChunk } from '@/utils/chunk-reload'
 
 export default function Error({
   error,
@@ -16,7 +17,13 @@ export default function Error({
 }) {
   useEffect(() => {
     console.error('Application error:', error)
+
+    // A stale client requesting old /_next/static chunks after a deploy is
+    // recoverable — reload once for the new bundle instead of reporting it.
+    if (isChunkLoadError(error.message) && reloadOnceForStaleChunk()) return
+
     try {
+      posthog.captureException(error)
       posthog.capture('client_error', {
         error_message: error.message,
         error_digest: error.digest,
