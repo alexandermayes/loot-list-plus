@@ -10,7 +10,7 @@ import ParallaxItem from './ParallaxItem'
 const statGradient = 'linear-gradient(200deg, rgb(46, 42, 53) 15%, rgb(80, 73, 95) 83%)'
 const quoteGradient = 'linear-gradient(190deg, rgb(12, 11, 14) 15%, rgb(23, 21, 27) 83%)'
 
-function TiltCard({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
+export function TiltCard({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [transform, setTransform] = useState('')
 
