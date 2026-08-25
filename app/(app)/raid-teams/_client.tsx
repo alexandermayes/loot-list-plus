@@ -76,10 +76,14 @@ export default function RaidTeamsPage() {
     if (activeGuild?.id) trackClientEvent('raid_teams_page_viewed', { guild_id: activeGuild.id })
   }, [activeGuild?.id])
 
-  // Redirect non-officers or non-Pro guilds
+  // Redirect non-officers to overview; officers of free guilds go to the
+  // Premium page instead, since raid teams is what they came here for.
   useEffect(() => {
-    if (!guildLoading && (!hasPermission('manage_roster') || !hasFeature(activeGuild, 'raid_teams'))) {
+    if (guildLoading) return
+    if (!hasPermission('manage_roster')) {
       router.push('/overview')
+    } else if (!hasFeature(activeGuild, 'raid_teams')) {
+      router.push('/premium')
     }
   }, [guildLoading, hasPermission, activeGuild, router])
 

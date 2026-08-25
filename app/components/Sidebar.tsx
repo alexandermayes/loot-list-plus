@@ -56,6 +56,7 @@ const NAV_ROUTE_MAP: Record<string, string> = {
   'raid-tracking': '/raid-tracking',
   'raid-teams': '/raid-teams',
   'audit-log': '/audit-log',
+  'premium': '/premium',
   'reserve': '/reserve',
 }
 
@@ -211,6 +212,8 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
     ...(hasPermission('manage_settings') ? [{ name: 'Loot Management', view: 'loot-settings', icon: '/icons/guild-settings.svg' }] : []),
     ...(hasPermission('manage_roster') && hasFeature(activeGuild, 'raid_teams') ? [{ name: 'Raid Teams', view: 'raid-teams', icon: '/icons/user-multiple.svg' }] : []),
     ...(hasPermission('view_audit_log') && hasFeature(activeGuild, 'audit_log') ? [{ name: 'Audit Log', view: 'audit-log', icon: '/icons/monitor.svg' }] : []),
+    // Upsell: officers of free guilds see where the Pro features live
+    ...(hasPermission('manage_settings') && !hasFeature(activeGuild, 'raid_teams') ? [{ name: 'Premium', view: 'premium', icon: '/icons/premium.svg' }] : []),
   ], [hasPermission, activeGuild])
 
   const isActive = (view: string) => {
@@ -229,6 +232,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
       'raid-tracking': '/raid-tracking',
       'raid-teams': '/raid-teams',
       'audit-log': '/audit-log',
+      'premium': '/premium',
       'reserve': '/reserve',
     }
     return pathname === routeMap[view] || (view === 'reserve' && pathname.startsWith('/reserve'))
