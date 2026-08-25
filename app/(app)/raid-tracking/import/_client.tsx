@@ -132,13 +132,17 @@ export default function ImportPage() {
 
       if (!raidDate || !characterName) continue
 
-      // Find or create raid event
+      // Find or create raid event. Prefer a scheduled (non-bonus) event but
+      // reuse a bonus one if it's all the date has; .maybeSingle() with a
+      // limit tolerates dates that legitimately hold both.
       const { data: existingRaid } = await supabase
         .from('raid_events')
         .select('id')
         .eq('guild_id', guildId)
         .eq('raid_date', raidDate)
-        .single()
+        .order('is_bonus', { ascending: true })
+        .limit(1)
+        .maybeSingle()
 
       let raidEventId: string
 
@@ -155,8 +159,26 @@ export default function ImportPage() {
           .select()
           .single()
 
-        if (raidError) throw raidError
-        raidEventId = newRaid.id
+        if (raidError) {
+          // 23505: a concurrent request created the event between our check
+          // and this insert — reuse the winner instead of failing the import.
+          if (raidError.code === '23505') {
+            const { data: winner } = await supabase
+              .from('raid_events')
+              .select('id')
+              .eq('guild_id', guildId)
+              .eq('raid_date', raidDate)
+              .eq('is_bonus', false)
+              .limit(1)
+              .maybeSingle()
+            if (!winner) throw raidError
+            raidEventId = winner.id
+          } else {
+            throw raidError
+          }
+        } else {
+          raidEventId = newRaid.id
+        }
       }
 
       // Find character by name, then verify guild membership

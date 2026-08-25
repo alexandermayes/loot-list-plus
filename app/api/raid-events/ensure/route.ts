@@ -163,7 +163,13 @@ export async function POST(request: NextRequest) {
           .insert(newEvents)
 
         if (insertError) {
-          console.error('Failed to create raid events:', insertError)
+          // 23505 = unique violation on (guild_id, raid_date, raid_team_id):
+          // a concurrent ensure request (e.g. raid-tracking and attendance
+          // pages racing) created the event between our existence check and
+          // this insert. The reload below returns the winner, so it's benign.
+          if (insertError.code !== '23505') {
+            console.error('Failed to create raid events:', insertError)
+          }
         } else {
           revalidateGuildRaidEvents(guild_id)
         }
