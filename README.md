@@ -1,8 +1,11 @@
 # LootList+
 
-A loot management platform for World of Warcraft Classic guilds.
+LootList+ is a free, transparent loot-management system for World of Warcraft Classic guilds. Raiders submit ranked loot lists, officers track attendance, and the platform calculates item-priority scores to help guilds distribute raid loot fairly.
 
-LootList+ helps guilds distribute raid loot fairly. Raiders submit ranked lists of the items they want, officers track attendance, and the system calculates priority scores to help decide who gets what. Comes with a full in-game addon for real-time loot distribution. No spreadsheets, no drama.
+Comes with a full in-game addon for real-time loot distribution. No spreadsheets, no drama.
+
+- **Website:** [getlootlist.com](https://www.getlootlist.com)
+- **App:** [lootlistplus.com](https://www.lootlistplus.com) (same product — the website is the public front door, the app is where guilds sign in)
 
 ## Features
 

@@ -93,6 +93,15 @@ export default function LandingFooter() {
                 parseforge.gg
               </a>
             </p>
+            <p>
+              The LootList+ app lives at{' '}
+              <a
+                href="https://www.lootlistplus.com"
+                className="text-[#bababa] hover:text-white transition-colors"
+              >
+                lootlistplus.com
+              </a>
+            </p>
           </div>
         </div>
       </div>
