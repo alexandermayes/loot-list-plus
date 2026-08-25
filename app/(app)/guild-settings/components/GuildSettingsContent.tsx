@@ -8,6 +8,7 @@ import InviteCodeManager from './InviteCodeManager'
 import MemberManager from './MemberManager'
 import RoleManager from './RoleManager'
 import ExpansionManager from './ExpansionManager'
+import { BillingSection } from './BillingSection'
 import RealmSelector from '@/app/components/RealmSelector'
 import { getRegionForRealm } from '@/data/wow-realms'
 import { GuildSettingsContentSkeleton } from '@/components/ui/skeletons'
@@ -758,6 +759,9 @@ export default function GuildSettingsContent() {
             </div>
           </div>
         </div>
+
+        {/* LootList+ Premium - Officers with manage_settings */}
+        <BillingSection />
 
         {/* Danger Zone - Only visible to guild creator */}
         {isGuildCreator && (
