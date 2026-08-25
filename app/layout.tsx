@@ -8,6 +8,7 @@ import { NotificationProvider } from "./contexts/NotificationContext";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { SWRProvider } from "./components/SWRProvider";
 import { PostHogProviderDeferred } from "./components/PostHogProviderDeferred";
+import { ChunkErrorReload } from "./components/ChunkErrorReload";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import NotificationContainer from "./components/NotificationContainer";
@@ -180,6 +181,7 @@ export default function RootLayout({
               <GuildContextProvider>
                 <ExpansionProvider>
                   <PostHogProviderDeferred>
+                    <ChunkErrorReload />
                     <NotificationContainer />
                     {children}
                     <SpeedInsights />
