@@ -115,9 +115,9 @@ export default function UpgradeModal({ open, onClose, source }: UpgradeModalProp
           <div className="mt-auto flex flex-col gap-3 pt-2">
             {isOfficer ? (
               <div className="flex items-center justify-end gap-3">
-                <Button variant="outline" onClick={onClose}>
-                  Maybe later
-                </Button>
+                <Link href="/premium" onClick={onClose}>
+                  <Button variant="outline">See full details</Button>
+                </Link>
                 <Button
                   variant="primary"
                   onClick={() => startCheckout(interval)}
@@ -131,18 +131,11 @@ export default function UpgradeModal({ open, onClose, source }: UpgradeModalProp
                 <p className="text-[13px] text-muted-foreground">
                   Only guild officers can upgrade — send one this way.
                 </p>
-                <Button variant="outline" onClick={onClose}>
-                  Got it
-                </Button>
+                <Link href="/premium" onClick={onClose}>
+                  <Button variant="outline">See full details</Button>
+                </Link>
               </div>
             )}
-            <Link
-              href="/premium"
-              onClick={onClose}
-              className="text-[12px] text-muted-foreground hover:text-foreground transition-colors text-right underline"
-            >
-              See full details
-            </Link>
           </div>
         </div>
       </div>
