@@ -51,7 +51,10 @@ img[alt=""] {
 .text-shimmer-purple {
   color: #9940ec;
   display: inline-block;
-  padding: 0.1em 0;
+  /* Extra bottom padding keeps background-clip:text from cutting descenders
+     on hover; the negative margin cancels it out of layout */
+  padding: 0.1em 0.05em 0.22em 0;
+  margin-bottom: -0.22em;
 }
 
 .text-shimmer-purple:hover {
@@ -76,7 +79,10 @@ img[alt=""] {
 .text-shimmer-gold {
   color: #ff8000;
   display: inline-block;
-  padding: 0.1em 0;
+  /* Extra bottom padding keeps background-clip:text from cutting descenders
+     on hover; the negative margin cancels it out of layout */
+  padding: 0.1em 0.05em 0.22em 0;
+  margin-bottom: -0.22em;
 }
 
 .text-shimmer-gold:hover {
