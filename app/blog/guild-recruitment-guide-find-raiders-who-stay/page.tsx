@@ -49,9 +49,11 @@ const jsonLd = {
   datePublished: '2026-05-21T00:00:00Z',
   dateModified: '2026-05-21T00:00:00Z',
   author: {
-    '@type': 'Organization',
-    name: 'LootList+',
-    url: 'https://www.getlootlist.com',
+    '@type': 'Person',
+    '@id': 'https://www.getlootlist.com/about#creator',
+    name: 'Zev',
+    description: 'Creator of LootList+ and guild officer and raid lead',
+    url: 'https://www.getlootlist.com/about',
   },
   publisher: {
     '@type': 'Organization',
@@ -147,6 +149,8 @@ export default function BlogPost() {
               Here&apos;s how to fix both ends of the funnel.
             </p>
             <div className="flex items-center gap-4 mt-6 text-sm text-foreground-muted">
+              <span>By <a href="/about" className="text-foreground-secondary hover:text-foreground underline underline-offset-2 transition-colors">Zev</a>, creator of LootList+</span>
+              <span>&middot;</span>
               <time dateTime="2026-05-21">May 21, 2026</time>
               <span>&middot;</span>
               <span>10 min read</span>
