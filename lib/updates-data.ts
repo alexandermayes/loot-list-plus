@@ -14,6 +14,31 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'August 25, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'LootList+ Premium',
+        description: 'Run multiple raid teams with separate schedules, attendance, and loot views, and follow every loot award, roster move, and setting change in the officer activity feed. One subscription covers your whole guild: $4.99 a month or $39 a year. Officers can upgrade from the sidebar or guild settings.',
+      },
+      {
+        category: 'improvement',
+        title: 'Out of beta',
+        description: 'The beta tag is gone. LootList+ has been running real raids for months, and now it says so.',
+      },
+      {
+        category: 'fix',
+        title: 'Raid days that refused to be skipped',
+        description: 'A rare bug could create two copies of the same raid day, so skipping one left the other showing as active. Existing duplicates are merged, new ones are impossible, and the skip button now reports a failure instead of pretending it worked.',
+      },
+      {
+        category: 'fix',
+        title: 'Broken pages right after an update',
+        description: 'If you had LootList+ open while a new version shipped, some pages could fail to load until you refreshed. The app now detects this and reloads itself once automatically.',
+      },
+    ],
+  },
+  {
     date: 'July 22, 2026',
     items: [
       {
