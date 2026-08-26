@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { toDateString } from '@/utils/date'
+import { resolveRaidDays } from '@/domain/raid-team/settings'
+import { isDateScheduled } from '@/domain/raid-team/schedule-history'
 import { revalidateGuildRaidEvents } from '@/lib/cache/dashboard-attendance'
 
 /**
@@ -88,7 +90,35 @@ export async function POST(request: NextRequest) {
     const { data: existingEvents } = await existingQuery
 
     const existingDates = new Set(existingEvents?.map(e => e.raid_date) || [])
-    const newDates = dates.filter(d => !existingDates.has(d))
+    let newDates = dates.filter(d => !existingDates.has(d))
+
+    // Authoritative schedule filter for team events. Clients filter by the
+    // team's schedule history too, but a stale client (e.g. right after team
+    // creation, before its day override loads) can send dates from the
+    // inherited guild schedule — which is how phantom past events get created
+    // on a brand-new team (#248). Recheck every candidate date server-side.
+    if (raid_team_id && newDates.length > 0) {
+      const [{ data: team }, { data: gs }] = await Promise.all([
+        serviceSupabase
+          .from('raid_teams')
+          .select('raid_days_override, schedule_history')
+          .eq('id', raid_team_id)
+          .eq('guild_id', guild_id)
+          .maybeSingle(),
+        serviceSupabase
+          .from('guild_settings')
+          .select('raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day')
+          .eq('guild_id', guild_id)
+          .maybeSingle(),
+      ])
+      if (!team) {
+        return NextResponse.json({ error: 'Raid team not found in this guild' }, { status: 404 })
+      }
+      const teamDays = gs ? resolveRaidDays(gs, team.raid_days_override) : []
+      newDates = newDates.filter((d) =>
+        isDateScheduled(d, new Date(`${d}T00:00:00Z`).getUTCDay(), teamDays, team.schedule_history)
+      )
+    }
 
     // 2. If there are new dates, look up the tier and create events
     if (newDates.length > 0 && expansion_id && allowCreate) {
