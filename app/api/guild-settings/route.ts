@@ -4,6 +4,7 @@ import { verifyPermission } from '@/utils/server-roles'
 import { NextResponse, after } from 'next/server'
 import { logAudit } from '@/utils/audit/log'
 import { trackEvent, trackApiError } from '@/utils/analytics/server'
+import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { toDateString } from '@/utils/date'
 
 export const dynamic = 'force-dynamic'
@@ -387,6 +388,7 @@ export async function PUT(request: Request) {
         },
       })
     }
+    evaluateGuildFunnel(serviceSupabase, guild_id, { lootSettingsUpdated: true })
 
     return NextResponse.json({ settings: result })
   } catch (error) {

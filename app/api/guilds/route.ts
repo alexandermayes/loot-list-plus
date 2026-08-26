@@ -5,6 +5,7 @@ import { seedExpansionForGuild } from '@/app/services/expansionSeeder'
 import { getCached, invalidateCache, cacheKeys } from '@/utils/cache'
 import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 import { trackApiError, trackEvent, setUserMilestone } from '@/utils/analytics/server'
+import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 
 // POST - Create a new guild
 export async function POST(request: NextRequest) {
@@ -245,6 +246,7 @@ export async function POST(request: NextRequest) {
 
     trackEvent({ event: 'guild_created', userId: user.id, guildId: guild.id, properties: { guild_id: guild.id, guild_name: guild.name } })
     setUserMilestone(user.id, 'first_guild_created_at')
+    evaluateGuildFunnel(serviceSupabase, guild.id)
 
     return NextResponse.json({
       success: true,

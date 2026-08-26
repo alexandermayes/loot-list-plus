@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError, trackEvent } from '@/utils/analytics/server'
+import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { notifyLootAward } from '@/lib/discord-loot-announcements'
 
 interface LootAwardRequest {
@@ -112,6 +113,7 @@ export async function POST(request: NextRequest) {
       guildId: guild_id,
       properties: { source: 'addon', count: 1 },
     })
+    evaluateGuildFunnel(supabase, guild_id)
 
     after(() =>
       notifyLootAward(supabase, guild_id, [

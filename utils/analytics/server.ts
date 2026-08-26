@@ -33,6 +33,14 @@ export type AnalyticsEvent =
   // Premium funnel (search & AI visibility sprint)
   | 'premium_checkout_started'
   | 'premium_subscription_started'
+  // Activation funnel milestones (fired once per guild by utils/analytics/funnel.ts)
+  | 'raid_schedule_configured'
+  | 'loot_settings_completed'
+  | 'roster_threshold_reached'
+  | 'guild_qualified'
+  | 'first_raid_recorded'
+  | 'first_loot_awarded'
+  | 'guild_activated'
 
 interface TrackEventParams {
   event: AnalyticsEvent

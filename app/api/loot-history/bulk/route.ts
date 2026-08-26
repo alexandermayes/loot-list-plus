@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
 import { logAudit } from '@/utils/audit/log'
 import { trackEvent, setUserMilestone } from '@/utils/analytics/server'
+import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { notifyLootAward, type LootAward } from '@/lib/discord-loot-announcements'
 import { recomputeBlpForItems } from '@/utils/blp/recompute'
 import { routeRecordsToTeamEvents } from '@/utils/raid-events/team-routing'
@@ -256,6 +257,7 @@ export async function POST(request: NextRequest) {
           guildId: guild_id,
         })
       }
+      evaluateGuildFunnel(serviceSupabase, guild_id)
       trackEvent({
         event: 'loot_awarded_bulk',
         userId: user.id,
