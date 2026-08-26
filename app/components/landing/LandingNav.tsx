@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { scrollToSection } from '@/lib/animations'
-import { trackClientEvent } from '@/utils/analytics/client'
+import { trackClientEvent, trackMarketingPageView, trackMarketingCta } from '@/utils/analytics/client'
 
 const APP_URL = 'https://www.lootlistplus.com'
 
@@ -19,6 +19,12 @@ function navigateToSection(sectionId: string) {
 
 export default function LandingNav() {
   const [scrolled, setScrolled] = useState(false)
+
+  // LandingNav is on every marketing page, so it owns the standardized
+  // acquisition page-view event and first-touch attribution.
+  useEffect(() => {
+    trackMarketingPageView()
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -75,6 +81,13 @@ export default function LandingNav() {
                 How it works
               </button>
               <a
+                href="/pricing"
+                onClick={() => trackClientEvent('landing_nav_clicked', { target: 'pricing', source: 'nav' })}
+                className="text-white hover:text-[#9940ec] transition-colors no-underline"
+              >
+                Pricing
+              </a>
+              <a
                 href="/compare"
                 onClick={() => trackClientEvent('landing_nav_clicked', { target: 'compare', source: 'nav' })}
                 className="text-white hover:text-[#9940ec] transition-colors no-underline"
@@ -101,7 +114,10 @@ export default function LandingNav() {
               </a>
               <a
                 href={APP_URL}
-                onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'nav_start_free' })}
+                onClick={() => {
+                  trackClientEvent('landing_cta_clicked', { cta: 'nav_start_free' })
+                  trackMarketingCta({ cta_text: 'Start for free', cta_placement: 'nav', destination: APP_URL })
+                }}
                 className="flex items-center justify-center h-9 px-4 py-2 rounded-[60px] bg-white font-poppins font-semibold text-[14px] text-black no-underline hover:bg-white/90 transition-colors"
               >
                 Start for free

@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
 import { getStripe, getPriceId } from '@/lib/billing/stripe'
+import { trackEvent } from '@/utils/analytics/server'
 
 /**
  * POST /api/billing/checkout
@@ -86,6 +87,13 @@ export async function POST(request: NextRequest) {
       },
       success_url: `${origin}/guild-settings?billing=success`,
       cancel_url: `${origin}/premium?billing=cancelled`,
+    })
+
+    trackEvent({
+      event: 'premium_checkout_started',
+      userId: user.id,
+      guildId: guild_id,
+      properties: { billing_period: interval, trial_eligible: trialEligible },
     })
 
     return NextResponse.json({ url: session.url })

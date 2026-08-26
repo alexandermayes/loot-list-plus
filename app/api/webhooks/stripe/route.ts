@@ -3,6 +3,7 @@ import type Stripe from 'stripe'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getStripe } from '@/lib/billing/stripe'
 import { syncSubscriptionToGuild } from '@/lib/billing/sync'
+import { trackEvent } from '@/utils/analytics/server'
 
 /**
  * POST /api/webhooks/stripe
@@ -69,6 +70,23 @@ export async function POST(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient()
     const { tier, error } = await syncSubscriptionToGuild(serviceSupabase, guildId, subscription)
+
+    // A completed checkout is a new Premium subscription — the conversion
+    // event for the acquisition funnel (guild-scoped distinct id; no user
+    // context exists inside a webhook).
+    if (!error && event.type === 'checkout.session.completed') {
+      const item = subscription.items?.data?.[0]
+      trackEvent({
+        event: 'premium_subscription_started',
+        userId: `guild:${guildId}`,
+        guildId,
+        properties: {
+          billing_period: item?.price?.recurring?.interval ?? null,
+          price: item?.price?.unit_amount != null ? item.price.unit_amount / 100 : null,
+          trialing: subscription.status === 'trialing',
+        },
+      })
+    }
 
     if (error) {
       // 500 so Stripe retries — the DB write failed, not the event parsing.

@@ -36,6 +36,11 @@ type ClientEvent =
   // Monetization
   | 'pro_upgrade_clicked'
   | 'pro_modal_viewed'
+  // Acquisition funnel (search & AI visibility sprint)
+  | 'marketing_page_viewed'
+  | 'marketing_cta_clicked'
+  | 'discord_oauth_started'
+  | 'discord_oauth_completed'
   // Landing page
   | 'landing_cta_clicked'
   | 'landing_nav_clicked'
@@ -92,6 +97,50 @@ export function trackClientEvent(event: ClientEvent, properties?: Record<string,
   } catch {
     // Don't let analytics break the app
   }
+}
+
+/** First-touch marketing landing page, persisted for attribution at OAuth time. */
+const LANDING_PAGE_KEY = 'll_landing_page'
+
+export function getFirstTouchLandingPage(): string | null {
+  try {
+    return localStorage.getItem(LANDING_PAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Fire on marketing page mount: records the standardized acquisition event
+ * (sprint funnel) and captures the first-touch landing page.
+ */
+export function trackMarketingPageView(): void {
+  try {
+    if (!localStorage.getItem(LANDING_PAGE_KEY)) {
+      localStorage.setItem(LANDING_PAGE_KEY, window.location.pathname)
+    }
+  } catch {
+    // localStorage unavailable — attribution degrades, event still fires
+  }
+  const params = new URLSearchParams(window.location.search)
+  trackClientEvent('marketing_page_viewed', {
+    page_path: window.location.pathname,
+    referrer: document.referrer || null,
+    utm_source: params.get('utm_source'),
+    utm_medium: params.get('utm_medium'),
+    utm_campaign: params.get('utm_campaign'),
+    landing_page: getFirstTouchLandingPage() ?? window.location.pathname,
+    device_type: window.matchMedia('(max-width: 768px)').matches ? 'mobile' : 'desktop',
+  })
+}
+
+/** Standardized CTA click for the acquisition funnel dashboards. */
+export function trackMarketingCta(props: { cta_text: string; cta_placement: string; destination: string }): void {
+  trackClientEvent('marketing_cta_clicked', {
+    page_path: window.location.pathname,
+    landing_page: getFirstTouchLandingPage(),
+    ...props,
+  })
 }
 
 /**

@@ -5,7 +5,7 @@ import { motion, useInView, useScroll, useTransform } from 'framer-motion'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
 import { scaleUp, scrollToSection } from '@/lib/animations'
-import { trackClientEvent } from '@/utils/analytics/client'
+import { trackClientEvent, trackMarketingCta } from '@/utils/analytics/client'
 import MagneticButton from './MagneticButton'
 import CountUp from './CountUp'
 
@@ -144,8 +144,8 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
                 <MagneticButton
                   as="button"
                   onClick={() => {
-                    trackClientEvent('landing_nav_clicked', { target: 'features', source: 'hero' })
-                    scrollToSection('features')
+                    trackClientEvent('landing_nav_clicked', { target: 'loot-decision', source: 'hero' })
+                    scrollToSection('loot-decision')
                   }}
                   className="flex items-center justify-center px-4 py-3 rounded-[60px] bg-[#121218] border border-[#383838] font-poppins font-semibold text-[16px] text-white cursor-pointer hover:bg-[#1a1a22] transition-colors"
                 >
@@ -154,7 +154,10 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
                 <MagneticButton
                   as="a"
                   href={APP_URL}
-                  onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'hero_create_guild' })}
+                  onClick={() => {
+                    trackClientEvent('landing_cta_clicked', { cta: 'hero_create_guild' })
+                    trackMarketingCta({ cta_text: 'Create your guild free', cta_placement: 'hero', destination: APP_URL })
+                  }}
                   className="flex items-center justify-center px-4 py-3 rounded-[60px] bg-white font-poppins font-semibold text-[16px] text-black no-underline hover:bg-white/90 transition-colors"
                 >
                   Create your guild free
