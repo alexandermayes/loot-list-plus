@@ -127,16 +127,14 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
 
             {/* Headline */}
             <div className="text-center w-full max-w-[720px]">
-              <p className="font-poppins font-semibold text-[12px] uppercase tracking-[0.2em] text-[#9940ec] mb-4">
-                Loot management for WoW Classic guilds
-              </p>
               <h1 className="font-poppins font-bold text-[40px] md:text-[56px] lg:text-[72px] leading-[0.92] text-white mb-6">
                 <span className="font-wow text-shimmer-purple text-[48px] md:text-[64px] lg:text-[80px] leading-[0.82]">Epic loot</span>
                 {' '}deserves an epic system.
               </h1>
               <p className="font-poppins font-medium text-[16px] text-[#bababa] leading-normal max-w-[620px] mx-auto">
-                Raiders rank what they want, officers set the rules, and every drop gets a
-                priority the whole guild can see.
+                LootList+ is loot management for WoW Classic guilds. Raiders rank what they
+                want, officers set the rules, and every drop gets a priority the whole guild
+                can see.
               </p>
             </div>
 
