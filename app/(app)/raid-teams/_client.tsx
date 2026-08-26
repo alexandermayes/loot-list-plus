@@ -45,9 +45,21 @@ export default function RaidTeamsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
+  // Human-readable schedule for a team card: its override days, or inherit.
+  const teamScheduleLabel = (team: RaidTeam): string => {
+    const o = team.raid_days_override
+    if (!o) return 'Guild schedule'
+    const fields = [o.first_raid_day, o.second_raid_day, o.third_raid_day, o.fourth_raid_day, o.fifth_raid_day]
+    const count = o.raid_days_per_week ?? fields.filter((d) => d != null).length
+    const days = fields.slice(0, count).filter((d): d is number => d != null)
+    return days.length > 0 ? days.map((d) => DAY_NAMES[d].slice(0, 3)).join('/') : 'Guild schedule'
+  }
+
   // Create team modal
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newTeamName, setNewTeamName] = useState('')
+  const [newRaidDaysPerWeek, setNewRaidDaysPerWeek] = useState('')
+  const [newRaidDays, setNewRaidDays] = useState<string[]>(['', '', '', '', ''])
 
   // Edit team modal
   const [editingTeam, setEditingTeam] = useState<RaidTeam | null>(null)
@@ -120,11 +132,25 @@ export default function RaidTeamsPage() {
     if (!activeGuild?.id || !newTeamName.trim()) return
     setSaving(true)
 
+    // Optional schedule override, so a team starts on the right days instead
+    // of inheriting the guild schedule until someone edits it (#248)
+    const dayFields = ['first_raid_day', 'second_raid_day', 'third_raid_day', 'fourth_raid_day', 'fifth_raid_day'] as const
+    const raidDaysOverride: RaidDaysOverride = {}
+    if (newRaidDaysPerWeek !== '') raidDaysOverride.raid_days_per_week = Number(newRaidDaysPerWeek)
+    dayFields.forEach((field, i) => {
+      if (newRaidDays[i] !== '') raidDaysOverride[field] = Number(newRaidDays[i])
+    })
+    const hasOverrides = Object.keys(raidDaysOverride).length > 0
+
     try {
       const res = await fetch('/api/raid-teams', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guild_id: activeGuild.id, name: newTeamName.trim() }),
+        body: JSON.stringify({
+          guild_id: activeGuild.id,
+          name: newTeamName.trim(),
+          raid_days_override: hasOverrides ? raidDaysOverride : null,
+        }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -134,6 +160,8 @@ export default function RaidTeamsPage() {
       showNotification('success', `Team "${data.team.name}" created`)
       setShowCreateModal(false)
       setNewTeamName('')
+      setNewRaidDaysPerWeek('')
+      setNewRaidDays(['', '', '', '', ''])
       loadTeams()
     } catch {
       showNotification('error', 'Failed to create team')
@@ -416,6 +444,7 @@ export default function RaidTeamsPage() {
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: team.color_hex }} />
                     <Text size="md" className="font-semibold">{team.name}</Text>
                     <Text size="sm" color="muted">{members.length} members</Text>
+                    <Text size="sm" color="muted">· {teamScheduleLabel(team)}</Text>
                     {team.is_default && (
                       <Badge variant="secondary" className="text-accent bg-accent/10 border-accent/20">Default</Badge>
                     )}
@@ -500,6 +529,47 @@ export default function RaidTeamsPage() {
             onKeyDown={(e) => { if (e.key === 'Enter') handleCreateTeam() }}
             autoFocus
           />
+          <div className="mt-4">
+            <Label size="sm" className="mb-1.5 block">Raid days/week</Label>
+            <Input
+              type="number"
+              min={0}
+              max={5}
+              placeholder="Inherit guild schedule"
+              value={newRaidDaysPerWeek}
+              onChange={(e) => setNewRaidDaysPerWeek(e.target.value)}
+            />
+          </div>
+          {Number(newRaidDaysPerWeek || 0) > 0 && (
+            <div className="mt-3 space-y-2">
+              {Array.from({ length: Number(newRaidDaysPerWeek) }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Label size="sm" className="w-20 shrink-0">
+                    Day {i + 1}
+                  </Label>
+                  <Select
+                    variant="rounded"
+                    size="sm"
+                    value={newRaidDays[i] || ''}
+                    onChange={(e) => {
+                      const next = [...newRaidDays]
+                      next[i] = e.target.value
+                      setNewRaidDays(next)
+                    }}
+                  >
+                    <option value="">Inherit</option>
+                    {DAY_NAMES.map((name, dayIdx) => (
+                      <option key={dayIdx} value={String(dayIdx)}>{name}</option>
+                    ))}
+                  </Select>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-[12px] text-muted-foreground mt-3">
+            Leave blank to follow the guild schedule. You can change this later
+            under Edit team.
+          </p>
         </ModalBody>
         <ModalFooter>
           <Button variant="outline" onClick={() => setShowCreateModal(false)}>Cancel</Button>
@@ -678,6 +748,9 @@ export default function RaidTeamsPage() {
         <ModalBody>
           <Text color="secondary" className="mb-4">
             Move raid events to this team. Attendance and loot history move with the events.
+          </Text>
+          <Text size="sm" color="muted" className="mb-4 block">
+            Looking to change which days this team raids? That&apos;s under Edit team → Raid days.
           </Text>
 
           {/* Day filter */}
