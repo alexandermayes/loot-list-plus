@@ -27,7 +27,7 @@ export default function PremiumHero() {
           float={{ distance: 14, duration: 7, delay: 0 }}
           clickEffect="shockwave"
           className="absolute left-[-180px] top-[140px] w-[480px] h-[460px] hidden lg:block pointer-events-none breathing-glow z-30"
-          style={{ '--glow-color': 'rgba(240,178,50,0.35)', '--glow-duration': '4.5s', '--glow-delay': '0s' } as React.CSSProperties}
+          style={{ '--glow-color': 'rgba(255,128,0,0.3)', '--glow-duration': '4.5s', '--glow-delay': '0s' } as React.CSSProperties}
           tooltip={{ name: "Val'anyr, Hammer of Ancient Kings", quality: 'legendary', type: 'One-Hand Mace', flavor: 'The gift of the titans.' }}
         >
           <Image src="/images/landing/items/valanyr.webp" alt="" fill sizes="500px" loading="lazy" className="object-contain" style={{ transform: 'rotate(-18deg)' }} />
@@ -52,7 +52,7 @@ export default function PremiumHero() {
         <div className="max-w-[900px] w-full flex flex-col items-center gap-6 md:gap-9">
           {/* Badge */}
           <div className="flex items-center gap-2 bg-[#17151b] rounded-[60px] pl-1 pr-3 py-1 max-w-full">
-            <span className="flex items-center justify-center px-2 py-1 bg-[#f0b232] rounded-[60px] font-poppins font-semibold text-[10px] text-black shrink-0">
+            <span className="flex items-center justify-center px-2 py-1 bg-[#ff8000] rounded-[60px] font-poppins font-semibold text-[10px] text-black shrink-0">
               PREMIUM
             </span>
             <span className="font-poppins text-[14px] text-white whitespace-nowrap truncate min-w-0">

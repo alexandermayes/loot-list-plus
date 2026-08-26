@@ -71,9 +71,10 @@ img[alt=""] {
   animation: shimmer-purple 0.8s ease-out forwards;
 }
 
-/* Gold shimmer for Premium accent text — same behavior as the purple one */
+/* Legendary-orange shimmer for Premium accent text — same behavior as the
+   purple one, using WoW's legendary item-quality color */
 .text-shimmer-gold {
-  color: #f0b232;
+  color: #ff8000;
   display: inline-block;
   padding: 0.1em 0;
 }
@@ -81,11 +82,11 @@ img[alt=""] {
 .text-shimmer-gold:hover {
   background: linear-gradient(
     90deg,
-    #f0b232 0%,
-    #f0b232 30%,
-    #ffe9b0 45%,
-    #f0b232 60%,
-    #f0b232 100%
+    #ff8000 0%,
+    #ff8000 30%,
+    #ffd9a0 45%,
+    #ff8000 60%,
+    #ff8000 100%
   );
   background-size: 300% 100%;
   -webkit-background-clip: text;

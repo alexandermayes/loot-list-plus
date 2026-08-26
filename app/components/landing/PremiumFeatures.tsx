@@ -79,7 +79,7 @@ export default function PremiumFeatures() {
               className="flex flex-col gap-4 overflow-hidden rounded-[20px] md:rounded-[28px] p-8 md:p-10"
               style={{ backgroundImage: feature.highlight ? highlightGradient : cardGradient }}
             >
-              <div className="flex items-center justify-center w-12 h-12 rounded-[14px] bg-[#f0b232]/10 border border-[#f0b232]/25">
+              <div className="flex items-center justify-center w-12 h-12 rounded-[14px] bg-[#ff8000]/10 border border-[#ff8000]/25">
                 <Image src={feature.icon} alt="" width={24} height={24} />
               </div>
               <p className="font-poppins font-semibold text-[20px] text-white leading-tight">

@@ -3,28 +3,19 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { motion, useInView } from 'framer-motion'
-import { fadeInUp, staggerContainer } from '@/lib/animations'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { isPro } from '@/domain/guild/feature-flags'
 import { trackClientEvent } from '@/utils/analytics/client'
-import { TiltCard } from './LandingValueProps'
 import MagneticButton from './MagneticButton'
 
-const annualGradient = 'linear-gradient(200deg, rgb(46, 42, 53) 15%, rgb(80, 73, 95) 83%)'
-const monthlyGradient = 'linear-gradient(190deg, rgb(12, 11, 14) 15%, rgb(23, 21, 27) 83%)'
-
-const INCLUDED = [
-  'Multiple raid teams',
-  'Officer activity feed',
-  'Priority Discord support',
-  'Covers every member of your guild',
-]
-
 /**
- * Pricing cards with viewer-aware checkout: officers get Stripe Checkout,
- * members get a nudge to their officers, Pro guilds get a settings link,
- * signed-out visitors get sign-in.
+ * The Premium offer, presented as the one artifact every WoW player has
+ * memorized: an in-game item tooltip, at legendary quality. Styling matches
+ * the hover tooltips on the floating hero items (ParallaxItem) so the page
+ * speaks one visual language. Checkout is viewer-aware: officers buy,
+ * members see a (red, in-game style) unmet requirement, Pro guilds get a
+ * settings link, signed-out visitors get sign-in.
  */
 export default function PremiumPricing() {
   const { activeGuild, loading, hasPermission } = useGuildContext()
@@ -38,7 +29,10 @@ export default function PremiumPricing() {
   }, [activeGuild?.id])
 
   const guildIsPro = isPro(activeGuild)
-  const canBuy = !!activeGuild && hasPermission('manage_settings') && !guildIsPro
+  const isOfficer = !!activeGuild && hasPermission('manage_settings')
+  const canBuy = isOfficer && !guildIsPro
+  // In-game red for an unmet requirement: a member who can't purchase
+  const requirementMet = !activeGuild || isOfficer
 
   const startCheckout = async (interval: 'monthly' | 'annual') => {
     if (!activeGuild || redirecting) return
@@ -63,122 +57,108 @@ export default function PremiumPricing() {
     }
   }
 
-  const buttonFor = (interval: 'monthly' | 'annual', label: string, primary: boolean) => {
-    const className = primary
-      ? 'inline-flex items-center justify-center px-5 py-3 rounded-[60px] bg-white font-poppins font-semibold text-[16px] text-black no-underline hover:bg-white/90 transition-colors cursor-pointer'
-      : 'inline-flex items-center justify-center px-5 py-3 rounded-[60px] bg-[#121218] border border-[#383838] font-poppins font-semibold text-[16px] text-white no-underline hover:bg-[#1a1a22] transition-colors cursor-pointer'
-
-    if (canBuy) {
-      return (
-        <MagneticButton as="button" onClick={() => startCheckout(interval)} className={className}>
-          {redirecting === interval ? 'Redirecting…' : label}
-        </MagneticButton>
-      )
-    }
-    // Signed-out visitors head to sign-in; everyone else gets guidance below.
-    if (!activeGuild && !loading) {
-      return (
-        <MagneticButton as="a" href="/" className={className}>
-          Sign in to upgrade
-        </MagneticButton>
-      )
-    }
-    return null
-  }
+  const primaryBtn =
+    'inline-flex items-center justify-center px-5 py-3 rounded-[60px] bg-white font-poppins font-semibold text-[16px] text-black no-underline hover:bg-white/90 transition-colors cursor-pointer'
+  const secondaryBtn =
+    'inline-flex items-center justify-center px-5 py-3 rounded-[60px] bg-[#121218] border border-[#383838] font-poppins font-semibold text-[16px] text-white no-underline hover:bg-[#1a1a22] transition-colors cursor-pointer'
 
   return (
     <section className="relative pt-12 md:pt-16 pb-24 md:pb-32 bg-[#080808]">
-      <div ref={ref} className="relative z-10 max-w-[900px] mx-auto px-6 md:px-12">
-        <motion.div
-          initial="hidden"
-          animate={isInView ? 'visible' : 'hidden'}
-          variants={staggerContainer}
-          className="text-center mb-10 md:mb-14"
+      <div ref={ref} className="relative z-10 max-w-[560px] mx-auto px-6">
+        <h2 className="sr-only">Pricing</h2>
+
+        {/* Loot-announce line, straight from the in-game chat log */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 1 } : {}}
+          transition={{ duration: 0.4 }}
+          className="font-poppins text-[14px] text-[#bababa] text-center mb-4"
         >
-          <motion.h2
-            variants={fadeInUp}
-            className="font-poppins font-bold text-[28px] md:text-[40px] leading-[1.1] text-white"
-          >
-            Simple <span className="font-wow text-shimmer-gold text-[32px] md:text-[44px]">pricing</span>, whole guild covered.
-          </motion.h2>
+          Your guild receives loot:
+        </motion.p>
+
+        {/* The legendary item tooltip */}
+        <motion.div
+          initial={{ opacity: 0, y: 24, scale: 0.97 }}
+          animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
+          transition={{ duration: 0.5, delay: 0.15 }}
+          className="mx-auto max-w-[440px] breathing-glow"
+          style={{ '--glow-color': 'rgba(255,128,0,0.25)', '--glow-duration': '4.5s', '--glow-delay': '0.5s' } as React.CSSProperties}
+        >
+          <div className="bg-[#1a1a2e]/95 border border-[#4a4a6a] rounded-[6px] px-5 py-4 shadow-xl backdrop-blur-sm">
+            <p className="font-poppins font-bold text-[22px] leading-tight text-[#ff8000]">
+              LootList+ Premium
+            </p>
+            <p className="font-poppins text-[13px] text-white mt-1.5">Binds to guild when picked up</p>
+            <p className="font-poppins text-[13px] text-white">Unique-Equipped: Guild (1)</p>
+            <p className={`font-poppins text-[13px] mt-1.5 ${requirementMet ? 'text-white' : 'text-[#ff2020]'}`}>
+              Requires Guild Officer
+            </p>
+            <div className="mt-3 space-y-0.5">
+              <p className="font-poppins text-[13px] text-white">+ Multiple Raid Teams</p>
+              <p className="font-poppins text-[13px] text-white">+ Officer Activity Feed</p>
+            </div>
+            <div className="mt-3 space-y-2">
+              <p className="font-poppins text-[13px] leading-snug text-[#1eff00]">
+                Equip: Split your roster into raid groups, each with its own schedule, attendance, and loot views.
+              </p>
+              <p className="font-poppins text-[13px] leading-snug text-[#1eff00]">
+                Equip: Records every loot award, roster move, and setting change — who did it, and when.
+              </p>
+              <p className="font-poppins text-[13px] leading-snug text-[#1eff00]">
+                Use: Summons priority support in the LootList+ Discord.
+              </p>
+            </div>
+            <p className="font-poppins text-[13px] italic text-[#ffd100] mt-3 leading-snug">
+              &quot;Keeps the servers running and the features coming — for every guild, free tier included.&quot;
+            </p>
+            <p className="font-poppins text-[13px] text-white mt-3">
+              Sell Price: <span className="font-semibold">$39 a year</span>
+              <span className="text-[#bababa]"> or $4.99 a month</span>
+            </p>
+          </div>
         </motion.div>
 
+        {/* Roll on it */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.2 }}
-          className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch"
+          transition={{ duration: 0.5, delay: 0.35 }}
+          className="mt-8 flex flex-col items-center gap-4"
         >
-          {/* Annual — best value */}
-          <TiltCard
-            className="relative flex flex-col gap-5 overflow-hidden rounded-[20px] md:rounded-[28px] p-8 md:p-10 border border-[#f0b232]/40"
-            style={{ backgroundImage: annualGradient }}
-          >
-            <span className="absolute top-5 right-5 px-2.5 py-1 bg-[#f0b232] rounded-[60px] font-poppins font-semibold text-[10px] text-black">
-              BEST VALUE
-            </span>
-            <p className="font-poppins font-semibold text-[14px] uppercase tracking-wide text-[#f0b232]">Annual</p>
-            <div className="flex items-baseline gap-2">
-              <span className="font-poppins font-bold text-[56px] leading-none text-white">$39</span>
-              <span className="font-poppins font-medium text-[16px] text-[#bababa]">/year</span>
+          {canBuy && (
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              <MagneticButton as="button" onClick={() => startCheckout('annual')} className={primaryBtn}>
+                {redirecting === 'annual' ? 'Redirecting…' : 'Upgrade yearly — $39'}
+              </MagneticButton>
+              <MagneticButton as="button" onClick={() => startCheckout('monthly')} className={secondaryBtn}>
+                {redirecting === 'monthly' ? 'Redirecting…' : '$4.99/month'}
+              </MagneticButton>
             </div>
-            <p className="font-poppins font-medium text-[14px] text-[#bababa]">
-              $3.25 a month — save 35% versus monthly.
-            </p>
-            <ul className="flex flex-col gap-2">
-              {INCLUDED.map((item) => (
-                <li key={item} className="flex items-center gap-2 font-poppins font-medium text-[14px] text-white">
-                  <span className="text-[#f0b232]">✦</span> {item}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-auto pt-2">{buttonFor('annual', 'Upgrade yearly', true)}</div>
-          </TiltCard>
-
-          {/* Monthly */}
-          <TiltCard
-            className="flex flex-col gap-5 overflow-hidden rounded-[20px] md:rounded-[28px] p-8 md:p-10"
-            style={{ backgroundImage: monthlyGradient }}
-          >
-            <p className="font-poppins font-semibold text-[14px] uppercase tracking-wide text-[#bababa]">Monthly</p>
-            <div className="flex items-baseline gap-2">
-              <span className="font-poppins font-bold text-[56px] leading-none text-white">$4.99</span>
-              <span className="font-poppins font-medium text-[16px] text-[#bababa]">/month</span>
-            </div>
-            <p className="font-poppins font-medium text-[14px] text-[#bababa]">
-              Same everything. Cancel anytime.
-            </p>
-            <ul className="flex flex-col gap-2">
-              {INCLUDED.map((item) => (
-                <li key={item} className="flex items-center gap-2 font-poppins font-medium text-[14px] text-white">
-                  <span className="text-[#bababa]">✦</span> {item}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-auto pt-2">{buttonFor('monthly', 'Upgrade monthly', false)}</div>
-          </TiltCard>
-        </motion.div>
-
-        {/* Viewer-state guidance under the cards */}
-        <div className="mt-8 text-center">
+          )}
+          {!activeGuild && !loading && (
+            <MagneticButton as="a" href="/" className={primaryBtn}>
+              Sign in to upgrade your guild
+            </MagneticButton>
+          )}
           {guildIsPro && (
-            <p className="font-poppins font-medium text-[15px] text-[#bababa]">
-              <span className="text-[#f0b232]">✦</span> {activeGuild?.name} already has Premium —{' '}
-              <Link href="/guild-settings" className="text-white underline hover:text-[#f0b232] transition-colors">
+            <p className="font-poppins font-medium text-[15px] text-[#bababa] text-center">
+              <span className="text-[#ff8000]">✦</span> {activeGuild?.name} already has Premium —{' '}
+              <Link href="/guild-settings" className="text-white underline hover:text-[#ff8000] transition-colors">
                 manage billing in guild settings
               </Link>
             </p>
           )}
-          {!guildIsPro && activeGuild && !canBuy && (
-            <p className="font-poppins font-medium text-[15px] text-[#bababa]">
+          {!guildIsPro && activeGuild && !isOfficer && (
+            <p className="font-poppins font-medium text-[15px] text-[#bababa] text-center">
               Upgrading is done by a guild officer — send them this page.
             </p>
           )}
-          <p className="font-poppins text-[13px] text-[#bababa]/60 mt-3">
+          <p className="font-poppins text-[13px] text-[#bababa]/60 text-center max-w-[400px]">
             One subscription covers your whole guild. Cancel anytime — you keep Premium
             until the end of the billing period.
           </p>
-        </div>
+        </motion.div>
       </div>
     </section>
   )
