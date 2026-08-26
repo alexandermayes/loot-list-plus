@@ -1,12 +1,12 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
-import Link from 'next/link'
 import { useGuildContext } from '../contexts/GuildContext'
 import Image from 'next/image'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { CharacterSelector } from './CharacterSelector'
+import UpgradeModal from './UpgradeModal'
 import { useSidebar } from '../contexts/SidebarContext'
 import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -74,6 +74,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [showCreateGuildModal, setShowCreateGuildModal] = useState(false)
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const sidebarRef = useRef<HTMLElement>(null)
@@ -186,6 +187,13 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
         router.push('/overview')
         onNavigate?.()
       }
+      return
+    }
+
+    // The Premium entry opens the in-app upgrade modal instead of navigating
+    if (view === 'premium') {
+      setShowUpgradeModal(true)
+      onNavigate?.()
       return
     }
 
@@ -316,13 +324,12 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                   Premium
                 </span>
               ) : (
-                <Link
-                  href="/premium"
-                  onClick={() => trackClientEvent('pro_upgrade_clicked', { source: 'sidebar_badge', guild_id: activeGuild.id })}
-                  className="text-[10px] font-semibold text-[#ff8000] border border-[#ff8000]/40 px-1.5 py-0.5 rounded-md uppercase tracking-wide no-underline hover:bg-[#ff8000]/15 transition-colors"
+                <button
+                  onClick={() => setShowUpgradeModal(true)}
+                  className="text-[10px] font-semibold text-[#ff8000] border border-[#ff8000]/40 px-1.5 py-0.5 rounded-md uppercase tracking-wide cursor-pointer hover:bg-[#ff8000]/15 transition-colors"
                 >
                   Upgrade
-                </Link>
+                </button>
               )
             )}
           </div>
@@ -823,6 +830,12 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
       initialView={joinModalInitialView}
       onClose={() => setShowJoinModal(false)}
       onError={showErrorToast}
+    />
+
+    <UpgradeModal
+      open={showUpgradeModal}
+      onClose={() => setShowUpgradeModal(false)}
+      source="sidebar"
     />
 
   </>

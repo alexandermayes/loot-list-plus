@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { motion, useInView } from 'framer-motion'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { useNotification } from '@/app/contexts/NotificationContext'
+import { usePremiumCheckout } from '@/app/hooks/usePremiumCheckout'
 import { isPro } from '@/domain/guild/feature-flags'
 import { trackClientEvent } from '@/utils/analytics/client'
 import MagneticButton from './MagneticButton'
@@ -19,8 +19,7 @@ import MagneticButton from './MagneticButton'
  */
 export default function PremiumPricing() {
   const { activeGuild, loading, hasPermission } = useGuildContext()
-  const { showNotification } = useNotification()
-  const [redirecting, setRedirecting] = useState<'monthly' | 'annual' | null>(null)
+  const { startCheckout, redirecting } = usePremiumCheckout('premium_page')
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: '-100px' })
 
@@ -33,29 +32,6 @@ export default function PremiumPricing() {
   const canBuy = isOfficer && !guildIsPro
   // In-game red for an unmet requirement: a member who can't purchase
   const requirementMet = !activeGuild || isOfficer
-
-  const startCheckout = async (interval: 'monthly' | 'annual') => {
-    if (!activeGuild || redirecting) return
-    trackClientEvent('pro_upgrade_clicked', { source: 'premium_page', interval, guild_id: activeGuild.id })
-    setRedirecting(interval)
-    try {
-      const res = await fetch('/api/billing/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guild_id: activeGuild.id, interval }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok || !data.url) {
-        showNotification('error', data.error || 'Couldn\'t start checkout. Try again.')
-        setRedirecting(null)
-        return
-      }
-      window.location.assign(data.url)
-    } catch {
-      showNotification('error', 'Couldn\'t start checkout. Try again.')
-      setRedirecting(null)
-    }
-  }
 
   const primaryBtn =
     'inline-flex items-center justify-center px-5 py-3 rounded-[60px] bg-white font-poppins font-semibold text-[16px] text-black no-underline hover:bg-white/90 transition-colors cursor-pointer'
