@@ -16,9 +16,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: 'https://www.getlootlist.com/about',
-      lastModified: new Date(),
+      lastModified: new Date(2026, 7, 26),
       changeFrequency: 'monthly',
       priority: 0.8,
+    },
+    {
+      url: 'https://www.getlootlist.com/pricing',
+      lastModified: new Date(2026, 7, 26),
+      changeFrequency: 'monthly',
+      priority: 0.9,
     },
     {
       url: 'https://www.getlootlist.com/premium',
