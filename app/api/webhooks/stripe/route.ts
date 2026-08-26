@@ -3,6 +3,7 @@ import type Stripe from 'stripe'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getStripe } from '@/lib/billing/stripe'
 import { syncSubscriptionToGuild } from '@/lib/billing/sync'
+import { syncPremiumDiscordRole } from '@/lib/billing/discord-premium'
 import { trackEvent } from '@/utils/analytics/server'
 
 /**
@@ -70,6 +71,16 @@ export async function POST(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient()
     const { tier, error } = await syncSubscriptionToGuild(serviceSupabase, guildId, subscription)
+
+    // Community Discord perk: grant/revoke the Premium role for the purchaser
+    if (!error) {
+      syncPremiumDiscordRole(
+        serviceSupabase,
+        guildId,
+        subscription.metadata?.user_id ?? null,
+        tier === 'pro'
+      )
+    }
 
     // A completed checkout is a new Premium subscription — the conversion
     // event for the acquisition funnel (guild-scoped distinct id; no user
