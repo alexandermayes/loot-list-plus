@@ -82,7 +82,8 @@ export async function POST(request: NextRequest) {
       allow_promotion_codes: true,
       metadata: { guild_id, guild_name: guild.name },
       subscription_data: {
-        metadata: { guild_id },
+        // user_id identifies the purchaser for Discord premium-role sync
+        metadata: { guild_id, user_id: user.id },
         ...(trialEligible ? { trial_period_days: 14 } : {}),
       },
       success_url: `${origin}/guild-settings?billing=success`,
