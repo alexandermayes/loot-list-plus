@@ -39,7 +39,7 @@ interface UpgradeModalProps {
  */
 export default function UpgradeModal({ open, onClose, source }: UpgradeModalProps) {
   const { activeGuild, hasPermission } = useGuildContext()
-  const { startCheckout, redirecting } = usePremiumCheckout(source)
+  const { startCheckout, redirecting, trialAvailable } = usePremiumCheckout(source)
   const [interval, setInterval] = useState<BillingInterval>('annual')
 
   const isOfficer = hasPermission('manage_settings')
@@ -98,6 +98,11 @@ export default function UpgradeModal({ open, onClose, source }: UpgradeModalProp
               <span className="text-[14px] text-muted-foreground">{price.per} per guild</span>
             </div>
             <p className="text-[13px] text-muted-foreground mt-1.5">{price.note}</p>
+            {trialAvailable && (
+              <p className="text-[13px] text-[#ff8000] mt-1.5">
+                Starts with a 14-day free trial. Cancel during the trial and you won&apos;t be charged.
+              </p>
+            )}
           </div>
 
           <div>
@@ -123,7 +128,9 @@ export default function UpgradeModal({ open, onClose, source }: UpgradeModalProp
                   onClick={() => startCheckout(interval)}
                   loading={redirecting !== null}
                 >
-                  Upgrade — {interval === 'annual' ? '$39/year' : '$4.99/month'}
+                  {trialAvailable
+                    ? 'Start 14-day free trial'
+                    : `Upgrade — ${interval === 'annual' ? '$39/year' : '$4.99/month'}`}
                 </Button>
               </div>
             ) : (

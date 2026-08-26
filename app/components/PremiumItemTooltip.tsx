@@ -42,6 +42,9 @@ export default function PremiumItemTooltip({
             <p className="font-poppins text-[13px] leading-snug text-[#1eff00]">
               Use: Summons priority support in the LootList+ Discord.
             </p>
+            <p className="font-poppins text-[13px] leading-snug text-[#1eff00]">
+              Use: Begins a 14-day free trial.
+            </p>
           </div>
         </>
       )}

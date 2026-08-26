@@ -56,12 +56,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'This guild already has Premium' }, { status: 400 })
     }
 
-    // Reuse the guild's Stripe customer if it has one from a past subscription
+    // Reuse the guild's Stripe customer if it has one from a past subscription.
+    // A guild that has never had a subscription gets a 14-day free trial;
+    // one trial per guild, so lapsed subscribers can't farm trials.
     const { data: existingSub } = await serviceSupabase
       .from('guild_subscriptions')
-      .select('stripe_customer_id')
+      .select('stripe_customer_id, stripe_subscription_id')
       .eq('guild_id', guild_id)
       .maybeSingle()
+
+    const trialEligible = !existingSub?.stripe_subscription_id
 
     const origin = request.nextUrl.origin
     const session = await stripe.checkout.sessions.create({
@@ -76,7 +80,10 @@ export async function POST(request: NextRequest) {
       customer_email: existingSub?.stripe_customer_id ? undefined : user.email,
       allow_promotion_codes: true,
       metadata: { guild_id, guild_name: guild.name },
-      subscription_data: { metadata: { guild_id } },
+      subscription_data: {
+        metadata: { guild_id },
+        ...(trialEligible ? { trial_period_days: 14 } : {}),
+      },
       success_url: `${origin}/guild-settings?billing=success`,
       cancel_url: `${origin}/premium?billing=cancelled`,
     })

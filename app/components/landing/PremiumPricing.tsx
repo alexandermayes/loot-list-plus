@@ -101,8 +101,9 @@ export default function PremiumPricing() {
             </p>
           )}
           <p className="font-poppins text-[13px] text-[#bababa]/60 text-center max-w-[400px]">
-            One subscription covers your whole guild. Cancel anytime — you keep Premium
-            until the end of the billing period.
+            Every new guild starts with a 14-day free trial — cancel during the trial
+            and you won&apos;t be charged. One subscription covers your whole guild, and
+            you keep Premium until the end of the billing period if you cancel later.
           </p>
         </motion.div>
       </div>
