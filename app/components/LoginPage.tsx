@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { trackClientEvent } from '@/utils/analytics/client'
+import { trackClientEvent, getFirstTouchLandingPage } from '@/utils/analytics/client'
 import { Button } from '@/components/ui/button'
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -53,6 +53,10 @@ export default function LoginPage({ nextParam = null, isAuthenticated = false, a
 
   const handleDiscordLogin = async () => {
     trackClientEvent('sign_in_clicked')
+    trackClientEvent('discord_oauth_started', {
+      source_page: getFirstTouchLandingPage(),
+      cta_placement: 'login_page',
+    })
     const callbackUrl = nextParam
       ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextParam)}`
       : `${window.location.origin}/auth/callback`

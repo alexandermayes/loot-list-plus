@@ -30,6 +30,9 @@ export type AnalyticsEvent =
   | 'reserve_run_deleted'
   | 'reserve_run_duplicated'
   | 'reserve_item_awarded'
+  // Premium funnel (search & AI visibility sprint)
+  | 'premium_checkout_started'
+  | 'premium_subscription_started'
 
 interface TrackEventParams {
   event: AnalyticsEvent

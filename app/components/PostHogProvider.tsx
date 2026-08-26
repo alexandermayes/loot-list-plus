@@ -105,6 +105,15 @@ function PostHogIdentify() {
           posthog.capture(isNewUser ? 'user_signed_up' : 'user_signed_in', {
             auth_provider: 'discord',
           })
+          // Standardized acquisition-funnel event (search & AI sprint)
+          let sourcePage: string | null = null
+          try {
+            sourcePage = localStorage.getItem('ll_landing_page')
+          } catch { /* attribution degrades gracefully */ }
+          posthog.capture('discord_oauth_completed', {
+            source_page: sourcePage,
+            new_user: isNewUser,
+          })
         }
       } else if (event === 'SIGNED_OUT') {
         posthog.reset()
