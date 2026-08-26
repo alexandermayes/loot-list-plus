@@ -38,6 +38,12 @@ export default function LandingFooter() {
               About
             </a>
             <a
+              href="/pricing"
+              className="text-sm text-[#bababa] hover:text-white transition-colors"
+            >
+              Pricing
+            </a>
+            <a
               href="/compare"
               className="text-sm text-[#bababa] hover:text-white transition-colors"
             >

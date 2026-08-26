@@ -294,7 +294,7 @@ export async function proxy(request: NextRequest) {
 
   // Page navigations (not API/auth routes — those have their own auth checks)
   if (!pathname.startsWith('/api') && !pathname.startsWith('/auth')) {
-    const isPublicRoute = ['/', '/login', '/guild-select', '/updates', '/dev-login', '/compare', '/about', '/premium', '/sitemap.xml', '/robots.txt', '/landing'].includes(pathname)
+    const isPublicRoute = ['/', '/login', '/guild-select', '/updates', '/dev-login', '/compare', '/about', '/premium', '/pricing', '/sitemap.xml', '/robots.txt', '/landing'].includes(pathname)
       || pathname.startsWith('/legal/')
       || pathname.startsWith('/guild-select/')
       || pathname.startsWith('/blog')

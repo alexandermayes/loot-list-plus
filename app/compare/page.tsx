@@ -97,7 +97,7 @@ const features: Feature[] = [
   { name: 'Bracket system with point costs', lootlist: true, tmb: 'item cap only', dkp: false, epgp: false, council: false },
   { name: 'Compiled per-item score rankings', lootlist: true, tmb: 'wishlists only', dkp: false, epgp: false, council: false },
   { name: 'First-party in-game addon', lootlist: true, tmb: 'third-party', dkp: true, epgp: true, council: false },
-  { name: 'Free to use', lootlist: true, tmb: true, dkp: true, epgp: true, council: true },
+  { name: 'Free core plan', lootlist: true, tmb: true, dkp: true, epgp: true, council: true },
 ]
 
 function Check() {
@@ -136,11 +136,19 @@ export default function ComparePage() {
           <header className="mb-16">
             <p className="text-sm font-medium text-accent mb-3">Comparison</p>
             <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-4">
-              How LootList+ compares to other loot systems
+              LootList+ vs TMB, DKP, EPGP and Loot Council
             </h1>
             <p className="text-lg text-foreground-secondary leading-relaxed">
-              An honest look at the loot systems Classic guilds use today, what they get right, where they fall short, and why we built something different.
+              Every system solves a different part of the loot problem. Here is where each one works, where it creates officer work, and when LootList+ is the better fit.
             </p>
+            <div className="mt-6 rounded-xl border border-border bg-background-subtle p-5 space-y-3">
+              <p className="text-foreground leading-relaxed">
+                <span className="font-semibold">Choose LootList+</span> if your guild wants ranked wishlists, attendance-weighted item priority, and visible score breakdowns in one system.
+              </p>
+              <p className="text-foreground-secondary leading-relaxed">
+                <span className="font-semibold text-foreground">Keep your current system</span> if it creates no officer overhead, raiders understand every decision, and the guild genuinely trusts it. Switching tools for sport is how officers invent new chores.
+              </p>
+            </div>
           </header>
 
           {/* Comparison Chart */}
@@ -181,6 +189,11 @@ export default function ComparePage() {
             </div>
 
             <div className="mt-4 space-y-2 text-sm text-foreground-muted">
+              <p>
+                LootList+ Premium is optional and adds multiple raid teams plus the officer
+                activity feed for $4.99 per month or $39 per year per guild. See{' '}
+                <Link href="/pricing" className="text-foreground-secondary underline hover:text-foreground transition-colors">pricing</Link> for the full breakdown.
+              </p>
               <p>
                 A few notes, because we&apos;d rather be accurate than flattering: <strong className="text-foreground-secondary">TMB does track raid attendance.</strong> It has raid groups, attendance percentages, a configurable decay window, per-raid remarks (late, benched, no-show, gave notice), and it can pull attendees straight from Warcraft Logs. What it doesn&apos;t do is turn any of that into loot priority. The percentage is shown next to a raider&apos;s name while officers assign prios; the officers still do the math.
               </p>
