@@ -3,6 +3,7 @@ import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 import { setUserMilestone, trackEvent } from '@/utils/analytics/server'
+import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { getDefaultRoleName } from '@/domain/guild/default-role'
 
 // GET - Validate invite code and get guild info (works without auth for invite preview)
@@ -187,6 +188,7 @@ export async function POST(
         })
 
       trackEvent({ event: 'guild_joined', userId: user.id, guildId })
+      evaluateGuildFunnel(serviceSupabase, guildId)
 
       return NextResponse.json({
         success: true,
@@ -257,6 +259,7 @@ export async function POST(
 
       revalidateUserBundle(user.id)
       trackEvent({ event: 'guild_joined', userId: user.id, guildId })
+      evaluateGuildFunnel(serviceSupabase, guildId)
 
       return NextResponse.json({
         success: true,
@@ -299,6 +302,7 @@ export async function POST(
     revalidateUserBundle(user.id)
     setUserMilestone(user.id, 'first_guild_joined_at')
     trackEvent({ event: 'guild_joined', userId: user.id, guildId })
+    evaluateGuildFunnel(serviceSupabase, guildId)
 
     return NextResponse.json({
       success: true,

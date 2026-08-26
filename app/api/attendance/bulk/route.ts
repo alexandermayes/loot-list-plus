@@ -3,6 +3,7 @@ import { withPermission } from '@/utils/api/handler'
 import { logAudit } from '@/utils/audit/log'
 import { resolveStatus } from '@/domain/scoring'
 import { trackEvent } from '@/utils/analytics/server'
+import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { revalidateCharacterAttendance } from '@/lib/cache/dashboard-attendance'
 import { recomputeBlpForEvents } from '@/utils/blp/recompute'
 import { routeRecordsToTeamEvents } from '@/utils/raid-events/team-routing'
@@ -263,6 +264,7 @@ export const PATCH = withPermission<{
       guildId: guild_id,
       properties: { raid_event_id: filters.raid_event_id, action: 'update' },
     })
+    evaluateGuildFunnel(serviceSupabase, guild_id)
 
     // Recompute BLP for the affected raid events (attendance edits change who
     // was eligible for that night's awards). Resolve event ids from the filter.

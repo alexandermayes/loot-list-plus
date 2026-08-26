@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
 import { logStatusChange } from '@/utils/audit/log'
 import { trackEvent } from '@/utils/analytics/server'
+import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { revalidatePendingSubmissions } from '@/lib/cache/submission-tag'
 
 /**
@@ -148,6 +149,9 @@ export async function POST(request: NextRequest) {
         new_status: status,
       },
     })
+    if (status === 'approved') {
+      evaluateGuildFunnel(serviceSupabase, submission.guild_id)
+    }
 
     // Invalidate the per-guild pending count for the sidebar badge
     revalidatePendingSubmissions(submission.guild_id)

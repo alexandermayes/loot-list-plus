@@ -12,6 +12,7 @@ import {
 } from '@/lib/battlenet'
 import { invalidateCache, cacheKeys } from '@/utils/cache'
 import { trackEvent } from '@/utils/analytics/server'
+import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 
 // Battle.net API returns localized strings as either a plain string
 // or an object with locale keys (e.g. { en_US: "Warrior", es_MX: "Guerrero" })
@@ -333,6 +334,8 @@ export async function POST(request: NextRequest) {
       if (guildError) {
         console.error('Error adding character to guild:', guildError)
         // Non-critical, continue
+      } else {
+        evaluateGuildFunnel(supabase, guildId)
       }
 
     }
