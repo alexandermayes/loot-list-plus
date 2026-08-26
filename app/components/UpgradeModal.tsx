@@ -11,6 +11,7 @@ import { Cancel01Icon } from '@hugeicons/core-free-icons'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { usePremiumCheckout, type BillingInterval } from '@/app/hooks/usePremiumCheckout'
 import { trackClientEvent } from '@/utils/analytics/client'
+import PremiumItemTooltip from './PremiumItemTooltip'
 
 const FEATURES = [
   'Multiple raid teams with separate schedules and attendance',
@@ -42,6 +43,7 @@ export default function UpgradeModal({ open, onClose, source }: UpgradeModalProp
   const [interval, setInterval] = useState<BillingInterval>('annual')
 
   const isOfficer = hasPermission('manage_settings')
+  const requirementMet = !activeGuild || isOfficer
   const price = PRICING[interval]
 
   useEffect(() => {
@@ -53,22 +55,21 @@ export default function UpgradeModal({ open, onClose, source }: UpgradeModalProp
   return (
     <Modal open={open} onClose={onClose} size="full">
       <div className="grid grid-cols-1 md:grid-cols-[2fr_3fr]">
-        {/* Visual panel — the legendary drop */}
-        <div className="relative hidden md:flex flex-col items-center justify-center gap-3 p-8 bg-[#0c0b0e] border-r border-border overflow-hidden">
+        {/* The drop itself — Val'anyr above its legendary tooltip */}
+        <div className="relative flex flex-col items-center justify-center gap-2 p-6 md:p-7 bg-[#0c0b0e] border-b md:border-b-0 md:border-r border-border overflow-hidden">
           <div
             className="absolute inset-0 pointer-events-none"
-            style={{ background: 'radial-gradient(circle at 50% 42%, rgba(255,128,0,0.18) 0%, transparent 60%)' }}
+            style={{ background: 'radial-gradient(circle at 50% 35%, rgba(255,128,0,0.18) 0%, transparent 60%)' }}
             aria-hidden="true"
           />
-          <div className="relative w-[220px] h-[210px]">
-            <Image src="/images/landing/items/valanyr.webp" alt="" fill sizes="220px" className="object-contain" style={{ transform: 'rotate(-14deg)' }} />
+          <div className="relative w-[150px] h-[140px] hidden md:block">
+            <Image src="/images/landing/items/valanyr.webp" alt="" fill sizes="150px" className="object-contain" style={{ transform: 'rotate(-14deg)' }} />
           </div>
-          <p className="relative font-bold text-[20px] text-[#ff8000] leading-tight text-center">
-            LootList+ Premium
-          </p>
-          <p className="relative text-[13px] text-muted-foreground text-center max-w-[220px]">
-            Legendary tools for serious guilds.
-          </p>
+          <PremiumItemTooltip
+            variant="compact"
+            requirementMet={requirementMet}
+            className="relative w-full max-w-[320px]"
+          />
         </div>
 
         {/* Plan panel */}
@@ -122,7 +123,7 @@ export default function UpgradeModal({ open, onClose, source }: UpgradeModalProp
                   onClick={() => startCheckout(interval)}
                   loading={redirecting !== null}
                 >
-                  Continue with Premium
+                  Upgrade — {interval === 'annual' ? '$39/year' : '$4.99/month'}
                 </Button>
               </div>
             ) : (
