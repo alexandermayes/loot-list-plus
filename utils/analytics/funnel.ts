@@ -163,7 +163,7 @@ export async function evaluateGuildFunnel(
       .from('guild_funnel_milestones')
       .upsert({ guild_id: guildId, ...updates, updated_at: now }, { onConflict: 'guild_id' })
     if (error) {
-      console.error(`Funnel milestone upsert failed for guild ${guildId}:`, error.message)
+      console.error('Funnel milestone upsert failed for guild', guildId, error.message)
       return
     }
 
@@ -172,6 +172,6 @@ export async function evaluateGuildFunnel(
     }
   } catch (err) {
     // Analytics must never break a product mutation
-    console.error(`Funnel evaluation failed for guild ${guildId}:`, err)
+    console.error('Funnel evaluation failed for guild', guildId, err)
   }
 }
