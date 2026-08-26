@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { useGuildContext } from '../contexts/GuildContext'
 import Image from 'next/image'
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
@@ -13,7 +14,7 @@ import { Cancel01Icon, Settings01Icon, Notification03Icon, BubbleChatEditIcon } 
 import { usePendingSubmissionCount } from '../hooks/usePendingSubmissionCount'
 import { useResubmitCount } from '../hooks/useResubmitCount'
 import { trackClientEvent } from '@/utils/analytics/client'
-import { hasFeature } from '@/domain/guild/feature-flags'
+import { hasFeature, isPro } from '@/domain/guild/feature-flags'
 
 // Lazy load modals to keep them out of the initial Sidebar chunk.
 const CreateGuildModal = dynamic(() => import('./CreateGuildModal').then(mod => ({ default: mod.CreateGuildModal })), {
@@ -294,11 +295,11 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
             <HugeiconsIcon icon={Cancel01Icon} size={24} className="text-foreground" />
           </Button>
         ) : (
-          <div className="px-[12px] pointer-events-auto">
+          <div className="px-[12px] pointer-events-auto flex items-center gap-2">
             <Button
               variant="ghost"
               onClick={() => handleNavClick('overview')}
-              className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-2 p-0 h-auto"
+              className="cursor-pointer hover:opacity-80 transition-opacity flex items-center p-0 h-auto"
             >
               <Image
                 src="/logo.svg"
@@ -308,10 +309,22 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                 className="logo-adaptive h-4 w-auto"
                 priority
               />
-              <span className="text-[10px] font-semibold text-accent bg-accent/15 px-1.5 py-0.5 rounded-md uppercase tracking-wide">
-                Beta
-              </span>
             </Button>
+            {activeGuild && (
+              isPro(activeGuild) ? (
+                <span className="text-[10px] font-semibold text-[#ff8000] bg-[#ff8000]/15 px-1.5 py-0.5 rounded-md uppercase tracking-wide">
+                  Premium
+                </span>
+              ) : (
+                <Link
+                  href="/premium"
+                  onClick={() => trackClientEvent('pro_upgrade_clicked', { source: 'sidebar_badge', guild_id: activeGuild.id })}
+                  className="text-[10px] font-semibold text-[#ff8000] border border-[#ff8000]/40 px-1.5 py-0.5 rounded-md uppercase tracking-wide no-underline hover:bg-[#ff8000]/15 transition-colors"
+                >
+                  Upgrade
+                </Link>
+              )
+            )}
           </div>
         )}
       </div>
