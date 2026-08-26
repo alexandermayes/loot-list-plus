@@ -111,7 +111,7 @@ export function BillingSection() {
           <>
             <p className="text-[13px] text-muted-foreground">
               Your guild is on the free tier. Premium is $4.99/month or $39/year
-              for the whole guild.
+              for the whole guild, and starts with a 14-day free trial.
             </p>
             <Button variant="primary" onClick={() => setShowUpgradeModal(true)}>
               See what&apos;s in Premium

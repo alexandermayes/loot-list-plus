@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { createClient } from '@/utils/supabase/client'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent } from '@/utils/analytics/client'
@@ -16,6 +17,27 @@ export function usePremiumCheckout(source: string) {
   const { activeGuild } = useGuildContext()
   const { showNotification } = useNotification()
   const [redirecting, setRedirecting] = useState<BillingInterval | null>(null)
+  // Guilds that never subscribed get a 14-day free trial. The lookup is
+  // officer-readable (RLS); everyone else defaults to true, which is
+  // harmless since only officers can start checkout.
+  const [trialAvailable, setTrialAvailable] = useState(true)
+
+  useEffect(() => {
+    if (!activeGuild?.id) return
+    let cancelled = false
+    const supabase = createClient()
+    supabase
+      .from('guild_subscriptions')
+      .select('stripe_subscription_id')
+      .eq('guild_id', activeGuild.id)
+      .maybeSingle()
+      .then(({ data }: { data: { stripe_subscription_id: string | null } | null }) => {
+        if (!cancelled) setTrialAvailable(!data?.stripe_subscription_id)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [activeGuild?.id])
 
   const startCheckout = useCallback(async (interval: BillingInterval) => {
     if (!activeGuild || redirecting) return
@@ -40,5 +62,5 @@ export function usePremiumCheckout(source: string) {
     }
   }, [activeGuild, redirecting, showNotification, source])
 
-  return { startCheckout, redirecting }
+  return { startCheckout, redirecting, trialAvailable }
 }
