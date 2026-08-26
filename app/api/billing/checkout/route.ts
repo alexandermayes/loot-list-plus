@@ -65,6 +65,11 @@ export async function POST(request: NextRequest) {
 
     const origin = request.nextUrl.origin
     const session = await stripe.checkout.sessions.create({
+      // Managed Payments (Link as merchant of record) is enabled by default
+      // on this account, but it replaces the branded Checkout with Link's
+      // own UI. Deliberately disabled: LootList+ is the merchant of record
+      // and Checkout renders with the account's branding.
+      managed_payments: { enabled: false },
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       customer: existingSub?.stripe_customer_id || undefined,
