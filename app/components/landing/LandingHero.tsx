@@ -126,36 +126,43 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
             </a>
 
             {/* Headline */}
-            <div className="text-center w-full max-w-[696px]">
+            <div className="text-center w-full max-w-[720px]">
               <h1 className="font-poppins font-bold text-[40px] md:text-[56px] lg:text-[72px] leading-[0.92] text-white mb-6">
                 <span className="font-wow text-shimmer-purple text-[48px] md:text-[64px] lg:text-[80px] leading-[0.82]">Epic loot</span>
                 {' '}deserves an epic system.
               </h1>
-              <p className="font-poppins font-medium text-[16px] text-[#bababa] leading-normal">
-                LootList+ is a transparent loot management system for WoW guilds. Includes loot submissions, attendance, tracking, and more!
+              <p className="font-poppins font-medium text-[16px] text-[#bababa] leading-normal max-w-[620px] mx-auto">
+                LootList+ is loot management for WoW Classic guilds. Raiders rank what they
+                want, officers set the rules, and every drop gets a priority the whole guild
+                can see.
               </p>
             </div>
 
             {/* CTA Buttons - Magnetic */}
-            <div className="flex items-center gap-[18px]">
-              <MagneticButton
-                as="button"
-                onClick={() => {
-                  trackClientEvent('landing_nav_clicked', { target: 'features', source: 'hero' })
-                  scrollToSection('features')
-                }}
-                className="flex items-center justify-center px-4 py-3 rounded-[60px] bg-[#121218] border border-[#383838] font-poppins font-semibold text-[16px] text-white cursor-pointer hover:bg-[#1a1a22] transition-colors"
-              >
-                See features
-              </MagneticButton>
-              <MagneticButton
-                as="a"
-                href={APP_URL}
-                onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'hero_start_free' })}
-                className="flex items-center justify-center px-4 py-3 rounded-[60px] bg-white font-poppins font-semibold text-[16px] text-black no-underline hover:bg-white/90 transition-colors"
-              >
-                Start for free
-              </MagneticButton>
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center gap-[18px]">
+                <MagneticButton
+                  as="button"
+                  onClick={() => {
+                    trackClientEvent('landing_nav_clicked', { target: 'features', source: 'hero' })
+                    scrollToSection('features')
+                  }}
+                  className="flex items-center justify-center px-4 py-3 rounded-[60px] bg-[#121218] border border-[#383838] font-poppins font-semibold text-[16px] text-white cursor-pointer hover:bg-[#1a1a22] transition-colors"
+                >
+                  See a loot decision
+                </MagneticButton>
+                <MagneticButton
+                  as="a"
+                  href={APP_URL}
+                  onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'hero_create_guild' })}
+                  className="flex items-center justify-center px-4 py-3 rounded-[60px] bg-white font-poppins font-semibold text-[16px] text-black no-underline hover:bg-white/90 transition-colors"
+                >
+                  Create your guild free
+                </MagneticButton>
+              </div>
+              <p className="font-poppins text-[13px] text-[#bababa]/70">
+                Free core plan · Discord sign-in · Classic Era through Mists of Pandaria
+              </p>
             </div>
           </div>
         </div>

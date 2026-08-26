@@ -20,8 +20,8 @@ function getRecentFeatures(): string {
 }
 
 export const metadata: Metadata = {
-  title: 'LootList+ - Loot Management for WoW Classic Guilds',
-  description: 'The ultimate loot management system for World of Warcraft Classic guilds. Track attendance, manage loot priority lists, and streamline raid loot distribution with Discord integration.',
+  title: 'LootList+ — Transparent Loot Management for WoW Classic',
+  description: 'Rank loot lists, track attendance, and calculate transparent item priority for your WoW Classic guild. Create your guild free with Discord.',
   alternates: {
     canonical: 'https://www.getlootlist.com',
   },
