@@ -131,12 +131,12 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
                 Loot management for WoW Classic guilds
               </p>
               <h1 className="font-poppins font-bold text-[40px] md:text-[56px] lg:text-[72px] leading-[0.92] text-white mb-6">
-                <span className="font-wow text-shimmer-purple text-[48px] md:text-[64px] lg:text-[80px] leading-[0.82]">Fair loot</span>
-                {' '}decisions without spreadsheets or guesswork.
+                <span className="font-wow text-shimmer-purple text-[48px] md:text-[64px] lg:text-[80px] leading-[0.82]">Epic loot</span>
+                {' '}deserves an epic system.
               </h1>
               <p className="font-poppins font-medium text-[16px] text-[#bababa] leading-normal max-w-[620px] mx-auto">
-                Raiders rank the items they want. Officers track attendance and set the rules.
-                LootList+ calculates priority for every drop and shows everyone who is next — and why.
+                Raiders rank what they want, officers set the rules, and every drop gets a
+                priority the whole guild can see.
               </p>
             </div>
 
@@ -163,7 +163,7 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
                 </MagneticButton>
               </div>
               <p className="font-poppins text-[13px] text-[#bababa]/70">
-                Free core plan · Discord sign-in · Classic Era, TBC, Wrath, Cataclysm and Mists of Pandaria
+                Free core plan · Discord sign-in · Classic Era through Mists of Pandaria
               </p>
             </div>
           </div>
