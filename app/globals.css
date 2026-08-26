@@ -71,6 +71,31 @@ img[alt=""] {
   animation: shimmer-purple 0.8s ease-out forwards;
 }
 
+/* Legendary-orange shimmer for Premium accent text — same behavior as the
+   purple one, using WoW's legendary item-quality color */
+.text-shimmer-gold {
+  color: #ff8000;
+  display: inline-block;
+  padding: 0.1em 0;
+}
+
+.text-shimmer-gold:hover {
+  background: linear-gradient(
+    90deg,
+    #ff8000 0%,
+    #ff8000 30%,
+    #ffd9a0 45%,
+    #ff8000 60%,
+    #ff8000 100%
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-purple 0.8s ease-out forwards;
+}
+
 @keyframes shimmer-purple {
   0% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
