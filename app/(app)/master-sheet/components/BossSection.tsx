@@ -430,7 +430,7 @@ const ItemRow = memo(function ItemRow({
                   title={
                     index > 0 && ir.rankings[index - 1] &&
                     ranking.loot_score === ir.rankings[index - 1].loot_score
-                      ? 'Tied score — /roll to decide!'
+                      ? 'Tied score: /roll to decide!'
                       : undefined
                   }
                   onClick={canCompare && onCompare ? (e: React.MouseEvent) => {
@@ -489,7 +489,7 @@ const ItemRow = memo(function ItemRow({
                   )}
                 </div>
               ) : (
-                <span className="text-muted-foreground">—</span>
+                <span className="text-muted-foreground">·</span>
               )}
             </td>
           )

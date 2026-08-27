@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
       ? parseInt(charClass.color_hex.replace('#', ''), 16)
       : FALLBACK_COLOR
 
-    const headerLine = `**${character_name}**${phase ? ` — Phase ${phase}` : ''}${guild_name ? ` in **${guild_name}**` : ''}`
+    const headerLine = `**${character_name}**${phase ? ` · Phase ${phase}` : ''}${guild_name ? ` in **${guild_name}**` : ''}`
     const footerParts = [charClass?.name, guild_name, 'LootList+'].filter(Boolean) as string[]
     const embed = {
       title: '📋 New loot list submission',

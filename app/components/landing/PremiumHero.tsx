@@ -68,7 +68,7 @@ export default function PremiumHero() {
             </h1>
             <p className="font-poppins font-medium text-[16px] text-[#bababa] leading-normal max-w-[620px] mx-auto">
               Everything your guild already uses stays free. Premium adds the tools
-              multi-team guilds ask for — for less than one raider&apos;s consumables budget.
+              multi-team guilds ask for, at less than one raider&apos;s consumables budget.
             </p>
           </div>
         </div>

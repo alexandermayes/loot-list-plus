@@ -6,7 +6,7 @@ import LandingFooter from '@/app/components/landing/LandingFooter'
 const APP_URL = 'https://www.lootlistplus.com'
 
 export const metadata: Metadata = {
-  title: 'About LootList+ — Built by a WoW Classic Guild',
+  title: 'About LootList+: Built by a WoW Classic Guild',
   description:
     'LootList+ was built by a WoW Classic guild to replace fragile loot spreadsheets with ranked lists, attendance, and transparent priority scores.',
   alternates: {

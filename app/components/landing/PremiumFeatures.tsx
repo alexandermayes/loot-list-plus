@@ -22,7 +22,7 @@ const FEATURES = [
     icon: '/images/landing/icons/list-view.svg',
     title: 'Officer activity feed',
     description:
-      'A full audit log of everything that changes in your guild — loot awards, roster moves, setting changes — with who did it and when.',
+      'A full audit log of everything that changes in your guild: loot awards, roster moves, and setting changes, with who did it and when.',
     highlight: false,
   },
   {

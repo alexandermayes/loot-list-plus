@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
       : meta.fallbackColor
 
     const charName = character_name || character.name
-    const headerLine = `**${charName}**${phase ? ` — Phase ${phase}` : ''}${guild_name ? ` in **${guild_name}**` : ''}`
+    const headerLine = `**${charName}**${phase ? ` · Phase ${phase}` : ''}${guild_name ? ` in **${guild_name}**` : ''}`
 
     const fields: { name: string; value: string; inline?: boolean }[] = []
     if (review_notes) {

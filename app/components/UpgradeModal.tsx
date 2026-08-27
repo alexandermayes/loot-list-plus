@@ -15,14 +15,14 @@ import PremiumItemTooltip from './PremiumItemTooltip'
 
 const FEATURES = [
   'Multiple raid teams with separate schedules and attendance',
-  'Officer activity feed — every change, who made it, and when',
+  'Officer activity feed: every change, who made it, and when',
   'Reserve runs for pugs and one-off raids, with shareable join links',
   'Priority support in the LootList+ Discord',
   'Covers every member of your guild',
 ]
 
 const PRICING: Record<BillingInterval, { amount: string; per: string; note: string }> = {
-  annual: { amount: '$39', per: '/year', note: '$3.25 a month — save 35%' },
+  annual: { amount: '$39', per: '/year', note: '$3.25 a month, save 35%' },
   monthly: { amount: '$4.99', per: '/month', note: 'Cancel anytime' },
 }
 
@@ -131,13 +131,13 @@ export default function UpgradeModal({ open, onClose, source }: UpgradeModalProp
                 >
                   {trialAvailable
                     ? 'Start 14-day free trial'
-                    : `Upgrade — ${interval === 'annual' ? '$39/year' : '$4.99/month'}`}
+                    : `Upgrade · ${interval === 'annual' ? '$39/year' : '$4.99/month'}`}
                 </Button>
               </div>
             ) : (
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[13px] text-muted-foreground">
-                  Only guild officers can upgrade — send one this way.
+                  Only guild officers can upgrade. Send one this way.
                 </p>
                 <Link href="/premium" onClick={onClose}>
                   <Button variant="outline">See full details</Button>

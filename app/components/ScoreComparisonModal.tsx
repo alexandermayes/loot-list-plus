@@ -103,7 +103,7 @@ function ScoreRow({
       <span className="text-foreground font-medium text-[13px] w-16 text-right tabular-nums">{userValue.toFixed(1)}</span>
       <span className="text-foreground font-medium text-[13px] w-16 text-right tabular-nums">{winnerValue.toFixed(1)}</span>
       <span className={`${diffColor} font-medium text-[12px] w-12 text-right tabular-nums`}>
-        {diff !== 0 ? diffFormatted : '—'}
+        {diff !== 0 ? diffFormatted : '0'}
       </span>
     </div>
   )

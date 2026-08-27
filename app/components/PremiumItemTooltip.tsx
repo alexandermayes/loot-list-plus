@@ -38,7 +38,7 @@ export default function PremiumItemTooltip({
               Equip: Split your roster into raid groups, each with its own schedule, attendance, and loot views.
             </p>
             <p className="font-poppins text-[13px] leading-snug text-[#1eff00]">
-              Equip: Records every loot award, roster move, and setting change — who did it, and when.
+              Equip: Records every loot award, roster move, and setting change, plus who did it and when.
             </p>
             <p className="font-poppins text-[13px] leading-snug text-[#1eff00]">
               Equip: Unlocks soft-reserve runs for pugs and one-off raids, with shareable join links.
@@ -53,7 +53,7 @@ export default function PremiumItemTooltip({
         </>
       )}
       <p className="font-poppins text-[13px] italic text-[#ffd100] mt-3 leading-snug">
-        &quot;Keeps the servers running and the features coming — for every guild, free tier included.&quot;
+        &quot;Keeps the servers running and the features coming, for every guild, free tier included.&quot;
       </p>
       <p className="font-poppins text-[13px] text-white mt-3">
         Sell Price: <span className="font-semibold">$39 a year</span>
