@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { logReserveAudit } from '@/utils/reserve-audit'
 import { trackEvent } from '@/utils/analytics/server'
 import { verifyReserveRunAccess } from '@/utils/reserve-access'
+import { requireReserveAccess } from '@/utils/feature-gate'
 
 /**
  * POST /api/reserve-runs/[id]/duplicate
@@ -49,6 +50,10 @@ export async function POST(
     if (fetchError || !source) {
       return NextResponse.json({ error: 'Run not found' }, { status: 404 })
     }
+
+    // Duplicating creates a new run — Premium (or grandfathered) only
+    const premiumAccess = await requireReserveAccess(serviceSupabase, user.id, source.guild_id)
+    if (!premiumAccess.allowed) return premiumAccess.error
 
     // Shift raid_at one week forward as a sensible default; officer can adjust later.
     const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000

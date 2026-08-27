@@ -1,6 +1,6 @@
 # LootList+
 
-LootList+ is a transparent loot-management system for World of Warcraft Classic guilds. Raiders submit ranked loot lists, officers track attendance, and Loot Scores show who has priority for each item and why. Core features are free; Premium adds multi-team support and an officer activity feed. Learn more at [getlootlist.com](https://www.getlootlist.com) or compare plans on the [pricing page](https://www.getlootlist.com/pricing).
+LootList+ is a transparent loot-management system for World of Warcraft Classic guilds. Raiders submit ranked loot lists, officers track attendance, and Loot Scores show who has priority for each item and why. Core features are free; Premium adds multi-team support, an officer activity feed, and reserve runs. Learn more at [getlootlist.com](https://www.getlootlist.com) or compare plans on the [pricing page](https://www.getlootlist.com/pricing).
 
 Comes with a full in-game addon for real-time loot distribution. No spreadsheets, no drama.
 

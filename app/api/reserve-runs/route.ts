@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { trackEvent } from '@/utils/analytics/server'
+import { requireReserveAccess } from '@/utils/feature-gate'
 
 /**
  * GET /api/reserve-runs?guild_id=X
@@ -111,6 +112,10 @@ export async function POST(request: NextRequest) {
     }
 
     const serviceSupabase = createServiceRoleClient()
+
+    // Premium feature (guilds with pre-cutoff runs are grandfathered)
+    const access = await requireReserveAccess(serviceSupabase, user.id, guild_id)
+    if (!access.allowed) return access.error
 
     // If guild_id provided, verify the user is a member of the guild
     if (guild_id) {
