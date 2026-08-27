@@ -126,7 +126,7 @@ export default function PricingPage() {
                 href="/premium"
                 className="inline-flex items-center justify-center px-5 py-3 rounded-[60px] bg-[#121218] border border-[#383838] font-poppins font-semibold text-[16px] text-white no-underline hover:bg-[#1a1a22] transition-colors"
               >
-                Start free and upgrade in the app
+                Start free trial
               </Link>
             </div>
           </div>
