@@ -1545,7 +1545,7 @@ export default function LootListContent({
       if (!poolForRank(targetRank).some(i => i.id === itemId)) {
         const item = offSpecItems.find(i => i.id === itemId)
         showNotification('error', item
-          ? `${item.name} can't go there — it's prio'd to other classes for that bracket.`
+          ? `${item.name} can't go there, it's prio'd to other classes for that bracket.`
           : `That item isn't allowed in that bracket.`)
         return
       }
@@ -1572,7 +1572,7 @@ export default function LootListContent({
     if (invalidId) {
       const item = offSpecItems.find(i => i.id === invalidId)
       showNotification('error', item
-        ? `${item.name} can't go there — it's prio'd to other classes for that bracket.`
+        ? `${item.name} can't go there, it's prio'd to other classes for that bracket.`
         : `That item isn't allowed in that bracket.`)
       return
     }

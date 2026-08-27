@@ -171,7 +171,7 @@ export function SettingsModal({
                       <p className="text-muted-foreground text-[12px] mt-1">
                         {settings.weekly_attendance_minimum
                           ? `Attending ${settings.weekly_attendance_minimum}+ raids in a week = full weekly credit`
-                          : 'Off — every scheduled raid counts toward the week'}
+                          : 'Off: every scheduled raid counts toward the week'}
                       </p>
                     </div>
 
@@ -655,7 +655,7 @@ export function SettingsModal({
                           </div>
 
                           <div>
-                            <Label className="block mb-2 inline-flex items-center gap-1">Hard reset <InfoTooltip content="Hides every raid before this anchor from bad luck protection, so accrued BLP restarts at zero. Loot and attendance history are untouched — clear the anchor to bring the old values back." iconSize={12} /></Label>
+                            <Label className="block mb-2 inline-flex items-center gap-1">Hard reset <InfoTooltip content="Hides every raid before this anchor from bad luck protection, so accrued BLP restarts at zero. Loot and attendance history are untouched. Clear the anchor to bring the old values back." iconSize={12} /></Label>
                             {settings.blp_reset_at && (
                               <p className="text-foreground-secondary text-[12px] mt-1 mb-1">
                                 Anchor: <span className="tabular-nums">{settings.blp_reset_at}</span>
@@ -670,7 +670,7 @@ export function SettingsModal({
                                 const today = toDateString(new Date())
                                 confirm({
                                   title: 'Reset bad luck protection?',
-                                  description: `Raids before ${today} will no longer count toward BLP, so every raider's accrued bonus restarts at zero. Loot and attendance history stay intact — this is non-destructive and can be undone.`,
+                                  description: `Raids before ${today} will no longer count toward BLP, so every raider's accrued bonus restarts at zero. Loot and attendance history stay intact. This is non-destructive and can be undone.`,
                                   confirmLabel: 'Reset BLP',
                                   variant: 'danger',
                                   onConfirm: () => {
@@ -689,7 +689,7 @@ export function SettingsModal({
                                 className="mt-1 text-[11px] h-auto p-0"
                                 onClick={() => {
                                   setSettings({ ...settings, blp_reset_at: null })
-                                  showNotification('success', 'BLP anchor cleared — full history counts again.')
+                                  showNotification('success', 'BLP anchor cleared. Full history counts again.')
                                 }}
                               >
                                 Clear anchor
@@ -1074,7 +1074,7 @@ export function SettingsModal({
                                 const today = toDateString(new Date())
                                 confirm({
                                   title: 'Reset donations?',
-                                  description: `Donations dated before ${today} will no longer count toward Loot Score. Records stay in the audit log — this is non-destructive.`,
+                                  description: `Donations dated before ${today} will no longer count toward Loot Score. Records stay in the audit log. This is non-destructive.`,
                                   confirmLabel: 'Reset donations',
                                   variant: 'danger',
                                   onConfirm: () => {

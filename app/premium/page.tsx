@@ -7,7 +7,7 @@ import PremiumFeatures from '@/app/components/landing/PremiumFeatures'
 import PremiumPricing from '@/app/components/landing/PremiumPricing'
 
 export const metadata: Metadata = {
-  title: 'LootList+ Premium — Raid Teams & Activity Feed',
+  title: 'LootList+ Premium: Raid Teams & Activity Feed',
   description:
     'Upgrade your guild to LootList+ Premium: run multiple raid teams with separate schedules and attendance, get a full officer activity feed, and host reserve runs for pugs.',
   alternates: {
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'LootList+ Premium',
     description:
-      'Multiple raid teams, officer activity feed, reserve runs, and priority support — $4.99/month or $39/year per guild.',
+      'Multiple raid teams, officer activity feed, reserve runs, and priority support. $4.99/month or $39/year per guild.',
     type: 'website',
     url: 'https://www.getlootlist.com/premium',
   },

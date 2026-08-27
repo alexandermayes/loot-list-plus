@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     }))
 
     const embed = {
-      title: `📢 LootList+ Update — ${latest.date}`,
+      title: `📢 LootList+ Update: ${latest.date}`,
       color: 0xff8000,
       fields,
       footer: {

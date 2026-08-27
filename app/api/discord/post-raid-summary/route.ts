@@ -337,7 +337,7 @@ export async function POST(request: NextRequest) {
 
     // Compose the embed
     const embed = {
-      title: `Raid Summary — ${raidTitle}${teamName ? ` (${teamName})` : ''}`,
+      title: `Raid Summary: ${raidTitle}${teamName ? ` (${teamName})` : ''}`,
       description,
       color: 0xff8000,
       fields,

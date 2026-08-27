@@ -75,7 +75,7 @@ export default function PremiumPricing() {
           {canBuy && (
             <div className="flex flex-col sm:flex-row items-center gap-3">
               <MagneticButton as="button" onClick={() => startCheckout('annual')} className={primaryBtn}>
-                {redirecting === 'annual' ? 'Redirecting…' : 'Upgrade yearly — $39'}
+                {redirecting === 'annual' ? 'Redirecting…' : 'Upgrade yearly · $39'}
               </MagneticButton>
               <MagneticButton as="button" onClick={() => startCheckout('monthly')} className={secondaryBtn}>
                 {redirecting === 'monthly' ? 'Redirecting…' : '$4.99/month'}
@@ -89,7 +89,7 @@ export default function PremiumPricing() {
           )}
           {guildIsPro && (
             <p className="font-poppins font-medium text-[15px] text-[#bababa] text-center">
-              <span className="text-[#ff8000]">✦</span> {activeGuild?.name} already has Premium —{' '}
+              <span className="text-[#ff8000]">✦</span> {activeGuild?.name} already has Premium.{' '}
               <Link href="/guild-settings" className="text-white underline hover:text-[#ff8000] transition-colors">
                 manage billing in guild settings
               </Link>
@@ -97,11 +97,11 @@ export default function PremiumPricing() {
           )}
           {!guildIsPro && activeGuild && !isOfficer && (
             <p className="font-poppins font-medium text-[15px] text-[#bababa] text-center">
-              Upgrading is done by a guild officer — send them this page.
+              Upgrading is done by a guild officer. Send them this page.
             </p>
           )}
           <p className="font-poppins text-[13px] text-[#bababa]/60 text-center max-w-[400px]">
-            Every new guild starts with a 14-day free trial — cancel during the trial
+            Every new guild starts with a 14-day free trial. Cancel during the trial
             and you won&apos;t be charged. One subscription covers your whole guild, and
             you keep Premium until the end of the billing period if you cancel later.
           </p>

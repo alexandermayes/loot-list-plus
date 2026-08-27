@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     }))
 
     const embed = {
-      title: `📢 LootList+ Update — ${date}`,
+      title: `📢 LootList+ Update: ${date}`,
       color: 0xff8000, // Accent orange
       fields,
       footer: {

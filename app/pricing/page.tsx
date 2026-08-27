@@ -6,7 +6,7 @@ import LandingFooter from '@/app/components/landing/LandingFooter'
 const APP_URL = 'https://www.lootlistplus.com'
 
 export const metadata: Metadata = {
-  title: 'LootList+ Pricing — Free Core Plan and $4.99 Premium',
+  title: 'LootList+ Pricing: Free Core Plan and $4.99 Premium',
   description:
     'Run ranked loot lists, attendance, and transparent item priority free. Premium adds multiple raid teams and officer activity for $4.99/month.',
   alternates: {

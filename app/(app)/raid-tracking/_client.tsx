@@ -2601,7 +2601,7 @@ export default function RaidTrackingPage() {
                   <div key={dateStr} className="bg-background-elevated/50 border border-dashed border-border rounded-xl px-5 py-4">
                     <p className="text-[14px] text-muted-foreground">
                       <span className="font-medium text-foreground">{formatted}</span>
-                      {' '}— available for tracking on the day
+                      {' '}· available for tracking on the day
                     </p>
                   </div>
                 )

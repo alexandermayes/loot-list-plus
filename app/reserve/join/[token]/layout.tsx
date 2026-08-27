@@ -14,7 +14,7 @@ export async function generateMetadata({
   const { token } = await params
 
   const fallback: Metadata = {
-    title: 'Reserve your loot — LootList+',
+    title: 'Reserve your loot | LootList+',
     description: 'Soft reserve your items for this raid before it locks.',
   }
 
@@ -55,8 +55,8 @@ export async function generateMetadata({
         : 'Completed'
 
     const title = guildName
-      ? `${guildName} — ${run.title}`
-      : `${run.title} — LootList+ Reserve`
+      ? `${guildName}: ${run.title}`
+      : `${run.title} | LootList+ Reserve`
 
     const reserveCount = run.max_reserves
     const description = `${statusLabel} · ${raidName} · ${raidDate} · ${reserveCount} reserve${reserveCount !== 1 ? 's' : ''} per player`

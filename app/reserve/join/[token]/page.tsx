@@ -690,7 +690,7 @@ export default function ReserveJoinPage() {
       ? `${characterName} (${characterSpec} ${characterClass}) reserved for ${run.title}:`
       : `${characterName} (${characterClass}) reserved for ${run.title}:`
     const lines = reservedItems.map(
-      (item) => `- ${item.name} — https://www.wowhead.com/item=${item.wowhead_id}`
+      (item) => `- ${item.name}: https://www.wowhead.com/item=${item.wowhead_id}`
     )
     const text = [header, ...lines].join('\n')
     try {
@@ -1300,8 +1300,8 @@ export default function ReserveJoinPage() {
                       ...userCharacters.map((c) => ({
                         value: c.id,
                         label: c.spec_name
-                          ? `${c.name} — ${c.spec_name} ${c.class_name}${c.is_main ? ' (Main)' : ''}`
-                          : `${c.name} — ${c.class_name}${c.is_main ? ' (Main)' : ''}`,
+                          ? `${c.name} · ${c.spec_name} ${c.class_name}${c.is_main ? ' (Main)' : ''}`
+                          : `${c.name} · ${c.class_name}${c.is_main ? ' (Main)' : ''}`,
                         color: c.class_color || undefined,
                       })),
                       { value: '__guest__', label: '+ Use a different character' },

@@ -15,9 +15,9 @@ const CLASS_COLORS: Record<string, string> = {
 // separated by attendance, and a high-attendance raider with a low rank
 // still waits their turn. BLP shows it helps without overriding intent.
 const CANDIDATES = [
-  { name: 'Thorgrim', wowClass: 'Warrior', spec: 'Fury', rank: 1, attendance: '92%', blp: '—', score: 88.4, winner: true },
+  { name: 'Thorgrim', wowClass: 'Warrior', spec: 'Fury', rank: 1, attendance: '92%', blp: '0', score: 88.4, winner: true },
   { name: 'Kregor', wowClass: 'Warrior', spec: 'Arms', rank: 1, attendance: '64%', blp: '+3', score: 71.9, winner: false },
-  { name: 'Sylvara', wowClass: 'Hunter', spec: 'Marksmanship', rank: 4, attendance: '98%', blp: '—', score: 63.5, winner: false },
+  { name: 'Sylvara', wowClass: 'Hunter', spec: 'Marksmanship', rank: 4, attendance: '98%', blp: '0', score: 63.5, winner: false },
 ]
 
 export default function LandingLootDecision() {

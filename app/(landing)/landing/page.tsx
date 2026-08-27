@@ -20,7 +20,7 @@ function getRecentFeatures(): string {
 }
 
 export const metadata: Metadata = {
-  title: 'LootList+ — Transparent Loot Management for WoW Classic',
+  title: 'LootList+ | Transparent Loot Management for WoW Classic',
   description: 'Rank loot lists, track attendance, and calculate transparent item priority for your WoW Classic guild. Create your guild free with Discord.',
   alternates: {
     canonical: 'https://www.getlootlist.com',

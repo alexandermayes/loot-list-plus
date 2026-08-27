@@ -171,7 +171,7 @@ export default function LogDonationModal({
                   {editing?.character_name}
                 </span>
                 <Text size="xs" color="muted" className="ml-2 inline">
-                  (cannot reassign — delete and recreate to move)
+                  (cannot reassign: delete and recreate to move)
                 </Text>
               </div>
             ) : (
