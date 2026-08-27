@@ -16,6 +16,7 @@ import PremiumItemTooltip from './PremiumItemTooltip'
 const FEATURES = [
   'Multiple raid teams with separate schedules and attendance',
   'Officer activity feed — every change, who made it, and when',
+  'Reserve runs for pugs and one-off raids, with shareable join links',
   'Priority support in the LootList+ Discord',
   'Covers every member of your guild',
 ]

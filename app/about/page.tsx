@@ -122,7 +122,7 @@ export default function AboutPage() {
         <Section heading="Free core plan, optional Premium">
           <Body>
             Core LootList+ features are free. Premium is for guilds that run multiple raid
-            teams or need a complete officer activity feed. One subscription covers the whole
+            teams, host reserve runs, or need a complete officer activity feed. One subscription covers the whole
             guild for $4.99 per month or $39 per year. See the full breakdown on the{' '}
             <Link href="/pricing" className="text-white underline hover:text-[#9940ec] transition-colors">pricing page</Link>.
           </Body>

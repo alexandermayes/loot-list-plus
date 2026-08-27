@@ -28,13 +28,14 @@ const PREMIUM_FEATURES = [
   'Multiple raid teams',
   'Separate schedules, attendance, and loot views per team',
   'Officer activity feed for loot awards, roster changes, and settings',
+  'Reserve runs for pugs and one-off raids',
   'One subscription for the entire guild',
 ]
 
 const FAQ = [
   {
     q: 'Is LootList+ actually free?',
-    a: 'Yes. The core system for loot lists, attendance, priority scores, and raid distribution is available without a subscription. Premium adds multi-team support and the officer activity feed.',
+    a: 'Yes. The core system for loot lists, attendance, priority scores, and raid distribution is available without a subscription. Premium adds multi-team support, the officer activity feed, and reserve runs.',
   },
   {
     q: 'Does every officer or raider pay?',

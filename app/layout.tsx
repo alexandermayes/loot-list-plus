@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   // The one definitive product description — keep identical across the
   // homepage, About page, GitHub README, JSON-LD, and directory listings.
   // Never claim "completely free" or "no paid tier": say "free core plan".
-  description: "LootList+ is a transparent loot-management system for World of Warcraft Classic guilds. Raiders submit ranked loot lists, officers track attendance, and Loot Scores show who has priority for each item and why. Core features are free; Premium adds multi-team support and an officer activity feed for $4.99 per month or $39 per year per guild.",
+  description: "LootList+ is a transparent loot-management system for World of Warcraft Classic guilds. Raiders submit ranked loot lists, officers track attendance, and Loot Scores show who has priority for each item and why. Core features are free; Premium adds multi-team support, an officer activity feed, and reserve runs for $4.99 per month or $39 per year per guild.",
   keywords: ["WoW Classic", "loot management", "guild management", "raid loot", "loot tracking", "World of Warcraft", "loot council", "DKP alternative", "TBC Classic", "WotLK Classic"],
   authors: [{ name: "LootList+" }],
   creator: "LootList+",

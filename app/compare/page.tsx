@@ -190,8 +190,8 @@ export default function ComparePage() {
 
             <div className="mt-4 space-y-2 text-sm text-foreground-muted">
               <p>
-                LootList+ Premium is optional and adds multiple raid teams plus the officer
-                activity feed for $4.99 per month or $39 per year per guild. See{' '}
+                LootList+ Premium is optional and adds multiple raid teams, reserve runs, and the
+                officer activity feed for $4.99 per month or $39 per year per guild. See{' '}
                 <Link href="/pricing" className="text-foreground-secondary underline hover:text-foreground transition-colors">pricing</Link> for the full breakdown.
               </p>
               <p>

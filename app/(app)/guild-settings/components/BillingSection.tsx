@@ -84,7 +84,7 @@ export function BillingSection() {
           )}
         </div>
         <p className="text-muted-foreground text-[13px] mt-1">
-          Multiple raid teams, officer activity feed, and priority support
+          Multiple raid teams, officer activity feed, reserve runs, and priority support
         </p>
       </div>
       <div className="p-6 space-y-4">

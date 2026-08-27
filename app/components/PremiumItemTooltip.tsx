@@ -31,6 +31,7 @@ export default function PremiumItemTooltip({
           <div className="mt-3 space-y-0.5">
             <p className="font-poppins text-[13px] text-white">+ Multiple Raid Teams</p>
             <p className="font-poppins text-[13px] text-white">+ Officer Activity Feed</p>
+            <p className="font-poppins text-[13px] text-white">+ Reserve Runs</p>
           </div>
           <div className="mt-3 space-y-2">
             <p className="font-poppins text-[13px] leading-snug text-[#1eff00]">
@@ -38,6 +39,9 @@ export default function PremiumItemTooltip({
             </p>
             <p className="font-poppins text-[13px] leading-snug text-[#1eff00]">
               Equip: Records every loot award, roster move, and setting change — who did it, and when.
+            </p>
+            <p className="font-poppins text-[13px] leading-snug text-[#1eff00]">
+              Equip: Unlocks soft-reserve runs for pugs and one-off raids, with shareable join links.
             </p>
             <p className="font-poppins text-[13px] leading-snug text-[#1eff00]">
               Use: Summons priority support in the LootList+ Discord.
