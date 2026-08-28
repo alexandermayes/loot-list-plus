@@ -1,1 +1,19 @@
 date,ai_surface,prompt_id,lootlist_appeared,factually_correct,cited_url,competing_sources,notes
+2026-08-28,chatgpt,P1,yes,yes,https://www.getlootlist.com/,thatsmybis.com;github.com,"Identified LootList+ as a WoW Classic loot-management system combining ranked loot lists, attendance, Loot Scores, modifiers, loot history, and Discord/raid workflows."
+2026-08-28,chatgpt,P2,yes,yes,https://www.getlootlist.com/,thatsmybis.com,"Recommended LootList+ as a strong fit for guilds wanting ranked lists plus attendance-based priority; also discussed TMB, DKP, EPGP, and Suicide Kings."
+2026-08-28,chatgpt,P3,yes,yes,https://www.getlootlist.com/,thatsmybis.com,"Presented LootList+ as a strong alternative to That's My BIS, distinguishing TMB's wishlist/loot-council focus from LootList+'s scoring and attendance model."
+2026-08-28,chatgpt,P4,yes,yes,https://www.getlootlist.com/,thatsmybis.com,"Explained combining ranked item priorities with attendance into a Loot Score, with modifiers and transparent ranked results."
+2026-08-28,chatgpt,P5,yes,yes,https://www.getlootlist.com/,thatsmybis.com,"Correctly highlighted LootList+'s per-item score breakdown and ""Why didn't I get this item?"" comparison as transparency features."
+2026-08-28,chatgpt,P6,yes,partial,https://www.getlootlist.com/pricing,,"Correctly stated the core system is free and Premium is $4.99/month or $39/year, but the response's Premium feature list was incomplete relative to the current pricing page."
+2026-08-28,google-ai-overviews,P1,yes,yes,,Gargul,"web tool for Classic through MoP, ranked lists up to 50 items, master sheet, Discord auth, Gargul link"
+2026-08-28,google-ai-overviews,P2,yes,yes,,thatsmybis.com;RosterRaid;Gargul;RC Loot Council;ClassicDKP;EPGP,LootList+ described as automated alternative merging ranked wishlists with attendance and modifiers
+2026-08-28,google-ai-overviews,P3,yes,yes,,thatsmybis.com,"direct modern alternative, automated scoring, bad luck protection, cleaner than spreadsheets"
+2026-08-28,google-ai-overviews,P4,yes,yes,,,"described Loot Score combining list rank, attendance modifier, and BLP"
+2026-08-28,google-ai-overviews,P5,yes,yes,,thatsmybis.com,"described item breakdown window with rank, attendance, BLP, and final score per candidate"
+2026-08-28,google-ai-overviews,P6,yes,no,,,"claimed the platform is entirely free with no paywalls; Premium is live at 4.99/mo, so the free claim is wrong"
+2026-08-28,claude,P1,yes,yes,,,"Domains named in prose (lootlistplus.com, getlootlist.com) but the inline citation resolved to the Blizzard forum announcement, not an owned URL"
+2026-08-28,claude,P2,yes,yes,,RCLootCouncil;Gargul;thatsmybis.com;softres.it;CommunityDKP;CEPGP;Classic Loot Manager;Core Loot Manager;biscouncil.com,"Listed last, grouped with BisCouncil as ""newer web tools""; no dedicated description"
+2026-08-28,claude,P3,yes,yes,https://www.getlootlist.com/compare,thatsmybis.com;biscouncil.com;Gargul;softres.it,Named as the closest direct alternative; answer also flagged the compare page as vendor-written marketing
+2026-08-28,claude,P4,yes,yes,https://www.getlootlist.com/compare,thatsmybis.com;RaidLogger;DKP;EPGP,"Presented as option 3 of 3, the single-system approach"
+2026-08-28,claude,P5,yes,yes,https://www.getlootlist.com/compare,RCLootCouncil;biscouncil.com;DKP;EPGP,Strongest placement — framed as the one system built around explainable priority
+2026-08-28,claude,P6,yes,yes,https://www.getlootlist.com/pricing,,"Free tier and $4.99/mo, $39/yr Premium reproduced accurately from the pricing page"
