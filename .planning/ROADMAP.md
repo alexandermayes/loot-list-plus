@@ -40,12 +40,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. At least one complete test-set run is recorded in the log, establishing the week-1 comparison point for Phase 6
 
 **Checkpoint (user action required)**: MEAS-01 cannot start until the user regenerates Google Search Console OAuth credentials, which `vercel env pull` wiped from `.env.local`. Steps are in the docstring of `scripts/analytics/pull-gsc.py`. If the credentials are not available when this phase runs, MEAS-02 ships on its own and MEAS-01 stays open with the blocker recorded in STATE.md. Do not fabricate or approximate baseline numbers from another source.
-**Plans:** 5 plans
+**Plans:** 1/5 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 01-01-PLAN.md - GSC export tooling: explicit date windows, verbatim query clustering, honest coverage labelling, tested
+- [x] 01-01-PLAN.md - GSC export tooling: explicit date windows, verbatim query clustering, honest coverage labelling, tested
 - [ ] 01-02-PLAN.md - AI-answer instrument: self-contained weekly runbook, results log schema, validating appender
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -144,7 +144,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Measurement Baseline & AI Answer Log | 0/5 | Planned | - |
+| 1. Measurement Baseline & AI Answer Log | 1/5 | In Progress|  |
 | 2. Checkable Conversion Copy | 0/TBD | Not started | - |
 | 3. Anonymized Product-Data Report | 0/TBD | Not started | - |
 | 4. Verified Guild Case Study | 0/TBD | Not started | - |
