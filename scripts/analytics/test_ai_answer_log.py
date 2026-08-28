@@ -32,6 +32,7 @@ append_row = log_ai_answer.append_row
 read_rows = log_ai_answer.read_rows
 
 COMMITTED_LOG = os.path.join(_THIS_DIR, "ai-answer-log.csv")
+RUNBOOK_PATH = os.path.join(_THIS_DIR, "RUNBOOK.md")
 
 
 def base_row(**overrides):
@@ -189,6 +190,36 @@ class TestAiAnswerLog(unittest.TestCase):
         with open(COMMITTED_LOG, newline="") as f:
             first_line = f.readline().strip("\n")
         self.assertEqual(first_line, ",".join(HEADER))
+
+    # --- runbook sync: catches the runbook and the code drifting apart ---
+
+    def test_every_prompt_appears_verbatim_in_runbook(self):
+        with open(RUNBOOK_PATH, encoding="utf-8") as f:
+            text = f.read()
+        for pid in PROMPT_IDS:
+            self.assertIn(PROMPTS[pid], text, f"{pid} prompt text missing or paraphrased in RUNBOOK.md")
+
+    def test_every_surface_appears_in_runbook(self):
+        with open(RUNBOOK_PATH, encoding="utf-8") as f:
+            text = f.read()
+        for surface in SURFACES:
+            self.assertIn(surface, text)
+
+    def test_every_header_column_appears_in_runbook(self):
+        with open(RUNBOOK_PATH, encoding="utf-8") as f:
+            text = f.read()
+        for column in HEADER:
+            self.assertIn(column, text)
+
+    def test_runbook_names_the_appender_script_path(self):
+        with open(RUNBOOK_PATH, encoding="utf-8") as f:
+            text = f.read()
+        self.assertIn("scripts/analytics/log-ai-answer.py", text)
+
+    def test_runbook_contains_no_typographic_long_dash(self):
+        with open(RUNBOOK_PATH, encoding="utf-8") as f:
+            text = f.read()
+        self.assertEqual(text.count("—"), 0)
 
 
 if __name__ == "__main__":
