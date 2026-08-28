@@ -184,12 +184,17 @@ class TestAiAnswerLog(unittest.TestCase):
 
     # --- committed log state ---
 
-    def test_committed_log_has_header_and_zero_data_rows(self):
-        rows = read_rows(COMMITTED_LOG)
-        self.assertEqual(rows, [])
+    def test_committed_log_header_is_intact(self):
+        # Plan 01-04 records the first real 18-cell run into this file, so
+        # the log now legitimately holds data rows. What must never drift is
+        # the header itself: schema changes to the committed log must be
+        # deliberate, not silent.
         with open(COMMITTED_LOG, newline="") as f:
             first_line = f.readline().strip("\n")
         self.assertEqual(first_line, ",".join(HEADER))
+        rows = read_rows(COMMITTED_LOG)
+        for row in rows:
+            self.assertEqual(set(row.keys()), set(HEADER))
 
     # --- runbook sync: catches the runbook and the code drifting apart ---
 
