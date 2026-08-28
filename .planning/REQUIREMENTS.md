@@ -27,7 +27,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 ### Measurement
 
 - [ ] **MEAS-01**: GSC baseline is exported and segmented into brand/competitor/problem/expansion query clusters (blocked on user regenerating GSC OAuth creds)
-- [ ] **MEAS-02**: Weekly AI-answer test set (the plan's 6 fixed prompts) has a runbook and a results log recording date, product inclusion, factual accuracy, cited URL
+- [x] **MEAS-02**: Weekly AI-answer test set (the plan's 6 fixed prompts) has a runbook and a results log recording date, product inclusion, factual accuracy, cited URL
 - [ ] **MEAS-03**: Week-4 review compares the Sep 18–24 cohort to the Aug 24–30 baseline and selects the next bet from observed queries
 
 ### Linking
@@ -68,17 +68,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EVID-04 | Phase 4 | Pending |
 | EVID-05 | Phase 4 | Blocked (user interview) |
 | MEAS-01 | Phase 1 | Pending |
-| MEAS-02 | Phase 1 | Pending |
+| MEAS-02 | Phase 1 | Complete |
 | MEAS-03 | Phase 6 | Pending |
 | LINK-01 | Phase 5 | Pending |
 | LINK-02 | Phase 5 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 13 total
 - Mapped to phases: 13
 - Unmapped: 0 ✓
 
 **Blocked on user action** (structured as explicit phase checkpoints, not assumed):
+
 - ~~MEAS-01 (Phase 1)~~ RESOLVED 2026-08-28: GSC OAuth credentials restored and verified working
 - EVID-05 (Phase 4): user must conduct the guild interview and obtain quote approval
 
