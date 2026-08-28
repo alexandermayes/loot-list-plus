@@ -36,7 +36,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A results log records, for each prompt in each run: date, whether LootList+ appeared, whether the answer was factually correct, the cited URL, and competing sources
   4. At least one complete test-set run is recorded in the log, establishing the week-1 comparison point for Phase 6
 **Checkpoint (user action required)**: MEAS-01 cannot start until the user regenerates Google Search Console OAuth credentials, which `vercel env pull` wiped from `.env.local`. Steps are in the docstring of `scripts/analytics/pull-gsc.py`. If the credentials are not available when this phase runs, MEAS-02 ships on its own and MEAS-01 stays open with the blocker recorded in STATE.md. Do not fabricate or approximate baseline numbers from another source.
-**Plans**: TBD
+**Plans:** 5 plans
+
+Plans:
+- [ ] 01-01-PLAN.md - GSC export tooling: explicit date windows, verbatim query clustering, honest coverage labelling, tested
+- [ ] 01-02-PLAN.md - AI-answer instrument: self-contained weekly runbook, results log schema, validating appender
+- [ ] 01-03-PLAN.md - Committed baseline exports (prior three months plus the partial cohort) with a provenance README and a dated follow-up in STATE.md
+- [ ] 01-04-PLAN.md - First complete recorded run: the user performs 18 prompt-surface cells, the executor logs exactly what was reported
+- [ ] 01-05-PLAN.md - Dated complete-cohort re-pull, gated on 2026-09-02, replacing the partial export and closing the open item
 
 ### Phase 2: Checkable Conversion Copy
 **Goal**: Every claim an officer reads on the path to signup is either verifiable or gone
@@ -110,7 +117,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Measurement Baseline & AI Answer Log | 0/TBD | Not started | - |
+| 1. Measurement Baseline & AI Answer Log | 0/5 | Planned | - |
 | 2. Checkable Conversion Copy | 0/TBD | Not started | - |
 | 3. Anonymized Product-Data Report | 0/TBD | Not started | - |
 | 4. Verified Guild Case Study | 0/TBD | Not started | - |
