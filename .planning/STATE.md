@@ -4,15 +4,15 @@ current_phase: 01
 current_phase_name: Measurement Baseline & AI Answer Log
 status: executing
 stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-08-28T21:37:36.029Z"
+last_updated: "2026-08-28T22:26:37.094Z"
 last_activity: 2026-08-28
 last_activity_desc: Phase 01 execution started
-state_head: a1501f2eb2de7231a246aded2256b114503afeda
+state_head: a227c7de42db7a7640b3df35a0c832ff62bc398f
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 5
-  completed_plans: 1
+  completed_plans: 3
   percent: 0
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-08-27)
 ## Current Position
 
 Phase: 01 (Measurement Baseline & AI Answer Log) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-08-28 — Phase 01 execution started
 
@@ -59,6 +59,7 @@ Progress: [░░░░░░░░░░] 0%
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 01 P01 | 25min | 3 tasks | 6 files |
+| Phase 01 P03 | 15min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,7 @@ Recent decisions affecting current work:
 - Roadmap: Report and case study are separate phases so the unblocked report is not held hostage by the user-owned interview.
 - Roadmap: Recrawl requests live in Phase 5, after all content is final. Repeat requests do not accelerate indexing.
 - [Phase 01]: GSC clustering overlap precedence fixed as brand > competitor > problem > expansion (planner choice, recorded in gsc_clusters.py)
+- [Phase 01]: The cohort export's true final-data date (2026-08-26) came from a live coverage_end() query, not the researched estimate (2026-08-25) — the actual reported value is authoritative
 
 ### Pending Todos
 
@@ -94,6 +96,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-08-28T21:52:06Z
+Last session: 2026-08-28T22:26:37.087Z
 Stopped at: Completed 01-03-PLAN.md
 Resume file: None
