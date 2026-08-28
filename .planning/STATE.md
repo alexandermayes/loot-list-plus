@@ -63,7 +63,7 @@ None yet.
 
 ### Blockers/Concerns
 
-- **[Phase 1] GSC OAuth credentials wiped.** MEAS-01 cannot run until the user regenerates Google Search Console OAuth credentials. `vercel env pull` removed them from `.env.local`. Steps are in the docstring of `scripts/analytics/pull-gsc.py`. Time-sensitive: the baseline export is an input to Phase 6.
+- ~~**[Phase 1] GSC OAuth credentials wiped.**~~ RESOLVED 2026-08-28: user recreated the OAuth client (Testing mode, added as test user), authorized via `scripts/analytics/gsc-auth.py` (new local-loopback helper, not yet committed), and `pull-gsc.py` verified a full pull. Note: while the consent screen stays in Testing mode, the refresh token expires every 7 days (first expiry ~Sep 4); user plans to fill Branding and publish the app to remove this.
 - **[Phase 4] Guild interview not conducted.** EVID-05 cannot be written until the user interviews a guild using the plan's ten questions and gets quote approval. EVID-04, the page template, is not blocked. No quotes or outcome numbers may be drafted on the guild's behalf.
 - **[Timeline] Sprint window closes Sep 24, 2026.** Phase 6 is calendar-bound to Sep 20 to 24, which leaves Phases 1 through 5 to land by Sep 19.
 - **[Phase 3] Production data access.** Report numbers come from the production database via the Supabase Management API only. Aggregate measures only, minimum 10 guilds per published segment, no player or guild names in artifacts or commits.
