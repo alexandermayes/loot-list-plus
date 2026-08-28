@@ -82,6 +82,7 @@ None yet.
 - **[Phase 4] Guild interview not conducted.** EVID-05 cannot be written until the user interviews a guild using the plan's ten questions and gets quote approval. EVID-04, the page template, is not blocked. No quotes or outcome numbers may be drafted on the guild's behalf.
 - **[Timeline] Sprint window closes Sep 24, 2026.** Phase 6 is calendar-bound to Sep 20 to 24, which leaves Phases 1 through 5 to land by Sep 19.
 - **[Phase 3] Production data access.** Report numbers come from the production database via the Supabase Management API only. Aggregate measures only, minimum 10 guilds per published segment, no player or guild names in artifacts or commits.
+- **[Phase 1] Baseline cohort export is partial.** `scripts/analytics/exports/gsc-baseline-cohort-query-2026-08-24_2026-08-30-PARTIAL-through-2026-08-26.csv` covers the Aug 24 to 30, 2026 cohort, but Search Console had only finalized data through 2026-08-26 at export time (2026-08-28). The complete window cannot be pulled before **2026-09-02**. Re-pull with `python3 scripts/analytics/pull-gsc.py --start 2026-08-24 --end 2026-08-30 --dimension query --csv gsc-baseline-cohort-query-2026-08-24_2026-08-30.csv` on or after that date, then replace the partial file and update `scripts/analytics/exports/README.md`. Plan `01-05` closes this out. The missing days must never be estimated, averaged, extrapolated, or sourced from anywhere other than the Search Console API (D-03).
 
 ## Deferred Items
 
@@ -93,6 +94,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-08-28T21:37:36.021Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-08-28T21:52:06Z
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None
