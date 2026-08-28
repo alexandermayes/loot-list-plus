@@ -1,0 +1,6 @@
+query,clicks,impressions,ctr,position,cluster
+loot list,4,24,0.16666666666666666,6.541666666666667,unclustered
+lootlist,4,8,0.5,2.5,brand
+lootlist+,1,1,1,1,brand
+hallo?,0,1,0,1,unclustered
+lootplus,0,1,0,38,unclustered
