@@ -77,7 +77,10 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+2 pending (area: seo), captured 2026-08-28 from the GSC baseline:
+- Fix "loot list" query cannibalization (changelog vs homepage)
+- Rework /compare search snippet for competitor queries
+
 
 ### Blockers/Concerns
 
