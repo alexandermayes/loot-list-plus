@@ -59,25 +59,29 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| COPY-01 | — | Pending |
-| PROOF-01 | — | Pending |
-| PROOF-02 | — | Pending |
-| EVID-01 | — | Pending |
-| EVID-02 | — | Pending |
-| EVID-03 | — | Pending |
-| EVID-04 | — | Pending |
-| EVID-05 | — | Pending |
-| MEAS-01 | — | Pending |
-| MEAS-02 | — | Pending |
-| MEAS-03 | — | Pending |
-| LINK-01 | — | Pending |
-| LINK-02 | — | Pending |
+| COPY-01 | Phase 2 | Pending |
+| PROOF-01 | Phase 2 | Pending |
+| PROOF-02 | Phase 2 | Pending |
+| EVID-01 | Phase 3 | Pending |
+| EVID-02 | Phase 3 | Pending |
+| EVID-03 | Phase 3 | Pending |
+| EVID-04 | Phase 4 | Pending |
+| EVID-05 | Phase 4 | Blocked (user interview) |
+| MEAS-01 | Phase 1 | Blocked (GSC OAuth creds) |
+| MEAS-02 | Phase 1 | Pending |
+| MEAS-03 | Phase 6 | Pending |
+| LINK-01 | Phase 5 | Pending |
+| LINK-02 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 13 total
-- Mapped to phases: 0
-- Unmapped: 13 ⚠️
+- Mapped to phases: 13
+- Unmapped: 0 ✓
+
+**Blocked on user action** (structured as explicit phase checkpoints, not assumed):
+- MEAS-01 (Phase 1): user must regenerate Google Search Console OAuth credentials
+- EVID-05 (Phase 4): user must conduct the guild interview and obtain quote approval
 
 ---
 *Requirements defined: 2026-08-27*
-*Last updated: 2026-08-27 after initial definition*
+*Last updated: 2026-08-28 after roadmap creation*
