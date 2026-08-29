@@ -1,7 +1,7 @@
 ---
 phase: 02
 slug: checkable-conversion-copy
-status: draft
+status: approved
 shadcn_initialized: true
 preset: pre-existing (components.json predates this phase — style: default, baseColor: neutral, cssVariables: true, no ui.shadcn.com/create preset string on file)
 created: 2026-08-28
@@ -107,16 +107,64 @@ Declared values (must be multiples of 4):
 > Empty-state and error-state COPY live in `## Copywriting Contract` above — this section covers
 > state coverage and REFERENCES those rows rather than restating the copy (de-dup).
 
-Applicable state considerations resolved: 4 covered, 1 backstop, 1 unresolved
+Ran via the ui-consideration-probe engine over 5 elements (E1 `QuoteCard` metadata block, E2 verification line, E3 `StatCard` replacement label, E4 LoginPage signup copy surface, E5 secondary link). Element kinds (data-display, action-surface, text-link) confirmed as detected — none missed.
 
-| Category | Element(s) | Status | Resolution / Reason |
-|----------|------------|--------|---------------------|
-| partial-data | `QuoteCard` metadata (role / expansion-tier / date) | ✅ covered | D-02 resolves this directly: a quote whose metadata the user cannot supply at the execution checkpoint keeps only the attribution already true on the page today (name + guild). No invented or approximated fields. |
-| zero-one-many | Verification-line variant | ✅ covered | D-03/D-04 define exactly three mutually exclusive render paths (WCL-linked / "Verified LootList+ customer" / dated "Verified customer, interviewed {Month Year}"). Every one of the 5 quotes renders exactly one variant, never zero, never more than one. |
-| long-text | `QuoteCard` quote body | ✅ covered | Existing centered-flex layout inside a fixed-height card already absorbs variable quote length; this phase does not touch the quote-text rendering, only the attribution block beneath it. |
-| empty (broken link target) | Signup secondary link destination | ✅ covered | D-08 locks an absolute cross-domain URL (`https://www.getlootlist.com/#how-it-works`), closing the gap RESEARCH.md's Pitfall 2 flagged (today's link points at the bare homepage root, not the how-it-works section, and a relative link would 404 across domains). |
-| overflow | `QuoteCard` fixed-height card (`h-[250px]` mobile / `h-[300px]` desktop) vs. new 3-5 line metadata block | ⚠ unresolved | The card height is fixed and centered via flex; today it holds a 2-line attribution block (name + guild) comfortably below the longest existing quote (Scizophrenic's, ~230 characters). Adding role, expansion/tier, date, and a verification line (potentially 3-4 additional lines even at 4px/12px tight spacing) has not been measured against that fixed height at the smallest breakpoint. Executor must verify visually per quote once real metadata is filled in at the D-02 checkpoint; if it overflows, the choice is to either combine fields onto shared lines (e.g., "Officer · Crucible · MoP") or increase card height — that choice is left to the executor/planner, not pre-decided here, since it depends on the actual approved metadata length. |
-| overflow | `StatCard` replacement label ("5 supported Classic expansions", ~29 characters) | 🧪 backstop | The existing `px-4` + `text-center` wrap pattern already absorbs a longer label on the same row ("1 system for loot, attendance, and priorities" is longer still), so this should render fine by precedent — but it has not been explicitly screenshotted/measured at the `h-[250px]` mobile breakpoint with the new text. Treat as a visual spot-check at execution, not a re-design. |
+Applicable state considerations: 30 total — 10 resolved (explicit), 4 resolved (backstop), 15 dismissed (not applicable to static content), 1 unresolved.
+
+**E1 — `QuoteCard` metadata block (role / guild / expansion-tier / date / verification line):**
+
+| Category | Status | Resolution / Reason |
+|----------|--------|---------------------|
+| empty | ✅ dismissed | Static hardcoded testimonial content; D-02 guarantees every quote always has at least name+guild attribution already true on the page today — an empty metadata block is not possible. |
+| loading | ✅ dismissed | Testimonials are hardcoded JSX, not fetched at runtime; no loading state exists or is introduced. |
+| error | ✅ dismissed | No data fetch occurs for testimonial content; static content cannot error. |
+| populated | ✅ resolved (explicit) | Normal state: role, guild, expansion/tier, interview date, and one verification-line variant render as a 4px-spaced (`space-y-1`) meta-text stack beneath the quote and author name, per D-02/D-03/D-04. |
+| partial | ✅ resolved (explicit) | When a quote's metadata fields are unavailable, only the attribution already true on the page today (name + guild) is kept — no invented or approximated fields (D-02). |
+| overflow | ⚠ unresolved — planner must treat as assumption | `QuoteCard`'s fixed-height card (`h-[250px]` mobile / `h-[300px]` desktop) has not been measured against the new 3-5 line metadata block. Today it holds a 2-line attribution block (name + guild) comfortably below the longest existing quote (~230 characters); adding role, expansion/tier, date, and a verification line may exceed that fixed height at the smallest breakpoint. Executor must verify visually per quote once real metadata is filled in at the D-02 checkpoint; if it overflows, combine fields onto shared lines (e.g., "Officer · Crucible · MoP") or increase card height — left to executor/planner judgment, not pre-decided, since it depends on approved metadata length. |
+| zero-one-many | ✅ resolved (explicit) | Exactly 5 testimonial quotes are hardcoded on the page; each renders its own independent metadata block — a fixed, known-at-authoring-time count, not a dynamic list, so no zero-state or unbounded-many case exists. |
+| long-text | 🧪 resolved (backstop) | The existing meta-text guild line already wraps within the card's fixed width today; new metadata lines reuse the same text style and are expected to wrap the same way. Visual spot-check at execution once real metadata is filled in, not a redesign. |
+
+**E2 — Verification line (three variants: WCL-linked / "Verified LootList+ customer" / dated):**
+
+| Category | Status | Resolution / Reason |
+|----------|--------|---------------------|
+| empty | ✅ dismissed | D-03/D-04 define exactly three mutually exclusive variants; every quote renders one of them, so an empty/no-variant state cannot occur. |
+| loading | ✅ dismissed | Static hardcoded text/link, not fetched at runtime; no loading state applies. |
+| error | ✅ dismissed | No data fetch occurs; the WCL profile link is a static outbound `<a href>`, not a load operation this phase manages — an unreachable destination is ordinary external-link behavior outside this phase's scope. |
+| populated | ✅ resolved (explicit) | Normal state: exactly one of three variants renders per quote — WCL-linked accent link with hover underline, muted-gray "Verified LootList+ customer", or muted-gray dated "Verified customer, interviewed {Month Year}" — per D-03/D-04. |
+| partial | ✅ dismissed | Not applicable; the three variants in D-03/D-04 are the complete, mutually exclusive set for this line — there is no partially-verified fourth state. |
+| overflow | 🧪 resolved (backstop) | The longest variant (the dated string, ~45 characters) is shorter than or comparable to the existing guild line already rendered in this position today; expected to fit without wrapping but not yet explicitly measured — visual spot-check at execution. |
+| zero-one-many | ✅ resolved (explicit) | D-03/D-04 define exactly three mutually exclusive render paths; every quote renders exactly one variant, never zero, never more than one. |
+| long-text | 🧪 resolved (backstop) | Same rationale as overflow above — longest variant text length is comparable to existing precedent on the page; visual spot-check at execution, not a redesign. |
+
+**E3 — `StatCard` replacement label ("5 supported Classic expansions"):**
+
+| Category | Status | Resolution / Reason |
+|----------|--------|---------------------|
+| empty | ✅ dismissed | Each `StatCard` is a single hardcoded string; there is no data-driven empty variant. |
+| loading | ✅ dismissed | Static hardcoded content, not fetched at runtime; no loading state applies. |
+| error | ✅ dismissed | No data fetch occurs; static content cannot error. |
+| populated | ✅ resolved (explicit) | Normal state: the three StatCards render "5 supported Classic expansions", "0 spreadsheets needed", and "1 system for loot, attendance, and priorities" side by side (D-06); only the first string changes this phase. |
+| partial | ✅ dismissed | Not applicable; each `StatCard` is one complete authored string — there is no field-level partiality to represent. |
+| overflow | 🧪 resolved (backstop) | The existing `px-4` + `text-center` wrap pattern already absorbs a longer label on the same row ("1 system for loot, attendance, and priorities" is longer still); expected to render fine by precedent but not yet explicitly screenshotted at the `h-[250px]` mobile breakpoint with the new text — visual spot-check at execution. |
+| zero-one-many | ✅ resolved (explicit) | Exactly 3 StatCards are hardcoded on the page; a fixed, known-at-authoring-time count, not a dynamic list. |
+| long-text | ✅ dismissed | The new label (~29 characters) is shorter than the existing longest label already rendered in the same row today ("1 system for loot, attendance, and priorities", ~47 characters) — no new long-text risk is introduced. |
+
+**E4 — LoginPage signup copy surface (H1 / body / primary CTA):**
+
+| Category | Status | Resolution / Reason |
+|----------|--------|---------------------|
+| loading | ✅ dismissed | Static page copy; the only asynchronous behavior on this surface is the Discord OAuth redirect itself, unchanged existing behavior this phase does not touch. |
+| error | ✅ dismissed | The existing auth-failure `Alert` ("Discord sign-in failed...") already handles this and is explicitly unchanged by this phase (see Copywriting Contract); no new error state is introduced. |
+| overflow | ✅ resolved (explicit) | H1, body, and CTA copy are fixed authored strings sized to fit the existing container widths already proven by the currently shipped copy; length is fixed at authoring time and verified visually at the D-16 sign-off before shipping, so no dynamic overflow can occur. |
+| long-text | ✅ resolved (explicit) | Same rationale as overflow — copy is a fixed authored string chosen and visually verified at the D-16 sign-off, not user-generated or dynamic-length content. |
+
+**E5 — Secondary link ("See how LootList+ works"):**
+
+| Category | Status | Resolution / Reason |
+|----------|--------|---------------------|
+| overflow | ✅ dismissed | Fixed short authored string (~24 characters) is shorter than the primary CTA button directly above it; no overflow risk. Broken-link-target risk is separately closed by D-08's absolute cross-domain URL (`https://www.getlootlist.com/#how-it-works`), fixing RESEARCH.md's Pitfall 2. |
+| long-text | ✅ resolved (explicit) | Link text is a fixed authored string chosen and visually verified at the D-16 sign-off alongside the rest of the signup copy, not dynamic-length content. |
 
 ---
 
@@ -131,11 +179,16 @@ Applicable state considerations resolved: 4 covered, 1 backstop, 1 unresolved
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: FLAG (no explicit focal point declared for primary screens — non-blocking; QuoteCard overflow risk already tracked above)
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: FLAG (5 sizes / 4 weights exceeds guidance — pre-existing debt, not introduced by this phase)
+- [x] Dimension 5 Spacing: FLAG (10px `gap-2.5` exception breaks 4-multiple grid — pre-existing debt, not introduced by this phase)
+- [x] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** APPROVED (6/6 dimensions resolved; 3 non-blocking FLAGs tied to pre-existing debt)
+
+**Executor should additionally verify at execution:**
+- QuoteCard metadata overflow at the D-02 checkpoint (see UI Considerations, E1 overflow — unresolved)
+- No em-dashes in final copy (`git diff --name-only <base>...HEAD | xargs grep -n "—"`) before D-16 sign-off
+- D-08 secondary link uses the absolute URL (`https://www.getlootlist.com/#how-it-works`), not a relative path
