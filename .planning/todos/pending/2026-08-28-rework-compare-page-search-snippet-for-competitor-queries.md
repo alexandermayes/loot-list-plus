@@ -11,7 +11,7 @@ files:
 
 ## Problem
 
-The committed GSC baseline (May 24 to Aug 23, 2026) shows competitor queries "tmb loot" (17 impressions, position 9.4) and "tmb loot system" (12 impressions, position 9.2) both at 0% CTR, and /compare itself at 305 impressions, position 12.6, 1.31% CTR. Meanwhile the week-1 AI answer log (2026-08-28) shows Claude cited /compare in 4 of 6 answers, so the page content works for AI surfaces; the search snippet (title/meta description) is what fails to earn the click from humans.
+The committed GSC baseline (May 24 to Aug 23, 2026) shows competitor queries "tmb loot" (17 impressions, position 9.4) and "tmb loot system" (12 impressions, position 9.2) both at 0% CTR, and /compare itself at 305 impressions, position 12.6, 1.31% CTR. Meanwhile the week-1 AI answer log (2026-08-28) shows Claude cited /compare in 3 of 6 answers (P3, P4, P5; P6 cites /pricing, P1/P2 cite nothing), so the page content works for AI surfaces; the search snippet (title/meta description) is what fails to earn the click from humans.
 
 ## Solution
 
