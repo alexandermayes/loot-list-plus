@@ -87,17 +87,53 @@ Confirmed by cross-reference against already-shipped copy, not by database query
 
 ## Guild Verification Data
 
-ACTIVITY-WINDOW: 30 days from 2026-08-29 (cutoff 2026-07-30; a guild whose most recent `raid_events.raid_date` or `loot_history.awarded_date` falls on or after the cutoff is treated as active)
+ACTIVITY-WINDOW: 30 days from 2026-08-29 (cutoff 2026-07-30; a guild whose most recent `raid_events.raid_date` or `loot_history.awarded_date` falls on or after the cutoff is treated as active). Confirmed final by the user at the Task 3 checkpoint — no re-run needed.
 
 One read-only SQL query was run against production via the Supabase Management API (`https://api.supabase.com/v1/projects/zjnhjstbqekudlsozsvi/database/query`), selecting only `guilds.name`, `guild_settings.wcl_guild_url`, `max(raid_events.raid_date)`, and `max(loot_history.awarded_date)` for the four guild names appearing in `LandingValueProps.tsx`'s QuoteCard `author.guild` props, matched case-insensitively on the trimmed name. No `guilds.id`, no player/member-level data, and no raw JSON response are recorded below or anywhere in this artifact.
 
-| Guild (as written in JSX) | Matched rows | Has public Warcraft Logs URL | Warcraft Logs URL | Most recent activity date | Active under the proposed window | Proposed D-03/D-04 variant |
+**Update after Task 3 checkpoint:** Indecisive and Bad Guys matched zero rows on the exact trimmed name. Per the user's explicit policy at the checkpoint ("if they don't have logs it's okay. I'm not going to put up testimonials for guilds that don't exist, so just verify them"), one additional read-only verification pass was run for these two names only, using an `ILIKE` substring match (`%indecisive%`, `%bad%guy%`) against `guilds.name` — same query shape, same three selected columns, no `guilds.id`, no player-level data. Both resolved to exactly one row each, under the common WoW guild-tag bracket convention (`<Bad Guys>`, `<Indecisive>`) rather than the plain-text name used in the testimonial JSX. Two queries total were run against production for this plan (the original four-guild lookup, plus this one follow-up scoped to the two unresolved names) — both read-only, both aggregate-only.
+
+| Guild (as written in JSX) | Matched rows | Has public Warcraft Logs URL | Warcraft Logs URL | Most recent activity date | Active under the window | Proposed D-03/D-04 variant |
 |---|---|---|---|---|---|---|
 | Crucible (Scizophrenic's quote) | 1 | No | — | 2026-08-27 | Yes | Active guild without a URL → plain "Verified LootList+ customer" note |
-| Indecisive (Para/Kidney's quote) | 0 | — | — | — | — | **UNRESOLVED, ask user** — no `guilds.name` row matched "indecisive" (case-insensitive, trimmed) |
-| Bad Guys (2laxs's quote) | 0 | — | — | — | — | **UNRESOLVED, ask user** — no `guilds.name` row matched "bad guys" (case-insensitive, trimmed) |
+| Indecisive (Para/Kidney's quote) | 1 (matched as `<Indecisive>`, follow-up ILIKE pass) | Yes | `https://fresh.warcraftlogs.com/guild/us/nightslayer/indecisive` | 2026-08-20 | Yes | Active guild with a public Warcraft Logs URL → verification note plus guild name linked to that URL |
+| Bad Guys (2laxs's quote) | 1 (matched as `<bad guys>`, follow-up ILIKE pass) | No | — | 2026-08-22 | Yes | Active guild without a URL → plain "Verified LootList+ customer" note |
 | Soul Stoned (Xx_'s quote) | 1 | Yes | `https://fresh.warcraftlogs.com/guild/us/dreamscythe/soul%20stoned` | 2026-08-27 | Yes | Active guild with a public Warcraft Logs URL → verification note plus guild name linked to that URL |
 
-Per this plan's flagged assumption on encoding: a guild with zero matches is reported here rather than guessed at, retried with a fuzzy match, or resolved with a second query. Only the one query above was run. The two unresolved guilds (Indecisive, Bad Guys) need the user's input at the Task 3 checkpoint — either the in-repo JSX guild string doesn't match the `guilds.name` value on file (e.g. a rename, a punctuation difference, or a guild that was never actually created as a distinct guild row), or the guild's data lives under a different name than the testimonial names it.
+**All four guilds resolved to a real, active guild record.** None require exclusion under the user's "real guilds only" policy — see the Testimonial Disposition section below for the final, implementation-ready call.
+
+---
+
+## Quote Metadata (user supplied)
+
+Collected at the Task 3 checkpoint. Per D-02, the executor did not invent, infer, or approximate any field below. The user confirmed the quote count and the activity window, and explicitly declined to supply per-quote role/expansion-tier/interview-date data — every quote keeps only its existing attribution (name + guild) plus the verification note/link determined above.
+
+**Quote count:** Confirmed at 4. No fifth quote exists. CONTEXT.md D-01's "all 5 homepage quotes stay up" reflected an assumption that did not match the actual codebase state (4 QuoteCard call sites); the user confirmed 4 is correct, not 5.
+
+| Quote (author, guild) | Role | Expansion/tier | Interviewed (month/year) |
+|---|---|---|---|
+| Scizophrenic, Crucible | NOT SUPPLIED | NOT SUPPLIED | NOT SUPPLIED |
+| Para/Kidney, Indecisive | NOT SUPPLIED | NOT SUPPLIED | NOT SUPPLIED |
+| 2laxs, Bad Guys | NOT SUPPLIED | NOT SUPPLIED | NOT SUPPLIED |
+| Xx_, Soul Stoned | NOT SUPPLIED | NOT SUPPLIED | NOT SUPPLIED |
+
+**Outbound-link consent:** Confirmed by the user — "render it if they have logs to point to." Applies to every guild that resolved with a public Warcraft Logs URL (Indecisive, Soul Stoned). Guilds without a URL on file (Crucible, Bad Guys) get the plain text-only note; there is nothing to link.
+
+---
+
+## Testimonial Disposition (final — for plan 02-04 to implement directly)
+
+No JSX is edited in this plan. This section is the finalized, unambiguous call plan 02-04 (wave 4) implements from.
+
+| Author | Guild (JSX today) | Keep or exclude | Role / expansion / date | Verification note |
+|---|---|---|---|---|
+| Scizophrenic | Crucible | **Keep** | All three: `NOT SUPPLIED` — do not add role/expansion/date text to this card | Plain text, no link: "Verified LootList+ customer" (guild has no public Warcraft Logs URL on file) |
+| Para/Kidney | Indecisive | **Keep** | All three: `NOT SUPPLIED` | Guild name links to `https://fresh.warcraftlogs.com/guild/us/nightslayer/indecisive`; note reads "Verified LootList+ customer" with the guild name as the link |
+| 2laxs | Bad Guys | **Keep** | All three: `NOT SUPPLIED` | Plain text, no link: "Verified LootList+ customer" (guild has no public Warcraft Logs URL on file) |
+| Xx_ | Soul Stoned | **Keep** | All three: `NOT SUPPLIED` | Guild name links to `https://fresh.warcraftlogs.com/guild/us/dreamscythe/soul%20stoned`; note reads "Verified LootList+ customer" with the guild name as the link |
+
+**Key decision, documented per the user's direction:** CONTEXT.md D-01 assumed all 5 homepage quotes would stay up unedited; the actual codebase only ever had 4, and the user's checkpoint answer set a stricter, previously-undocumented policy — any quoted guild that does not resolve to a real, active `guilds` row would have been **excluded entirely**, not published with invented or approximated verification data. That exclusion path was evaluated for Indecisive and Bad Guys (the two guilds that missed the first exact-match query) and, after one authorized follow-up read-only query, both resolved to real, active guild records under a bracketed guild-tag name variant. **The exclusion path was not triggered — all 4 quotes stay up, none are dropped.** No quote in this phase carries role, expansion/tier, or interview-date text (D-02: all four fields came back `NOT SUPPLIED`); plan 02-04 renders each QuoteCard with only its existing name/guild attribution plus the verification note/link from the table above.
+
+Per D-05, no Review/AggregateRating structured data is added for any of these testimonials.
 
 ---
