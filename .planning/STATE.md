@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-current_phase: 01
-current_phase_name: Measurement Baseline & AI Answer Log
+current_phase: 2
+current_phase_name: Checkable Conversion Copy
 status: executing
-stopped_at: Phase 2 context gathered
-last_updated: "2026-08-29T00:16:49.433Z"
+stopped_at: Phase 02 UI-SPEC approved
+last_updated: "2026-08-30T00:24:31.334Z"
 last_activity: 2026-08-28
 last_activity_desc: Phase 01 execution started
-state_head: beabd1aa8131f513cecdf15e95c7031285692789
+state_head: 456e2f839b1567b4e8e8508e7e764928eecd281b
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 5
+  total_plans: 12
   completed_plans: 4
   percent: 0
 ---
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-08-27)
 
 ## Current Position
 
-Phase: 01 (Measurement Baseline & AI Answer Log) — EXECUTING
+Phase: 2 (Checkable Conversion Copy) — READY TO EXECUTE
 Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-08-28 — Phase 01 execution started
@@ -77,10 +77,16 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-2 pending (area: seo), captured 2026-08-28 from the GSC baseline:
+6 pending:
 
-- Fix "loot list" query cannibalization (changelog vs homepage)
-- Rework /compare search snippet for competitor queries
+- (area: seo) captured 2026-08-28 from the GSC baseline:
+  - Fix "loot list" query cannibalization (changelog vs homepage)
+  - Rework /compare search snippet for competitor queries
+- (area: analytics, growth) captured 2026-08-29 from admin dashboard screenshots — out of scope for the current sprint, deferred until Phases 2-6 land:
+  - Fix admin analytics dashboard showing zero data (Blog/Funnel/Traffic — likely a PostHog config issue)
+  - Redesign admin analytics dashboard (more detail, animations)
+  - Review PostHog data for growth experiments (A/B tests to raise usage/signups)
+  - Explore top-of-funnel and paid ads strategy (needs budget/platform scoping before any spend)
 
 ### Blockers/Concerns
 
@@ -100,6 +106,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-08-29T00:16:49.419Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-checkable-conversion-copy/02-CONTEXT.md
+Last session: 2026-08-29T01:18:15.668Z
+Stopped at: Phase 02 UI-SPEC approved
+Resume file: .planning/phases/02-checkable-conversion-copy/02-UI-SPEC.md
