@@ -84,3 +84,20 @@ Confirmed by cross-reference against already-shipped copy, not by database query
 **Count:** Both named sources agree. `/about`'s explicit five-item list (Classic Era, The Burning Crusade, Wrath of the Lich King, Cataclysm, Mists of Pandaria) is the same inclusive range `/pricing`'s "Classic Era through Mists of Pandaria" shorthand describes, and `LandingHero.tsx` uses the identical shorthand. **The product supports exactly 5 Classic expansions.** This confirms the planned D-06 replacement stat "5 supported Classic expansions" is factually accurate and consistent with what is already shipped on two other pages.
 
 ---
+
+## Guild Verification Data
+
+ACTIVITY-WINDOW: 30 days from 2026-08-29 (cutoff 2026-07-30; a guild whose most recent `raid_events.raid_date` or `loot_history.awarded_date` falls on or after the cutoff is treated as active)
+
+One read-only SQL query was run against production via the Supabase Management API (`https://api.supabase.com/v1/projects/zjnhjstbqekudlsozsvi/database/query`), selecting only `guilds.name`, `guild_settings.wcl_guild_url`, `max(raid_events.raid_date)`, and `max(loot_history.awarded_date)` for the four guild names appearing in `LandingValueProps.tsx`'s QuoteCard `author.guild` props, matched case-insensitively on the trimmed name. No `guilds.id`, no player/member-level data, and no raw JSON response are recorded below or anywhere in this artifact.
+
+| Guild (as written in JSX) | Matched rows | Has public Warcraft Logs URL | Warcraft Logs URL | Most recent activity date | Active under the proposed window | Proposed D-03/D-04 variant |
+|---|---|---|---|---|---|---|
+| Crucible (Scizophrenic's quote) | 1 | No | — | 2026-08-27 | Yes | Active guild without a URL → plain "Verified LootList+ customer" note |
+| Indecisive (Para/Kidney's quote) | 0 | — | — | — | — | **UNRESOLVED, ask user** — no `guilds.name` row matched "indecisive" (case-insensitive, trimmed) |
+| Bad Guys (2laxs's quote) | 0 | — | — | — | — | **UNRESOLVED, ask user** — no `guilds.name` row matched "bad guys" (case-insensitive, trimmed) |
+| Soul Stoned (Xx_'s quote) | 1 | Yes | `https://fresh.warcraftlogs.com/guild/us/dreamscythe/soul%20stoned` | 2026-08-27 | Yes | Active guild with a public Warcraft Logs URL → verification note plus guild name linked to that URL |
+
+Per this plan's flagged assumption on encoding: a guild with zero matches is reported here rather than guessed at, retried with a fuzzy match, or resolved with a second query. Only the one query above was run. The two unresolved guilds (Indecisive, Bad Guys) need the user's input at the Task 3 checkpoint — either the in-repo JSX guild string doesn't match the `guilds.name` value on file (e.g. a rename, a punctuation difference, or a guild that was never actually created as a distinct guild row), or the guild's data lives under a different name than the testimonial names it.
+
+---
