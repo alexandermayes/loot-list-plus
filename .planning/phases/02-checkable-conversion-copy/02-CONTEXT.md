@@ -30,7 +30,7 @@ Every claim an officer reads on the path to signup is either verifiable or gone.
 ### SEO/metadata copy (folded todos)
 - **D-09:** /changelog gets an unambiguous changelog-intent title/meta and the homepage title is strengthened to own "loot list" intent. No noindex on /changelog. — **Reversibility:** reversible.
 - **D-10:** Homepage title tag is category-forward (searcher's words first, brand attached), e.g. leading with loot list / attendance / Loot Score vocabulary. The on-page H1 "Epic loot deserves an epic system" is sacred and does not change.
-- **D-11:** /compare title/meta are rewritten to earn clicks from competitor queries ("tmb loot" etc.) using checkable claims, not marketing superlatives. Context: the week-1 AI answer log shows Claude cites /compare in 4 of 6 answers but flagged it as vendor-written marketing; GSC shows position ~9 to 12.6 with 0 to 1.31% CTR on those queries.
+- **D-11:** /compare title/meta are rewritten to earn clicks from competitor queries ("tmb loot" etc.) using checkable claims, not marketing superlatives. Context: the week-1 AI answer log shows Claude cites /compare in 3 of 6 answers (verified against scripts/analytics/ai-answer-log.csv on 2026-08-30; corrects an earlier "4 of 6" figure) but flagged it as vendor-written marketing; GSC shows position ~9 to 12.6 with 0 to 1.31% CTR on those queries.
 
 ### Repositioning (wording only)
 - **D-12:** Broaden positioning wording from "WoW Classic" to "World of Warcraft" across ALL in-repo user-facing surfaces: marketing pages, titles/metas, app text, JSON-LD schema. — **Reversibility:** costly — this touches many surfaces and the standing full-sweep rule; a half-applied broadening (marketing broad, schema narrow) is worse than either consistent state.
