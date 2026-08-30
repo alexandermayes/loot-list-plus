@@ -159,3 +159,11 @@ Plan 02-02 can draft every string this phase needs (unverifiable-claim replaceme
 ---
 *Phase: 02-checkable-conversion-copy*
 *Completed: 2026-08-29*
+
+## Self-Check: PASSED
+- FOUND: `.planning/phases/02-checkable-conversion-copy/02-COPY-AUDIT.md`
+- FOUND: `.planning/phases/02-checkable-conversion-copy/02-01-SUMMARY.md`
+- FOUND commit: `9cfb92d` (Task 1)
+- FOUND commit: `40d7045` (Task 2)
+- FOUND commit: `25a1da3` (Task 3)
+- FOUND commit: `1bfa33b` (plan metadata / SUMMARY commit)
