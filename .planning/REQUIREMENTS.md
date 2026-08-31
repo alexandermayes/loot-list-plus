@@ -9,12 +9,12 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Copy
 
-- [ ] **COPY-01**: Signup page shows the rewritten officer-intent copy (title, H1, body, CTA, secondary link), taste-checked against the established hero voice, no em dashes
+- [x] **COPY-01**: Signup page shows the rewritten officer-intent copy (title, H1, body, CTA, secondary link), taste-checked against the established hero voice, no em dashes
 
 ### Proof
 
-- [ ] **PROOF-01**: Every homepage testimonial displays name/character, role, guild, expansion/tier, interview date, and a verification link or "Verified LootList+ customer" note
-- [ ] **PROOF-02**: Unsupported claims (e.g. "3+ hours saved a week") are removed or replaced with checkable product facts
+- [x] **PROOF-01**: Every homepage testimonial displays name/character, role, guild, expansion/tier, interview date, and a verification link or "Verified LootList+ customer" note
+- [x] **PROOF-02**: Unsupported claims (e.g. "3+ hours saved a week") are removed or replaced with checkable product facts
 
 ### Evidence
 
@@ -59,9 +59,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| COPY-01 | Phase 2 | Pending |
-| PROOF-01 | Phase 2 | Pending |
-| PROOF-02 | Phase 2 | Pending |
+| COPY-01 | Phase 2 | Complete |
+| PROOF-01 | Phase 2 | Complete |
+| PROOF-02 | Phase 2 | Complete |
 | EVID-01 | Phase 3 | Pending |
 | EVID-02 | Phase 3 | Pending |
 | EVID-03 | Phase 3 | Pending |

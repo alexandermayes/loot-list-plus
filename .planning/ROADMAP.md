@@ -70,7 +70,7 @@ Plans:
   3. No homepage claim asserts an outcome that cannot be checked; the unsupported stats block is replaced with product facts a visitor can confirm on the site
   4. The user has read and signed off on the final wording of every changed string before it ships, and plan copy was treated as a starting point rather than final text
 
-**Plans:** 6/7 plans executed
+**Plans:** 7/7 plans executed
 **UI hint**: yes
 
 Plans:
@@ -94,7 +94,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 02-07-PLAN.md - Blog surfaces per the approved indexed-title decision, title mirrors kept in agreement, and the phase-wide sweep completeness gate
+- [x] 02-07-PLAN.md - Blog surfaces per the approved indexed-title decision, title mirrors kept in agreement, and the phase-wide sweep completeness gate
 
 ### Phase 3: Anonymized Product-Data Report
 
@@ -168,7 +168,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Measurement Baseline & AI Answer Log | 4/5 | In Progress|  |
-| 2. Checkable Conversion Copy | 6/7 | In Progress|  |
+| 2. Checkable Conversion Copy | 7/7 | In Progress|  |
 | 3. Anonymized Product-Data Report | 0/TBD | Not started | - |
 | 4. Verified Guild Case Study | 0/TBD | Not started | - |
 | 5. Internal Authority & Recrawl | 0/TBD | Not started | - |
