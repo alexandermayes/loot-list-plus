@@ -72,7 +72,7 @@ type QuoteAuthor = {
 function VerificationLine({ verification }: { verification: TestimonialVerification }) {
   const text =
     verification.type === 'verified_customer_dated'
-      ? `Verified customer, interviewed ${verification.monthYear}`
+      ? `Verified LootList+ customer ∙ Interviewed ${verification.monthYear}`
       : 'Verified LootList+ customer'
   return (
     <p className="font-poppins text-[12px] text-[#bababa] leading-tight text-center">{text}</p>

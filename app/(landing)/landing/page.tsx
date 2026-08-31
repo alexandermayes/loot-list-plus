@@ -20,7 +20,7 @@ function getRecentFeatures(): string {
 }
 
 export const metadata: Metadata = {
-  title: 'Loot Lists, Attendance & Loot Score Tracking | LootList+',
+  title: { absolute: 'Loot Lists, Attendance & Loot Score Tracking | LootList+' },
   description: 'Rank loot lists, track attendance, and calculate transparent item priority for your World of Warcraft guild. Create your guild free with Discord.',
   alternates: {
     canonical: 'https://www.getlootlist.com',
