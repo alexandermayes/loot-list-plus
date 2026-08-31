@@ -7,7 +7,7 @@ import type { Metadata } from 'next'
 import LoginPage from '@/app/components/LoginPage'
 
 export const metadata: Metadata = {
-  title: 'LootList+ \u2219 Sign up',
+  title: 'Sign up \u2219 LootList+',
   description: 'Sign in to LootList+ with Discord to manage your guild\'s loot.',
   alternates: {
     canonical: 'https://lootlistplus.com',
