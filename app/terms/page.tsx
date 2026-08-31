@@ -5,7 +5,7 @@ import LandingFooter from '@/app/components/landing/LandingFooter'
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
-  description: 'Terms of Service for LootList+, the loot management system for World of Warcraft Classic guilds.',
+  description: 'Terms of Service for LootList+, the loot management system for World of Warcraft guilds.',
   alternates: {
     canonical: 'https://www.getlootlist.com/terms',
   },
@@ -37,7 +37,7 @@ export default function TermsOfServicePage() {
           <section className="space-y-4">
             <Heading level={2}>2. Description of Service</Heading>
             <Text>
-              LootList+ is a guild loot management tool for World of Warcraft Classic. The Service
+              LootList+ is a guild loot management tool for World of Warcraft. The Service
               allows users to:
             </Text>
             <ul className="ml-6 list-disc space-y-2">

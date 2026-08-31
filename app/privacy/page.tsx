@@ -30,7 +30,7 @@ export default function PrivacyPolicyPage() {
               LootList+ (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;), operated by the
               LootList+ Team, is committed to protecting your privacy. This Privacy Policy
               explains how we collect, use, disclose, and safeguard your information when you use
-              our loot management service for World of Warcraft Classic.
+              our loot management service for World of Warcraft.
             </Text>
             <Text>
               By using LootList+, you consent to the data practices described in this policy. If you
