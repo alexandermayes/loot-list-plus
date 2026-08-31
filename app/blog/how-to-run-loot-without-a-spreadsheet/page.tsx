@@ -365,7 +365,8 @@ export default function BlogPost() {
               </li>
             </ul>
             <p>
-              Most guilds are fully migrated within two raid resets.
+              Most guilds find the migration lighter than expected once
+              rosters and rules are set up once.
               The spreadsheet sits untouched in the Discord pins as a
               historical artifact.
             </p>
