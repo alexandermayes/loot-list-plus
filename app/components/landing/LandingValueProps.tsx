@@ -55,7 +55,31 @@ function StatCard({ value, label, className }: { value: string; label: string; c
   )
 }
 
-function QuoteCard({ quote, author, className }: { quote: string; author?: { name: string; guild: string }; className?: string }) {
+// Discriminated union: exactly one variant renders per quote (UI-SPEC E2 zero-one-many).
+type TestimonialVerification =
+  | { type: 'wcl_link'; url: string; monthYear?: string }
+  | { type: 'verified_customer' }
+  | { type: 'verified_customer_dated'; monthYear: string }
+
+type QuoteAuthor = {
+  name: string
+  guild: string
+  role?: string
+  expansionTier?: string
+  verification?: TestimonialVerification
+}
+
+function VerificationLine({ verification }: { verification: TestimonialVerification }) {
+  const text =
+    verification.type === 'verified_customer_dated'
+      ? `Verified customer, interviewed ${verification.monthYear}`
+      : 'Verified LootList+ customer'
+  return (
+    <p className="font-poppins text-[12px] text-[#bababa] leading-tight text-center">{text}</p>
+  )
+}
+
+function QuoteCard({ quote, author, className }: { quote: string; author?: QuoteAuthor; className?: string }) {
   return (
     <TiltCard
       className={`flex flex-col items-center justify-center overflow-hidden rounded-[20px] md:rounded-[28px] p-6 md:p-12 lg:p-20 ${className || ''}`}
@@ -67,7 +91,31 @@ function QuoteCard({ quote, author, className }: { quote: string; author?: { nam
       {author && (
         <div className="mt-5">
           <p className="font-poppins font-semibold text-[13px] text-white leading-tight text-center">{author.name}</p>
-          <p className="font-poppins text-[12px] text-[#bababa] leading-tight text-center">{author.guild}</p>
+          <p className="font-poppins text-[12px] leading-tight text-center">
+            {author.verification?.type === 'wcl_link' ? (
+              <a
+                href={author.verification.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline"
+              >
+                {author.guild}
+              </a>
+            ) : (
+              <span className="text-[#bababa]">{author.guild}</span>
+            )}
+          </p>
+          {(author.role || author.expansionTier || author.verification) && (
+            <div className="space-y-1">
+              {author.role && (
+                <p className="font-poppins text-[12px] text-[#bababa] leading-tight text-center">{author.role}</p>
+              )}
+              {author.expansionTier && (
+                <p className="font-poppins text-[12px] text-[#bababa] leading-tight text-center">{author.expansionTier}</p>
+              )}
+              {author.verification && <VerificationLine verification={author.verification} />}
+            </div>
+          )}
         </div>
       )}
     </TiltCard>
@@ -126,9 +174,10 @@ export default function LandingValueProps() {
           className="flex flex-col md:flex-row gap-4 mb-4"
         >
           <StatCard value="100%" label="transparent" className="h-[250px] md:h-[300px] flex-shrink-0 md:w-auto md:flex-1" />
+          {/* APPROVED-STRING: quote.crucible.verification = Verified LootList+ customer (plain text, no link) */}
           <QuoteCard
             quote="One of the biggest benefits we've seen is how much it cuts down on loot drama. The transparency and structure it provides keep things fair and clear for everyone, while also incentivizing raiders to maintain good attendance and consistently show up prepared."
-            author={{ name: 'Scizophrenic', guild: 'Crucible' }}
+            author={{ name: 'Scizophrenic', guild: 'Crucible', verification: { type: 'verified_customer' } }}
             className="h-[250px] md:h-[300px] md:flex-[2]"
           />
         </motion.div>
@@ -152,19 +201,30 @@ export default function LandingValueProps() {
           transition={{ delay: 0.4 }}
           className="flex flex-col md:flex-row gap-4"
         >
+          {/* APPROVED-STRING: quote.indecisive.verification = Verified LootList+ customer, guild name "Indecisive" links to https://fresh.warcraftlogs.com/guild/us/nightslayer/indecisive */}
           <QuoteCard
             quote="LootList+ is a game changer. As someone who has always dreaded being a loot master, I no longer despise handling loot. Cannot recommend it enough."
-            author={{ name: 'Para/Kidney', guild: 'Indecisive' }}
+            author={{
+              name: 'Para/Kidney',
+              guild: 'Indecisive',
+              verification: { type: 'wcl_link', url: 'https://fresh.warcraftlogs.com/guild/us/nightslayer/indecisive' },
+            }}
             className="h-[250px] md:h-[300px] md:flex-1"
           />
+          {/* APPROVED-STRING: quote.bad-guys.verification = Verified LootList+ customer (plain text, no link) */}
           <QuoteCard
             quote="I chose LootList+ for the intuitive design and was pleasantly surprised by the depth of features. If you've used other loot tools and want something cleaner and easier for your raiders, this is the answer."
-            author={{ name: '2laxs', guild: 'Bad Guys' }}
+            author={{ name: '2laxs', guild: 'Bad Guys', verification: { type: 'verified_customer' } }}
             className="h-[250px] md:h-[300px] md:flex-1"
           />
+          {/* APPROVED-STRING: quote.soul-stoned.verification = Verified LootList+ customer, guild name "Soul Stoned" links to https://fresh.warcraftlogs.com/guild/us/dreamscythe/soul%20stoned */}
           <QuoteCard
             quote="The best feature I never expected was the community support from the creators. Honestly, it's a 10/10 and the best loot management system I've ever used."
-            author={{ name: 'Xx_', guild: 'Soul Stoned' }}
+            author={{
+              name: 'Xx_',
+              guild: 'Soul Stoned',
+              verification: { type: 'wcl_link', url: 'https://fresh.warcraftlogs.com/guild/us/dreamscythe/soul%20stoned' },
+            }}
             className="h-[250px] md:h-[300px] md:flex-1"
           />
         </motion.div>
