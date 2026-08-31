@@ -5,9 +5,9 @@ import LandingCTA from '@/app/components/landing/LandingCTA'
 import LandingFooter from '@/app/components/landing/LandingFooter'
 
 export const metadata: Metadata = {
-  title: 'LootList+ vs TMB, DKP, EPGP, and Loot Council',
+  title: 'LootList+ vs TMB, DKP, EPGP and Loot Council: Feature Comparison',
   description:
-    'An honest comparison of WoW Classic loot systems. See how LootList+ stacks up against That\'s My BiS, DKP, EPGP, and traditional loot council.',
+    'Feature-by-feature comparison of LootList+, That\'s My BiS, DKP, EPGP, and loot council: ranked lists, attendance tracking, and computed loot priority.',
   keywords: [
     'lootlist vs tmb',
     'thatsmybis alternative',
@@ -21,22 +21,22 @@ export const metadata: Metadata = {
     canonical: 'https://www.getlootlist.com/compare',
   },
   openGraph: {
-    title: 'LootList+ vs TMB, DKP, EPGP, and Loot Council',
+    title: 'LootList+ vs TMB, DKP, EPGP and Loot Council: Feature Comparison',
     description:
-      'An honest comparison of WoW Classic loot systems. See how LootList+ stacks up against the alternatives.',
+      'How LootList+ compares to TMB, DKP, EPGP, and loot council on ranked lists, attendance, and computed priority.',
     type: 'article',
     url: 'https://www.getlootlist.com/compare',
   },
 }
 
-const APP_URL = 'https://www.getlootlist.com'
+const APP_URL = 'https://www.lootlistplus.com'
 
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  headline: 'LootList+ vs TMB, DKP, EPGP, and Loot Council',
+  headline: 'LootList+ vs TMB, DKP, EPGP and Loot Council: Feature Comparison',
   description:
-    'An honest comparison of WoW Classic loot systems. See how LootList+ stacks up against the alternatives.',
+    'How LootList+ compares to TMB, DKP, EPGP, and loot council on ranked lists, attendance, and computed priority.',
   datePublished: '2026-04-03T00:00:00Z',
   dateModified: '2026-07-21T00:00:00Z',
   author: {
