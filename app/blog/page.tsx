@@ -59,7 +59,7 @@ const posts = [
   },
   {
     slug: 'how-to-run-loot-without-a-spreadsheet',
-    title: 'How to Run Loot in WoW Classic Without a Spreadsheet',
+    title: 'How to Run Loot in World of Warcraft Without a Spreadsheet',
     description:
       'Spreadsheets were the default for Classic loot tracking, but they break at scale. Here\'s how to run a clean loot system without one.',
     date: 'May 7, 2026',

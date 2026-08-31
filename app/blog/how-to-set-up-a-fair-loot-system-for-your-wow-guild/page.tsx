@@ -8,7 +8,7 @@ import BlogTracker from '@/app/components/landing/BlogTracker'
 export const metadata: Metadata = {
   title: 'How to Set Up a Fair Loot System for Your WoW Guild',
   description:
-    'Compare DKP, EPGP, Loot Council, and Suicide Kings. Learn what makes a loot system fair and how to set one up for your WoW Classic guild.',
+    'Compare DKP, EPGP, Loot Council, and Suicide Kings. Learn what makes a loot system fair and how to set one up for your World of Warcraft guild.',
   keywords: [
     'wow loot system',
     'wow guild loot distribution',
@@ -41,7 +41,7 @@ const jsonLd = {
   '@type': 'Article',
   headline: 'How to Set Up a Fair Loot System for Your WoW Guild',
   description:
-    'Compare DKP, EPGP, Loot Council, and Suicide Kings. Learn what makes a loot system fair and how to set one up for your WoW Classic guild.',
+    'Compare DKP, EPGP, Loot Council, and Suicide Kings. Learn what makes a loot system fair and how to set one up for your World of Warcraft guild.',
   datePublished: '2026-03-23T00:00:00Z',
   dateModified: '2026-03-23T00:00:00Z',
   author: {
@@ -331,8 +331,8 @@ export default function BlogPost() {
               apply regardless of what tool you use.
             </p>
             <p>
-              LootList+ combines the best parts of loot council and priority
-              lists into what it calls a <strong>Loot Score</strong> system.
+              LootList+ combines ranked loot lists and attendance-weighted
+              scoring into what it calls a <strong>Loot Score</strong> system.
               Here&apos;s how it works:
             </p>
             <p>
