@@ -173,7 +173,7 @@ export default function LandingValueProps() {
           transition={{ delay: 0.2 }}
           className="flex flex-col md:flex-row gap-4 mb-4"
         >
-          <StatCard value="100%" label="transparent" className="h-[250px] md:h-[300px] flex-shrink-0 md:w-auto md:flex-1" />
+          <StatCard value="Every" label="score fully explained" className="h-[250px] md:h-[300px] flex-shrink-0 md:w-auto md:flex-1" />
           {/* APPROVED-STRING: quote.crucible.verification = Verified LootList+ customer (plain text, no link) */}
           <QuoteCard
             quote="One of the biggest benefits we've seen is how much it cuts down on loot drama. The transparency and structure it provides keep things fair and clear for everyone, while also incentivizing raiders to maintain good attendance and consistently show up prepared."
@@ -189,7 +189,7 @@ export default function LandingValueProps() {
           transition={{ delay: 0.3 }}
           className="flex flex-col md:flex-row gap-4 mb-4"
         >
-          <StatCard value="3+" label="hours saved a week" className="h-[250px] md:h-[300px] flex-shrink-0 md:w-auto md:flex-1" />
+          <StatCard value="5" label="supported Classic expansions" className="h-[250px] md:h-[300px] flex-shrink-0 md:w-auto md:flex-1" />
           <StatCard value="0" label="spreadsheets needed" className="h-[250px] md:h-[300px] flex-shrink-0 md:w-auto md:flex-1" />
           <StatCard value="1" label="system for loot, attendance, and priorities" className="h-[250px] md:h-[300px] flex-shrink-0 md:w-auto md:flex-1" />
         </motion.div>
