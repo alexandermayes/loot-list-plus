@@ -1,4 +1,4 @@
-STATUS: DRAFT, PENDING SIGN-OFF
+STATUS: APPROVED
 
 # Phase 2 Copy Draft
 
@@ -91,6 +91,17 @@ Candidates:
 
 **Unchanged (not a candidate, stated for completeness):** `robots: { index: false }` stays as-is on `app/page.tsx`. D-09/D-10/D-11 govern indexed marketing/content pages; this is a login surface and is intentionally not indexed.
 
+### Approved
+
+User sign-off received directly, 2026-08-30 (title: T-B, H1: H-B, body: B-A, CTA: C-A, secondary link text: S-B unchanged, secondary href locked per D-08).
+
+APPROVED-STRING: signup.title = Sign up ∙ LootList+
+APPROVED-STRING: signup.h1 = Fair loot decisions, out of the spreadsheet.
+APPROVED-STRING: signup.body = Connect with Discord to create your guild or join one you have already been invited to. Core features are free.
+APPROVED-STRING: signup.cta = Continue with Discord
+APPROVED-STRING: signup.secondary-text = See how it works
+APPROVED-STRING: signup.secondary-href = https://www.getlootlist.com/#how-it-works
+
 ---
 
 ## B. Testimonial verification lines (PROOF-01)
@@ -138,6 +149,15 @@ Locked line format (D-03, sprint plan verbatim shape): quote, then `Verified Loo
 - **Exact rendered line:** `Verified LootList+ customer`, with the guild name `Soul Stoned` rendered as a link to `https://fresh.warcraftlogs.com/guild/us/dreamscythe/soul%20stoned`
 
 **No quote wording changes (D-01):** all four quote texts stay exactly as shipped in `app/components/landing/LandingValueProps.tsx`. **No structured data (D-05):** no Review/AggregateRating schema is added for any of these four blocks; this line item is a statement of what is deliberately absent, not a proposal.
+
+### Approved
+
+User sign-off received directly, 2026-08-30. No changes from the drafted disposition above.
+
+APPROVED-STRING: quote.crucible.verification = Verified LootList+ customer (plain text, no link)
+APPROVED-STRING: quote.indecisive.verification = Verified LootList+ customer, guild name "Indecisive" links to https://fresh.warcraftlogs.com/guild/us/nightslayer/indecisive
+APPROVED-STRING: quote.bad-guys.verification = Verified LootList+ customer (plain text, no link)
+APPROVED-STRING: quote.soul-stoned.verification = Verified LootList+ customer, guild name "Soul Stoned" links to https://fresh.warcraftlogs.com/guild/us/dreamscythe/soul%20stoned
 
 ---
 
@@ -207,6 +227,24 @@ Current: "Most guilds are fully migrated within two raid resets."
 - `app/components/landing/LandingValueProps.tsx:166` quote text ("...it's a 10/10 and the best loot management system I've ever used.") - **Keep.** Author's own quoted wording; D-01 forbids editing quote content even though it contains a superlative.
 - `app/blog/how-to-set-up-a-fair-loot-system-for-your-wow-guild/page.tsx:414` ("The best system in the world fails if it depends on one person's free time.") - **Keep.** A generic aphorism about tooling in general, not a claim about LootList+ itself.
 - `app/compare/page.tsx:32` `APP_URL` constant defect - **Not fixed in this section.** Out of scope for PROOF-02/D-11; carried to Section G item 3 as its own named sign-off question, since the executor is already editing this file for D-11's metadata but the defect is unrelated to metadata copy.
+
+### Approved
+
+User sign-off received directly, 2026-08-30: all four C2 items approved per the recommended "Fix" option ("go with whatever you recommend"). C2c's fixes are recorded once under their own keys below (`manifest`/`meta.homepage.*`), not duplicated.
+
+APPROVED-STRING: stat.row1.value = Every
+APPROVED-STRING: stat.row1.label = score fully explained
+APPROVED-STRING: stat.row2.value = 5
+APPROVED-STRING: stat.row2.label = supported Classic expansions
+APPROVED-STRING: claim.landing-compare.best-parts = LootList+ combines ranked loot lists, attendance-weighted scoring, and transparent priority into one system. No spreadsheets, no guesswork.
+APPROVED-STRING: claim.blog-fair-loot.best-parts = LootList+ combines ranked loot lists and attendance-weighted scoring into what it calls a Loot Score system.
+APPROVED-STRING: claim.blog-spreadsheet.migration-speed = Most guilds find the migration lighter than expected once rosters and rules are set up once.
+
+**Implementation notes for the shipping executor:**
+- `claim.blog-fair-loot.best-parts` replaces only the sentence "LootList+ combines the best parts of loot council and priority lists into what it calls a Loot Score system." at `app/blog/how-to-set-up-a-fair-loot-system-for-your-wow-guild/page.tsx:334-336`, preserving the `<strong>Loot Score</strong>` emphasis around "Loot Score" and leaving the paragraph's trailing sentence ("Here's how it works:") unchanged.
+- `claim.blog-spreadsheet.migration-speed` replaces only the first sentence of the paragraph at `app/blog/how-to-run-loot-without-a-spreadsheet/page.tsx:367-369`; the second sentence ("The spreadsheet sits untouched in the Discord pins as a historical artifact.") stays unchanged.
+- C2c's `public/site.webmanifest:4` fix is `repos.public/site.webmanifest.4` below (Section E). C2c's homepage openGraph/twitter description fixes are `meta.homepage.og-description` and `meta.homepage.twitter-description` below (Section D), reused verbatim rather than drafted a third time.
+- C3 items are unchanged: no action taken on the two quote/aphorism strings; the `/compare` `APP_URL` fix is `G3` below.
 
 ---
 
@@ -319,6 +357,30 @@ Evidence: see D1 above (position ~9 to 12.6, 0 to 1.31% CTR on competitor querie
 
 **Also repositioned in this same file (D-12, drafted once here, referenced from Section E rows 23-25):** every remaining "WoW Classic loot systems" instance in this file becomes "World of Warcraft loot systems" as part of whichever candidate above is selected.
 
+### Approved
+
+User sign-off received directly, 2026-08-30. Homepage: H-T2, D2 description as drafted, openGraph/twitter as drafted. Changelog: CH-T2, CH-D2. Compare: CO-T1, CO-D1, using the corrected 3-of-6 AI-citation figure.
+
+APPROVED-STRING: meta.homepage.title = Loot Lists, Attendance & Loot Score Tracking | LootList+
+APPROVED-STRING: meta.homepage.description = Rank loot lists, track attendance, and calculate transparent item priority for your World of Warcraft guild. Create your guild free with Discord.
+APPROVED-STRING: meta.homepage.og-title = LootList+ - Loot Management for World of Warcraft Guilds
+APPROVED-STRING: meta.homepage.og-description = LootList+ is a transparent loot management system for World of Warcraft guilds. Track attendance, manage priority lists, and streamline loot distribution.
+APPROVED-STRING: meta.homepage.og-image-alt = LootList+ - Loot Management for World of Warcraft Guilds
+APPROVED-STRING: meta.homepage.twitter-title = LootList+ - Loot Management for World of Warcraft Guilds
+APPROVED-STRING: meta.homepage.twitter-description = A transparent loot management system for World of Warcraft guilds.
+
+APPROVED-STRING: meta.changelog.title = LootList+ Changelog: Recent Updates
+APPROVED-STRING: meta.changelog.description = Recent LootList+ releases: new features, fixes, and improvements. See what shipped and when.
+APPROVED-STRING: meta.changelog.og-title = LootList+ Changelog
+APPROVED-STRING: meta.changelog.og-description = New features, improvements, and fixes across LootList+ for World of Warcraft guild loot management.
+
+APPROVED-STRING: meta.compare.title = LootList+ vs TMB, DKP, EPGP and Loot Council: Feature Comparison
+APPROVED-STRING: meta.compare.description = Feature-by-feature comparison of LootList+, That's My BiS, DKP, EPGP, and loot council: ranked lists, attendance tracking, and computed loot priority.
+APPROVED-STRING: meta.compare.og-title = LootList+ vs TMB, DKP, EPGP and Loot Council: Feature Comparison
+APPROVED-STRING: meta.compare.og-description = How LootList+ compares to TMB, DKP, EPGP, and loot council on ranked lists, attendance, and computed priority.
+APPROVED-STRING: meta.compare.jsonld-headline = LootList+ vs TMB, DKP, EPGP and Loot Council: Feature Comparison
+APPROVED-STRING: meta.compare.jsonld-description = How LootList+ compares to TMB, DKP, EPGP, and loot council on ranked lists, attendance, and computed priority.
+
 ---
 
 ## E. Repositioning dispositions (D-12)
@@ -364,9 +426,53 @@ Every row below is carried forward from `02-COPY-AUDIT.md`'s Repositioning Inven
 
 **Not in scope for this in-repo sweep (D-14):** Discord server description, GitHub repository description field, and old external posts. See Section F.
 
+### Approved
+
+User sign-off received directly, 2026-08-30: **G1 resolved as Option A, full broaden.** Rows 12-18 and 22 (the 8 contingent blog-title occurrences) are no longer contingent, all 34 occurrences reposition, except row 3 (kept, per the user's earlier standing note that "WoW Classic" stays as a distinct search keyword). Values below were re-verified directly against the current file contents, not re-derived from the audit's elided quotes.
+
+APPROVED-STRING: repos.app/layout.tsx.33 = LootList+ - Loot Management for World of Warcraft Guilds
+APPROVED-STRING: repos.app/layout.tsx.39 = LootList+ is a transparent loot-management system for World of Warcraft guilds. Raiders submit ranked loot lists, officers track attendance, and Loot Scores show who has priority for each item and why. Core features are free; Premium adds multi-team support, an officer activity feed, and reserve runs for $4.99 per month or $39 per year per guild.
+APPROVED-STRING: repos.app/layout.tsx.54 = LootList+ - Loot Management for World of Warcraft Guilds
+APPROVED-STRING: repos.app/layout.tsx.100 = LootList+ combines ranked loot lists, attendance, and transparent item-priority scores for World of Warcraft guilds.
+APPROVED-STRING: repos.app/layout.tsx.130 = LootList+ combines ranked loot lists, attendance, and transparent item-priority scores for World of Warcraft guilds.
+APPROVED-STRING: repos.app/about/page.tsx.9 = About LootList+: Built by a World of Warcraft Guild
+APPROVED-STRING: repos.app/about/page.tsx.11 = LootList+ was built by a World of Warcraft guild to replace fragile loot spreadsheets with ranked lists, attendance, and transparent priority scores.
+APPROVED-STRING: repos.app/terms/page.tsx.8 = Terms of Service for LootList+, the loot management system for World of Warcraft guilds.
+APPROVED-STRING: repos.app/terms/page.tsx.40 = LootList+ is a guild loot management tool for World of Warcraft. The Service
+APPROVED-STRING: repos.app/privacy/page.tsx.33 = our loot management service for World of Warcraft.
+APPROVED-STRING: repos.app/blog/page.tsx.62 = How to Run Loot in World of Warcraft Without a Spreadsheet
+APPROVED-STRING: repos.app/blog/how-to-run-loot-without-a-spreadsheet/page.tsx.10 = How to Run Loot in World of Warcraft Without a Spreadsheet
+APPROVED-STRING: repos.app/blog/how-to-run-loot-without-a-spreadsheet/page.tsx.30 = How to Run Loot in World of Warcraft Without a Spreadsheet
+APPROVED-STRING: repos.app/blog/how-to-run-loot-without-a-spreadsheet/page.tsx.45 = How to Run Loot in World of Warcraft Without a Spreadsheet
+APPROVED-STRING: repos.app/blog/how-to-run-loot-without-a-spreadsheet/page.tsx.101 = How to Run Loot in World of Warcraft Without a Spreadsheet
+APPROVED-STRING: repos.app/blog/how-to-run-loot-without-a-spreadsheet/page.tsx.121 = How to Run Loot in World of Warcraft Without a Spreadsheet
+APPROVED-STRING: repos.app/blog/how-to-run-loot-without-a-spreadsheet/page.tsx.139 = How to Run Loot in World of Warcraft Without a Spreadsheet
+APPROVED-STRING: repos.app/blog/how-to-set-up-a-fair-loot-system-for-your-wow-guild/page.tsx.11 = Compare DKP, EPGP, Loot Council, and Suicide Kings. Learn what makes a loot system fair and how to set one up for your World of Warcraft guild.
+APPROVED-STRING: repos.app/blog/how-to-set-up-a-fair-loot-system-for-your-wow-guild/page.tsx.44 = Compare DKP, EPGP, Loot Council, and Suicide Kings. Learn what makes a loot system fair and how to set one up for your World of Warcraft guild.
+APPROVED-STRING: repos.app/components/landing/LandingHero.tsx.135 = LootList+ is loot management for World of Warcraft guilds. Raiders rank what they
+APPROVED-STRING: repos.app/components/landing/BlogRelatedPosts.tsx.28 = How to Run Loot in World of Warcraft Without a Spreadsheet
+APPROVED-STRING: repos.app/compare/page.tsx.10 = Feature-by-feature comparison of LootList+, That's My BiS, DKP, EPGP, and loot council: ranked lists, attendance tracking, and computed loot priority.
+APPROVED-STRING: repos.app/compare/page.tsx.26 = How LootList+ compares to TMB, DKP, EPGP, and loot council on ranked lists, attendance, and computed priority.
+APPROVED-STRING: repos.app/compare/page.tsx.39 = How LootList+ compares to TMB, DKP, EPGP, and loot council on ranked lists, attendance, and computed priority.
+APPROVED-STRING: repos.app/(landing)/landing/page.tsx.23 = Loot Lists, Attendance & Loot Score Tracking | LootList+
+APPROVED-STRING: repos.app/(landing)/landing/page.tsx.24 = Rank loot lists, track attendance, and calculate transparent item priority for your World of Warcraft guild. Create your guild free with Discord.
+APPROVED-STRING: repos.app/(landing)/landing/page.tsx.29 = LootList+ - Loot Management for World of Warcraft Guilds
+APPROVED-STRING: repos.app/(landing)/landing/page.tsx.30 = LootList+ is a transparent loot management system for World of Warcraft guilds. Track attendance, manage priority lists, and streamline loot distribution.
+APPROVED-STRING: repos.app/(landing)/landing/page.tsx.39 = LootList+ - Loot Management for World of Warcraft Guilds
+APPROVED-STRING: repos.app/(landing)/landing/page.tsx.44 = LootList+ - Loot Management for World of Warcraft Guilds
+APPROVED-STRING: repos.app/(landing)/landing/page.tsx.45 = A transparent loot management system for World of Warcraft guilds.
+APPROVED-STRING: repos.README.md.3 = LootList+ is a transparent loot-management system for World of Warcraft guilds. Raiders submit ranked loot lists, officers track attendance, and Loot Scores show who has priority for each item and why. Core features are free; Premium adds multi-team support, an officer activity feed, and reserve runs. Learn more at [getlootlist.com](https://www.getlootlist.com) or compare plans on the [pricing page](https://www.getlootlist.com/pricing).
+APPROVED-STRING: repos.public/site.webmanifest.4 = A transparent loot management system for World of Warcraft guilds
+
+Row 3 (`app/layout.tsx:40`, the `keywords` array) has no APPROVED-STRING; disposition remains **keep**, unchanged.
+
+**Note on row 21** (`LandingHero.tsx:135`): the approved value above is the full literal line as it exists in the source today, ending mid-sentence ("...Raiders rank what they") because the JSX text wraps onto the next line in the file; only "WoW Classic guilds" → "World of Warcraft guilds" changes within it, nothing else on that line moves.
+
+**Note on row 20**: `app/blog/how-to-set-up-a-fair-loot-system-for-your-wow-guild/page.tsx:44` is the JSON-LD `description` field, which duplicates line 11's plain metadata `description` verbatim in the current source; both get the identical approved value above, kept in sync as the plan requires.
+
 ### Residual allowances
 
-One line per file in the inventory, including files whose approved count is 0. Defaults below assume the **Section G item 1 recommendation (full broaden)**; if the user instead chooses the lower-risk partial option for the blog-title question, the three contingent files' numbers change as noted in Section G item 1, and this section is corrected at Task 2 to match the actual answer.
+One line per file in the inventory, including files whose approved count is 0. **Resolved 2026-08-30: G1 = full broaden**, so the counts below are final, not conditional.
 
 RESIDUAL-ALLOWANCE: app/layout.tsx = 1
 RESIDUAL-ALLOWANCE: app/about/page.tsx = 0
@@ -382,7 +488,7 @@ RESIDUAL-ALLOWANCE: app/(landing)/landing/page.tsx = 0
 RESIDUAL-ALLOWANCE: README.md = 0
 RESIDUAL-ALLOWANCE: public/site.webmanifest = 0
 
-(If the user instead picks the partial/lower-risk option in Section G item 1: `app/blog/page.tsx` becomes 1, `app/blog/how-to-run-loot-without-a-spreadsheet/page.tsx` becomes 6, `app/components/landing/BlogRelatedPosts.tsx` becomes 1, and `app/layout.tsx` stays 1, all other files unchanged.)
+(The partial/lower-risk option was not chosen; the counts above are final.)
 
 ---
 
@@ -409,16 +515,28 @@ The indexed title, on-page H1, and JSON-LD headline of `app/blog/how-to-run-loot
 
 **Recommendation:** Option A. **Your answer sets Section E rows 12-18 and 22's final disposition and the three contingent RESIDUAL-ALLOWANCE lines in Section E.**
 
+**Resolved 2026-08-30 (user sign-off, direct): Option A, full broaden.** See Section E's Approved subsection for the final values.
+
 **2. Each undecided superlative from Section C2.** Choose fix (using the proposed replacement), remove, or keep with a reason, for each of:
 - C2a: the "100% transparent" stat (recommended: fix, qualitative reword)
 - C2b: the "best parts of every/any loot system" superlative, both instances (recommended: fix, consistent across both)
 - C2c: the "ultimate loot management system" superlative, all three instances (recommended: fix, synced with the homepage rewrite)
 - C2d: the blog migration-speed claim (recommended: fix, remove the specific timeframe)
 
+**Resolved 2026-08-30 (user sign-off, direct): fix, per the recommendation, for all four.** See Section C's Approved subsection for the final values.
+
 **3. The `/compare` CTA destination defect (`app/compare/page.tsx:32`).** `const APP_URL = 'https://www.getlootlist.com'` sends every CTA on this page to the marketing homepage domain instead of the signup domain, while every sibling page (`LandingNav.tsx`, `LandingHero.tsx`, `app/about/page.tsx`, `app/pricing/page.tsx`) correctly uses `https://www.lootlistplus.com`. This is out of D-11's locked scope (it is not a copy claim), and it was flagged rather than silently fixed because this plan's own instructions say to flag rather than auto-fix inconsistencies inside a copy-only plan. **Recommendation:** fix it to `https://www.lootlistplus.com`, since the executor is already editing this file for the D-11 metadata rewrite and the current behavior sends a clicking officer to the wrong domain. Cost of fixing: a one-line constant change. Cost of not fixing: officers who click any CTA on `/compare` land on the marketing homepage instead of the signup flow.
+
+**Resolved 2026-08-30 (user sign-off, direct): fix it.**
+
+APPROVED-STRING: fix.compare-page.app-url = https://www.lootlistplus.com
 
 **4. D-04 activity window and any unresolved guild.** Already answered, not a new decision. `ACTIVITY-WINDOW: 30 days from 2026-08-29 (cutoff 2026-07-30)`, confirmed final by the user at plan 02-01's Task 3 checkpoint. All four guilds (Crucible, Indecisive, Bad Guys, Soul Stoned) resolved to a real, active `guilds` row; none required exclusion. Recorded here only so it is visible at this consolidated sign-off, not because it needs to be re-decided.
 
 **5. Whether the quote count is four or five.** Already answered, not a new decision. Confirmed at 4 at plan 02-01's Task 3 checkpoint; the codebase has never had a fifth `QuoteCard`. CONTEXT.md's D-01 "all 5 homepage quotes stay up" reflected an assumption that did not match the actual codebase, not a real fifth quote. Recorded here only for this consolidated sign-off's visibility.
 
+**AI-citation figure (Section D1's flagged discrepancy).** Resolved 2026-08-30 (user sign-off, direct): **3 of 6 is correct**, not 4 of 6. Corrected in the source docs on `main` (`02-CONTEXT.md`, `02-RESEARCH.md`, `02-05-PLAN.md`, `02-02-PLAN.md`, and the originating todo file), commit `07e029a`. This draft's Section D1 and Section D4 already used the verified 3-of-6 figure.
+
 ---
+
+SIGN-OFF: APPROVED 2026-08-30
