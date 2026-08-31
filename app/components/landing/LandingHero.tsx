@@ -132,7 +132,7 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
                 {' '}deserves an epic system.
               </h1>
               <p className="font-poppins font-medium text-[16px] text-[#bababa] leading-normal max-w-[620px] mx-auto">
-                LootList+ is loot management for WoW Classic guilds. Raiders rank what they
+                LootList+ is loot management for World of Warcraft guilds. Raiders rank what they
                 want, officers set the rules, and every drop gets a priority the whole guild
                 can see.
               </p>
