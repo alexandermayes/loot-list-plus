@@ -7,7 +7,7 @@ import BlogTracker from '@/app/components/landing/BlogTracker'
 
 export const metadata: Metadata = {
   title:
-    'How to Run Loot in WoW Classic Without a Spreadsheet',
+    'How to Run Loot in World of Warcraft Without a Spreadsheet',
   description:
     'Spreadsheets were the default for Classic loot tracking, but they break at scale. Here\'s how to run a clean loot system without one.',
   keywords: [
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
       'https://www.getlootlist.com/blog/how-to-run-loot-without-a-spreadsheet',
   },
   openGraph: {
-    title: 'How to Run Loot in WoW Classic Without a Spreadsheet',
+    title: 'How to Run Loot in World of Warcraft Without a Spreadsheet',
     description:
       'Spreadsheets were the default for Classic loot tracking, but they break at scale. Here\'s how to run a clean loot system without one.',
     type: 'article',
@@ -42,7 +42,7 @@ const APP_URL = 'https://www.lootlistplus.com'
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  headline: 'How to Run Loot in WoW Classic Without a Spreadsheet',
+  headline: 'How to Run Loot in World of Warcraft Without a Spreadsheet',
   description:
     'Spreadsheets were the default for Classic loot tracking, but they break at scale. Here\'s how to run a clean loot system without one.',
   datePublished: '2026-05-07T00:00:00Z',
@@ -98,7 +98,7 @@ const breadcrumbLd = {
     {
       '@type': 'ListItem',
       position: 3,
-      name: 'How to Run Loot in WoW Classic Without a Spreadsheet',
+      name: 'How to Run Loot in World of Warcraft Without a Spreadsheet',
     },
   ],
 }
@@ -118,7 +118,7 @@ export default function BlogPost() {
 
       {/* Article */}
       <article className="relative pt-32 pb-20 px-6 md:px-12 lg:px-20">
-        <BlogTracker slug="how-to-run-loot-without-a-spreadsheet" title="How to Run Loot in WoW Classic Without a Spreadsheet" />
+        <BlogTracker slug="how-to-run-loot-without-a-spreadsheet" title="How to Run Loot in World of Warcraft Without a Spreadsheet" />
         <div className="max-w-3xl mx-auto">
           {/* Breadcrumb */}
           <nav className="mb-8 text-sm text-foreground-secondary">
@@ -136,7 +136,7 @@ export default function BlogPost() {
           <header className="mb-12">
             <p className="text-sm font-medium text-accent mb-3">Guide</p>
             <h1 className="text-3xl md:text-4xl font-bold text-foreground leading-tight mb-4">
-              How to Run Loot in WoW Classic Without a Spreadsheet
+              How to Run Loot in World of Warcraft Without a Spreadsheet
             </h1>
             <p className="text-lg text-foreground-secondary leading-relaxed">
               Every Classic guild starts with a spreadsheet. It works fine
