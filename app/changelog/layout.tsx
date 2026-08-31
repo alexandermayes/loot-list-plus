@@ -4,16 +4,16 @@ import type { Metadata } from 'next'
 // export metadata. This server layout supplies a unique title/description and
 // canonical for the route (previously it fell back to the generic site default).
 export const metadata: Metadata = {
-  title: 'Changelog',
+  title: 'LootList+ Changelog: Recent Updates',
   description:
-    'Every LootList+ update: new features, improvements, and fixes for WoW guild loot management, attendance tracking, and Discord integration.',
+    'Recent LootList+ releases: new features, fixes, and improvements. See what shipped and when.',
   alternates: {
     canonical: '/changelog',
   },
   openGraph: {
     title: 'LootList+ Changelog',
     description:
-      'New features, improvements, and fixes across LootList+ for WoW guild loot management.',
+      'New features, improvements, and fixes across LootList+ for World of Warcraft guild loot management.',
     url: 'https://www.getlootlist.com/changelog',
     type: 'website',
   },

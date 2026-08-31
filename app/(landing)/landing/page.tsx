@@ -20,14 +20,14 @@ function getRecentFeatures(): string {
 }
 
 export const metadata: Metadata = {
-  title: 'LootList+ | Transparent Loot Management for WoW Classic',
-  description: 'Rank loot lists, track attendance, and calculate transparent item priority for your WoW Classic guild. Create your guild free with Discord.',
+  title: 'Loot Lists, Attendance & Loot Score Tracking | LootList+',
+  description: 'Rank loot lists, track attendance, and calculate transparent item priority for your World of Warcraft guild. Create your guild free with Discord.',
   alternates: {
     canonical: 'https://www.getlootlist.com',
   },
   openGraph: {
-    title: 'LootList+ - Loot Management for WoW Classic Guilds',
-    description: 'The ultimate loot management system for World of Warcraft Classic guilds. Track attendance, manage priority lists, and streamline loot distribution.',
+    title: 'LootList+ - Loot Management for World of Warcraft Guilds',
+    description: 'LootList+ is a transparent loot management system for World of Warcraft guilds. Track attendance, manage priority lists, and streamline loot distribution.',
     url: 'https://www.getlootlist.com',
     siteName: 'LootList+',
     locale: 'en_US',
@@ -36,13 +36,13 @@ export const metadata: Metadata = {
       url: 'https://www.getlootlist.com/og-image.jpg',
       width: 2400,
       height: 1264,
-      alt: 'LootList+ - Loot Management for WoW Classic Guilds',
+      alt: 'LootList+ - Loot Management for World of Warcraft Guilds',
     }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'LootList+ - Loot Management for WoW Classic Guilds',
-    description: 'The ultimate loot management system for World of Warcraft Classic guilds.',
+    title: 'LootList+ - Loot Management for World of Warcraft Guilds',
+    description: 'A transparent loot management system for World of Warcraft guilds.',
     images: ['https://www.getlootlist.com/og-image.jpg'],
   },
 }
