@@ -145,3 +145,12 @@ These require a running instance with real Supabase credentials (same gap as 02-
 Ready. `TestimonialVerification` and `QuoteAuthor` are reusable types for later phases that echo this proof pattern (per the plan's own reversibility note: Phase 3's report page and Phase 4's case study page). No blockers for the next plan in this wave.
 
 Shared-ID note: requirements PROOF-01 and PROOF-02 are shared with sibling plans in this phase. `requirements-completed` is left empty per this plan's execution instructions; the orchestrator should reconcile REQUIREMENTS.md centrally once all declaring plans finish.
+
+## Self-Check: PASSED
+- FOUND: app/components/landing/__tests__/LandingValueProps.test.tsx
+- FOUND: .planning/phases/02-checkable-conversion-copy/02-04-SUMMARY.md
+- FOUND: commit 5cf4325 (Task 1)
+- FOUND: commit c22ef62 (Task 2)
+- FOUND: commit c5b0c46 (scope-extension task)
+- FOUND: commit bab3ac2 (Task 3/4)
+- FOUND: commit 322cf6e (SUMMARY commit)
