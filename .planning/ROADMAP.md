@@ -70,7 +70,7 @@ Plans:
   3. No homepage claim asserts an outcome that cannot be checked; the unsupported stats block is replaced with product facts a visitor can confirm on the site
   4. The user has read and signed off on the final wording of every changed string before it ships, and plan copy was treated as a starting point rather than final text
 
-**Plans:** 3/7 plans executed
+**Plans:** 6/7 plans executed
 **UI hint**: yes
 
 Plans:
@@ -88,9 +88,9 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 02-04-PLAN.md - Homepage proof block: per-quote verification lines, the widened QuoteCard contract, the replaced stat card, and a render test
-- [ ] 02-05-PLAN.md - Root layout, homepage, changelog, and compare metadata: cannibalization fix, competitor-query rewrite, and the first stop in the repositioning sweep
-- [ ] 02-06-PLAN.md - Repositioning on About, Terms, Privacy, hero body, web manifest, and README, with the manifest superlative removed
+- [x] 02-04-PLAN.md - Homepage proof block: per-quote verification lines, the widened QuoteCard contract, the replaced stat card, and a render test
+- [x] 02-05-PLAN.md - Root layout, homepage, changelog, and compare metadata: cannibalization fix, competitor-query rewrite, and the first stop in the repositioning sweep
+- [x] 02-06-PLAN.md - Repositioning on About, Terms, Privacy, hero body, web manifest, and README, with the manifest superlative removed
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -168,7 +168,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Measurement Baseline & AI Answer Log | 4/5 | In Progress|  |
-| 2. Checkable Conversion Copy | 3/7 | In Progress|  |
+| 2. Checkable Conversion Copy | 6/7 | In Progress|  |
 | 3. Anonymized Product-Data Report | 0/TBD | Not started | - |
 | 4. Verified Guild Case Study | 0/TBD | Not started | - |
 | 5. Internal Authority & Recrawl | 0/TBD | Not started | - |
