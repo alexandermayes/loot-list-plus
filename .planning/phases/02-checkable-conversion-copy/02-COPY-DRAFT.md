@@ -484,6 +484,7 @@ RESIDUAL-ALLOWANCE: app/blog/how-to-set-up-a-fair-loot-system-for-your-wow-guild
 RESIDUAL-ALLOWANCE: app/components/landing/LandingHero.tsx = 0
 RESIDUAL-ALLOWANCE: app/components/landing/BlogRelatedPosts.tsx = 0
 RESIDUAL-ALLOWANCE: app/compare/page.tsx = 0
+RESIDUAL-ALLOWANCE: app/changelog/layout.tsx = 0
 RESIDUAL-ALLOWANCE: app/(landing)/landing/page.tsx = 0
 RESIDUAL-ALLOWANCE: README.md = 0
 RESIDUAL-ALLOWANCE: public/site.webmanifest = 0
