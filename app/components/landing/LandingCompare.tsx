@@ -88,7 +88,7 @@ export default function LandingCompare() {
             variants={fadeInUp}
             className="font-poppins text-[16px] text-[#bababa] leading-relaxed max-w-[600px] mx-auto mb-10"
           >
-            LootList+ combines the best parts of every loot system into one. No spreadsheets, no guesswork, full transparency for every raider.
+            LootList+ combines ranked loot lists, attendance-weighted scoring, and transparent priority into one system. No spreadsheets, no guesswork.
           </motion.p>
 
           {/* Comparison table */}
