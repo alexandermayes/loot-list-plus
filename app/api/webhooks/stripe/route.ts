@@ -72,14 +72,22 @@ export async function POST(request: NextRequest) {
     const serviceSupabase = createServiceRoleClient()
     const { tier, error } = await syncSubscriptionToGuild(serviceSupabase, guildId, subscription)
 
-    // Community Discord perk: grant/revoke the Premium role for the purchaser
+    // Community Discord perk: grant/revoke the Premium role for the purchaser.
+    // Awaited so the sync completes before we respond, but wrapped in its own
+    // try/catch so a Discord problem never turns a successful DB sync into a
+    // 500 that Stripe would retry - the daily reconciliation cron is the
+    // safety net for anything this call misses.
     if (!error) {
-      syncPremiumDiscordRole(
-        serviceSupabase,
-        guildId,
-        subscription.metadata?.user_id ?? null,
-        tier === 'pro'
-      )
+      try {
+        await syncPremiumDiscordRole(
+          serviceSupabase,
+          guildId,
+          subscription.metadata?.user_id ?? null,
+          tier === 'pro'
+        )
+      } catch (discordError) {
+        console.error(`Stripe webhook ${event.type}: Discord role sync failed for guild ${guildId}, reconciliation cron will catch it`, discordError)
+      }
     }
 
     // A completed checkout is a new Premium subscription — the conversion
