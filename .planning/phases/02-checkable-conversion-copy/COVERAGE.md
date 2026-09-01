@@ -1,6 +1,6 @@
 # Phase 02: API Coverage Decision
 
-No external API integration: this phase ships zero code that calls an external service, so there is no capability surface to subtract from.
+This phase ships zero runtime code that calls an external service. The only API use is a single authoring-time lookup, decided in the matrix below.
 
 ## Why the detector fired
 
@@ -12,9 +12,9 @@ The Supabase Management API is called **once, at authoring time**, by the execut
 
 | Capability | Decision | Reason |
 |---|---|---|
-| `POST /v1/projects/{ref}/database/query` (read-only SELECT) | `INTEGRATE` (authoring-time only) | One aggregate lookup per quoted guild for the D-03 Warcraft Logs URL and the D-04 activity flag. Result is read by a human and hand-typed into static JSX props. |
-| Every other Management API capability (projects, branches, secrets, functions, backups, config) | `OPT-OUT` | Out of phase scope. This phase changes copy; it provisions and mutates nothing. |
-| Any runtime API surface (new route handler, client fetch, cron, webhook) | `OPT-OUT` | 02-RESEARCH.md "Anti-Patterns to Avoid" explicitly forbids wiring the D-04 activity check as a live component or API route: it would add a runtime surface, an attack surface, and a per-pageview query that no requirement asks for. |
+| `POST /v1/projects/{ref}/database/query` (read-only SELECT) | INTEGRATE | Authoring-time only: one aggregate lookup per quoted guild for the D-03 Warcraft Logs URL and D-04 activity flag, hand-typed into static JSX props. |
+| All other Management API capabilities | OPT-OUT | Out of phase scope (projects, branches, secrets, functions, backups, config). This phase changes copy; it provisions and mutates nothing. |
+| Any runtime API surface (route handler, client fetch, cron, webhook) | OPT-OUT | Forbidden by 02-RESEARCH.md anti-patterns: a live D-04 activity check would add runtime and attack surface no requirement asks for. |
 
 No `app/api/**` route, no client fetch, no new environment variable, and no new dependency is created by this phase. The committed diff contains only static copy.
 
