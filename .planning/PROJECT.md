@@ -28,10 +28,13 @@ An officer who lands on the site immediately understands the category, trusts ch
 - ✓ Sprint #4: acquisition + activation funnel events, guild_funnel_milestones, four pinned PostHog dashboards (2036463–2036466) — shipped #245–#246
 - ✓ Sprint #9: consistent Zev author identity (Person schema + visible byline) on all 9 blog posts — shipped #247
 
+### Validated (Phase 2)
+
+- ✓ Signup page copy rewrite (sprint #3, second half) — approved copy shipped through metadata, component, cross-domain link, and render test — Phase 2 (UAT passed 2026-09-01)
+- ✓ Sprint #6: testimonial verification format — per-quote verification lines (name, guild, verification link or self-attestation note); unsupported stats replaced with checkable facts ("5 supported Classic expansions") — Phase 2. Note: role/expansion/date omitted (not fabricated) where the user did not supply per-quote metadata; accepted as data-availability gap per D-02, confirmed at UAT test 3.
+
 ### Active
 
-- [ ] Signup page copy rewrite (sprint #3, second half) — plan has exact copy; must be taste-checked against LoginPage and the established hero voice
-- [ ] Sprint #6: testimonial verification format — every homepage quote gets role/guild/expansion/date + verification note; unsupported stats ("3+ hours saved") replaced with checkable product facts
 - [ ] Sprint #11: anonymized product-data report at `/research/wow-classic-loot-systems-2026` — methodology, ≥3 findings, ≥10 guilds per published segment, numbers reproducible from saved queries (prod data via Supabase Management API)
 - [ ] Sprint #12: verified guild case study page at `/customers/{guild-slug}` — page template + publish; content blocked on user-conducted interview (questions in plan)
 - [ ] Sprint #10: GSC baseline export — blocked on user regenerating GSC OAuth creds (wiped from .env.local by `vercel env pull`; steps in `scripts/analytics/pull-gsc.py` docstring); PostHog baseline already pulled 2026-08-26
@@ -73,6 +76,9 @@ An officer who lands on the site immediately understands the category, trusts ch
 | Public creator identity stays "Zev", not linked to real-name GitHub | Privacy preference; can opt in later | ✓ Good |
 | External surfaces (#8, #13) deferred out of this milestone | Founder-owned accounts/actions; user chose to focus on in-repo + evidence + measurement | — Pending |
 | Case study ships as template + checkpoint, not fabricated content | Proof must be verifiable; interview is user-owned | — Pending |
+| Testimonial metadata gap accepted, not backfilled | User did not supply role/expansion/date per quote; D-02 forbids invention, so fields are omitted rather than guessed | ✓ Good (UAT 2026-09-01) |
+| Blog titles keep indexed-title decision; title mirrors kept in agreement | Preserve existing rankings while sweeping repositioning copy | ✓ Good |
+| Premium Discord role sync verified live in prod; hardening deferred to post-sprint task | Grant+revoke pipeline confirmed working (env vars, webhook, discord_id coverage); gaps are structural: no backfill/reconciliation, comped guilds excluded, fire-and-forget call | — Pending (design awaiting user sign-off) |
 
 ## Evolution
 
@@ -92,4 +98,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-27 after initialization*
+*Last updated: 2026-09-01 after Phase 2*

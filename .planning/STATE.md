@@ -1,19 +1,19 @@
 ---
 gsd_state_version: 1.0
-current_phase: 02
-current_phase_name: Checkable Conversion Copy
-status: executing
-stopped_at: Phase 02 UI-SPEC approved
-last_updated: "2026-08-30T00:43:11.181Z"
-last_activity: 2026-08-29
-last_activity_desc: Phase 02 execution started
-state_head: 7d460f436073685bbf55d6a2316b43f2369a952c
+current_phase: 1
+current_phase_name: Measurement Baseline & AI Answer Log
+status: planning
+stopped_at: Phase 02 complete, ready to plan Phase 1
+last_updated: "2026-09-01T19:33:23.724Z"
+last_activity: 2026-09-01
+last_activity_desc: Phase 02 complete, transitioned to Phase 1
+state_head: edbc8dc6cdc9ee17cfc730c319210198f533efd2
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 12
-  completed_plans: 4
-  percent: 0
+  completed_plans: 11
+  percent: 17
 ---
 
 # Project State
@@ -23,22 +23,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-27)
 
 **Core value:** An officer who lands on the site immediately understands the category, trusts checkable proof, and completes enough setup to become an activated guild (+30% weekly activated guilds by the Sep 18 to 24 cohort)
-**Current focus:** Phase 02 — Checkable Conversion Copy
+**Current focus:** Phase 1 wrap-up — plan 01-05 complete-cohort GSC re-pull (unlocks 2026-09-02), then Phase 3 (Anonymized Product-Data Report)
 
 ## Current Position
 
-Phase: 02 (Checkable Conversion Copy) — EXECUTING
-Plan: 1 of 7
-Status: Executing Phase 02
-Last activity: 2026-08-29 — Phase 02 execution started
+Phase: 1 — Measurement Baseline & AI Answer Log
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-01 — Phase 02 complete, transitioned to Phase 1
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██████████████████░░] 11/12 plans (92%)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0
+- Total plans completed: 7
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -46,7 +46,7 @@ Progress: [░░░░░░░░░░] 0%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 02 | 7 | - | - |
 
 **Recent Trend:**
 
@@ -74,6 +74,9 @@ Recent decisions affecting current work:
 - Roadmap: Recrawl requests live in Phase 5, after all content is final. Repeat requests do not accelerate indexing.
 - [Phase 01]: GSC clustering overlap precedence fixed as brand > competitor > problem > expansion (planner choice, recorded in gsc_clusters.py)
 - [Phase 01]: The cohort export's true final-data date (2026-08-26) came from a live coverage_end() query, not the researched estimate (2026-08-25) — the actual reported value is authoritative
+- [Phase 02]: Testimonial role/expansion/date metadata omitted, not fabricated (D-02); accepted as data-availability gap at UAT 2026-09-01
+- [Phase 02]: Phase complete 2026-09-01 — 7/7 plans, 4/4 UAT passed, SECURITY.md verified (18 threats, 0 open)
+- [Ad-hoc]: Premium Discord role sync verified live in prod (grant + revoke); hardening design (backfill, reconciliation incl. comped guilds, await + retry) pending user sign-off
 
 ### Pending Todos
 
@@ -106,6 +109,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-01T17:55:32Z
-Stopped at: Session resumed after restart; proceeding to Phase 02 UAT (4 pending human checks)
-Resume file: .planning/phases/02-checkable-conversion-copy/02-UAT.md
+Last session: 2026-09-01T19:33:23Z
+Stopped at: Phase 02 complete; next up is plan 01-05 (calendar-gated to 2026-09-02) or Phase 3 planning
+Resume file: None

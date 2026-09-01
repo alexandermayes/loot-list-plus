@@ -1,26 +1,31 @@
 ---
 phase: 02-checkable-conversion-copy
 verified: 2026-08-31T16:20:00Z
-status: human_needed
+status: passed
 score: 4/4 must-haves verified (with 1 documented, user-acknowledged data-availability limitation)
 behavior_unverified: 0
 overrides_applied: 0
 suggested_overrides:
+
   - must_have: "Every homepage testimonial displays the character or real name, role, guild, expansion or tier, interview date, and either a public verification link or a 'Verified LootList+ customer' note"
     reason: "Role, expansion/tier, and interview date are omitted (not fabricated) for all 4 testimonials because the user did not supply this per-quote metadata when asked directly at the 02-01-PLAN.md Task 3 checkpoint (documented in 02-CONTEXT.md D-02 and 02-COPY-AUDIT.md). Name, guild, and the verification link/note ARE displayed and correct for all 4 quotes. Fabricating the missing fields would violate D-02's explicit non-invention rule and the project's data-integrity posture. Recommend accepting this as a legitimate real-world data-availability gap rather than an execution defect."
-    accepted_by: null
-    accepted_at: null
+    accepted_by: user (UAT test 3 passed with reduced attribution rendered; data-availability gap accepted)
+    accepted_at: 2026-09-01
 re_verification: null
 human_verification:
+
   - test: "At a 375px viewport width, open the signup page (/) and confirm the H1, body, primary Discord button, and secondary link render without overflow, orphaned wraps, or the Discord button being pushed off-screen."
     expected: "All four strings display cleanly at mobile width; the H1 reads as one confident line or a deliberate two-line break at 1440px."
     why_human: "Deferred from plan 02-03's Gate 4 human-check for end-of-phase UAT harvest; isolated worktree agent could not run a fully configured dev server to visually confirm layout at these viewports."
+
   - test: "Click the signup page's secondary link ('See how it works') and confirm it lands on the marketing site's #how-it-works section, and click 'Continue with Discord' and confirm Discord OAuth still starts."
     expected: "Secondary link resolves to https://www.getlootlist.com/#how-it-works and scrolls to the LandingHowItWorks section; Discord OAuth flow is unaffected by the copy change."
     why_human: "Deferred from plan 02-03's Gate 4 human-check; cross-domain navigation and a live OAuth handshake cannot be verified by static code inspection alone."
+
   - test: "At a 375px viewport width, open the homepage, scroll to the proof section, and confirm each quote card holds its full attribution stack (name, guild, verification line) inside the card without clipping or overflow, and that the linked Warcraft Logs guild name is the only accent-colored element and opens the correct guild's public page in a new tab."
     expected: "No card overflows; Warcraft Logs links (Indecisive, Soul Stoned) open the correct guild pages in a new tab; the verification line reads as LootList+ vouching for its own customer, not as a third-party endorsement."
     why_human: "Deferred from plan 02-04's Gate 4 human-check; visual overflow behavior and the subjective 'does this read as self-attestation vs third-party endorsement' judgment require a human looking at the rendered page, not grep."
+
   - test: "Confirm the replaced Row 2 stat card ('5 / supported Classic expansions') reads correctly beside its '0 spreadsheets needed' and '1 system...' siblings and that its label wraps cleanly at 375px."
     expected: "Three stat cards display side by side without label overflow at mobile width."
     why_human: "Deferred from plan 02-04's Gate 4 human-check; visual layout confirmation only."
