@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-08-27)
 Phase: 1 — Measurement Baseline & AI Answer Log
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-09-01 — Phase 02 complete, transitioned to Phase 1
+Last activity: 2026-09-01 — Completed quick task 260901-hkj: hardened premium Discord role sync (webhook await, retry, revoke guard, reconciliation cron)
 
 Progress: [██████████████████░░] 11/12 plans (92%)
 
@@ -98,6 +98,12 @@ Recent decisions affecting current work:
 - **[Timeline] Sprint window closes Sep 24, 2026.** Phase 6 is calendar-bound to Sep 20 to 24, which leaves Phases 1 through 5 to land by Sep 19.
 - **[Phase 3] Production data access.** Report numbers come from the production database via the Supabase Management API only. Aggregate measures only, minimum 10 guilds per published segment, no player or guild names in artifacts or commits.
 - **[Phase 1] Baseline cohort export is partial.** `scripts/analytics/exports/gsc-baseline-cohort-query-2026-08-24_2026-08-30-PARTIAL-through-2026-08-26.csv` covers the Aug 24 to 30, 2026 cohort, but Search Console had only finalized data through 2026-08-26 at export time (2026-08-28). The complete window cannot be pulled before **2026-09-02**. Re-pull with `python3 scripts/analytics/pull-gsc.py --start 2026-08-24 --end 2026-08-30 --dimension query --csv gsc-baseline-cohort-query-2026-08-24_2026-08-30.csv` on or after that date, then replace the partial file and update `scripts/analytics/exports/README.md`. Plan `01-05` closes this out. The missing days must never be estimated, averaged, extrapolated, or sourced from anywhere other than the Search Console API (D-03).
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260901-hkj | Harden premium Discord role sync: await webhook role call, discordFetch retry, multi-guild revoke guard, daily reconciliation cron with backfill | 2026-09-01 | 1c13170 | [260901-hkj-harden-the-premium-discord-role-sync-awa](./quick/260901-hkj-harden-the-premium-discord-role-sync-awa/) |
 
 ## Deferred Items
 
