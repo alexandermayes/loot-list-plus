@@ -1,6 +1,43 @@
 import { describe, it, expect } from 'vitest'
-import { resolveRollingWeeks, resolveRaidDays, resolveRaidDaySettings } from '../settings'
+import { resolveRollingWeeks, resolveRaidDays, resolveRaidDaySettings, validateRollingWeeksOverride, MAX_ROLLING_WEEKS_OVERRIDE } from '../settings'
 import type { RaidDaysOverride } from '../types'
+
+// ─── validateRollingWeeksOverride ──────────────────────────
+
+describe('validateRollingWeeksOverride', () => {
+  it('accepts null as "inherit the guild setting"', () => {
+    expect(validateRollingWeeksOverride(null)).toEqual({ ok: true, value: null })
+  })
+
+  it('accepts undefined as "inherit the guild setting"', () => {
+    expect(validateRollingWeeksOverride(undefined)).toEqual({ ok: true, value: null })
+  })
+
+  it('rejects 0 — a zero-week window zeroes the whole team', () => {
+    const result = validateRollingWeeksOverride(0)
+    expect(result.ok).toBe(false)
+  })
+
+  it('rejects negatives', () => {
+    expect(validateRollingWeeksOverride(-1).ok).toBe(false)
+  })
+
+  it('accepts the boundary values', () => {
+    expect(validateRollingWeeksOverride(1)).toEqual({ ok: true, value: 1 })
+    expect(validateRollingWeeksOverride(MAX_ROLLING_WEEKS_OVERRIDE))
+      .toEqual({ ok: true, value: MAX_ROLLING_WEEKS_OVERRIDE })
+  })
+
+  it('rejects one past the upper boundary', () => {
+    expect(validateRollingWeeksOverride(MAX_ROLLING_WEEKS_OVERRIDE + 1).ok).toBe(false)
+  })
+
+  it('rejects non-integers and non-numbers', () => {
+    expect(validateRollingWeeksOverride(2.5).ok).toBe(false)
+    expect(validateRollingWeeksOverride('4').ok).toBe(false)
+    expect(validateRollingWeeksOverride(NaN).ok).toBe(false)
+  })
+})
 
 // ─── resolveRollingWeeks ───────────────────────────────────
 
@@ -17,9 +54,19 @@ describe('resolveRollingWeeks', () => {
     expect(resolveRollingWeeks(4, 8)).toBe(8)
   })
 
-  it('returns team override of 0 (not treated as null)', () => {
-    // Edge case: 0 is a valid override (e.g., no rolling window)
-    expect(resolveRollingWeeks(4, 0)).toBe(0)
+  it('inherits the guild setting when the override is 0', () => {
+    // A zero-week window makes the attendance denominator 0, which silently
+    // zeroes every raider on the team ("0 of 0 raids") on team-scoped
+    // surfaces. 0 is what an empty number stepper produces, not an intent.
+    expect(resolveRollingWeeks(4, 0)).toBe(4)
+  })
+
+  it('inherits the guild setting when the override is negative', () => {
+    expect(resolveRollingWeeks(4, -1)).toBe(4)
+  })
+
+  it('returns the smallest meaningful override', () => {
+    expect(resolveRollingWeeks(4, 1)).toBe(1)
   })
 })
 

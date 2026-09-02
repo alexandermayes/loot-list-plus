@@ -4,7 +4,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
 import { requirePro } from '@/utils/feature-gate'
 import { logAudit } from '@/utils/audit/log'
-import { resolveRaidDays } from '@/domain/raid-team/settings'
+import { resolveRaidDays, validateRollingWeeksOverride } from '@/domain/raid-team/settings'
 import type { RaidDaysOverride } from '@/domain/raid-team/types'
 import { toDateString } from '@/utils/date'
 
@@ -91,6 +91,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'guild_id and name are required' }, { status: 400 })
     }
 
+    const rollingWeeksCheck = validateRollingWeeksOverride(rolling_weeks_override)
+    if (!rollingWeeksCheck.ok) {
+      return NextResponse.json({ error: rollingWeeksCheck.error }, { status: 400 })
+    }
+
     const serviceSupabase = createServiceRoleClient()
 
     // Pro gate
@@ -136,7 +141,7 @@ export async function POST(request: NextRequest) {
         is_default: isFirstTeam,
         sort_order: nextOrder,
         raid_days_override: raid_days_override || null,
-        rolling_weeks_override: rolling_weeks_override ?? null,
+        rolling_weeks_override: rollingWeeksCheck.value,
         schedule_history: initialDays.length > 0
           ? [{ days: initialDays, effective_from: toDateString(new Date()) }]
           : null,

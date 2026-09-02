@@ -31,6 +31,8 @@
 export { computeScore } from './engine'
 export { explainScore } from './explain'
 export { computeAttendance, resolveStatus, getAttendanceWindowEnd, getAttendanceWindowStart, getCurrentResetWeekEnd, resolveOwnedEvents } from './attendance'
+export { resolveAttendanceWindow } from './attendance-window'
+export type { AttendanceWindow } from './attendance-window'
 export { withDefaults, getDefaultSettings } from './defaults'
 
 // ─── Utility (display helpers, not scoring) ──────────────────

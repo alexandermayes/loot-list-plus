@@ -34,7 +34,7 @@ import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useResubmitCount } from '@/app/hooks/useResubmitCount'
 import ItemLink from '@/app/components/ItemLink'
-import { computeScore, computeAttendance, explainScore, getRoleModifierWithLabel, calculateBadLuckBonus, type ItemPriority, type AttendanceResult, type ScoreExplanation } from '@/domain/scoring'
+import { computeScore, computeAttendance, explainScore, getRoleModifierWithLabel, calculateBadLuckBonus, resolveAttendanceWindow, type ItemPriority, type AttendanceResult, type ScoreExplanation } from '@/domain/scoring'
 import { calculateDonationsBatch } from '@/lib/donations/batch'
 import { getSpecRoles, getRoleDisplayName, type Role } from '@/domain/loot/spec-role-mapping'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
@@ -44,7 +44,7 @@ import { SetupGuide } from './SetupGuide'
 import { hasFeature } from '@/domain/guild/feature-flags'
 import type { RaidTeam } from '@/domain/raid-team/types'
 import type { Tables } from '@/lib/database.types'
-import { resolveRaidDays, resolveRollingWeeks } from '@/domain/raid-team/settings'
+import { resolveRaidDays } from '@/domain/raid-team/settings'
 import { paginatedSelect } from '@/utils/supabase/paginate'
 
 // Get next N raid dates from configured raid days
@@ -877,10 +877,17 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
             .single()
         : Promise.resolve({ data: null, error: null })
 
-      // Start raid events query eagerly with a generous 12-week window.
-      // We'll filter client-side to the actual rolling_attendance_weeks once settings arrive.
-      // This eliminates a sequential round-trip (previously waited for settings first).
-      const maxRollingWeeks = 12
+      // Start raid events query eagerly, before settings arrive, then filter
+      // client-side to the resolved rolling window. This eliminates a
+      // sequential round-trip (previously waited for settings first).
+      //
+      // The eager window MUST cover the widest configurable rolling window
+      // (the team override input caps at 52 weeks). When it was narrower than
+      // the configured window the engine scored whatever happened to be
+      // fetched — the same silent truncation the resolved-window pairing below
+      // exists to prevent. A year of one guild's raid_events is a few hundred
+      // rows, well under the PostgREST row cap.
+      const maxRollingWeeks = 52
       const eagerPeriodStart = new Date()
       eagerPeriodStart.setDate(eagerPeriodStart.getDate() - (maxRollingWeeks * 7))
       const todayStr = toDateString(new Date())
@@ -961,13 +968,16 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
           }
           savedRaidDays = raidDays
 
-          // Apply team rolling weeks override if applicable
-          const rollingWeeks = activeTeam?.rolling_weeks_override != null
-            ? resolveRollingWeeks(guildSettings.rolling_attendance_weeks || 4, activeTeam.rolling_weeks_override)
-            : guildSettings.rolling_attendance_weeks || 4
-          const actualPeriodStart = new Date()
-          actualPeriodStart.setDate(actualPeriodStart.getDate() - (rollingWeeks * 7))
-          const actualPeriodStartStr = toDateString(actualPeriodStart)
+          // Apply the team rolling weeks override to BOTH the event window and
+          // the engine config. Resolving them separately let the engine window
+          // wider than what we kept here, silently scoring a truncated event
+          // set (and reading "0 of 0 raids" outright at an override of 0).
+          const { rollingWeeks, fetchStart: actualPeriodStartStr } = resolveAttendanceWindow({
+            guildRollingWeeks: guildSettings.rolling_attendance_weeks,
+            teamRollingWeeksOverride: activeTeam?.rolling_weeks_override,
+            asOfDate: todayStr,
+            weekResetDay: (guildSettings as { week_reset_day?: number | null }).week_reset_day,
+          })
 
           const raidEventsData = (raidEventsResult.data || []).filter(
             (e: { raid_date: string }) => e.raid_date >= actualPeriodStartStr
@@ -1022,7 +1032,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
           const attendanceResult = computeAttendance({
             records: teamRecords,
             raidEvents: raidEventsData || [],
-            config: guildSettings,
+            config: { ...guildSettings, rolling_attendance_weeks: rollingWeeks },
             raidDays,
             memberJoinedAt: membership?.joined_at ? toDateString(new Date(membership.joined_at)) : undefined,
             newMemberMode,

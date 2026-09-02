@@ -21,13 +21,47 @@ interface RaidDaySettings {
 
 /**
  * Resolve rolling attendance weeks: team override > guild setting.
+ *
+ * A non-positive override is treated as "no override" (inherit the guild
+ * setting), not as a zero-week window. A zero-week window is not a
+ * configuration — it makes the attendance denominator 0, so every raider on
+ * the team silently scores "0 of 0 raids" with +0.00 credit on every
+ * team-scoped surface while guild-scoped surfaces (attendance "All teams",
+ * addon export, Discord bot) keep showing real numbers. The field's own
+ * contract in the team editor is "leave empty to inherit from guild
+ * settings", and a browser number stepper on an empty `min={0}` input lands
+ * on 0, so 0 in the database means a mis-click, never an intent.
  */
 export function resolveRollingWeeks(
   guildRollingWeeks: number,
   teamOverride: number | null | undefined
 ): number {
-  if (teamOverride != null) return teamOverride
+  if (teamOverride != null && teamOverride > 0) return teamOverride
   return guildRollingWeeks
+}
+
+/** Upper bound for a team's rolling-weeks override (mirrors the team editor input). */
+export const MAX_ROLLING_WEEKS_OVERRIDE = 52
+
+/**
+ * Validate a team's `rolling_weeks_override` before it is stored.
+ *
+ * "Inherit the guild setting" is expressed as null — never as 0. A stored 0
+ * produces a zero-length attendance window, which zeroes every raider on the
+ * team without any visible error, so it is rejected at the write boundary
+ * rather than normalized silently.
+ */
+export function validateRollingWeeksOverride(
+  value: unknown
+): { ok: true; value: number | null } | { ok: false; error: string } {
+  if (value === undefined || value === null) return { ok: true, value: null }
+  if (typeof value !== 'number' || !Number.isInteger(value)) {
+    return { ok: false, error: 'rolling_weeks_override must be a whole number of weeks, or null to inherit the guild setting' }
+  }
+  if (value < 1 || value > MAX_ROLLING_WEEKS_OVERRIDE) {
+    return { ok: false, error: `rolling_weeks_override must be between 1 and ${MAX_ROLLING_WEEKS_OVERRIDE} weeks, or null to inherit the guild setting` }
+  }
+  return { ok: true, value }
 }
 
 /**
