@@ -237,7 +237,14 @@ export default function RaidTeamsPage() {
     setEditingTeam(team)
     setEditName(team.name)
     setEditColor(team.color_hex)
-    setEditRollingWeeks(team.rolling_weeks_override != null ? String(team.rolling_weeks_override) : '')
+    // A non-positive stored override is a mis-click, not a configuration (it
+    // zeroes the team's attendance window). Show it as empty = "inherit", so
+    // the field is valid and the next save writes null and clears the bad row.
+    setEditRollingWeeks(
+      team.rolling_weeks_override != null && team.rolling_weeks_override > 0
+        ? String(team.rolling_weeks_override)
+        : ''
+    )
     const override = team.raid_days_override
     setEditRaidDaysPerWeek(override?.raid_days_per_week != null ? String(override.raid_days_per_week) : '')
     setEditRaidDays([
@@ -624,9 +631,11 @@ export default function RaidTeamsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label size="sm" className="mb-1.5 block">Rolling weeks</Label>
+                  {/* Floor of 1: a 0-week window zeroes the attendance
+                      denominator for everyone on the team. Empty = inherit. */}
                   <Input
                     type="number"
-                    min={0}
+                    min={1}
                     max={52}
                     placeholder="Guild default"
                     value={editRollingWeeks}

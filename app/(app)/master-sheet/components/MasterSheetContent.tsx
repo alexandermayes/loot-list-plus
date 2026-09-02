@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/client'
 import { paginatedSelect } from '@/utils/supabase/paginate'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { computeScore, computeAttendance, getAttendanceWindowStart, type ItemPriority, type AttendanceResult } from '@/domain/scoring'
+import { computeScore, computeAttendance, resolveAttendanceWindow, type ItemPriority, type AttendanceResult } from '@/domain/scoring'
 import { calculateDonationsBatch } from '@/lib/donations/batch'
 import { getSpecRoles } from '@/domain/loot/spec-role-mapping'
 import { formatRankingsForGargul } from '@/domain/loot/gargul-dft'
@@ -42,7 +42,7 @@ const ItemCandidateModal = dynamic(() => import('./ItemCandidateModal').then(mod
 import { RaidModeView } from './RaidModeView'
 import type { PlayerRanking, LootItem as BossLootItem } from './BossSection'
 import { useRaidTeam } from '@/app/hooks/useRaidTeam'
-import { resolveRaidDays, resolveRollingWeeks } from '@/domain/raid-team/settings'
+import { resolveRaidDays } from '@/domain/raid-team/settings'
 import { TeamSelector } from '@/app/components/TeamSelector'
 
 interface LootItem {
@@ -332,9 +332,18 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
     // subset of the raids the engine should have seen, producing bonuses
     // that didn't match the dashboard. GH #96.
     const todayStr = toDateString(new Date())
-    const weeks = resolveRollingWeeks(guildSettings.rolling_attendance_weeks || 4, activeTeam?.rolling_weeks_override)
     const resetDay = (guildSettings as { week_reset_day?: number | null }).week_reset_day ?? null
-    const periodStartStr = getAttendanceWindowStart(todayStr, weeks, resetDay)
+    // One resolution for both the query bound and the engine config — see
+    // resolveAttendanceWindow. Passing the guild's rolling_attendance_weeks to
+    // the engine while bounding the query by a team override made the engine
+    // score a wider window than we fetched (and read 0 of 0 at an override
+    // of 0).
+    const { rollingWeeks: weeks, fetchStart: periodStartStr } = resolveAttendanceWindow({
+      guildRollingWeeks: guildSettings.rolling_attendance_weeks,
+      teamRollingWeeksOverride: activeTeam?.rolling_weeks_override,
+      asOfDate: todayStr,
+      weekResetDay: resetDay,
+    })
 
     let raidEventsQuery = supabase
       .from('raid_events')
@@ -464,7 +473,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
       const result = computeAttendance({
         records: characterRecords,
         raidEvents: recentRaids,
-        config: guildSettings,
+        config: { ...guildSettings, rolling_attendance_weeks: weeks },
         raidDays,
         memberJoinedAt: membership?.joined_at ? toDateString(new Date(membership.joined_at)) : undefined,
         newMemberMode,

@@ -4,7 +4,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
 import { requirePro } from '@/utils/feature-gate'
 import { logAudit } from '@/utils/audit/log'
-import { resolveRaidDays } from '@/domain/raid-team/settings'
+import { resolveRaidDays, validateRollingWeeksOverride } from '@/domain/raid-team/settings'
 import type { RaidDaysOverride } from '@/domain/raid-team/types'
 import { appendScheduleEntry } from '@/domain/raid-team/schedule-history'
 import { toDateString } from '@/utils/date'
@@ -32,6 +32,13 @@ export async function PATCH(
       sort_order?: number
       raid_days_override?: RaidDaysOverride | null
       rolling_weeks_override?: number | null
+    }
+
+    if (rolling_weeks_override !== undefined) {
+      const rollingWeeksCheck = validateRollingWeeksOverride(rolling_weeks_override)
+      if (!rollingWeeksCheck.ok) {
+        return NextResponse.json({ error: rollingWeeksCheck.error }, { status: 400 })
+      }
     }
 
     const serviceSupabase = createServiceRoleClient()

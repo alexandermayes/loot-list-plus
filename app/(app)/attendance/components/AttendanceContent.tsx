@@ -687,7 +687,7 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
 
         // Load guild-wide attendance data (includes score for all characters)
         // Pass filteredRaidEvents (schedule-filtered) so computeAttendance matches the overview
-        await loadGuildAttendance(activeCharData.active_guild_id, filteredRaidEvents, settingsData, characterData.id, raidDays as number[], raidStartDate)
+        await loadGuildAttendance(activeCharData.active_guild_id, filteredRaidEvents, settingsData, characterData.id, raidDays as number[], raidStartDate, weeks)
       } catch (error) {
         console.error('Failed to load attendance data:', error)
         setError("Couldn't load attendance data. Check your connection and try again.")
@@ -704,10 +704,17 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
     })
   }, [user, activeTeamId])
 
-  const loadGuildAttendance = async (guildId: string, raidEvents: RaidEvent[], settings: GuildSettingsRow | null, activeCharacterId?: string, raidDays: number[] = [], raidStartDate: string | null = null) => {
+  const loadGuildAttendance = async (guildId: string, raidEvents: RaidEvent[], settings: GuildSettingsRow | null, activeCharacterId?: string, raidDays: number[] = [], raidStartDate: string | null = null, rollingWeeks?: number) => {
     try {
       const raidEventIds = raidEvents.map(r => r.id)
       const raidDaysPerWeek = raidDays.length || settings?.raid_days_per_week || 2
+      // The engine must score the same rolling window this page fetched with.
+      // Passing the raw guild setting while the query was bounded by a team
+      // override let the two drift (see resolveAttendanceWindow).
+      const engineConfig = {
+        ...(settings || {}),
+        ...(rollingWeeks != null ? { rolling_attendance_weeks: rollingWeeks } : {}),
+      }
       const weeklyMin = settings?.weekly_attendance_minimum as number | null | undefined
       const weeklyCap = activeTeamId
         ? Math.min(weeklyMin ?? raidDaysPerWeek, raidDaysPerWeek)
@@ -898,7 +905,7 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
         const result = computeAttendance({
           records: charRecords,
           raidEvents,
-          config: settings || {},
+          config: engineConfig,
           raidDays: [], // raidEvents already pre-filtered by caller
           memberJoinedAt: joinedAt ? toDateString(new Date(joinedAt)) : undefined,
           newMemberMode,
@@ -952,7 +959,7 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
             const result = computeAttendance({
               records: charRecords,
               raidEvents,
-              config: settings || {},
+              config: engineConfig,
               raidDays: [],
               memberJoinedAt: joinedAt ? toDateString(new Date(joinedAt)) : undefined,
               newMemberMode,
