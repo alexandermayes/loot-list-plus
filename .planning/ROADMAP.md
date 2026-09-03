@@ -17,7 +17,7 @@ The order is driven by the calendar and by two user-owned blockers. Measurement 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Measurement Baseline & AI Answer Log** - Baseline search data and a repeatable weekly AI-answer test so the week-4 review has real before/after numbers
+- [x] **Phase 1: Measurement Baseline & AI Answer Log** - Baseline search data and a repeatable weekly AI-answer test so the week-4 review has real before/after numbers (completed 2026-09-03)
 - [x] **Phase 2: Checkable Conversion Copy** - Signup and homepage say only things an officer can verify (completed 2026-09-01)
 - [ ] **Phase 3: Anonymized Product-Data Report** - Publish a finding nobody else can produce, with every number reproducible
 - [ ] **Phase 4: Verified Guild Case Study** - A real guild's before and after, published with content that guild approved
@@ -40,7 +40,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. At least one complete test-set run is recorded in the log, establishing the week-1 comparison point for Phase 6
 
 **Checkpoint (user action required)**: MEAS-01 cannot start until the user regenerates Google Search Console OAuth credentials, which `vercel env pull` wiped from `.env.local`. Steps are in the docstring of `scripts/analytics/pull-gsc.py`. If the credentials are not available when this phase runs, MEAS-02 ships on its own and MEAS-01 stays open with the blocker recorded in STATE.md. Do not fabricate or approximate baseline numbers from another source.
-**Plans:** 5/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 **Wave 1**
@@ -167,7 +167,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Measurement Baseline & AI Answer Log | 5/5 | In Progress|  |
+| 1. Measurement Baseline & AI Answer Log | 5/5 | Complete    | 2026-09-03 |
 | 2. Checkable Conversion Copy | 7/7 | Complete    | 2026-09-01 |
 | 3. Anonymized Product-Data Report | 0/TBD | Not started | - |
 | 4. Verified Guild Case Study | 0/TBD | Not started | - |
