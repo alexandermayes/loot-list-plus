@@ -32,36 +32,30 @@ gsc-<kind>-<dimension>-<start>_<end>[-PARTIAL-through-<true-end-date>].csv
 |------|-----------|-------------------|---------------------------|-----------|----------------------|
 | `gsc-trend-query-2026-05-24_2026-08-23.csv` | query | 2026-05-24 to 2026-08-23 | 2026-08-23 (fully final) | 23 | `python3 scripts/analytics/pull-gsc.py --start 2026-05-24 --end 2026-08-23 --dimension query --csv gsc-trend-query-2026-05-24_2026-08-23.csv` |
 | `gsc-trend-page-2026-05-24_2026-08-23.csv` | page | 2026-05-24 to 2026-08-23 | 2026-08-23 (fully final) | 10 | `python3 scripts/analytics/pull-gsc.py --start 2026-05-24 --end 2026-08-23 --dimension page --csv gsc-trend-page-2026-05-24_2026-08-23.csv` |
-| `gsc-baseline-cohort-query-2026-08-24_2026-08-30-PARTIAL-through-2026-08-26.csv` | query | 2026-08-24 to 2026-08-30 | 2026-08-26 (partial) | 5 | `python3 scripts/analytics/pull-gsc.py --start 2026-08-24 --end 2026-08-30 --dimension query --csv gsc-baseline-cohort-query-2026-08-24_2026-08-30.csv` |
+| `gsc-baseline-cohort-query-2026-08-24_2026-08-30.csv` | query | 2026-08-24 to 2026-08-30 | 2026-08-30 (fully final) | 6 | `python3 scripts/analytics/pull-gsc.py --start 2026-08-24 --end 2026-08-30 --dimension query --csv gsc-baseline-cohort-query-2026-08-24_2026-08-30.csv` |
 
 The reproducing command always uses the bare, unmarked filename passed on the command
 line. The script decides at run time whether to append a partial marker, based on what
 Search Console actually reports as final, not on what the operator requested.
 
-## The partial cohort export and its dated re-pull
+## The cohort re-pull (completed 2026-09-03)
 
-The Aug 24 to 30, 2026 baseline cohort could not be exported complete on the day this
-export ran (2026-08-28), because Search Console finalizes data 2 to 3 days after the
-fact. At export time, Search Console had only finalized data for the cohort window
-through 2026-08-26, so the committed cohort file is named with a `-PARTIAL-through-2026-08-26`
-marker and contains 5 data rows rather than a full week's worth.
+The Aug 24 to 30, 2026 baseline cohort was first exported on 2026-08-28, while Search
+Console had only finalized data through 2026-08-26, so the committed file carried a
+`-PARTIAL-through-2026-08-26` marker and 5 data rows.
 
-Search Console is expected to finalize the remaining days of the cohort window
-(through 2026-08-30) on or after **2026-09-02**. To re-pull the complete cohort once
-that date has passed, run:
+The complete window was re-pulled on **2026-09-03** (plan `01-05`), after Search Console
+confirmed final data through 2026-08-30. The script wrote the bare, unmarked filename,
+and the superseded `-PARTIAL-through-2026-08-26` file was removed from the repository,
+so exactly one cohort export remains: `gsc-baseline-cohort-query-2026-08-24_2026-08-30.csv`
+(6 rows, fully final).
 
-```
-python3 scripts/analytics/pull-gsc.py --start 2026-08-24 --end 2026-08-30 --dimension query --csv gsc-baseline-cohort-query-2026-08-24_2026-08-30.csv
-```
-
-If the window is then fully final, the script writes the bare filename with no partial
-marker. Delete the old `-PARTIAL-through-2026-08-26` file, commit the new complete file
-in its place, and update this table's cohort row (true final-data end date, row count,
-and the fact that the marker is gone). Plan `01-05` is responsible for closing this out.
-
-The missing days of the cohort window must never be estimated, averaged, extrapolated,
-or substituted from any other data source, before or after 2026-09-02. A partial window
-is labelled partial with its true last date of final data, or it is not committed.
+The filename convention and the partial-marker semantics above still apply to all future
+exports: a window that is not fully final at export time gets a `-PARTIAL-through-<date>`
+marker carrying the true last date of final data. Missing days of any window must never
+be estimated, averaged, extrapolated, or substituted from any other data source. A
+partial window is labelled partial with its true last date of final data, or it is not
+committed.
 
 ## Data sensitivity
 
