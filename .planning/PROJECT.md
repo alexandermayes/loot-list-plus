@@ -33,14 +33,17 @@ An officer who lands on the site immediately understands the category, trusts ch
 - ✓ Signup page copy rewrite (sprint #3, second half) — approved copy shipped through metadata, component, cross-domain link, and render test — Phase 2 (UAT passed 2026-09-01)
 - ✓ Sprint #6: testimonial verification format — per-quote verification lines (name, guild, verification link or self-attestation note); unsupported stats replaced with checkable facts ("5 supported Classic expansions") — Phase 2. Note: role/expansion/date omitted (not fabricated) where the user did not supply per-quote metadata; accepted as data-availability gap per D-02, confirmed at UAT test 3.
 
+### Validated (Phase 1)
+
+- ✓ Sprint #10: GSC baseline export — trend exports (3 months) plus the complete Aug 24 to 30 cohort committed with provenance and query clusters (brand/competitor/problem/expansion); OAuth blocker resolved 2026-08-28; complete cohort re-pulled 2026-09-03 (final data through 2026-08-30, partial file replaced) — Phase 1
+- ✓ Weekly AI-answer test set instrument — RUNBOOK.md (6 verbatim prompts, 3 surfaces, session hygiene), validating log appender, and the week-1 run recorded (18/18 cells, 2026-08-28) — Phase 1. Weekly runs continue through the sprint as an operational cadence (next runs feed the Phase 6 week-4 review).
+
 ### Active
 
 - [ ] Sprint #11: anonymized product-data report at `/research/wow-classic-loot-systems-2026` — methodology, ≥3 findings, ≥10 guilds per published segment, numbers reproducible from saved queries (prod data via Supabase Management API)
 - [ ] Sprint #12: verified guild case study page at `/customers/{guild-slug}` — page template + publish; content blocked on user-conducted interview (questions in plan)
-- [ ] Sprint #10: GSC baseline export — blocked on user regenerating GSC OAuth creds (wiped from .env.local by `vercel env pull`; steps in `scripts/analytics/pull-gsc.py` docstring); PostHog baseline already pulled 2026-08-26
 - [ ] Sprint #14: contextual internal linking across marketing pages + one-time recrawl requests after everything is final
 - [ ] Sprint #15: week-4 review — cohort comparison vs baseline, CTR/query review, pick the next bet from data
-- [ ] Weekly AI-answer test set — 6 fixed prompts from the plan, run from clean sessions, results recorded
 
 ### Out of Scope
 
@@ -78,6 +81,7 @@ An officer who lands on the site immediately understands the category, trusts ch
 | Case study ships as template + checkpoint, not fabricated content | Proof must be verifiable; interview is user-owned | — Pending |
 | Testimonial metadata gap accepted, not backfilled | User did not supply role/expansion/date per quote; D-02 forbids invention, so fields are omitted rather than guessed | ✓ Good (UAT 2026-09-01) |
 | Blog titles keep indexed-title decision; title mirrors kept in agreement | Preserve existing rankings while sweeping repositioning copy | ✓ Good |
+| Partial cohort shipped labelled, complete window re-pulled on dated follow-up (D-03) | GSC final-data lag must not hold the phase hostage, and missing days are never approximated | ✓ Good (closed 2026-09-03) |
 | Premium Discord role sync verified live in prod; hardening deferred to post-sprint task | Grant+revoke pipeline confirmed working (env vars, webhook, discord_id coverage); gaps are structural: no backfill/reconciliation, comped guilds excluded, fire-and-forget call | — Pending (design awaiting user sign-off) |
 
 ## Evolution
@@ -98,4 +102,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-01 after Phase 2*
+*Last updated: 2026-09-03 after Phase 1*
