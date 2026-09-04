@@ -110,8 +110,33 @@ Plans:
   4. The page is self-canonical, present once in the sitemap, and its metadata and structured data match the visible copy, with a contextual create-your-guild CTA
 
 **Data handling note**: Source data comes from the production database via the Supabase Management API. Pull aggregate measures only. Do not extract raw rows, guild names, or player names into planning artifacts, commits, or chat. Raise the 10-guild floor if a combination of segments could identify a single guild.
-**Plans**: TBD
+**Plans:** 6 plans
 **UI hint**: yes
+
+Plans:
+**Wave 1**
+
+- [ ] 03-01-PLAN.md - Tracer: one committed query through the Management API to a committed artifact and a page that renders it, with the floor, window, privacy, and rounding guards under test
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 03-02-PLAN.md - All ten candidate metrics registered with an honest disposition, including the evidenced funnel grey-out and the measured top-priority-bracket decision
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 03-03-PLAN.md - The D-01 finding-selection checkpoint: full candidate menu, user picks 3 to 5, selection committed as a reproducible input
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 03-04-PLAN.md - Every visible string drafted with artifact-bound number tokens, then the consolidated copy sign-off gate
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 03-05-PLAN.md - Full page buildout: per-finding sections, stat callouts, scrollable tables, methodology, downloads, contextual CTA, and the approved-string parity gate
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 03-06-PLAN.md - Publish: single sitemap entry, indexability restored, provenance record, and the end-to-end reproduction proof
 
 ### Phase 4: Verified Guild Case Study
 
@@ -169,7 +194,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Measurement Baseline & AI Answer Log | 5/5 | Complete    | 2026-09-03 |
 | 2. Checkable Conversion Copy | 7/7 | Complete    | 2026-09-01 |
-| 3. Anonymized Product-Data Report | 0/TBD | Not started | - |
+| 3. Anonymized Product-Data Report | 0/6 | Planned      | - |
 | 4. Verified Guild Case Study | 0/TBD | Not started | - |
 | 5. Internal Authority & Recrawl | 0/TBD | Not started | - |
 | 6. Week-4 Review & Next Bet | 0/TBD | Not started | - |
