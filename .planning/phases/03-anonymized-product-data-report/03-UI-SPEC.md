@@ -56,16 +56,19 @@ Exceptions:
 
 ## Typography
 
-Reuses the site's existing `fontSize` scale (`tailwind.config.js`) — no new sizes or weights are introduced.
+Consolidated to exactly **4 sizes** (checker-mandated max). No new sizes or weights are introduced beyond the site's existing `fontSize` scale (`tailwind.config.js`).
 
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
-| Label (eyebrow tag, byline, breadcrumb, table headers, methodology captions, download-link text) | 12px (`text-sm`) | 400 regular (byline/breadcrumb) — see exception | 1.5 |
+| Label (eyebrow tag, byline, breadcrumb, table headers, methodology captions, download-link text) | 16px (`text-lg`) — same size token as Body, distinguished by `text-foreground-muted` color and/or `uppercase tracking-wide` treatment, never by a separate font size | 400 regular | 1.5 |
 | Body (opening copy, finding number-sentence + officer-meaning + limits paragraphs, methodology prose) | 16px (`text-lg`) | 400 regular | 1.5 |
 | Heading (H2 per-finding claim) | 20px (`text-2xl`) | 700 bold | 1.2 |
-| Display (H1 page title; also the stat-callout big number, at the wide end of this range) | 24px mobile → 32px desktop (`text-3xl md:text-4xl`) for H1; up to 42px (`text-5xl`) for stat-callout numbers only | 700 bold | 1.2 (H1) / 1.02 (stat number, `text-5xl` token) |
+| Display (H1 page title) | 32px (`text-4xl`) at all breakpoints — the prior mobile/desktop split (24px→32px) is removed; ship the single desktop-scale value everywhere to stay on-budget | 700 bold | 1.2 |
+| Stat-callout number | 42px (`text-5xl`) — the report's single largest size, reserved exclusively for the big number under each finding's number-sentence | 700 bold | 1.02 |
 
-Declared weights: **2** — 400 (regular, all body/meta text) and 700 (bold, all headings, the stat-callout number, and the CTA button label).
+Four distinct pixel values ship on this page: **16, 20, 32, 42.** Label was previously a fifth size (12px); it is now folded into the 16px Body size and differentiated by color/case only, per the checker's consolidation guidance. The H1 mobile/desktop split (24/32) was previously a de facto fifth and sixth value; it is now a single 32px value at all viewport widths.
+
+Declared weights: **2** — 400 (regular, all body/meta/label text) and 700 (bold, H2, H1, the stat-callout number, and the CTA button label).
 
 Exception (inherited, not introduced by this phase): the existing blog header pattern this page mirrors (D-08) uses `font-medium` (500) on the eyebrow tag (e.g. "Guide") and `font-semibold` (600) on H3 subheads and the byline name. This report page has no H3s and no eyebrow-tag emphasis need beyond the label weight above, so it does not need to reproduce those two extra weights — but if a future edit adds an H3 or an eyebrow tag to match blog styling exactly, treat 500/600 as an accepted carry-over from the shared blog pattern rather than a new addition requiring re-approval.
 
@@ -83,6 +86,18 @@ Reuses the existing dark-mode design tokens (`app/globals.css`, `:root.dark`) �
 | Destructive | `hsl(0 84% 60%)` ≈ `#ef4444` (`text-destructive` / `bg-destructive`) | Not expected to appear on this page — no destructive action exists here. Reserved only if a data-limitation warning ever needs a distinct color from the standard "limits" paragraph; default to the standard body-text treatment instead, since this page has no confirm/delete flow (see Copywriting Contract) |
 
 Accent reserved for: stat-callout numbers, in-body/download links, the single CTA button, and the eyebrow label. Never used for table borders, table header text color, or plain body copy.
+
+---
+
+## Focal Point / Visual Hierarchy
+
+| Priority | Element | Why |
+|----------|---------|-----|
+| 1 — Primary anchor | The stat-callout big number (42px, 700, `text-accent`) for each finding | Largest size on the page, only accent-colored numeral, boxed in `bg-background-elevated` — the eye lands here first within every finding. This is the "proof" the phase exists to deliver (checkable, at-a-glance data), so it must out-rank the surrounding prose. |
+| 2 — Secondary | The H2 claim (20px, 700) immediately above the number-sentence, and the number-sentence + officer-meaning paragraph (16px, 400) immediately below the callout | Establishes what the number means before and after the eye lands on it. Secondary because it's read, not scanned — supports the callout rather than competing with it. |
+| 3 — Tertiary | The opening copy (16px, 400) at the top of the page, methodology section, and the CTA box | Opening copy sets context but is skimmed past on return visits; the CTA is a conversion ask, deliberately placed after the proof has already landed, not before it. |
+
+Rule of thumb for the executor: **within each finding, the stat-callout number must be the single largest, most saturated element in that block.** Nothing else in a finding (H2 claim, table text, limits paragraph) should compete with it in size or accent-color usage. The page-level H1 (32px) is allowed to be visually prominent at the very top of the page, but no per-finding element should approach the H1's weight — hierarchy resets to "callout wins" as soon as a reader is inside a finding.
 
 ---
 
