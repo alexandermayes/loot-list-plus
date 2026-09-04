@@ -110,13 +110,13 @@ Plans:
   4. The page is self-canonical, present once in the sitemap, and its metadata and structured data match the visible copy, with a contextual create-your-guild CTA
 
 **Data handling note**: Source data comes from the production database via the Supabase Management API. Pull aggregate measures only. Do not extract raw rows, guild names, or player names into planning artifacts, commits, or chat. Raise the 10-guild floor if a combination of segments could identify a single guild.
-**Plans:** 6 plans
+**Plans:** 1/6 plans executed
 **UI hint**: yes
 
 Plans:
 **Wave 1**
 
-- [ ] 03-01-PLAN.md - Tracer: one committed query through the Management API to a committed artifact and a page that renders it, with the floor, window, privacy, and rounding guards under test
+- [x] 03-01-PLAN.md - Tracer: one committed query through the Management API to a committed artifact and a page that renders it, with the floor, window, privacy, and rounding guards under test
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -194,7 +194,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Measurement Baseline & AI Answer Log | 5/5 | Complete    | 2026-09-03 |
 | 2. Checkable Conversion Copy | 7/7 | Complete    | 2026-09-01 |
-| 3. Anonymized Product-Data Report | 0/6 | Planned      | - |
+| 3. Anonymized Product-Data Report | 1/6 | In Progress|  |
 | 4. Verified Guild Case Study | 0/TBD | Not started | - |
 | 5. Internal Authority & Recrawl | 0/TBD | Not started | - |
 | 6. Week-4 Review & Next Bet | 0/TBD | Not started | - |
