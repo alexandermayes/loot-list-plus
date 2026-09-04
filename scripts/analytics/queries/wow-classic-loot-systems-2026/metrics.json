@@ -4,6 +4,71 @@
     "label": "Active guilds, raid events, loot awards, and raiders with approved lists during the report window",
     "kind": "count",
     "query_file": "01-sample-definition.sql",
-    "unavailable_reason": null
+    "unavailable_reason": null,
+    "definition_note": null
+  },
+  {
+    "metric_id": "median-list-length",
+    "label": "Median list length",
+    "kind": "median",
+    "query_file": "02-median-list-length.sql",
+    "unavailable_reason": null,
+    "definition_note": "Counts only non-removed items on an approved loot list inside the window; a list whose owner deleted entries has the length the owner kept, not the length they ever typed."
+  },
+  {
+    "metric_id": "attendance-weighting",
+    "label": "Share of active guilds whose attendance configuration differs from the shipped defaults",
+    "kind": "percentage",
+    "query_file": "03-attendance-weighting.sql",
+    "unavailable_reason": null,
+    "definition_note": "guild_settings.attendance_type is a non-null column whose shipped application default is 'points-per-raid' with a nonzero max_attendance_bonus, so a presence check on attendance_type would return effectively every guild and would say nothing. The measured quantity is the share of active guilds whose attendance configuration differs from the shipped defaults (domain/scoring/defaults.ts) on at least one of the seven confirmed guild_settings attendance columns."
+  },
+  {
+    "metric_id": "blp-usage",
+    "label": "Percentage of active guilds using bad-luck protection",
+    "kind": "percentage",
+    "query_file": "04-bad-luck-protection-usage.sql",
+    "unavailable_reason": null,
+    "definition_note": null
+  },
+  {
+    "metric_id": "expansion-distribution",
+    "label": "Distribution of expansions active guilds raided in",
+    "kind": "breakdown",
+    "query_file": "05-expansion-distribution.sql",
+    "unavailable_reason": null,
+    "definition_note": "A guild is counted once per expansion it had qualifying raid activity in during the window (routed through raid_events -> raid_tiers -> expansions, grouped by expansion name text, never loot_history.expansion_id). A guild active in more than one expansion is counted in more than one bucket, so the segment shares do not sum to 100%."
+  },
+  {
+    "metric_id": "time-to-qualified",
+    "label": "Median time from guild creation to qualified setup",
+    "kind": "median",
+    "query_file": null,
+    "unavailable_reason": "Coverage measurement pending: Task 2 evidences this grey-out against the guild_funnel_milestones instrumentation date (2026-08-27) before finalizing the reason text.",
+    "definition_note": null
+  },
+  {
+    "metric_id": "time-to-activated",
+    "label": "Median time from qualified setup to activation",
+    "kind": "median",
+    "query_file": null,
+    "unavailable_reason": "Coverage measurement pending: Task 2 evidences this grey-out against the guild_funnel_milestones instrumentation date (2026-08-27) before finalizing the reason text.",
+    "definition_note": null
+  },
+  {
+    "metric_id": "top-priority-bracket",
+    "label": "Share of awarded items that were in the winner's top priority bracket",
+    "kind": "percentage",
+    "query_file": null,
+    "unavailable_reason": "Coverage decision pending: Task 3 measures loot_submission_snapshots coverage against active guilds and award counts in the window before deciding whether this metric ships or is withheld.",
+    "definition_note": null
+  },
+  {
+    "metric_id": "officer-time-survey",
+    "label": "Self-reported weekly officer time before and after LootList+",
+    "kind": "median",
+    "query_file": null,
+    "unavailable_reason": "No survey instrument exists in this product, no self-reported officer-time data has ever been collected, and the sprint plan requires self-reported figures to be reported separately from behavioral data, so there is nothing to report.",
+    "definition_note": null
   }
 ]

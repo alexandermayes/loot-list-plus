@@ -22,8 +22,11 @@ Then, any session:
         # no network and requires no Keychain entry.
 
     python3 scripts/analytics/run-research-report.py --menu
-        # Prints the candidate-metric table (metric_id, label, kind,
-        # query_file, or a "GREYED OUT" reason) and writes nothing.
+        # Runs every registry entry that has a query_file against
+        # production (D-01 checkpoint menu), prints one line per entry --
+        # a pickable value or an "unavailable: <reason>" line, with support
+        # measurements in their own non-pickable block -- and writes
+        # nothing to public/research/.
 
     python3 scripts/analytics/run-research-report.py
         # Runs every metrics.json entry that has a query_file against
@@ -48,11 +51,16 @@ from research_report import (
     GUILD_FLOOR,
     WINDOW_END,
     WINDOW_START,
+    assemble_breakdown,
+    assemble_median,
+    assemble_percentage_from_counts,
+    assemble_scalar_finding,
+    assemble_support,
     assert_no_forbidden_columns,
     assert_window_literals,
     build_artifact,
     parse_query_header,
-    quantize_display,
+    render_menu,
     resolve_output_path,
     write_csv,
     write_json,
@@ -169,14 +177,95 @@ def stable_generated_at(json_path: str, candidate_artifact: dict, candidate_gene
     return candidate_generated_at
 
 
-def print_menu(metrics) -> None:
-    print(f"{'metric_id':<28} {'kind':<10} {'query_file':<28} status")
-    for m in metrics:
-        if m.get("query_file"):
-            print(f"{m['metric_id']:<28} {m['kind']:<10} {m['query_file']:<28} available")
+def run_all_metrics(metrics, args, token):
+    """Executes every registry entry with a `query_file` against production,
+    in registry order, and assembles each into a `(status, entry)` result
+    via the shared `assemble_*` helpers -- the one code path `--menu` and
+    the full run both use, so a value shown at the checkpoint can never
+    diverge from what a later run of the same query would produce (D-05).
+
+    Returns `(sample, sample_query_file, results)`, where `results` maps
+    every metric_id -- including those with no `query_file` -- to a
+    `(status, entry)` pair. A metric with no `query_file` maps to its
+    registered `unavailable_reason` without ever touching the network.
+    """
+    sample = None
+    sample_query_file = None
+    results = {}
+
+    for metric in metrics:
+        query_file = metric.get("query_file")
+        if not query_file:
+            results[metric["metric_id"]] = ("unavailable", {
+                "metric_id": metric["metric_id"],
+                "label": metric["label"],
+                "reason": metric.get("unavailable_reason") or "no query file",
+            })
+            continue
+
+        path = Path(args.queries_dir) / query_file
+        sql = path.read_text()
+        header = parse_query_header(sql)
+        assert_window_literals(sql, str(path))
+        assert_no_forbidden_columns(sql, str(path))
+        columns = header["columns"]
+
+        rows = run_sql(args.project_ref, token, sql)
+
+        def check_columns(row):
+            actual = set(row.keys())
+            if set(columns) != actual:
+                raise RuntimeError(
+                    f"{path}: response columns {sorted(actual)} do not match "
+                    f"declared columns {sorted(columns)} -- refusing to publish "
+                    "a mismatched result set"
+                )
+
+        if metric["metric_id"] == SAMPLE_METRIC_ID:
+            if not rows:
+                print("error: the sample-definition metric did not produce a sample block", file=sys.stderr)
+                sys.exit(1)
+            row = rows[0]
+            check_columns(row)
+            sample = {k: int(v) for k, v in row.items()}
+            sample_query_file = query_file
+            continue
+
+        if metric["kind"] == "breakdown":
+            segment_counts = {}
+            for row in rows:
+                check_columns(row)
+                seg_col, count_col = columns[0], columns[1]
+                segment_counts[row[seg_col]] = int(row[count_col])
+            denominator = sample.get("active_guilds") if sample else None
+            results[metric["metric_id"]] = assemble_breakdown(metric, segment_counts, denominator)
+            continue
+
+        if not rows:
+            results[metric["metric_id"]] = ("unavailable", {
+                "metric_id": metric["metric_id"],
+                "label": metric["label"],
+                "reason": "query returned zero rows",
+            })
+            continue
+
+        row = rows[0]
+        check_columns(row)
+
+        if metric["kind"] == "support":
+            results[metric["metric_id"]] = assemble_support(metric, row)
+        elif metric["kind"] == "percentage" and len(columns) == 2:
+            results[metric["metric_id"]] = assemble_percentage_from_counts(
+                metric, row[columns[0]], row[columns[1]]
+            )
+        elif metric["kind"] == "median":
+            measured = row[columns[1]] if len(columns) > 1 else None
+            results[metric["metric_id"]] = assemble_median(metric, row[columns[0]], measured)
         else:
-            reason = m.get("unavailable_reason") or "no query file"
-            print(f"{m['metric_id']:<28} {m['kind']:<10} {'-':<28} GREYED OUT: {reason}")
+            value_col = next(iter(row))
+            results[metric["metric_id"]] = assemble_scalar_finding(metric, row[value_col])
+
+    return sample, sample_query_file, results
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -211,75 +300,30 @@ def main():
     metrics = load_metrics(args.queries_dir)
 
     if args.menu:
-        print_menu(metrics)
+        token = get_access_token()
+        _sample, _sample_query_file, results = run_all_metrics(metrics, args, token)
+        print(render_menu(metrics, results))
         return
 
     token = get_access_token()
-
-    sample = None
-    sample_query_file = None
-    findings = []
-    unavailable = []
-
-    for metric in metrics:
-        query_file = metric.get("query_file")
-        if not query_file:
-            unavailable.append({
-                "metric_id": metric["metric_id"],
-                "label": metric["label"],
-                "reason": metric.get("unavailable_reason") or "no query file",
-            })
-            continue
-
-        path = Path(args.queries_dir) / query_file
-        sql = path.read_text()
-        header = parse_query_header(sql)
-        assert_window_literals(sql, str(path))
-        assert_no_forbidden_columns(sql, str(path))
-
-        rows = run_sql(args.project_ref, token, sql)
-
-        if not rows:
-            unavailable.append({
-                "metric_id": metric["metric_id"],
-                "label": metric["label"],
-                "reason": "query returned zero rows",
-            })
-            continue
-
-        row = rows[0]
-        declared_columns = set(header["columns"])
-        actual_columns = set(row.keys())
-        if declared_columns != actual_columns:
-            raise RuntimeError(
-                f"{path}: response columns {sorted(actual_columns)} do not "
-                f"match declared columns {sorted(declared_columns)} -- "
-                "refusing to publish a mismatched result set"
-            )
-
-        if metric["metric_id"] == SAMPLE_METRIC_ID:
-            sample = {k: int(v) for k, v in row.items()}
-            sample_query_file = query_file
-            continue
-
-        value_col = next(iter(row))
-        value = row[value_col]
-        findings.append({
-            "metric_id": metric["metric_id"],
-            "label": metric["label"],
-            "kind": metric["kind"],
-            "value": value,
-            "display": quantize_display(value, metric["kind"]) if value is not None else None,
-            "denominator": None,
-            "share_basis": None,
-            "segments": [],
-            "floor_applied": False,
-            "query_file": query_file,
-        })
+    sample, sample_query_file, results = run_all_metrics(metrics, args, token)
 
     if sample is None:
         print("error: the sample-definition metric did not produce a sample block", file=sys.stderr)
         sys.exit(1)
+
+    findings = []
+    unavailable = []
+    for metric in metrics:
+        if metric["metric_id"] == SAMPLE_METRIC_ID:
+            continue
+        if metric["kind"] == "support":
+            # Support measurements are evidence for a grey-out/decision,
+            # never a pickable finding -- they never reach the published
+            # artifact (D-01/D-02).
+            continue
+        status, entry = results[metric["metric_id"]]
+        (findings if status == "finding" else unavailable).append(entry)
 
     window = {"start": args.start, "end": args.end}
     candidate_generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
