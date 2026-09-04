@@ -279,8 +279,16 @@ class TestMetricsRegistryCompleteness(unittest.TestCase):
     def setUp(self):
         self.registry = json.loads(METRICS_JSON_PATH.read_text())
 
-    def test_registry_has_nine_entries_with_required_shape(self):
-        self.assertEqual(len(self.registry), 9)
+    def test_registry_has_nine_candidate_entries_with_required_shape(self):
+        # "Candidate" = every non-`support` entry, i.e. the sprint plan's
+        # ten recommended-dataset bullets minus the two (bullets 1 and 2)
+        # already combined into plan 03-01's single sample-definition
+        # entry. `support` entries (added in tasks 2 and 3) are evidence
+        # for a grey-out/decision, never pickable, and are checked
+        # separately below -- they are additional to, not part of, this
+        # nine-entry candidate count.
+        candidates = [e for e in self.registry if e["kind"] != "support"]
+        self.assertEqual(len(candidates), 9)
         for entry in self.registry:
             self.assertTrue(entry.get("metric_id"))
             self.assertTrue(entry.get("label"))
@@ -295,6 +303,13 @@ class TestMetricsRegistryCompleteness(unittest.TestCase):
     def test_metric_ids_are_unique(self):
         ids = [e["metric_id"] for e in self.registry]
         self.assertEqual(len(ids), len(set(ids)))
+
+    def test_support_entries_are_additional_to_the_nine_candidates(self):
+        support = [e for e in self.registry if e["kind"] == "support"]
+        self.assertGreaterEqual(len(support), 1)
+        for entry in support:
+            self.assertTrue(entry.get("metric_id"))
+            self.assertTrue(entry.get("label"))
 
     def test_attendance_weighting_carries_a_definition_note(self):
         entry = next(e for e in self.registry if e["metric_id"] == "attendance-weighting")

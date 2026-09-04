@@ -44,7 +44,7 @@
     "label": "Median time from guild creation to qualified setup",
     "kind": "median",
     "query_file": null,
-    "unavailable_reason": "Coverage measurement pending: Task 2 evidences this grey-out against the guild_funnel_milestones instrumentation date (2026-08-27) before finalizing the reason text.",
+    "unavailable_reason": "guild_funnel_milestones shipped via migration 20260827000000 on 2026-08-27, four days before this report's window closes (2026-08-31) and roughly three months after it opens (2026-06-01). The evaluator (utils/analytics/funnel.ts) only stamps qualified_at with the time it happens to re-run and observe the condition newly true, not the historical time the condition became true, so any guild that qualified before 2026-08-27 carries a qualified_at timestamp reflecting an incidental later mutation rather than the true milestone date. Measured: only 2 of the 33 active guilds in this window were created on or after 2026-08-27 (funnel-cohort-coverage), well below the 10-guild floor, so even a cohort restricted to post-instrumentation guilds could not be published.",
     "definition_note": null
   },
   {
@@ -52,7 +52,7 @@
     "label": "Median time from qualified setup to activation",
     "kind": "median",
     "query_file": null,
-    "unavailable_reason": "Coverage measurement pending: Task 2 evidences this grey-out against the guild_funnel_milestones instrumentation date (2026-08-27) before finalizing the reason text.",
+    "unavailable_reason": "guild_funnel_milestones shipped via migration 20260827000000 on 2026-08-27, four days before this report's window closes (2026-08-31) and roughly three months after it opens (2026-06-01). The evaluator (utils/analytics/funnel.ts) only stamps both qualified_at and activated_at with the time it happens to re-run and observe each condition newly true, not the historical time each condition became true, so any guild that qualified or activated before 2026-08-27 carries timestamps reflecting an incidental later mutation rather than the true milestone dates. Measured: only 2 of the 33 active guilds in this window were created on or after 2026-08-27 (funnel-cohort-coverage), well below the 10-guild floor, so even a cohort restricted to post-instrumentation guilds could not be published.",
     "definition_note": null
   },
   {
@@ -70,5 +70,13 @@
     "query_file": null,
     "unavailable_reason": "No survey instrument exists in this product, no self-reported officer-time data has ever been collected, and the sprint plan requires self-reported figures to be reported separately from behavioral data, so there is nothing to report.",
     "definition_note": null
+  },
+  {
+    "metric_id": "funnel-cohort-coverage",
+    "label": "Active guilds created on or after the funnel-instrumentation date (support measurement, not a finding)",
+    "kind": "support",
+    "query_file": "06-funnel-cohort-coverage.sql",
+    "unavailable_reason": null,
+    "definition_note": "Evidence for the time-to-qualified/time-to-activated grey-outs; not itself pickable as a finding."
   }
 ]
