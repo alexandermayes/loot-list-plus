@@ -34,9 +34,11 @@ from research_report import (
     assert_window_literals,
     build_artifact,
     decide_top_bracket_coverage,
+    load_selection_file,
     quantize_display,
     render_menu,
     resolve_output_path,
+    validate_selection,
     write_csv,
 )
 
@@ -466,6 +468,52 @@ class TestDecideTopBracketCoverage(unittest.TestCase):
         }
         self.assertIsNone(entry["query_file"])
         self.assertTrue(any(ch.isdigit() for ch in entry["unavailable_reason"]))
+
+
+# --- 03-03 Task 3: the D-01 selection file and its validation guard ---
+
+class TestLoadSelectionFile(unittest.TestCase):
+    def test_missing_file_returns_empty_list(self):
+        self.assertEqual(load_selection_file("/nonexistent/path/published-findings.txt"), [])
+
+    def test_preserves_order_and_skips_blank_lines(self):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "published-findings.txt")
+            with open(path, "w") as f:
+                f.write("median-list-length\n\nattendance-weighting\nblp-usage\n")
+            self.assertEqual(
+                load_selection_file(path),
+                ["median-list-length", "attendance-weighting", "blp-usage"],
+            )
+
+
+class TestValidateSelection(unittest.TestCase):
+    def _metrics(self):
+        return [
+            {"metric_id": "sample-definition", "label": "Sample", "kind": "count"},
+            {"metric_id": "median-list-length", "label": "Median list length", "kind": "median"},
+            {"metric_id": "officer-time-survey", "label": "Officer time", "kind": "median", "unavailable_reason": "no instrument"},
+            {"metric_id": "top-bracket-coverage", "label": "Coverage", "kind": "support"},
+        ]
+
+    def test_accepts_pickable_ids(self):
+        validate_selection(["median-list-length"], self._metrics())  # no raise
+
+    def test_rejects_unknown_id(self):
+        with self.assertRaises(ValueError):
+            validate_selection(["not-a-real-metric"], self._metrics())
+
+    def test_rejects_greyed_out_id(self):
+        with self.assertRaises(ValueError):
+            validate_selection(["officer-time-survey"], self._metrics())
+
+    def test_rejects_support_kind_id(self):
+        with self.assertRaises(ValueError):
+            validate_selection(["top-bracket-coverage"], self._metrics())
+
+    def test_rejects_sample_definition_id(self):
+        with self.assertRaises(ValueError):
+            validate_selection(["sample-definition"], self._metrics())
 
 
 if __name__ == "__main__":

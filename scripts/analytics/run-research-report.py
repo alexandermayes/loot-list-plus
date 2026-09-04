@@ -49,6 +49,7 @@ from pathlib import Path
 
 from research_report import (
     GUILD_FLOOR,
+    SELECTION_FILE_NAME,
     WINDOW_END,
     WINDOW_START,
     assemble_breakdown,
@@ -59,9 +60,11 @@ from research_report import (
     assert_no_forbidden_columns,
     assert_window_literals,
     build_artifact,
+    load_selection_file,
     parse_query_header,
     render_menu,
     resolve_output_path,
+    validate_selection,
     write_csv,
     write_json,
 )
@@ -292,6 +295,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--floor", type=int, default=GUILD_FLOOR)
     parser.add_argument("--lint-queries", action="store_true", help="offline preflight only, no network")
     parser.add_argument("--menu", action="store_true", help="print the candidate table, write nothing")
+    parser.add_argument(
+        "--selection",
+        default=None,
+        help=(
+            "path to the D-01 selection file (one metric id per line, "
+            f"publication order); defaults to <queries-dir>/{SELECTION_FILE_NAME}"
+        ),
+    )
     return parser
 
 
@@ -316,7 +327,25 @@ def main():
         print(render_menu(metrics, results))
         return
 
+    selection_path = args.selection or str(Path(args.queries_dir) / SELECTION_FILE_NAME)
+    selection_ids = load_selection_file(selection_path)
+    try:
+        validate_selection(selection_ids, metrics)
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        sys.exit(1)
+
     token = get_access_token()
+    # Reuses the identical query-execution/assembly path `--menu` used
+    # (D-05): a selected finding's value here is structurally guaranteed
+    # to match what the checkpoint showed. Running every registry entry
+    # (not only the selected ones) is required, not merely permitted: a
+    # segmented breakdown or zero-row candidate can only be told apart
+    # from a declined-but-computable one by actually assembling it, since
+    # the floor-withhold and zero-row states are runtime outcomes, not
+    # static registry fields (see expansion-distribution, which carries no
+    # `unavailable_reason` in metrics.json but resolves to "unavailable"
+    # at runtime once its segments are floor-checked).
     sample, sample_query_file, results = run_all_metrics(metrics, args, token)
 
     if sample is None:
@@ -324,6 +353,14 @@ def main():
         sys.exit(1)
 
     findings = []
+    for metric_id in selection_ids:
+        status, entry = results[metric_id]
+        if status != "finding":
+            print(f"error: selected metric {metric_id!r} did not assemble to a finding: {entry}", file=sys.stderr)
+            sys.exit(1)
+        findings.append(entry)
+
+    selection_set = set(selection_ids)
     unavailable = []
     for metric in metrics:
         if metric["metric_id"] == SAMPLE_METRIC_ID:
@@ -333,8 +370,21 @@ def main():
             # never a pickable finding -- they never reach the published
             # artifact (D-01/D-02).
             continue
+        if metric["metric_id"] in selection_set:
+            continue
         status, entry = results[metric["metric_id"]]
-        (findings if status == "finding" else unavailable).append(entry)
+        if status == "unavailable":
+            # Genuinely unavailable, whether by registry design (a static
+            # `unavailable_reason`) or by a runtime floor/coverage
+            # decision (e.g. a floor-withheld breakdown). An `unavailable`
+            # entry never carries a numeric value (T-03-15), so recording
+            # it here discloses nothing the checkpoint menu did not
+            # already show as a reason with no number.
+            unavailable.append(entry)
+        # A computable candidate that assembled to a real "finding" but
+        # was not selected is declined, not unavailable: it is excluded
+        # from the artifact entirely, never printed, and its number never
+        # committed anywhere in the repository (D-01 prohibition).
 
     window = {"start": args.start, "end": args.end}
     candidate_generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

@@ -4,7 +4,7 @@
     "start": "2026-06-01",
     "end": "2026-08-31"
   },
-  "generated_at": "2026-09-04T18:07:28Z",
+  "generated_at": "2026-09-04T23:07:04Z",
   "guild_floor": 10,
   "definitions": {
     "active_guild": "A guild qualifies as active if, during the window, it has at least one non-skipped raid event, OR at least one loot award, OR at least five approved loot lists. A raid_events row with is_skipped true is excluded. An approved list counts when COALESCE(reviewed_at, submitted_at) falls inside the window.",
@@ -16,7 +16,85 @@
     "loot_awards": 5432,
     "raiders_with_approved_lists": 452
   },
-  "findings": [],
-  "unavailable": [],
+  "findings": [
+    {
+      "metric_id": "median-list-length",
+      "label": "Median list length",
+      "kind": "median",
+      "value": 18,
+      "display": "18.0",
+      "denominator": 583,
+      "share_basis": "measured",
+      "sums_to_100": null,
+      "segments": [],
+      "floor_applied": false,
+      "query_file": "02-median-list-length.sql",
+      "definition_note": "Counts only non-removed items on an approved loot list inside the window; a list whose owner deleted entries has the length the owner kept, not the length they ever typed."
+    },
+    {
+      "metric_id": "attendance-weighting",
+      "label": "Share of active guilds whose attendance configuration differs from the shipped defaults",
+      "kind": "percentage",
+      "value": 84.84848484848484,
+      "display": "84.8",
+      "denominator": 33,
+      "share_basis": "active_guilds",
+      "sums_to_100": null,
+      "segments": [],
+      "floor_applied": false,
+      "query_file": "03-attendance-weighting.sql",
+      "definition_note": "guild_settings.attendance_type is a non-null column whose shipped application default is 'points-per-raid' with a nonzero max_attendance_bonus, so a presence check on attendance_type would return effectively every guild and would say nothing. The measured quantity is the share of active guilds whose attendance configuration differs from the shipped defaults (domain/scoring/defaults.ts) on at least one of the seven confirmed guild_settings attendance columns."
+    },
+    {
+      "metric_id": "blp-usage",
+      "label": "Percentage of active guilds using bad-luck protection",
+      "kind": "percentage",
+      "value": 45.45454545454545,
+      "display": "45.5",
+      "denominator": 33,
+      "share_basis": "active_guilds",
+      "sums_to_100": null,
+      "segments": [],
+      "floor_applied": false,
+      "query_file": "04-bad-luck-protection-usage.sql",
+      "definition_note": null
+    },
+    {
+      "metric_id": "top-priority-bracket",
+      "label": "Share of awarded items that were in the winner's top priority bracket",
+      "kind": "percentage",
+      "value": 29.486062717770032,
+      "display": "29.5",
+      "denominator": 2296,
+      "share_basis": "active_guilds",
+      "sums_to_100": null,
+      "segments": [],
+      "floor_applied": false,
+      "query_file": "08-top-priority-bracket.sql",
+      "definition_note": "Measured live against production (top-bracket-coverage): 16 active guilds have at least one usable prior list snapshot (clears the 10-guild floor) and 4,292 of 4,853 awards in the window (88.5%) have a prior snapshot (clears the 80% coverage bar), so this ships. The share below covers only awards whose winner had a prior loot_submission_snapshots row and whose awarded item was found, with a rank, in that snapshot; an award without a determinable rank is excluded from both the numerator and the denominator rather than counted as a miss. \"Top priority bracket\" is Bracket 1 (ranks 48-50), the fixed rank set from domain/loot/bracket-validation.ts -- constant across every guild, not a guild_settings-configurable value."
+    }
+  ],
+  "unavailable": [
+    {
+      "metric_id": "expansion-distribution",
+      "label": "Distribution of expansions active guilds raided in",
+      "reason": "withheld: after merging every segment under the 10-guild privacy floor into an \"Other\" bucket, that merged bucket itself holds fewer than 10 guilds, so no segment here can be published without risking identifying a specific guild"
+    },
+    {
+      "metric_id": "time-to-qualified",
+      "label": "Median time from guild creation to qualified setup",
+      "reason": "guild_funnel_milestones shipped via migration 20260827000000 on 2026-08-27, four days before this report's window closes (2026-08-31) and roughly three months after it opens (2026-06-01). The evaluator (utils/analytics/funnel.ts) only stamps qualified_at with the time it happens to re-run and observe the condition newly true, not the historical time the condition became true, so any guild that qualified before 2026-08-27 carries a qualified_at timestamp reflecting an incidental later mutation rather than the true milestone date. Measured: only 2 of the 33 active guilds in this window were created on or after 2026-08-27 (funnel-cohort-coverage), well below the 10-guild floor, so even a cohort restricted to post-instrumentation guilds could not be published."
+    },
+    {
+      "metric_id": "time-to-activated",
+      "label": "Median time from qualified setup to activation",
+      "reason": "guild_funnel_milestones shipped via migration 20260827000000 on 2026-08-27, four days before this report's window closes (2026-08-31) and roughly three months after it opens (2026-06-01). The evaluator (utils/analytics/funnel.ts) only stamps both qualified_at and activated_at with the time it happens to re-run and observe each condition newly true, not the historical time each condition became true, so any guild that qualified or activated before 2026-08-27 carries timestamps reflecting an incidental later mutation rather than the true milestone dates. Measured: only 2 of the 33 active guilds in this window were created on or after 2026-08-27 (funnel-cohort-coverage), well below the 10-guild floor, so even a cohort restricted to post-instrumentation guilds could not be published."
+    },
+    {
+      "metric_id": "officer-time-survey",
+      "label": "Self-reported weekly officer time before and after LootList+",
+      "reason": "No survey instrument exists in this product, no self-reported officer-time data has ever been collected, and the sprint plan requires self-reported figures to be reported separately from behavioral data, so there is nothing to report."
+    }
+  ],
   "sample_query_file": "01-sample-definition.sql"
 }

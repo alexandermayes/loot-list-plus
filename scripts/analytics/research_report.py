@@ -19,6 +19,7 @@ WINDOW_END = "2026-08-31"
 GUILD_FLOOR = 10
 REPORT_SLUG = "wow-classic-loot-systems-2026"
 OUTPUT_DIR = "public/research"
+SELECTION_FILE_NAME = "published-findings.txt"
 
 CSV_HEADER = [
     "metric_id",
@@ -484,6 +485,39 @@ def render_menu(metrics, results):
     lines.append("")
     lines.append(f"{pickable_count} pickable, {unavailable_count} unavailable")
     return "\n".join(lines)
+
+
+def load_selection_file(path):
+    """Reads the D-01 selection file (one metric id per line, in
+    publication order) and returns the ids as a list with that order
+    preserved. Blank lines are skipped; no other commentary is permitted
+    in the file (Task 3's writer never emits any). A missing file returns
+    an empty list rather than raising, so `--menu` and `--lint-queries`
+    (which never touch the selection) are unaffected, and a genuinely
+    empty selection is a valid, if unpublishable, state (EVID-01 empty)."""
+    if not os.path.exists(path):
+        return []
+    with open(path) as f:
+        return [line.strip() for line in f if line.strip()]
+
+
+def validate_selection(selection_ids, metrics):
+    """Task 3's D-01/D-02 selection guard: raises ValueError naming the
+    first offending id if `selection_ids` names anything other than a
+    pickable candidate -- an unknown id, a greyed-out id (carries an
+    `unavailable_reason`), or a support-kind id. A greyed metric cannot be
+    selected and a support measurement is not a finding."""
+    registry = {m["metric_id"]: m for m in metrics}
+    for metric_id in selection_ids:
+        metric = registry.get(metric_id)
+        if metric is None:
+            raise ValueError(f"selection lists unknown metric id: {metric_id}")
+        if metric.get("unavailable_reason"):
+            raise ValueError(f"selection lists a greyed-out metric id: {metric_id}")
+        if metric.get("kind") == "support":
+            raise ValueError(f"selection lists a support-kind metric id: {metric_id}")
+        if metric["metric_id"] == "sample-definition" or metric.get("kind") == "count":
+            raise ValueError(f"selection lists the sample block, which is never a pickable finding: {metric_id}")
 
 
 def resolve_output_path(path):

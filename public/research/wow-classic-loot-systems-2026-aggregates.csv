@@ -3,3 +3,7 @@ sample.active_guilds,Active guilds,count,,33,33,,,01-sample-definition.sql
 sample.raid_events,Raid events,count,,454,454,,,01-sample-definition.sql
 sample.loot_awards,Loot awards,count,,5432,5432,,,01-sample-definition.sql
 sample.raiders_with_approved_lists,Raiders with approved lists,count,,452,452,,,01-sample-definition.sql
+median-list-length,Median list length,median,,18,18.0,583,measured,02-median-list-length.sql
+attendance-weighting,Share of active guilds whose attendance configuration differs from the shipped defaults,percentage,,84.84848484848484,84.8,33,active_guilds,03-attendance-weighting.sql
+blp-usage,Percentage of active guilds using bad-luck protection,percentage,,45.45454545454545,45.5,33,active_guilds,04-bad-luck-protection-usage.sql
+top-priority-bracket,Share of awarded items that were in the winner's top priority bracket,percentage,,29.486062717770032,29.5,2296,active_guilds,08-top-priority-bracket.sql
