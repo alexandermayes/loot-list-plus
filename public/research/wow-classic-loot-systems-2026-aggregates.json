@@ -1,0 +1,22 @@
+{
+  "report_slug": "wow-classic-loot-systems-2026",
+  "window": {
+    "start": "2026-06-01",
+    "end": "2026-08-31"
+  },
+  "generated_at": "2026-09-04T18:07:28Z",
+  "guild_floor": 10,
+  "definitions": {
+    "active_guild": "A guild qualifies as active if, during the window, it has at least one non-skipped raid event, OR at least one loot award, OR at least five approved loot lists. A raid_events row with is_skipped true is excluded. An approved list counts when COALESCE(reviewed_at, submitted_at) falls inside the window.",
+    "raiders": "Raiders are counted as distinct characters holding an approved list inside the window. No alt de-duplication is applied; this is a character count, not a person count."
+  },
+  "sample": {
+    "active_guilds": 33,
+    "raid_events": 454,
+    "loot_awards": 5432,
+    "raiders_with_approved_lists": 452
+  },
+  "findings": [],
+  "unavailable": [],
+  "sample_query_file": "01-sample-definition.sql"
+}

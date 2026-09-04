@@ -1,0 +1,9 @@
+[
+  {
+    "metric_id": "sample-definition",
+    "label": "Active guilds, raid events, loot awards, and raiders with approved lists during the report window",
+    "kind": "count",
+    "query_file": "01-sample-definition.sql",
+    "unavailable_reason": null
+  }
+]

@@ -1,0 +1,5 @@
+metric_id,label,kind,segment,value,display,denominator,share_basis,query_file
+sample.active_guilds,Active guilds,count,,33,33,,,01-sample-definition.sql
+sample.raid_events,Raid events,count,,454,454,,,01-sample-definition.sql
+sample.loot_awards,Loot awards,count,,5432,5432,,,01-sample-definition.sql
+sample.raiders_with_approved_lists,Raiders with approved lists,count,,452,452,,,01-sample-definition.sql
