@@ -379,17 +379,17 @@ def apply_floor(segment_counts: dict[str, int], floor: int = 10) -> dict[str, in
 
 ## Open Questions
 
-1. **Where should the committed JSON/CSV artifact live — `public/research/` or `scripts/analytics/exports/`?**
+1. **(RESOLVED — 03-01 PLAN Task 1: `public/research/` chosen and implemented)** **Where should the committed JSON/CSV artifact live — `public/research/` or `scripts/analytics/exports/`?**
    - What we know: `resolveJsonModule` makes a build-time `import` work from either location; `public/` gives a free direct-download URL with no extra route handler; `scripts/analytics/exports/` matches the Phase 1 provenance-README convention exactly but needs a small route handler (or a build step that copies the file into `public/`) to be downloadable from the page (D-10).
    - What's unclear: no existing precedent in this codebase for a downloadable, build-time-imported data artifact.
    - Recommendation: use `public/research/` as the single source of truth (runner writes there directly), since it satisfies D-05 (build-time import), D-10 (direct download link), and D-09 (zero new dependencies — no route handler needed) simultaneously. This is Claude's Discretion per CONTEXT.md; the planner should confirm.
 
-2. **Is the "top priority bracket" metric computable at all?**
+2. **(RESOLVED — 03-02 PLAN Task 3: `loot_submission_snapshots` [lib/database.types.ts:1459] exists; task measures June–Aug snapshot coverage against a stated bar of ≥10 guilds and ≥80% award coverage, then decides the metric on that measurement)** **Is the "top priority bracket" metric computable at all?**
    - What we know: it requires knowing each award's rank on the winner's list *at the time of the award*, not today's live-recomputed priority (D-14/D-15 already establish that historical fidelity matters for this report).
    - What's unclear: whether any table stores a point-in-time score/rank snapshot per award; this session did not find one in `loot_history`'s columns (`awarded_by, awarded_date, character_id, expansion_id, guild_id, loot_item_id, notes, raid_event_id, raid_tier_id, source` — no rank/score column [VERIFIED: lib/database.types.ts:1207-1223]).
    - Recommendation: treat as likely greyed out per D-02's own wording ("only if the data supports it accurately"), but have the D-01 checkpoint explicitly confirm no snapshot table exists elsewhere before finalizing the grey-out reason text.
 
-3. **Does Postgres's `percentile_cont` work through the Management API's `/database/query` endpoint the same as a normal SELECT?**
+3. **(RESOLVED — 03-01 PLAN Task 1: confirmed with a trivial SELECT during runner development, before the median-dependent query files are written)** **Does Postgres's `percentile_cont` work through the Management API's `/database/query` endpoint the same as a normal SELECT?**
    - What we know: the endpoint executes arbitrary SQL as a normal Postgres connection would; `percentile_cont(0.5) WITHIN GROUP (ORDER BY x)` is standard Postgres and should work identically.
    - What's unclear: not tested this session (no queries were run against prod, per this phase's data-privacy mandate).
    - Recommendation: confirm with a trivial SELECT during runner development, before writing the median-dependent query files.
