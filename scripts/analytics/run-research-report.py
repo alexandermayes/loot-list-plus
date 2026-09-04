@@ -229,6 +229,17 @@ def run_all_metrics(metrics, args, token):
             check_columns(row)
             sample = {k: int(v) for k, v in row.items()}
             sample_query_file = query_file
+            # Presented in the --menu output for full transparency (every
+            # registry entry appears with its real number), but never
+            # pickable/unavailable: the sample block is unconditionally
+            # published, not a D-01 choice. render_menu keys this off
+            # `kind == "count"`, which only sample-definition uses.
+            sample_display = ", ".join(f"{k}={v}" for k, v in sample.items())
+            results[metric["metric_id"]] = ("finding", {
+                "metric_id": metric["metric_id"],
+                "label": metric["label"],
+                "display": sample_display,
+            })
             continue
 
         if metric["kind"] == "breakdown":

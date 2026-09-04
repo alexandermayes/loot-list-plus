@@ -434,10 +434,15 @@ def render_menu(metrics, results):
     not allowed to pick. Entries whose `kind` is `support` print in a
     separate trailing block and are never counted as pickable or
     unavailable -- a human cannot pick a support measurement as a finding.
-    Returns the full rendered text, including the trailing pickable/
+    The `sample-definition` entry (`kind == "count"`) is likewise never
+    pickable -- it is unconditionally published as the artifact's `sample`
+    block, not chosen at this checkpoint -- and prints in its own leading
+    block for full transparency without inflating the pickable/unavailable
+    tally. Returns the full rendered text, including the trailing pickable/
     unavailable count."""
     main_lines = []
     support_lines = []
+    sample_lines = []
     pickable_count = 0
     unavailable_count = 0
 
@@ -447,20 +452,31 @@ def render_menu(metrics, results):
             continue
         status, entry = result
         is_support = metric["kind"] == "support"
+        is_sample = metric["kind"] == "count"
 
         if status == "finding":
             line = f"{metric['metric_id']:<28} {metric['kind']:<12} {entry['display']}"
-            if not is_support:
+            if not is_support and not is_sample:
                 pickable_count += 1
         else:
             reason = entry.get("reason", "unavailable")
             line = f"{metric['metric_id']:<28} {metric['kind']:<12} unavailable: {reason}"
-            if not is_support:
+            if not is_support and not is_sample:
                 unavailable_count += 1
 
-        (support_lines if is_support else main_lines).append(line)
+        if is_sample:
+            sample_lines.append(line)
+        elif is_support:
+            support_lines.append(line)
+        else:
+            main_lines.append(line)
 
-    lines = list(main_lines)
+    lines = []
+    if sample_lines:
+        lines.append("-- sample block (always published, not pickable) --")
+        lines.extend(sample_lines)
+        lines.append("")
+    lines.extend(main_lines)
     if support_lines:
         lines.append("")
         lines.append("-- support measurements (not pickable) --")
