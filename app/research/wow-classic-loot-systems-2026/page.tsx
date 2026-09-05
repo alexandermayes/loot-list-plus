@@ -68,7 +68,12 @@ const APPROVED_STRINGS: Record<string, string> = {
   'page.standfirst': `An inside look at how {sample_active_guilds} World of Warcraft Classic guilds actually run loot: what raiders rank, how guilds weight attendance, how often bad-luck protection is on, and how often the top of the list wins the item.`,
   'page.breadcrumb-label': `Research`,
   'page.byline': `By Zev, creator of LootList+`,
-  'page.read-time': `6 min read`,
+  // Recalculated by plan 03-06 against the final assembled page's rendered
+  // word count (article text only, excluding the global nav/footer chrome):
+  // 1,590 words at a 220 wpm standard reading-speed midpoint (03-COPY-DRAFT.md
+  // Section G4 approves the wording, not the placeholder number) = 7.2min,
+  // rounded to the nearest whole minute.
+  'page.read-time': `7 min read`,
 
   'opening.paragraph-1': `Between {window_start} and {window_end}, {sample_active_guilds} active guilds used LootList+ to manage {sample_raid_events} raid events and {sample_loot_awards} loot awards across {sample_raiders} raiders with approved lists. We looked at aggregated, anonymized activity to see how these guilds balance wishlist rank, attendance, bad-luck protection, and officer judgment. No player or guild names are included in the dataset.`,
   'opening.paragraph-2': `This is product usage data, not a survey of every WoW guild. It shows how guilds using a transparent, list-based system behave in practice.`,
@@ -182,12 +187,11 @@ const PAGE_H1 = approved('page.h1')
 const PAGE_STANDFIRST = approved('page.standfirst')
 const PAGE_BREADCRUMB_LABEL = approved('page.breadcrumb-label')
 const PAGE_BYLINE = approved('page.byline')
-// Carried-forward action item (03-COPY-DRAFT.md Section G4): the wording is
-// approved verbatim, but the minute figure is a placeholder. Plan 03-06
-// recalculates it against the final assembled page's word count before the
-// page is indexed or added to the sitemap; this plan does not touch the
-// sitemap or robots directive, so the recalculation deadline has not yet
-// arrived.
+// Carried-forward action item (03-COPY-DRAFT.md Section G4), resolved by
+// plan 03-06: the wording is approved verbatim; the minute figure has been
+// recalculated against the final assembled page's word count (see the
+// APPROVED_STRINGS comment above `page.read-time`) before the page is
+// indexed or added to the sitemap.
 const PAGE_READ_TIME = approved('page.read-time')
 
 const BYLINE_ZEV_INDEX = PAGE_BYLINE.indexOf('Zev')
@@ -266,15 +270,6 @@ export const metadata: Metadata = {
     publishedTime: '2026-09-04T00:00:00Z',
     authors: ['LootList+'],
     url: 'https://www.getlootlist.com/research/wow-classic-loot-systems-2026',
-  },
-  // Publication gate, not a page setting: main auto-deploys to production
-  // about 12 seconds after merge. Plan 03-06 removes this directive and
-  // adds the sitemap entry in the same commit, once the human render check
-  // and the read-time recalculation both clear -- this plan (03-05) is
-  // explicitly scoped to leave the sitemap and this directive untouched.
-  robots: {
-    index: false,
-    follow: false,
   },
 }
 

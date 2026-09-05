@@ -102,7 +102,7 @@ const APPROVED: Record<string, string> = {
     'An inside look at how {sample_active_guilds} World of Warcraft Classic guilds actually run loot: what raiders rank, how guilds weight attendance, how often bad-luck protection is on, and how often the top of the list wins the item.',
   'page.breadcrumb-label': 'Research',
   'page.byline': 'By Zev, creator of LootList+',
-  'page.read-time': '6 min read',
+  'page.read-time': '7 min read',
   'opening.paragraph-1':
     'Between {window_start} and {window_end}, {sample_active_guilds} active guilds used LootList+ to manage {sample_raid_events} raid events and {sample_loot_awards} loot awards across {sample_raiders} raiders with approved lists. We looked at aggregated, anonymized activity to see how these guilds balance wishlist rank, attendance, bad-luck protection, and officer judgment. No player or guild names are included in the dataset.',
   'opening.paragraph-2':
