@@ -110,7 +110,7 @@ Plans:
   4. The page is self-canonical, present once in the sitemap, and its metadata and structured data match the visible copy, with a contextual create-your-guild CTA
 
 **Data handling note**: Source data comes from the production database via the Supabase Management API. Pull aggregate measures only. Do not extract raw rows, guild names, or player names into planning artifacts, commits, or chat. Raise the 10-guild floor if a combination of segments could identify a single guild.
-**Plans:** 3/6 plans executed
+**Plans:** 4/6 plans executed
 **UI hint**: yes
 
 Plans:
@@ -128,7 +128,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 03-04-PLAN.md - Every visible string drafted with artifact-bound number tokens, then the consolidated copy sign-off gate
+- [x] 03-04-PLAN.md - Every visible string drafted with artifact-bound number tokens, then the consolidated copy sign-off gate
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -194,7 +194,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Measurement Baseline & AI Answer Log | 5/5 | Complete    | 2026-09-03 |
 | 2. Checkable Conversion Copy | 7/7 | Complete    | 2026-09-01 |
-| 3. Anonymized Product-Data Report | 3/6 | In Progress|  |
+| 3. Anonymized Product-Data Report | 4/6 | In Progress|  |
 | 4. Verified Guild Case Study | 0/TBD | Not started | - |
 | 5. Internal Authority & Recrawl | 0/TBD | Not started | - |
 | 6. Week-4 Review & Next Bet | 0/TBD | Not started | - |

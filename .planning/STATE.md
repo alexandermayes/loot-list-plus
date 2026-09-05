@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 03
 current_phase_name: Anonymized Product-Data Report
 status: executing
-stopped_at: Completed 03-04-PLAN.md
-last_updated: "2026-09-05T00:53:56.368Z"
+stopped_at: Completed 03-05-PLAN.md
+last_updated: "2026-09-05T01:26:16.571Z"
 last_activity: 2026-09-04
 last_activity_desc: Phase 03 execution started
-state_head: 9f68f73127bccdcbc85bd5a24701427a49f93da7
+state_head: 7dddc0fe789e4e4bb75e74b13536eb9f3caa5f25
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 18
-  completed_plans: 15
+  completed_plans: 16
   percent: 33
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-09-03)
 ## Current Position
 
 Phase: 03 (Anonymized Product-Data Report) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
 Last activity: 2026-09-04 — Phase 03 execution started
 
@@ -67,6 +67,7 @@ Progress: [████████████████████] 12/12 p
 | Phase 03 P02 | 68min | 3 tasks | 11 files |
 | Phase 03 P03 | 25min | 3 tasks | 7 files |
 | Phase 03 P04 | 15m | 1 tasks | 1 files |
+| Phase 03 P05 | 45min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -90,6 +91,9 @@ Recent decisions affecting current work:
 - [Phase 03]: D-01 selection (pick-by-id): median-list-length, attendance-weighting, blp-usage, top-priority-bracket published in that order; user delegated the specific pick to the orchestrator's recommendation after asking where findings are published
 - [Phase 03]: expansion-distribution recorded as Unavailable (floor-withheld), not Declined: the menu never offered it as a live pickable option
 - [Phase 03]: Report copy sign-off: user approved all 45 strings as drafted (approve-all), including drafter defaults for H1/title year difference, eyebrow wording, attendance-weighting framing, and the read-time placeholder (flagged as a pre-ship recalculation item for 03-05/03-06).
+- [Phase 03]: Contextual CTA rendered outside the prose wrapper (not nested) since the wrapper's [&_a]:text-accent underline rule would break the filled accent button
+- [Phase 03]: JSON download href derived from aggregates.report_slug (not a literal path) to keep the parity gate's single-occurrence count exact, since the JSON extension already appears once in the module's static import statement
+- [Phase 03]: page.read-time ships as approved placeholder '6 min read' unrecalculated; 03-05 does not touch the sitemap/robots directive so the recalculation deadline belongs to 03-06
 
 ### Pending Todos
 
@@ -128,6 +132,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-05T00:53:55.112Z
-Stopped at: Completed 03-04-PLAN.md
+Last session: 2026-09-05T01:26:16.470Z
+Stopped at: Completed 03-05-PLAN.md
 Resume file: None
