@@ -263,7 +263,7 @@ describe('ResearchReportPage', () => {
   })
 
   describe('findings', () => {
-    it('renders one H2 per finding', () => {
+    it('renders one H2 per finding, and the article H2 count equals findings + methodology + downloads', () => {
       const { container } = render(<ResearchReportPage />)
       // Scoped to <article>: the generic bottom LandingCTA marketing
       // section (outside the article, unrelated to this report) carries
@@ -271,7 +271,7 @@ describe('ResearchReportPage', () => {
       // include.
       const article = container.querySelector('article') as HTMLElement
       const h2s = within(article).getAllByRole('heading', { level: 2 })
-      expect(h2s).toHaveLength(aggregates.findings.length)
+      expect(h2s).toHaveLength(aggregates.findings.length + 2)
       for (const finding of aggregates.findings) {
         const expectedH2 = FINDING_APPROVED[finding.metric_id].h2
         expect(h2s.some((h) => h.textContent === expectedH2)).toBe(true)
@@ -338,6 +338,65 @@ describe('ResearchReportPage', () => {
       const { container } = render(<ResearchReportPage />)
       expect(container.querySelectorAll('[class*="line-clamp"]').length).toBe(0)
       expect(container.querySelectorAll('[class*="truncate"]').length).toBe(0)
+    })
+  })
+
+  describe('methodology, downloads, and the contextual CTA', () => {
+    it('renders every approved methodology string with tokens resolved', () => {
+      const { container } = render(<ResearchReportPage />)
+      const keys = [
+        'methodology.h2',
+        'methodology.window',
+        'methodology.active-guild',
+        'methodology.raider',
+        'methodology.expansion',
+        'methodology.floor',
+        'methodology.rounding',
+        'methodology.absences',
+      ]
+      for (const key of keys) {
+        expect(container.textContent).toContain(resolveTokens(APPROVED[key]))
+      }
+    })
+
+    it('renders the methodology window dates and guild floor from the imported artifact', () => {
+      const { container } = render(<ResearchReportPage />)
+      expect(container.textContent).toContain(formatWindowDate(aggregates.window.start))
+      expect(container.textContent).toContain(formatWindowDate(aggregates.window.end))
+      expect(container.textContent).toContain(String(aggregates.guild_floor))
+    })
+
+    it('names every withheld metric from the artifact unavailable array, with its reason', () => {
+      const { container } = render(<ResearchReportPage />)
+      for (const item of aggregates.unavailable) {
+        expect(container.textContent).toContain(item.label)
+        expect(container.textContent).toContain(item.reason)
+      }
+    })
+
+    it('links to the saved-queries directory on GitHub', () => {
+      const { container } = render(<ResearchReportPage />)
+      const link = container.querySelector(
+        'a[href="https://github.com/alexandermayes/loot-list-plus/tree/main/scripts/analytics/queries/wow-classic-loot-systems-2026"]'
+      )
+      expect(link).not.toBeNull()
+    })
+
+    it('offers exactly two download links, CSV and JSON, with the approved labels', () => {
+      render(<ResearchReportPage />)
+      const csvLink = screen.getByRole('link', { name: APPROVED['downloads.csv-label'] })
+      const jsonLink = screen.getByRole('link', { name: APPROVED['downloads.json-label'] })
+      expect(csvLink).toHaveAttribute('href', '/research/wow-classic-loot-systems-2026-aggregates.csv')
+      expect(jsonLink).toHaveAttribute('href', `/research/${aggregates.report_slug}-aggregates.json`)
+    })
+
+    it('renders exactly one contextual CTA anchor to the signup domain, inside the article', () => {
+      const { container } = render(<ResearchReportPage />)
+      const article = container.querySelector('article') as HTMLElement
+      const ctaLink = within(article).getByRole('link', { name: APPROVED['cta.button'] })
+      expect(ctaLink).toHaveAttribute('href', 'https://www.lootlistplus.com')
+      expect(container.textContent).toContain(APPROVED['cta.heading'])
+      expect(container.textContent).toContain(APPROVED['cta.body'])
     })
   })
 })

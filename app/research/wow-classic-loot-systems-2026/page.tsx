@@ -5,6 +5,7 @@ import LandingNav from '@/app/components/landing/LandingNav'
 import LandingCTA from '@/app/components/landing/LandingCTA'
 import LandingFooter from '@/app/components/landing/LandingFooter'
 import BlogTracker from '@/app/components/landing/BlogTracker'
+import { Button } from '@/components/ui/button'
 import aggregates from '@/public/research/wow-classic-loot-systems-2026-aggregates.json'
 
 // ---------------------------------------------------------------------------
@@ -39,7 +40,14 @@ interface Finding {
   definition_note: string | null
 }
 
+interface UnavailableMetric {
+  metric_id: string
+  label: string
+  reason: string
+}
+
 const findings = aggregates.findings as unknown as Finding[]
+const unavailableMetrics = aggregates.unavailable as UnavailableMetric[]
 
 // ---------------------------------------------------------------------------
 // Approved copy (.planning/phases/03-anonymized-product-data-report/03-COPY-DRAFT.md)
@@ -88,6 +96,24 @@ const APPROVED_STRINGS: Record<string, string> = {
   'finding.top-priority-bracket.officer-meaning': `A meaningful share of loot decisions land exactly where the list said they should: at the top. That is a useful gut-check for an officer weighing a close call between two raiders. It does not mean every award goes to the top of someone's list, so this number is a baseline for "how often does the list agree with the outcome," not a claim that the system always hands the item to the top-ranked raider.`,
   'finding.top-priority-bracket.limits': `This share only covers awards where the winner had a usable snapshot of their list from before the raid, and where the awarded item could be found on that snapshot with a determinable rank. An award without a usable prior snapshot or without a determinable rank is left out of both the numerator and the denominator here, it is not counted as a miss. "Top priority bracket" is a fixed rank range built into LootList+ itself, the same for every guild; it is not a setting any guild configures.`,
   'finding.top-priority-bracket.callout-label': `of ranked awards landed in the top bracket`,
+
+  'methodology.h2': `Methodology`,
+  'methodology.window': `This report uses a fixed calendar window, {window_start} through {window_end}, not a window that moves forward with the calendar. The dates are locked in place so every number here stays reproducible against the exact same window, indefinitely.`,
+  'methodology.active-guild': `A guild counts as active in this window if it had at least one raid event that was not marked skipped, or at least one loot award, or at least five approved loot lists. A raid marked skipped in the scheduler does not count toward activity. A loot list counts as approved as of whichever timestamp exists: an officer's review, or, if no review was ever logged, the raider's own submission time.`,
+  'methodology.raider': `Raiders are counted as distinct characters holding an approved loot list in the window. This is a character count, not a person count: a player who raids on two characters, each with an approved list, is counted twice.`,
+  'methodology.expansion': `Where a guild had qualifying activity in more than one expansion during the window, it is counted in every expansion it was active in, not just one. That means an expansion-by-expansion breakdown can add up to more than the whole, by design, and the report says so wherever such a breakdown appears.`,
+  'methodology.floor': `Every number in this report represents at least {guild_floor} guilds. Where a segment would fall under that floor on its own, it is folded into an "Other" row rather than published on its own, so no individual guild can be identified by process of elimination.`,
+  'methodology.rounding': `Percentages and medians in this report are rounded to one decimal place, rounding half up.`,
+  'methodology.reproduce': `Every number on this page comes from a saved SQL query committed to our GitHub repository. You can read the exact queries, and run them yourself, in the saved-queries directory: https://github.com/alexandermayes/loot-list-plus/tree/main/scripts/analytics/queries/wow-classic-loot-systems-2026.`,
+  'methodology.absences': `This report does not publish four measures the original plan recommended. A breakdown of active guilds by expansion is withheld because even after merging small segments into an "Other" row, that merged row itself falls under our guild-privacy floor, so it cannot be published without risking identifying a specific guild. Median time from guild creation to a qualified setup, and median time from a qualified setup to activation, are both withheld because the timestamps needed to measure them only started being recorded shortly before this window closed, leaving almost no guild in the window with a reliable timestamp for either milestone. A self-reported measure of officer time saved per week is not published because no survey of that kind has ever been run; the original plan calls for self-reported figures to be kept separate from behavioral data, and we have none to report. No other candidate metric was declined: every measure that could be computed accurately and safely within this window was published above.`,
+
+  'downloads.h2': `Get the data`,
+  'downloads.csv-label': `Download the aggregates as CSV`,
+  'downloads.json-label': `Download the aggregates as JSON`,
+
+  'cta.heading': `See how the same rules work with your roster.`,
+  'cta.body': `Create a free guild, import your raiders, and compare the priority order before your next raid night.`,
+  'cta.button': `Create your guild free`,
 }
 
 function formatWindowDate(iso: string): string {
@@ -157,9 +183,11 @@ const PAGE_STANDFIRST = approved('page.standfirst')
 const PAGE_BREADCRUMB_LABEL = approved('page.breadcrumb-label')
 const PAGE_BYLINE = approved('page.byline')
 // Carried-forward action item (03-COPY-DRAFT.md Section G4): the wording is
-// approved verbatim, but the minute figure is a placeholder that still
-// needs recalculating against the final assembled page's word count before
-// the page is indexed or added to the sitemap.
+// approved verbatim, but the minute figure is a placeholder. Plan 03-06
+// recalculates it against the final assembled page's word count before the
+// page is indexed or added to the sitemap; this plan does not touch the
+// sitemap or robots directive, so the recalculation deadline has not yet
+// arrived.
 const PAGE_READ_TIME = approved('page.read-time')
 
 const BYLINE_ZEV_INDEX = PAGE_BYLINE.indexOf('Zev')
@@ -169,8 +197,54 @@ if (BYLINE_ZEV_INDEX === -1) {
 const BYLINE_BEFORE_ZEV = PAGE_BYLINE.slice(0, BYLINE_ZEV_INDEX)
 const BYLINE_AFTER_ZEV = PAGE_BYLINE.slice(BYLINE_ZEV_INDEX + 'Zev'.length)
 
+// D-07: the reproduce paragraph's visible text ends with this URL as plain
+// text. Splitting on the URL and re-joining the three pieces around an
+// anchor keeps the rendered text byte-identical to the approved string
+// while also giving the reader an actual clickable link.
+const REPRODUCE_URL =
+  'https://github.com/alexandermayes/loot-list-plus/tree/main/scripts/analytics/queries/wow-classic-loot-systems-2026'
+const METHODOLOGY_REPRODUCE = approved('methodology.reproduce')
+const REPRODUCE_URL_INDEX = METHODOLOGY_REPRODUCE.indexOf(REPRODUCE_URL)
+if (REPRODUCE_URL_INDEX === -1) {
+  throw new Error('methodology.reproduce no longer contains the saved-queries URL')
+}
+const REPRODUCE_BEFORE = METHODOLOGY_REPRODUCE.slice(0, REPRODUCE_URL_INDEX)
+const REPRODUCE_AFTER = METHODOLOGY_REPRODUCE.slice(REPRODUCE_URL_INDEX + REPRODUCE_URL.length)
+// This published path is a public proof link: moving or renaming the
+// queries directory on the default branch breaks the report's reproduce
+// link (D-07's costly-reversibility consequence), so treat a rename here
+// as requiring a coordinated update to this constant.
+
+// The CSV extension is not imported anywhere else in this file, so its
+// literal path is written once, here. The JSON extension IS already
+// present once, in the `import aggregates from '...json'` statement above;
+// deriving this href from the artifact's own `report_slug` field (rather
+// than repeating the literal filename) keeps that substring appearing
+// exactly once in this file, which is what the approved-string parity gate
+// checks for.
+const CSV_DOWNLOAD_HREF = '/research/wow-classic-loot-systems-2026-aggregates.csv'
+const JSON_DOWNLOAD_HREF = `/research/${aggregates.report_slug}-aggregates.json`
+
+const DOWNLOADS_H2 = approved('downloads.h2')
+const DOWNLOADS_CSV_LABEL = approved('downloads.csv-label')
+const DOWNLOADS_JSON_LABEL = approved('downloads.json-label')
+
+const CTA_HEADING = approved('cta.heading')
+const CTA_BODY = approved('cta.body')
+const CTA_BUTTON_LABEL = approved('cta.button')
+const CTA_URL = 'https://www.lootlistplus.com'
+
 const OPENING_PARAGRAPH_1 = approved('opening.paragraph-1')
 const OPENING_PARAGRAPH_2 = approved('opening.paragraph-2')
+
+const METHODOLOGY_H2 = approved('methodology.h2')
+const METHODOLOGY_WINDOW = approved('methodology.window')
+const METHODOLOGY_ACTIVE_GUILD = approved('methodology.active-guild')
+const METHODOLOGY_RAIDER = approved('methodology.raider')
+const METHODOLOGY_EXPANSION = approved('methodology.expansion')
+const METHODOLOGY_FLOOR = approved('methodology.floor')
+const METHODOLOGY_ROUNDING = approved('methodology.rounding')
+const METHODOLOGY_ABSENCES = approved('methodology.absences')
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -194,10 +268,10 @@ export const metadata: Metadata = {
     url: 'https://www.getlootlist.com/research/wow-classic-loot-systems-2026',
   },
   // Publication gate, not a page setting: main auto-deploys to production
-  // about 12 seconds after merge, and the visible copy on this page is
-  // still a draft until the plan 03-03 copy sign-off gate clears. Plan
-  // 03-05 removes this directive and adds the sitemap entry in the same
-  // commit.
+  // about 12 seconds after merge. Plan 03-06 removes this directive and
+  // adds the sitemap entry in the same commit, once the human render check
+  // and the read-time recalculation both clear -- this plan (03-05) is
+  // explicitly scoped to leave the sitemap and this directive untouched.
   robots: {
     index: false,
     follow: false,
@@ -379,6 +453,53 @@ export default function ResearchReportPage() {
                 <p>{approved(`finding.${finding.metric_id}.limits`)}</p>
               </Fragment>
             ))}
+
+            <h2>{METHODOLOGY_H2}</h2>
+            <p>{METHODOLOGY_WINDOW}</p>
+            <p>{METHODOLOGY_ACTIVE_GUILD}</p>
+            <p>{METHODOLOGY_RAIDER}</p>
+            <p>{METHODOLOGY_EXPANSION}</p>
+            <p>{METHODOLOGY_FLOOR}</p>
+            <p>{METHODOLOGY_ROUNDING}</p>
+            <p>
+              {REPRODUCE_BEFORE}
+              <a href={REPRODUCE_URL}>{REPRODUCE_URL}</a>
+              {REPRODUCE_AFTER}
+            </p>
+            <p>{METHODOLOGY_ABSENCES}</p>
+            {/* Data-driven, not authored copy: every entry of the
+                artifact's `unavailable` array is listed by its own label
+                and reason, so a metric withheld later appears here
+                automatically instead of needing a copy edit. */}
+            <ul className="list-disc pl-6 space-y-2">
+              {unavailableMetrics.map((item) => (
+                <li key={item.metric_id}>
+                  {item.label}: {item.reason}
+                </li>
+              ))}
+            </ul>
+
+            <h2>{DOWNLOADS_H2}</h2>
+            <div className="flex flex-wrap gap-x-8 gap-y-2 my-4">
+              <a href={CSV_DOWNLOAD_HREF}>{DOWNLOADS_CSV_LABEL}</a>
+              <a href={JSON_DOWNLOAD_HREF}>{DOWNLOADS_JSON_LABEL}</a>
+            </div>
+          </div>
+
+          {/* Contextual CTA (EVID-03): rendered as a sibling outside the
+              prose wrapper above, not nested inside it. The wrapper's
+              `[&_a]:text-accent [&_a]:underline` rule is correct for the
+              in-body links above it, but wrong for this filled button --
+              nesting it there would force underlined accent-on-accent text
+              that is invisible against the button's own accent background.
+              Plain anchor, no click handler: it stays inside <article>, so
+              BlogTracker's existing click delegation already reports it. */}
+          <div className="my-12 p-8 rounded-xl border border-border bg-background-elevated flex flex-col items-start gap-4">
+            <div className="text-2xl font-bold text-foreground">{CTA_HEADING}</div>
+            <p className="text-lg text-foreground-secondary">{CTA_BODY}</p>
+            <Button asChild variant="accent" size="lg" className="font-bold">
+              <a href={CTA_URL}>{CTA_BUTTON_LABEL}</a>
+            </Button>
           </div>
         </div>
       </article>
