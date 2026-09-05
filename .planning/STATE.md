@@ -4,15 +4,15 @@ current_phase: 03
 current_phase_name: Anonymized Product-Data Report
 status: executing
 stopped_at: Completed 03-05-PLAN.md
-last_updated: "2026-09-05T01:26:16.571Z"
+last_updated: "2026-09-05T01:35:36.999Z"
 last_activity: 2026-09-04
 last_activity_desc: Phase 03 execution started
-state_head: 7dddc0fe789e4e4bb75e74b13536eb9f3caa5f25
+state_head: c2df32553d59151c61d3d2628e1d3ec370c664e2
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 18
-  completed_plans: 16
+  completed_plans: 17
   percent: 33
 ---
 
@@ -115,6 +115,7 @@ Recent decisions affecting current work:
 - **[Timeline] Sprint window closes Sep 24, 2026.** Phase 6 is calendar-bound to Sep 20 to 24, which leaves Phases 1 through 5 to land by Sep 19.
 - **[Phase 3] Production data access.** Report numbers come from the production database via the Supabase Management API only. Aggregate measures only, minimum 10 guilds per published segment, no player or guild names in artifacts or commits.
 - ~~**[Phase 1] Baseline cohort export is partial.**~~ RESOLVED 2026-09-03: complete Aug 24 to 30 window pulled with Search Console final data through 2026-08-30 (live coverage query, not assumed); committed as `scripts/analytics/exports/gsc-baseline-cohort-query-2026-08-24_2026-08-30.csv` (6 rows) and the superseded PARTIAL file removed; evidence in the provenance row of `scripts/analytics/exports/README.md` (plan 01-05, D-03 discharged).
+- 03-06 Task 2 paused: re-running scripts/analytics/run-research-report.py against production no longer reproduces the committed artifact byte-for-byte. sample.raiders_with_approved_lists dropped 452->451 and median-list-length's denominator dropped 583->582 (stable across two consecutive re-runs); all other findings (attendance-weighting, blp-usage, top-priority-bracket) matched exactly. Per the publication contract this halts Task 2 for a human decision rather than silently regenerating -- see checkpoint in the 03-06 execution transcript. Committed artifacts were left untouched (git checkout -- restored); public/research/README.md is drafted but not yet committed.
 
 ### Quick Tasks Completed
 
