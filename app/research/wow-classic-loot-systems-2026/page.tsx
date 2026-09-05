@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { Fragment } from 'react'
 import Link from 'next/link'
 import LandingNav from '@/app/components/landing/LandingNav'
 import LandingCTA from '@/app/components/landing/LandingCTA'
@@ -6,19 +7,174 @@ import LandingFooter from '@/app/components/landing/LandingFooter'
 import BlogTracker from '@/app/components/landing/BlogTracker'
 import aggregates from '@/public/research/wow-classic-loot-systems-2026-aggregates.json'
 
-const META_DESCRIPTION =
-  'An anonymized look at how WoW Classic guilds use ranked lists, attendance, bad-luck protection, and officer judgment to distribute raid loot.'
+// ---------------------------------------------------------------------------
+// Artifact shapes
+//
+// The committed JSON's `segments` arrays are all `[]` in the current
+// artifact (none of the four published findings are segmented breakdowns),
+// so `resolveJsonModule` would otherwise infer `never[]` for that field.
+// These interfaces give the generic breakdown-table code below a stable
+// shape to compile against regardless of what the current data happens to
+// contain, per T-03-29 (a number token bound to the wrong artifact path).
+// ---------------------------------------------------------------------------
+interface FindingSegment {
+  segment: string
+  guild_count: number
+  share: number
+  display: string
+}
 
-// The build-time JSON import above is the D-05 mechanism: this page can
-// never state a number the committed query in
-// scripts/analytics/queries/wow-classic-loot-systems-2026/ did not
-// actually produce, because there is no request-time fetch anywhere on
-// this page.
-const HEADLINE = `How WoW Classic Guilds Actually Run Loot in 2026: Data from ${aggregates.sample.active_guilds.toLocaleString('en-US')} Guilds`
+interface Finding {
+  metric_id: string
+  label: string
+  kind: string
+  value: number
+  display: string
+  denominator: number | null
+  share_basis: string | null
+  sums_to_100: boolean | null
+  segments: FindingSegment[]
+  floor_applied: boolean
+  query_file: string | null
+  definition_note: string | null
+}
+
+const findings = aggregates.findings as unknown as Finding[]
+
+// ---------------------------------------------------------------------------
+// Approved copy (.planning/phases/03-anonymized-product-data-report/03-COPY-DRAFT.md)
+//
+// Every value below is copied verbatim from an `APPROVED-STRING` line in the
+// sign-off artifact (STATUS: APPROVED, SIGN-OFF: APPROVED 2026-09-04). Do not
+// reword, retitle, recapitalize, or repunctuate any value here without a
+// fresh sign-off round -- see the copy-fidelity contract this plan executes
+// under. `{token}` placeholders are resolved from TOKENS below, which is
+// itself built only from fields already present in the committed aggregates
+// artifact, so no numeral in the rendered page can drift from a query.
+// ---------------------------------------------------------------------------
+const APPROVED_STRINGS: Record<string, string> = {
+  'page.title': `How WoW Classic Guilds Actually Run Loot in 2026: Data from {sample_active_guilds} Guilds`,
+  'page.meta-description': `An anonymized look at how WoW Classic guilds use ranked lists, attendance, bad-luck protection, and officer judgment to distribute raid loot.`,
+  'page.eyebrow': `Research`,
+  'page.h1': `How WoW Classic Guilds Actually Run Loot: Data from {sample_active_guilds} Guilds`,
+  'page.standfirst': `An inside look at how {sample_active_guilds} World of Warcraft Classic guilds actually run loot: what raiders rank, how guilds weight attendance, how often bad-luck protection is on, and how often the top of the list wins the item.`,
+  'page.breadcrumb-label': `Research`,
+  'page.byline': `By Zev, creator of LootList+`,
+  'page.read-time': `6 min read`,
+
+  'opening.paragraph-1': `Between {window_start} and {window_end}, {sample_active_guilds} active guilds used LootList+ to manage {sample_raid_events} raid events and {sample_loot_awards} loot awards across {sample_raiders} raiders with approved lists. We looked at aggregated, anonymized activity to see how these guilds balance wishlist rank, attendance, bad-luck protection, and officer judgment. No player or guild names are included in the dataset.`,
+  'opening.paragraph-2': `This is product usage data, not a survey of every WoW guild. It shows how guilds using a transparent, list-based system behave in practice.`,
+
+  'finding.median-list-length.h2': `Raiders keep long, ranked wishlists, not short top-five picks`,
+  'finding.median-list-length.number-sentence': `The median approved loot list held {finding_median_list_length_value} items, measured across {finding_median_list_length_denominator} approved lists in the window.`,
+  'finding.median-list-length.officer-meaning': `If you are used to thinking of a raider's list as "their five or six BiS items," this is bigger than that. A typical approved list ranks well past the obvious wishlist items, which means loot decisions for an officer are rarely a two-item choice. Knowing the fuller list matters for items well outside anyone's top pick.`,
+  'finding.median-list-length.limits': `This counts only the items still on a list at the end of the window, not everything a raider ever typed in. A raider who ranked forty items and later trimmed the list down keeps the length they ended up with, not the length they started with, so this number reflects a maintained list, not a first draft.`,
+  'finding.median-list-length.callout-label': `median items per approved list`,
+
+  'finding.attendance-weighting.h2': `Most guilds don't leave attendance scoring on the default settings`,
+  'finding.attendance-weighting.number-sentence': `{finding_attendance_weighting_value}% of the {finding_attendance_weighting_denominator} active guilds measured had changed at least one attendance-scoring setting away from what LootList+ ships by default.`,
+  'finding.attendance-weighting.officer-meaning': `Attendance scoring is on for every guild out of the box, so the interesting question isn't whether guilds track attendance, it's whether the default weighting fits how a specific guild actually runs raids. Most guilds we measured went in and adjusted it, which suggests the shipped defaults are a reasonable starting point for a new guild, not a setting most officers should assume is already tuned for them.`,
+  'finding.attendance-weighting.limits': `This does not measure whether a guild tracks attendance. Attendance scoring is on by default for every guild, with a nonzero bonus, so a simple presence check would say nearly everyone tracks it and would tell you nothing useful. What this measures instead is whether a guild's attendance configuration differs from the shipped defaults on at least one setting, which is a narrower and more honest question about active tuning, not passive presence.`,
+  'finding.attendance-weighting.callout-label': `of active guilds tuned attendance away from the default`,
+
+  'finding.blp-usage.h2': `Bad-luck protection is common, but far from universal`,
+  'finding.blp-usage.number-sentence': `{finding_blp_usage_value}% of the {finding_blp_usage_denominator} active guilds measured had bad-luck protection turned on.`,
+  'finding.blp-usage.officer-meaning': `Roughly half of active guilds run without bad-luck protection at all, so if your guild has been debating whether to turn it on, you are not choosing between "everyone does this" and "no one does this." Either choice puts you alongside a large, normal group of other guilds.`,
+  'finding.blp-usage.limits': `This only tells you whether the setting is switched on, not how any guild has it tuned, and it says nothing about how often bad-luck protection actually changed who won an item during the window. A guild with the setting on and a guild with it off could both be running loot fairly; this number describes a configuration choice, not an outcome.`,
+  'finding.blp-usage.callout-label': `of active guilds using bad-luck protection`,
+
+  'finding.top-priority-bracket.h2': `About three in ten drops go to someone whose list already had it at the top`,
+  'finding.top-priority-bracket.number-sentence': `{finding_top_priority_bracket_value}% of the {finding_top_priority_bracket_denominator} awarded items with a determinable prior rank went to a raider whose list already ranked that item in the top priority bracket.`,
+  'finding.top-priority-bracket.officer-meaning': `A meaningful share of loot decisions land exactly where the list said they should: at the top. That is a useful gut-check for an officer weighing a close call between two raiders. It does not mean every award goes to the top of someone's list, so this number is a baseline for "how often does the list agree with the outcome," not a claim that the system always hands the item to the top-ranked raider.`,
+  'finding.top-priority-bracket.limits': `This share only covers awards where the winner had a usable snapshot of their list from before the raid, and where the awarded item could be found on that snapshot with a determinable rank. An award without a usable prior snapshot or without a determinable rank is left out of both the numerator and the denominator here, it is not counted as a miss. "Top priority bracket" is a fixed rank range built into LootList+ itself, the same for every guild; it is not a setting any guild configures.`,
+  'finding.top-priority-bracket.callout-label': `of ranked awards landed in the top bracket`,
+}
+
+function formatWindowDate(iso: string): string {
+  const [year, month, day] = iso.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+}
+
+// The single place every `{token}` in an approved string resolves against
+// the committed artifact (T-03-29). Every value here is read off `aggregates`
+// -- nothing is a hand-typed numeral -- so a number on this page can never
+// state something the committed query did not actually produce.
+const TOKENS: Record<string, string> = {
+  window_start: formatWindowDate(aggregates.window.start),
+  window_end: formatWindowDate(aggregates.window.end),
+  sample_active_guilds: aggregates.sample.active_guilds.toLocaleString('en-US'),
+  sample_raid_events: aggregates.sample.raid_events.toLocaleString('en-US'),
+  sample_loot_awards: aggregates.sample.loot_awards.toLocaleString('en-US'),
+  sample_raiders: aggregates.sample.raiders_with_approved_lists.toLocaleString('en-US'),
+  guild_floor: aggregates.guild_floor.toLocaleString('en-US'),
+  finding_median_list_length_value: findings[0].display,
+  finding_median_list_length_denominator: (findings[0].denominator ?? 0).toLocaleString('en-US'),
+  finding_attendance_weighting_value: findings[1].display,
+  finding_attendance_weighting_denominator: (findings[1].denominator ?? 0).toLocaleString('en-US'),
+  finding_blp_usage_value: findings[2].display,
+  finding_blp_usage_denominator: (findings[2].denominator ?? 0).toLocaleString('en-US'),
+  finding_top_priority_bracket_value: findings[3].display,
+  finding_top_priority_bracket_denominator: (findings[3].denominator ?? 0).toLocaleString('en-US'),
+}
+
+function resolveTokens(template: string, tokens: Record<string, string>): string {
+  return template.replace(/\{(\w+)\}/g, (_match, key: string) => {
+    if (!(key in tokens)) {
+      throw new Error(`Unresolved token {${key}} in approved string: "${template}"`)
+    }
+    return tokens[key]
+  })
+}
+
+function approved(key: string): string {
+  const template = APPROVED_STRINGS[key]
+  if (template === undefined) {
+    throw new Error(`Missing approved string for key "${key}" (see 03-COPY-DRAFT.md)`)
+  }
+  return resolveTokens(template, TOKENS)
+}
+
+function calloutValue(finding: Finding): string {
+  // The artifact's `kind` field is the only source of truth for whether a
+  // display value needs a unit suffix; this is a data-format decision, not
+  // new authored copy, so it carries no sign-off requirement of its own.
+  return finding.kind === 'percentage' ? `${finding.display}%` : finding.display
+}
+
+const PAGE_TITLE = approved('page.title')
+const PAGE_META_DESCRIPTION = approved('page.meta-description')
+const PAGE_EYEBROW = approved('page.eyebrow')
+// page.h1 intentionally differs from page.title: the title keeps the
+// literal "2026" year, the H1 drops it (03-COPY-DRAFT.md Section G1). The
+// H1 -- not the title -- is what the Article JSON-LD `headline` must match.
+const PAGE_H1 = approved('page.h1')
+const PAGE_STANDFIRST = approved('page.standfirst')
+const PAGE_BREADCRUMB_LABEL = approved('page.breadcrumb-label')
+const PAGE_BYLINE = approved('page.byline')
+// Carried-forward action item (03-COPY-DRAFT.md Section G4): the wording is
+// approved verbatim, but the minute figure is a placeholder that still
+// needs recalculating against the final assembled page's word count before
+// the page is indexed or added to the sitemap.
+const PAGE_READ_TIME = approved('page.read-time')
+
+const BYLINE_ZEV_INDEX = PAGE_BYLINE.indexOf('Zev')
+if (BYLINE_ZEV_INDEX === -1) {
+  throw new Error('page.byline no longer contains "Zev"; the /about link binding broke')
+}
+const BYLINE_BEFORE_ZEV = PAGE_BYLINE.slice(0, BYLINE_ZEV_INDEX)
+const BYLINE_AFTER_ZEV = PAGE_BYLINE.slice(BYLINE_ZEV_INDEX + 'Zev'.length)
+
+const OPENING_PARAGRAPH_1 = approved('opening.paragraph-1')
+const OPENING_PARAGRAPH_2 = approved('opening.paragraph-2')
 
 export const metadata: Metadata = {
-  title: HEADLINE,
-  description: META_DESCRIPTION,
+  title: PAGE_TITLE,
+  description: PAGE_META_DESCRIPTION,
   keywords: [
     'wow classic loot data',
     'wow classic guild statistics',
@@ -30,8 +186,8 @@ export const metadata: Metadata = {
     canonical: 'https://www.getlootlist.com/research/wow-classic-loot-systems-2026',
   },
   openGraph: {
-    title: HEADLINE,
-    description: META_DESCRIPTION,
+    title: PAGE_TITLE,
+    description: PAGE_META_DESCRIPTION,
     type: 'article',
     publishedTime: '2026-09-04T00:00:00Z',
     authors: ['LootList+'],
@@ -51,8 +207,11 @@ export const metadata: Metadata = {
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Article',
-  headline: HEADLINE,
-  description: META_DESCRIPTION,
+  // The headline must equal the rendered H1 (page.h1), not page.title:
+  // a headline that differs from the visible H1 is the structured-data
+  // mismatch EVID-03 forbids.
+  headline: PAGE_H1,
+  description: PAGE_META_DESCRIPTION,
   datePublished: '2026-09-04T00:00:00Z',
   dateModified: '2026-09-04T00:00:00Z',
   author: {
@@ -96,25 +255,12 @@ const breadcrumbLd = {
     {
       '@type': 'ListItem',
       position: 2,
-      name: HEADLINE,
+      name: PAGE_H1,
     },
   ],
 }
 
-function formatWindowDate(iso: string): string {
-  const [year, month, day] = iso.split('-').map(Number)
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
-}
-
 export default function ResearchReportPage() {
-  const windowStart = formatWindowDate(aggregates.window.start)
-  const windowEnd = formatWindowDate(aggregates.window.end)
-
   return (
     <main className="bg-background overflow-x-hidden" style={{ background: 'linear-gradient(180deg, #0f0e12 0%, #080808 40%)' }}>
       <script
@@ -128,56 +274,111 @@ export default function ResearchReportPage() {
       <LandingNav />
 
       <article className="relative pt-32 pb-20 px-6 md:px-12 lg:px-20">
-        <BlogTracker slug="wow-classic-loot-systems-2026" title={HEADLINE} />
+        <BlogTracker slug="wow-classic-loot-systems-2026" title={PAGE_H1} />
         <div className="max-w-3xl mx-auto">
           <nav className="mb-8 text-sm text-foreground-secondary">
             <Link href="/" className="hover:text-foreground transition-colors">
               Home
             </Link>
             <span className="mx-2 text-foreground-muted">/</span>
-            <span className="text-foreground-muted">Research</span>
+            <span className="text-foreground-muted">{PAGE_BREADCRUMB_LABEL}</span>
           </nav>
 
           <header className="mb-12">
-            <p className="text-lg text-accent mb-3">Research</p>
+            <p className="text-lg text-accent mb-3">{PAGE_EYEBROW}</p>
             <h1 className="text-4xl font-bold text-foreground leading-tight mb-4">
-              {HEADLINE}
+              {PAGE_H1}
             </h1>
             <p className="text-lg text-foreground-secondary leading-relaxed">
-              {META_DESCRIPTION}
+              {PAGE_STANDFIRST}
             </p>
             <div className="flex items-center gap-4 mt-6 text-sm text-foreground-muted">
               <span>
-                By{' '}
+                {BYLINE_BEFORE_ZEV}
                 <a
                   href="/about"
                   className="text-foreground-secondary hover:text-foreground underline underline-offset-2 transition-colors"
                 >
                   Zev
                 </a>
-                , creator of LootList+
+                {BYLINE_AFTER_ZEV}
               </span>
               <span>&middot;</span>
               <time dateTime="2026-09-04">September 4, 2026</time>
               <span>&middot;</span>
-              <span>4 min read</span>
+              <span>{PAGE_READ_TIME}</span>
             </div>
           </header>
 
           <div className="prose prose-invert prose-lg max-w-none [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:text-foreground [&_h2]:mt-12 [&_h2]:mb-4 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:text-foreground [&_h3]:mt-8 [&_h3]:mb-3 [&_p]:text-foreground-secondary [&_p]:leading-relaxed [&_p]:mb-4 [&_li]:text-foreground-secondary [&_li]:leading-relaxed [&_ul]:mb-4 [&_ol]:mb-4 [&_strong]:text-foreground [&_a]:text-accent [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:text-accent/80">
-            <p>
-              Between {windowStart} and {windowEnd}, {aggregates.sample.active_guilds.toLocaleString('en-US')} active
-              guilds used LootList+ to manage {aggregates.sample.raid_events.toLocaleString('en-US')} raid events
-              and {aggregates.sample.loot_awards.toLocaleString('en-US')} loot awards across{' '}
-              {aggregates.sample.raiders_with_approved_lists.toLocaleString('en-US')} raiders with approved lists.
-              We analyzed aggregated, anonymized activity to see how Classic guilds balance wishlist rank,
-              attendance, bad-luck protection, and officer judgment. No player or guild names are included in the
-              dataset.
-            </p>
-            <p>
-              This is product usage data, not a survey of every WoW guild. It shows how guilds using a transparent,
-              list-based system behave in practice.
-            </p>
+            <p>{OPENING_PARAGRAPH_1}</p>
+            <p>{OPENING_PARAGRAPH_2}</p>
+
+            {findings.map((finding) => (
+              <Fragment key={finding.metric_id}>
+                <h2>{approved(`finding.${finding.metric_id}.h2`)}</h2>
+                <p>{approved(`finding.${finding.metric_id}.number-sentence`)}</p>
+
+                {/* Stat callout: the single largest, only accent-colored
+                    numeral in this finding (UI-SPEC focal point). Rendered
+                    as plain divs, not <p> tags, so the wrapper's
+                    `[&_p]:text-foreground-secondary` rule above cannot
+                    override the accent color -- a <p> here would lose the
+                    color fight on CSS specificity. */}
+                <div className="my-6 p-4 rounded-xl border border-border bg-background-elevated">
+                  <div className="text-5xl font-bold text-accent">{calloutValue(finding)}</div>
+                  <div className="text-lg text-foreground-muted mt-1">
+                    {approved(`finding.${finding.metric_id}.callout-label`)}
+                  </div>
+                </div>
+
+                {finding.segments.length > 0 && (
+                  <div className="-mx-4 sm:mx-0 overflow-x-auto my-6">
+                    <table className="w-full min-w-max">
+                      <caption className="sr-only">{finding.label}</caption>
+                      <thead>
+                        <tr className="bg-background-elevated">
+                          {/* No approved copy exists for these header
+                              labels: every published finding in the
+                              current artifact has `segments: []`
+                              (03-COPY-DRAFT.md Section C note), so this
+                              branch is unreachable today. A future finding
+                              that ships with real segments needs its own
+                              copy sign-off round for these two labels
+                              before shipping -- Rule 4 territory, not
+                              covered by this plan. */}
+                          <th className="px-3 py-2 text-left text-lg font-normal text-foreground-muted">
+                            Segment
+                          </th>
+                          <th className="px-3 py-2 text-right text-lg font-normal text-foreground-muted">
+                            Guilds
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {finding.segments.map((segment) => (
+                          // Every row, including a merged "Other" row,
+                          // shares this exact className: no asterisk, no
+                          // footnote marker, no distinct treatment (T-03-27,
+                          // UI-SPEC "partial"). The merge is a privacy
+                          // mechanism disclosed in the methodology prose,
+                          // not flagged in the table.
+                          <tr key={segment.segment} className="border-t border-border">
+                            <td className="px-3 py-2 text-foreground-secondary">{segment.segment}</td>
+                            <td className="px-3 py-2 text-right text-foreground-secondary">
+                              {segment.guild_count.toLocaleString('en-US')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <p>{approved(`finding.${finding.metric_id}.officer-meaning`)}</p>
+                <p>{approved(`finding.${finding.metric_id}.limits`)}</p>
+              </Fragment>
+            ))}
           </div>
         </div>
       </article>
