@@ -1,6 +1,9 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import CaseStudyPage, { generateMetadata, generateStaticParams } from '../page'
+import CaseStudyPage, { generateMetadata, generateStaticParams, Eyebrow } from '../page'
+import { ProofStrip, NarrativePanels, buildBylineMeta } from '../sections'
 import { exampleGuildFixture } from '@/data/case-studies/example-guild-fixture'
 import {
   publishedCaseStudies,
@@ -268,6 +271,261 @@ describe('app/customers/[slug]/page.tsx', () => {
       // pattern is applied before any such normalization could occur, so
       // this raw form is rejected outright.
       expect(CASE_STUDY_SLUG_PATTERN.test('examplé-guild')).toBe(false)
+    })
+  })
+
+  describe('ProofStrip (T-04-13 omit rule)', () => {
+    // Test-local caption strings, not the approved copy: ProofStrip is
+    // tested here as a generic presentational component, independent of
+    // which strings the page ultimately resolves for it. The full-page
+    // suite below proves those approved strings actually reach the DOM.
+    const captions = {
+      roster: 'Roster size',
+      expansion: 'Expansion and tier',
+      metric: 'Weekly admin time saved',
+      tenure: 'Months using LootList+',
+    }
+
+    it('renders exactly four blocks, in the contract order, when all four stats are present', () => {
+      const { container } = render(<ProofStrip stats={exampleGuildFixture.proofStrip} captions={captions} />)
+      const figures = container.querySelectorAll('.text-5xl')
+      expect(figures).toHaveLength(4)
+      expect(Array.from(figures).map((el) => el.textContent)).toEqual([
+        exampleGuildFixture.proofStrip.rosterSize,
+        exampleGuildFixture.proofStrip.expansionTier,
+        exampleGuildFixture.proofStrip.adminTimeDelta,
+        exampleGuildFixture.proofStrip.monthsUsing,
+      ])
+    })
+
+    it('each figure element carries the 42px size token and the accent colour token, and each block carries its caption', () => {
+      const { container } = render(<ProofStrip stats={exampleGuildFixture.proofStrip} captions={captions} />)
+      const figure = container.querySelector('.text-5xl')
+      expect(figure).not.toBeNull()
+      expect(figure?.className).toContain('text-5xl')
+      expect(figure?.className).toContain('text-accent')
+      expect(container.textContent).toContain(captions.roster)
+      expect(container.textContent).toContain(captions.tenure)
+    })
+
+    it('omits the tenure block cleanly when its figure is absent, with no not-applicable marker, dash, ellipsis, or empty block', () => {
+      const stats = { ...exampleGuildFixture.proofStrip, monthsUsing: undefined }
+      const { container } = render(<ProofStrip stats={stats} captions={captions} />)
+      const figures = container.querySelectorAll('.text-5xl')
+      expect(figures).toHaveLength(3)
+      expect(container.textContent).not.toContain('N/A')
+      expect(container.textContent).not.toContain('n/a')
+      expect(container.textContent).not.toContain('...')
+      for (const figure of figures) {
+        const text = figure.textContent?.trim()
+        expect(text).not.toBe('')
+        expect(text).not.toBe('-')
+      }
+    })
+
+    it('omits the roster block cleanly when its figure is absent, proving the omit rule is positional-independent', () => {
+      const stats = { ...exampleGuildFixture.proofStrip, rosterSize: undefined }
+      const { container } = render(<ProofStrip stats={stats} captions={captions} />)
+      const figures = container.querySelectorAll('.text-5xl')
+      expect(figures).toHaveLength(3)
+      expect(container.textContent).not.toContain(captions.roster)
+      for (const figure of figures) {
+        expect(figure.textContent?.trim()).not.toBe('')
+      }
+    })
+
+    it('the container carries the mobile gap-4 and desktop gap-6 spacing tokens, with no clipping utility class inside it', () => {
+      const { container } = render(<ProofStrip stats={exampleGuildFixture.proofStrip} captions={captions} />)
+      const grid = container.firstElementChild
+      expect(grid?.className).toContain('gap-4')
+      expect(grid?.className).toContain('md:gap-6')
+      expect(container.innerHTML).not.toMatch(/truncate|line-clamp/)
+    })
+  })
+
+  describe('NarrativePanels', () => {
+    it('renders exactly two panels carrying the approved labels and the entry narratives, with no accent colour on either body', () => {
+      const { container } = render(
+        <NarrativePanels
+          beforeLabel="Before LootList+"
+          afterLabel="After LootList+"
+          beforeNarrative={exampleGuildFixture.beforeNarrative}
+          afterNarrative={exampleGuildFixture.afterNarrative}
+        />
+      )
+      const headings = container.querySelectorAll('.text-2xl.font-bold')
+      expect(headings).toHaveLength(2)
+      expect(headings[0].textContent).toBe('Before LootList+')
+      expect(headings[1].textContent).toBe('After LootList+')
+      expect(container.textContent).toContain(exampleGuildFixture.beforeNarrative)
+      expect(container.textContent).toContain(exampleGuildFixture.afterNarrative)
+      const bodies = container.querySelectorAll('p')
+      for (const body of bodies) {
+        expect(body.className).not.toContain('text-accent')
+      }
+    })
+  })
+
+  describe('Full page: proof strip and narrative panels wired in', () => {
+    it('renders the four-block proof strip and both narrative panels, and the page still has exactly one H1 matching the Article headline', async () => {
+      const { container } = await renderFixturePage()
+      const figures = container.querySelectorAll('.text-5xl')
+      expect(figures).toHaveLength(4)
+
+      const panelHeadings = Array.from(container.querySelectorAll('.text-2xl.font-bold')).map((el) => el.textContent)
+      expect(panelHeadings).toEqual(expect.arrayContaining(['Before LootList+', 'After LootList+']))
+
+      const h1 = screen.getByRole('heading', { level: 1 })
+      const objects = getJsonLdObjects(container)
+      const article = objects.find((o) => o['@type'] === 'Article')
+      expect(article.headline).toBe(h1.textContent)
+    })
+
+    it('contains no element with a clipping utility class anywhere on the page', async () => {
+      const { container } = await renderFixturePage()
+      expect(container.innerHTML).not.toMatch(/truncate|line-clamp/)
+    })
+  })
+
+  describe('buildBylineMeta', () => {
+    it('returns both items, interviewed-then-expansion, when both are present', () => {
+      const items = buildBylineMeta({
+        interviewedMonthYear: 'March 2026',
+        expansionTier: 'Cataclysm Classic Tier 11',
+      })
+      expect(items).toEqual([
+        { key: 'interviewed', value: 'March 2026' },
+        { key: 'expansion-tier', value: 'Cataclysm Classic Tier 11' },
+      ])
+    })
+
+    it('drops an absent item with no empty entry and no stranded separator to render', () => {
+      const items = buildBylineMeta({ interviewedMonthYear: 'March 2026' })
+      expect(items).toHaveLength(1)
+      expect(items[0].value).toBe('March 2026')
+      expect(items.some((item) => item.value === '')).toBe(false)
+    })
+  })
+
+  describe('Eyebrow', () => {
+    it('renders the eyebrow element when its value is non-empty', () => {
+      const { container } = render(<Eyebrow value="Case Study" />)
+      expect(container.textContent).toBe('Case Study')
+      expect(container.firstElementChild).not.toBeNull()
+    })
+
+    it('renders no eyebrow element and no residual spacing element when its value is empty', () => {
+      const { container } = render(<Eyebrow value="" />)
+      expect(container.firstElementChild).toBeNull()
+      expect(container.textContent).toBe('')
+    })
+  })
+
+  describe('Full page: header chrome (breadcrumb, eyebrow, byline)', () => {
+    it('renders the approved breadcrumb label as the second segment, after a Home link to /', async () => {
+      const { container } = await renderFixturePage()
+      const homeLink = screen.getByRole('link', { name: 'Home' })
+      expect(homeLink).toHaveAttribute('href', '/')
+      expect(container.textContent).toContain('Customers')
+    })
+
+    it('renders the approved byline with Zev linked to /about', async () => {
+      const { container } = await renderFixturePage()
+      expect(container.textContent).toContain('By Zev, creator of LootList+')
+      const zevLink = screen.getByRole('link', { name: 'Zev' })
+      expect(zevLink).toHaveAttribute('href', '/about')
+    })
+
+    it('renders the byline meta row with the interview month/year and expansion/tier, separated by middots', async () => {
+      const { container } = await renderFixturePage()
+      expect(container.textContent).toContain(exampleGuildFixture.interviewedMonthYear)
+      expect(container.textContent).toContain(exampleGuildFixture.expansionTier)
+      expect(container.textContent).toContain('·')
+    })
+
+    it('renders the eyebrow above the H1 since the approved value is non-empty', async () => {
+      const { container } = await renderFixturePage()
+      expect(container.textContent).toContain('Case Study')
+    })
+  })
+
+  describe('Full page: credible limitation and contextual CTA', () => {
+    it('renders one limitation section with the approved heading and the entry limitation text, with no accent and no destructive colour anywhere', async () => {
+      const { container } = await renderFixturePage()
+      expect(container.textContent).toContain('What still needs work')
+      expect(container.textContent).toContain(exampleGuildFixture.limitation)
+      const headings = Array.from(container.querySelectorAll('.text-2xl.font-bold')).filter(
+        (el) => el.textContent === 'What still needs work'
+      )
+      expect(headings).toHaveLength(1)
+      expect(headings[0].closest('div')?.className).not.toContain('text-accent')
+      expect(container.innerHTML).not.toMatch(/text-destructive|bg-destructive/)
+    })
+
+    it('renders exactly one anchor to lootlistplus.com inside the article, carrying the approved button label alongside the approved heading and body', async () => {
+      const { container } = await renderFixturePage()
+      const article = container.querySelector('article')
+      expect(article).not.toBeNull()
+      const links = Array.from(article?.querySelectorAll('a') ?? []).filter((a) => {
+        try {
+          return new URL(a.getAttribute('href') || '').hostname === 'www.lootlistplus.com'
+        } catch {
+          return false
+        }
+      })
+      expect(links).toHaveLength(1)
+      expect(links[0].textContent).toBe('Create your guild free')
+      expect(container.textContent).toContain('See how the same rules work with your roster.')
+      expect(container.textContent).toContain(
+        'Create a free guild, import your raiders, and compare the priority order before your next raid night.'
+      )
+    })
+
+    it('the Article headline still equals the rendered H1 and no rating or testimonial-score schema appears', async () => {
+      const { container } = await renderFixturePage()
+      const h1 = screen.getByRole('heading', { level: 1 })
+      const objects = getJsonLdObjects(container)
+      const article = objects.find((o) => o['@type'] === 'Article')
+      expect(article.headline).toBe(h1.textContent)
+      for (const obj of objects) {
+        expect(JSON.stringify(obj)).not.toMatch(/Rating|testimonial/i)
+      }
+    })
+  })
+
+  describe('Copy-fidelity parity: every APPROVED-STRING in 04-COPY-DRAFT.md ships in page.tsx', () => {
+    it('every approved value (literal segments around any token) appears verbatim in the page source', () => {
+      const draftPath = join(
+        process.cwd(),
+        '.planning/phases/04-verified-guild-case-study/04-COPY-DRAFT.md'
+      )
+      const draft = readFileSync(draftPath, 'utf8')
+      const pageSourcePath = join(process.cwd(), 'app/customers/[slug]/page.tsx')
+      const pageSource = readFileSync(pageSourcePath, 'utf8')
+
+      const lines = draft.split('\n').filter((line) => line.startsWith('APPROVED-STRING: '))
+      expect(lines.length).toBeGreaterThan(0)
+
+      const missing: string[] = []
+      for (const line of lines) {
+        const rest = line.slice('APPROVED-STRING: '.length)
+        const eqIndex = rest.indexOf(' = ')
+        const key = rest.slice(0, eqIndex)
+        const value = rest.slice(eqIndex + 3)
+        if (value.includes('{')) {
+          // Token-bearing template: check the literal segment before the
+          // first token, the same treatment the plan's own automated gate
+          // applies, since a resolved value for the untaken title variant
+          // never reaches the DOM for this fixture.
+          const literalPrefix = value.split('{')[0]
+          if (literalPrefix.length >= 8 && !pageSource.includes(literalPrefix)) {
+            missing.push(key)
+          }
+        } else if (value.length > 0 && !pageSource.includes(value)) {
+          missing.push(key)
+        }
+      }
+      expect(missing).toEqual([])
     })
   })
 })
