@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button'
 import type { CaseStudyProofStrip } from '@/data/case-studies/types'
 
 // ---------------------------------------------------------------------------
@@ -132,4 +133,54 @@ export function buildBylineMeta(entry: {
     { key: 'expansion-tier', value: entry.expansionTier ?? '' },
   ]
   return candidates.filter((item) => item.value.length > 0)
+}
+
+/**
+ * The credible-limitation section, sourced from interview question nine.
+ * Standard body treatment only: no accent colour and no destructive
+ * colour, because an honest limitation is a credibility feature rather
+ * than a warning (04-UI-SPEC.md Color). This is a deliberate contract
+ * decision, not a styling preference -- colouring an honest limitation
+ * like an error would present the page's credibility feature as a problem
+ * notice. The box grows with its content and the paragraph is never
+ * shortened.
+ */
+export function LimitationSection({ heading, body }: { heading: string; body: string }) {
+  return (
+    <div className="my-12 p-8 rounded-xl border border-border bg-background-elevated">
+      <div className="text-2xl font-bold text-foreground mb-4">{heading}</div>
+      <p className="text-lg text-foreground-secondary leading-relaxed">{body}</p>
+    </div>
+  )
+}
+
+/**
+ * The single contextual conversion ask. Composed in `page.tsx` as a
+ * sibling after the limitation section, outside any prose wrapper, for
+ * the reason the research report page records: a wrapper's
+ * underlined-accent link rule would turn this filled accent button into
+ * invisible text. Plain anchor, no click handler -- it sits inside the
+ * `article`, so `BlogTracker`'s existing click delegation already reports
+ * the click (T-04-14).
+ */
+export function ContextualCta({
+  heading,
+  body,
+  buttonLabel,
+  href,
+}: {
+  heading: string
+  body: string
+  buttonLabel: string
+  href: string
+}) {
+  return (
+    <div className="my-12 p-8 rounded-xl border border-border bg-background-elevated flex flex-col items-start gap-4">
+      <div className="text-2xl font-bold text-foreground">{heading}</div>
+      <p className="text-lg text-foreground-secondary">{body}</p>
+      <Button asChild variant="accent" size="lg" className="font-bold">
+        <a href={href}>{buttonLabel}</a>
+      </Button>
+    </div>
+  )
 }

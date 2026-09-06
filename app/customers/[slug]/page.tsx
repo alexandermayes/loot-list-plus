@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { Fragment } from 'react'
+import Link from 'next/link'
 import LandingNav from '@/app/components/landing/LandingNav'
 import LandingCTA from '@/app/components/landing/LandingCTA'
 import LandingFooter from '@/app/components/landing/LandingFooter'
@@ -6,7 +8,7 @@ import BlogTracker from '@/app/components/landing/BlogTracker'
 import { QuoteCard } from '@/app/components/landing/LandingValueProps'
 import { listRoutableCaseStudies, requireCaseStudy } from '@/data/case-studies'
 import type { CaseStudy } from '@/data/case-studies/types'
-import { ProofStrip, NarrativePanels } from './sections'
+import { ProofStrip, NarrativePanels, LimitationSection, ContextualCta, buildBylineMeta } from './sections'
 
 // ---------------------------------------------------------------------------
 // Approved copy (draft, this task only)
@@ -33,6 +35,13 @@ const APPROVED_STRINGS: Record<string, string> = {
   'proofstrip.tenure-caption': `Months using LootList+`,
   'narrative.before-label': `Before LootList+`,
   'narrative.after-label': `After LootList+`,
+  'page.eyebrow': `Case Study`,
+  'page.breadcrumb-label': `Customers`,
+  'page.byline': `By Zev, creator of LootList+`,
+  'limitation.h2': `What still needs work`,
+  'cta.heading': `See how the same rules work with your roster.`,
+  'cta.body': `Create a free guild, import your raiders, and compare the priority order before your next raid night.`,
+  'cta.button': `Create your guild free`,
 }
 
 function resolveTokens(template: string, tokens: Record<string, string>): string {
@@ -83,6 +92,17 @@ function resolveH1(entry: CaseStudy, tokens: Record<string, string>): string {
 
 function canonicalUrl(slug: string): string {
   return `https://www.getlootlist.com/customers/${slug}`
+}
+
+// Exported so the eyebrow omit rule (04-COPY-DRAFT.md Section F item 1) is
+// directly testable with an empty value, not only through the always-
+// non-empty committed approved string. Whether the eyebrow appears is
+// carried by the copy artifact's resolved value, not by a separate code
+// flag: an empty approved value renders neither the element nor its
+// spacing.
+export function Eyebrow({ value }: { value: string }) {
+  if (!value) return null
+  return <p className="text-lg text-accent mb-3">{value}</p>
 }
 
 // dynamicParams = false: any slug outside generateStaticParams() renders
@@ -138,6 +158,24 @@ export default async function CaseStudyPage({
   const description = approved('page.meta-description', tokens)
   const lead = approved('page.lead', tokens)
   const canonical = canonicalUrl(entry.slug)
+  const eyebrow = approved('page.eyebrow', tokens)
+  const breadcrumbLabel = approved('page.breadcrumb-label', tokens)
+
+  // Report-page index-splitting technique (app/research/wow-classic-loot-
+  // systems-2026/page.tsx): turns the word "Zev" inside the approved
+  // byline into an anchor to /about without changing a byte of the
+  // approved string.
+  const byline = approved('page.byline', tokens)
+  const bylineZevIndex = byline.indexOf('Zev')
+  if (bylineZevIndex === -1) {
+    throw new Error('page.byline no longer contains "Zev"; the /about link binding broke')
+  }
+  const bylineBeforeZev = byline.slice(0, bylineZevIndex)
+  const bylineAfterZev = byline.slice(bylineZevIndex + 'Zev'.length)
+  const bylineMeta = buildBylineMeta({
+    interviewedMonthYear: entry.interviewedMonthYear,
+    expansionTier: entry.expansionTier,
+  })
 
   // Article + BreadcrumbList only (D-05, RESEARCH.md Pattern 4). No schema
   // type that asserts a rating or a testimonial score is added here: a
@@ -199,9 +237,36 @@ export default async function CaseStudyPage({
       <article className="relative pt-32 pb-20 px-6 md:px-12 lg:px-20">
         <BlogTracker slug={entry.slug} title={h1} />
         <div className="max-w-3xl mx-auto">
+          <nav className="mb-8 text-lg text-foreground-secondary">
+            <Link href="/" className="hover:text-foreground transition-colors">
+              Home
+            </Link>
+            <span className="mx-2 text-foreground-muted">/</span>
+            <span className="text-foreground-muted">{breadcrumbLabel}</span>
+          </nav>
+
           <header className="mb-12">
+            <Eyebrow value={eyebrow} />
             <h1 className="text-4xl font-bold text-foreground leading-tight mb-4">{h1}</h1>
             <p className="text-lg text-foreground-secondary leading-relaxed">{lead}</p>
+            <div className="flex items-center gap-2 mt-6 text-lg text-foreground-muted flex-wrap">
+              <span>
+                {bylineBeforeZev}
+                <a
+                  href="/about"
+                  className="text-foreground-secondary hover:text-foreground underline underline-offset-2 transition-colors"
+                >
+                  Zev
+                </a>
+                {bylineAfterZev}
+              </span>
+              {bylineMeta.map((item) => (
+                <Fragment key={item.key}>
+                  <span>&middot;</span>
+                  <span>{item.value}</span>
+                </Fragment>
+              ))}
+            </div>
           </header>
 
           {/* Primary anchor (04-UI-SPEC.md Focal Point priority 1): the
@@ -235,6 +300,15 @@ export default async function CaseStudyPage({
           <div className="mt-8">
             <QuoteCard quote={entry.quote} author={entry.author} />
           </div>
+
+          <LimitationSection heading={approved('limitation.h2', tokens)} body={entry.limitation} />
+
+          <ContextualCta
+            heading={approved('cta.heading', tokens)}
+            body={approved('cta.body', tokens)}
+            buttonLabel={approved('cta.button', tokens)}
+            href="https://www.lootlistplus.com"
+          />
         </div>
       </article>
 
