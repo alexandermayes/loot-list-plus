@@ -119,7 +119,7 @@ User sign-off received directly (`approve-all`), 2026-09-04. All four findings s
 ## D. Methodology
 
 APPROVED-STRING: methodology.h2 = Methodology
-APPROVED-STRING: methodology.window = This report uses a fixed calendar window, {window_start} through {window_end}, not a window that moves forward with the calendar. The dates are locked in place so every number here stays reproducible against the exact same window, indefinitely.
+APPROVED-STRING: methodology.window = This report uses a fixed calendar window, {window_start} through {window_end}, not a window that moves forward with the calendar. The dates are locked in place, and the data page states when its numbers were generated. A list that an officer reviews again after the window closes moves out of the window under the definition above, so a fresh run reflects the data as it stands at run time.
 APPROVED-STRING: methodology.active-guild = A guild counts as active in this window if it had at least one raid event that was not marked skipped, or at least one loot award, or at least five approved loot lists. A raid marked skipped in the scheduler does not count toward activity. A loot list counts as approved as of whichever timestamp exists: an officer's review, or, if no review was ever logged, the raider's own submission time.
 APPROVED-STRING: methodology.raider = Raiders are counted as distinct characters holding an approved loot list in the window. This is a character count, not a person count: a player who raids on two characters, each with an approved list, is counted twice.
 APPROVED-STRING: methodology.expansion = Where a guild had qualifying activity in more than one expansion during the window, it is counted in every expansion it was active in, not just one. That means an expansion-by-expansion breakdown can add up to more than the whole, by design, and the report says so wherever such a breakdown appears.
@@ -181,3 +181,4 @@ User sign-off received directly (`approve-all`), 2026-09-04. All three CTA strin
 ---
 
 SIGN-OFF: APPROVED 2026-09-04
+SIGN-OFF ADDENDUM: methodology.window revised and approved 2026-09-05

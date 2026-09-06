@@ -109,7 +109,7 @@ const APPROVED: Record<string, string> = {
     'This is product usage data, not a survey of every WoW guild. It shows how guilds using a transparent, list-based system behave in practice.',
   'methodology.h2': 'Methodology',
   'methodology.window':
-    'This report uses a fixed calendar window, {window_start} through {window_end}, not a window that moves forward with the calendar. The dates are locked in place so every number here stays reproducible against the exact same window, indefinitely.',
+    'This report uses a fixed calendar window, {window_start} through {window_end}, not a window that moves forward with the calendar. The dates are locked in place, and the data page states when its numbers were generated. A list that an officer reviews again after the window closes moves out of the window under the definition above, so a fresh run reflects the data as it stands at run time.',
   'methodology.active-guild':
     "A guild counts as active in this window if it had at least one raid event that was not marked skipped, or at least one loot award, or at least five approved loot lists. A raid marked skipped in the scheduler does not count toward activity. A loot list counts as approved as of whichever timestamp exists: an officer's review, or, if no review was ever logged, the raider's own submission time.",
   'methodology.raider':
