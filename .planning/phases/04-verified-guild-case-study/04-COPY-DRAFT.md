@@ -1,10 +1,10 @@
-STATUS: DRAFT
+STATUS: APPROVED
 
 # Phase 4 Copy Draft
 
 **Purpose:** Every visible string the `/customers/{guild-slug}` case-study template will render, drafted in one place, for the ROADMAP's hard copy sign-off gate. Guild-specific values appear as declared `CONTENT-TOKEN` placeholders rather than as words, because the interview has not happened and this phase forbids inventing any part of it. This approval covers wording and token placement only, not a finished sentence about a real guild. The resolved sentences with real guild values cannot exist until the interview clears and a registry entry is committed at `data/case-studies/`; that resolved text gets its own sign-off at the publish plan, before anything is indexed.
 
-**Sign-off:** not yet received. Plan 04-03 refuses to run until this file's first line reads `STATUS: APPROVED` and a `SIGN-OFF: APPROVED <ISO date>` line is present below.
+**Sign-off:** received 2026-09-06 as `approve-all` at the plan 04-02 checkpoint. Every string below is approved as drafted, and the Section F open calls are settled by the stated defaults. The `SIGN-OFF: APPROVED` line at the end of this file is the marker plan 04-03 requires.
 
 ---
 
@@ -38,7 +38,7 @@ These five strings were locked by the approved `04-UI-SPEC.md` Copywriting Contr
 
 `page.title` mirrors `page.h1-preferred`'s wording rather than adding a distinguishing detail of its own (unlike the research report's title, which added a literal year the H1 dropped). The sprint plan's "Preferred title" and "H1" lines are the same underlying content for this template, so one drafted string covers both the browser `<title>` and the preferred-variant H1; the fallback variant covers both surfaces the same way, through `page.h1-fallback`.
 
-### Drafted
+### Approved
 
 APPROVED-STRING: page.title = How {guild} Cut Weekly Loot Admin from {before_admin_time} to {after_admin_time}
 APPROVED-STRING: page.h1-preferred = How {guild} Cut Weekly Loot Admin from {before_admin_time} to {after_admin_time}
@@ -58,7 +58,7 @@ These three strings were left open by the UI contract. Each is drafted below wit
 
 `page.byline`: kept identical to the research report's existing byline, word for word, so both evidence pages carry the same authorship signal and neither reads as a different voice.
 
-### Drafted
+### Approved
 
 APPROVED-STRING: page.eyebrow = Case Study
 APPROVED-STRING: page.breadcrumb-label = Customers
@@ -70,7 +70,7 @@ APPROVED-STRING: page.byline = By Zev, creator of LootList+
 
 These four short labels sit under the four 42px accent stat numbers (16px caption per the UI contract's typography scale). Each is drafted short on purpose: a stat whose figure the interview did not collect has its whole block omitted rather than rendered with a caption and no value, so these captions never need to describe an absence.
 
-### Drafted
+### Approved
 
 APPROVED-STRING: proofstrip.roster-caption = Roster size
 APPROVED-STRING: proofstrip.expansion-caption = Expansion and tier
@@ -83,7 +83,7 @@ APPROVED-STRING: proofstrip.tenure-caption = Months using LootList+
 
 `narrative.before-label` and `narrative.after-label` head the two required before/after panels. `limitation.h2` heads the section built from interview question nine. This heading must read as honest rather than alarming: the UI contract deliberately renders this section in standard body treatment with no accent color and no destructive color, because a guild's honest limitation is a credibility feature, not a warning. A heading that sounds like an error notice would undo that visual decision in words, so the drafted heading below is plain and matter-of-fact rather than dramatic.
 
-### Drafted
+### Approved
 
 APPROVED-STRING: narrative.before-label = Before LootList+
 APPROVED-STRING: narrative.after-label = After LootList+
@@ -95,7 +95,7 @@ APPROVED-STRING: limitation.h2 = What still needs work
 
 The UI contract marks this row draft and not locked, and recommends mirroring the research report's own CTA for visual-family consistency across both evidence pages. That recommendation is carried here as the draft. The alternative is a case-study-specific ask (for example, one referencing the interviewed guild's own expansion or roster size), which was not drafted because no guild content exists yet to reference; a guild-specific CTA can be proposed once a real entry exists, at the publish plan's own sign-off.
 
-### Drafted
+### Approved
 
 APPROVED-STRING: cta.heading = See how the same rules work with your roster.
 APPROVED-STRING: cta.body = Create a free guild, import your raiders, and compare the priority order before your next raid night.
@@ -115,3 +115,5 @@ Each open wording call below carries the drafter's own default, so an approve-al
 ---
 
 This file contains no guild name, no quote text, no role, no realm, and no number presented as a customer figure anywhere above, including in the drafting notes. Every guild-specific value is a declared `CONTENT-TOKEN`, resolved only once a real, interview-approved registry entry exists.
+
+SIGN-OFF: APPROVED 2026-09-06
