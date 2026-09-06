@@ -15,6 +15,16 @@ export const CASE_STUDY_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 // array here emits zero reachable /customers/{slug} URLs, because
 // generateStaticParams() below reads this array directly and
 // dynamicParams is false in app/customers/[slug]/page.tsx.
+//
+// Three properties this registry guards, enforced by tests rather than by
+// this comment alone:
+// 1. The published array is empty, so a production build emits no
+//    /customers/{slug} route at all (app/customers/[slug]/__tests__/page.test.tsx).
+// 2. The fixture never enters this array, so it can never enter the
+//    sitemap regardless of environment (app/__tests__/sitemap.test.ts).
+// 3. The route's interim `robots` directive and the sitemap entry are a
+//    matched pair: they change together in one commit at publish time,
+//    never independently (RESEARCH.md Pitfall 2).
 export const publishedCaseStudies: CaseStudy[] = []
 
 // The fixture is never in publishedCaseStudies. It only ever resolves

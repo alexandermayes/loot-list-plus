@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import sitemap from '../sitemap'
 import { metadata } from '../research/wow-classic-loot-systems-2026/page'
+import { listPublishedSlugs } from '@/data/case-studies'
 
 // The first test of app/sitemap.ts in this repository (03-06-PLAN.md Task 1).
 // The file has a flat array with no de-duplication logic anywhere, so this
@@ -9,6 +10,15 @@ import { metadata } from '../research/wow-classic-loot-systems-2026/page'
 // page shipping unindexable (T-03-31, T-03-32).
 
 const REPORT_URL = 'https://www.getlootlist.com/research/wow-classic-loot-systems-2026'
+
+// Holds only while the case study is unpublished (D-06/D-07): the published
+// case-study registry is empty this phase, so a production build emits no
+// /customers/{slug} route and this fragment must never appear in the
+// sitemap. The publish commit replaces this assertion with a
+// single-occurrence check per published slug, in the same commit that
+// removes the case-study route's interim `robots` directive
+// (RESEARCH.md Pitfall 2, Phase 3's atomic publish discipline).
+const CUSTOMERS_PATH_FRAGMENT = '/customers/'
 
 describe('app/sitemap.ts', () => {
   it('lists the report URL exactly once', () => {
@@ -46,6 +56,25 @@ describe('app/sitemap.ts', () => {
     const entries = sitemap()
     for (const entry of entries) {
       expect(entry.url.startsWith('https://www.getlootlist.com')).toBe(true)
+    }
+  })
+
+  it('contains no /customers/ entry while the case study is unpublished', () => {
+    const entries = sitemap()
+    const matches = entries.filter((entry) => entry.url.includes(CUSTOMERS_PATH_FRAGMENT))
+    expect(matches).toHaveLength(0)
+  })
+
+  it('agrees with listPublishedSlugs(): exactly one sitemap entry per published case-study slug', () => {
+    const publishedSlugs = listPublishedSlugs()
+    // With an empty list (today) this loop holds vacuously; it starts
+    // guarding the moment the first case study ships.
+    expect(publishedSlugs).toEqual([])
+    const entries = sitemap()
+    for (const slug of publishedSlugs) {
+      const canonical = `https://www.getlootlist.com/customers/${slug}`
+      const matches = entries.filter((entry) => entry.url === canonical)
+      expect(matches).toHaveLength(1)
     }
   })
 })

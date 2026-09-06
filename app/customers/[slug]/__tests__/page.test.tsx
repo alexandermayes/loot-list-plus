@@ -206,4 +206,68 @@ describe('app/customers/[slug]/page.tsx', () => {
       expect(CASE_STUDY_SLUG_PATTERN.test(slug)).toBe(true)
     }
   })
+
+  // Restated here as the publish-race guard (T-04-05), not only as a
+  // metadata shape check: the interim directive must hold for the fixture
+  // slug specifically, so a regression that flips it on for one slug but
+  // not another is still caught.
+  it('generateMetadata never returns an indexable robots directive for the fixture slug (publish-race guard)', async () => {
+    const metadata = await generateMetadata({ params: Promise.resolve({ slug: FIXTURE_SLUG }) })
+    const robots = metadata.robots as { index?: boolean; follow?: boolean } | undefined
+    expect(robots?.index).toBe(false)
+    expect(robots?.follow).toBe(false)
+  })
+
+  describe('slug resolution is exact ASCII equality, not case-folded or percent-decoded', () => {
+    it('requireCaseStudy throws for the empty string', () => {
+      expect(() => requireCaseStudy('')).toThrow()
+    })
+
+    it('requireCaseStudy throws for a slug differing only by letter case from the fixture slug', () => {
+      const caseVariant = FIXTURE_SLUG.replace(/^./, (c) => c.toUpperCase())
+      expect(caseVariant).not.toBe(FIXTURE_SLUG)
+      expect(() => requireCaseStudy(caseVariant)).toThrow()
+    })
+
+    it('requireCaseStudy throws for a percent-encoded form of the fixture slug', () => {
+      const percentEncoded = FIXTURE_SLUG.replace('-', '%2D')
+      expect(percentEncoded).not.toBe(FIXTURE_SLUG)
+      expect(() => requireCaseStudy(percentEncoded)).toThrow()
+    })
+
+    it('requireCaseStudy throws, and the message names the offending slug, for every rejection case', () => {
+      const cases = [
+        'not-a-real-guild',
+        '',
+        FIXTURE_SLUG.replace(/^./, (c) => c.toUpperCase()),
+        FIXTURE_SLUG.replace('-', '%2D'),
+      ]
+      for (const slug of cases) {
+        expect(() => requireCaseStudy(slug)).toThrowError(new RegExp(slug.length > 0 ? slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '.*'))
+      }
+    })
+  })
+
+  describe('CASE_STUDY_SLUG_PATTERN rejects malformed slugs', () => {
+    it('rejects an uppercase slug', () => {
+      expect(CASE_STUDY_SLUG_PATTERN.test('Example-Guild')).toBe(false)
+    })
+
+    it('rejects a slug with a leading or trailing hyphen', () => {
+      expect(CASE_STUDY_SLUG_PATTERN.test('-example-guild')).toBe(false)
+      expect(CASE_STUDY_SLUG_PATTERN.test('example-guild-')).toBe(false)
+    })
+
+    it('rejects a slug containing a slash or a dot', () => {
+      expect(CASE_STUDY_SLUG_PATTERN.test('example/guild')).toBe(false)
+      expect(CASE_STUDY_SLUG_PATTERN.test('example.guild')).toBe(false)
+    })
+
+    it('rejects a slug containing a non-ASCII character that normalizes to an ASCII letter', () => {
+      // U+00E9 (e with acute accent) NFKD-normalizes to a plain "e", but the
+      // pattern is applied before any such normalization could occur, so
+      // this raw form is rejected outright.
+      expect(CASE_STUDY_SLUG_PATTERN.test('examplé-guild')).toBe(false)
+    })
+  })
 })
