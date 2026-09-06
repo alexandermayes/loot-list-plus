@@ -152,7 +152,7 @@ Plans:
   4. The page shows how the story was verified (public profile link where permitted, otherwise a verified-customer note) and claims no outcome the interview did not support
 
 **Checkpoint (user action required)**: EVID-05 is blocked on the user conducting the guild interview (the plan's ten questions, including question ten on public linking) and obtaining quote approval. EVID-04, the template, can ship without it. If the interview has not happened when this phase runs, ship the template, leave the case study unpublished, and record the block in STATE.md. Do not draft or infer customer quotes, guild names, or outcome numbers.
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans executed
 **UI hint**: yes
 
 Plans:
@@ -167,7 +167,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 04-04-PLAN.md - Self-contained publish runbook and the honest EVID-05 blocked record
+- [x] 04-04-PLAN.md - Self-contained publish runbook and the honest EVID-05 blocked record
 
 ### Phase 5: Internal Authority & Recrawl
 
@@ -209,7 +209,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Measurement Baseline & AI Answer Log | 5/5 | Complete    | 2026-09-03 |
 | 2. Checkable Conversion Copy | 7/7 | Complete    | 2026-09-01 |
 | 3. Anonymized Product-Data Report | 6/6 | Complete    | 2026-09-05 |
-| 4. Verified Guild Case Study | 3/4 | In Progress|  |
+| 4. Verified Guild Case Study | 4/4 | In Progress|  |
 | 5. Internal Authority & Recrawl | 0/TBD | Not started | - |
 | 6. Week-4 Review & Next Bet | 0/TBD | Not started | - |
 

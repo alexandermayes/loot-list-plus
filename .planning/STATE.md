@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 04
 current_phase_name: Verified Guild Case Study
 status: executing
-stopped_at: Wave 2 complete (04-03 merged b28e977); dispatching 04-04 sequentially on main
-last_updated: "2026-09-06T22:19:33.692Z"
+stopped_at: Completed 04-04-PLAN.md
+last_updated: "2026-09-06T22:38:28.227Z"
 last_activity: 2026-09-06
 last_activity_desc: Phase 04 execution started
-state_head: b28e9775d4eb5d03477246b4008d5f51165d134a
+state_head: a7464437c975011c6293bbde0886f6ef1a23f676
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 22
-  completed_plans: 21
+  completed_plans: 22
   percent: 50
 ---
 
@@ -28,8 +28,8 @@ See: .planning/PROJECT.md (updated 2026-09-03)
 ## Current Position
 
 Phase: 04 (Verified Guild Case Study) — EXECUTING
-Plan: 1 of 4
-Status: Executing Phase 04
+Plan: 2 of 4
+Status: Ready to execute
 Last activity: 2026-09-06 — Phase 04 execution started
 
 Progress: [████████████████████] 12/12 plans ([█████░░░░░] 50%) — Phases 1-2 of 6 complete
@@ -73,6 +73,7 @@ Progress: [████████████████████] 12/12 p
 | Phase 04 P01 | 40min | 2 tasks | 7 files |
 | Phase 04 P02 | 40min | 3 tasks | 2 files |
 | Phase 04 P03 | 40min | 2 tasks | 3 files |
+| Phase 04 P04 | 17min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,8 @@ Recent decisions affecting current work:
 - [Phase 04]: QuoteCard, VerificationLine, TestimonialVerification and QuoteAuthor exported in place from LandingValueProps.tsx rather than extracted to a shared module — TiltCard already lives there and is imported by PremiumFeatures.tsx; extraction would create a circular import or a second consumer rewrite
 - [Phase 04]: Eyebrow omit rule implemented as a small exported Eyebrow({ value }) component in page.tsx so an empty approved eyebrow renders no element and is directly testable — Plan 04-03 test requirement; implementation-detail choice within plan discretion
 - [Phase 04]: Case-study page chrome (breadcrumb, byline, byline meta, eyebrow) uses text-lg 16px, not the report page's text-sm, so exactly four type sizes (16/20/32/42) ship on the page — 04-03 acceptance criterion on the UI-SPEC type scale; QuoteCard's inherited sizes remain the accepted Phase 3 exception
+- [Phase 04]: Publish runbook (04-PUBLISH-RUNBOOK.md) written now, while the route contract is fresh, per D-07: it carries its own atomic robots/sitemap/test commit, contextual link sweep, and one-time recrawl so the case study can publish self-contained after Phase 5's recrawl pass has already run without it.
+- [Phase 04]: EVID-05 blocker record honestly updated, not resolved: STATE.md and REQUIREMENTS.md now name the interview kit and the publish runbook as the two artifacts that unblock EVID-05, while the checkbox and traceability row stay unchecked/Blocked.
 
 ### Pending Todos
 
@@ -148,6 +151,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-06T22:19:33.239Z
-Stopped at: Wave 2 complete (04-03 merged b28e977); dispatching 04-04 sequentially on main
+Last session: 2026-09-06T22:38:28.010Z
+Stopped at: Completed 04-04-PLAN.md
 Resume file: None
