@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 04
 current_phase_name: Verified Guild Case Study
 status: executing
-stopped_at: Wave 1 complete (04-01 merged from prior-session worktree, 04-02 signed off); wave 2 (04-03) next
-last_updated: "2026-09-06T21:46:03.884Z"
+stopped_at: Wave 2 complete (04-03 merged b28e977); dispatching 04-04 sequentially on main
+last_updated: "2026-09-06T22:19:33.692Z"
 last_activity: 2026-09-06
 last_activity_desc: Phase 04 execution started
-state_head: 0f1c88ed9ea27984af1da73b3e5aec1b6bbe0d60
+state_head: b28e9775d4eb5d03477246b4008d5f51165d134a
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 22
-  completed_plans: 20
+  completed_plans: 21
   percent: 50
 ---
 
@@ -72,6 +72,7 @@ Progress: [████████████████████] 12/12 p
 | Phase 03 P06 | 50min | 2 tasks | 11 files |
 | Phase 04 P01 | 40min | 2 tasks | 7 files |
 | Phase 04 P02 | 40min | 3 tasks | 2 files |
+| Phase 04 P03 | 40min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,12 @@ Recent decisions affecting current work:
 - [Phase 03]: Live-data drift accepted via pinned final snapshot; the research-report window is reproducible against a fixed calendar range but not immune to post-generation re-approvals moving a list's review timestamp out of that window (documented in public/research/README.md and .planning/debug/research-report-one-row-drift.md)
 - [Phase 03]: methodology.window sentence revised with fresh user sign-off (2026-09-05) to disclose the live-data reproducibility caveat honestly instead of claiming indefinite reproducibility
 - [Phase 03]: Root cause of the reproduction drift documented via systematic debugging (.planning/debug/research-report-one-row-drift.md): confirmed H2 (a legitimate post-window re-approval via an unaudited client-side draft-reversion path), not a pipeline defect
+- [Phase 04]: Copy sign-off received: user approved all 18 case-study template strings as drafted (approve-all, 2026-09-06). Section F defaults settled: eyebrow 'Case Study', breadcrumb 'Customers', neutral limitation heading 'What still needs work', CTA mirrors the research report. — ROADMAP copy sign-off gate; plan 04-03 parity gate requires the SIGN-OFF marker
+- [Phase 04]: page.title and the rendered H1 are computed from the same resolveH1() call so the browser title, H1 and Article JSON-LD headline can never disagree — Stronger guarantee than two independently templated strings; EVID-04 success criterion 2
+- [Phase 04]: isFixtureRouteEnabled() reads process.env.NODE_ENV at call time (not a module constant) so vi.stubEnv can flip production gating mid-test-run — D-08 production filter must be testable without re-importing the registry module
+- [Phase 04]: QuoteCard, VerificationLine, TestimonialVerification and QuoteAuthor exported in place from LandingValueProps.tsx rather than extracted to a shared module — TiltCard already lives there and is imported by PremiumFeatures.tsx; extraction would create a circular import or a second consumer rewrite
+- [Phase 04]: Eyebrow omit rule implemented as a small exported Eyebrow({ value }) component in page.tsx so an empty approved eyebrow renders no element and is directly testable — Plan 04-03 test requirement; implementation-detail choice within plan discretion
+- [Phase 04]: Case-study page chrome (breadcrumb, byline, byline meta, eyebrow) uses text-lg 16px, not the report page's text-sm, so exactly four type sizes (16/20/32/42) ship on the page — 04-03 acceptance criterion on the UI-SPEC type scale; QuoteCard's inherited sizes remain the accepted Phase 3 exception
 
 ### Pending Todos
 
@@ -141,6 +148,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-06T21:46:03.697Z
-Stopped at: Wave 1 complete (04-01 merged from prior-session worktree, 04-02 signed off); wave 2 (04-03) next
+Last session: 2026-09-06T22:19:33.239Z
+Stopped at: Wave 2 complete (04-03 merged b28e977); dispatching 04-04 sequentially on main
 Resume file: None
