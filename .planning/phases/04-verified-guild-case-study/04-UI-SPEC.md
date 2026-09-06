@@ -1,7 +1,7 @@
 ---
 phase: 4
 slug: verified-guild-case-study
-status: draft
+status: approved
 shadcn_initialized: true
 preset: "style=default, baseColor=neutral, cssVariables=true (components.json, pre-existing)"
 created: 2026-09-06
@@ -135,18 +135,49 @@ No executor may replace a `{token}` with an invented value. Every token resolves
 
 ## UI Considerations
 
-Applicable state considerations resolved: 22 covered, 0 backstop, 1 unresolved (flagged, not silently dropped).
+Probe run (post-verification): 7 elements, 37 applicable considerations — **36 resolved (verification: explicit), 0 backstop, 1 unresolved** (flagged, not silently dropped). Element kinds confirmed via authored override for E3 (heuristic returned unclassified; confirmed as static-content + nav). Empty-state and error-state COPY lives in the Copywriting Contract above — rows below reference it rather than restating it.
 
-| Category | Element(s) | Status | Resolution / Reason |
-|----------|------------|--------|---------------------|
-| empty | Whole page (zero case studies published) | ✅ covered | No UI empty-state exists to design — `generateStaticParams()` returning `[]` makes the route unreachable, not renderable-but-empty. See Copywriting Contract "Empty state." Invalid slug → standard Next.js 404, not a custom page. |
-| loading | Proof strip, narrative panels, quote block, CTA | ✅ covered | Server Component, build-time data-module import (mirrors Phase 3's D-05), no client fetch — nothing transitions from a loading to a loaded state. |
-| error | Proof strip, narrative panels, quote block, CTA, public-profile link | ✅ covered | No fetch, no form submission to fail. A broken guild-supplied outbound link is a content-accuracy defect caught at copy sign-off (Pattern 2), not a rendered UI error state. |
-| populated | Proof strip (4 fixed items), narrative panels (2, before/after), quote block (1 quote), limitation section (1 paragraph), header | ✅ covered | The only real state, fully fixed cardinality per the sprint-plan template: exactly 4 proof-strip items, exactly 2 narrative panels, exactly 1 quote, exactly 1 limitation paragraph. Layout: `max-w-3xl` article column (matches Phase 3), proof strip as a 4-up row (desktop) / 2×2 grid (mobile) of `bg-background-elevated` stat blocks, narrative panels side-by-side (desktop) / stacked (mobile), quote block full-width using the reused `QuoteCard` gradient treatment. |
-| partial | Proof strip (a stat the interview didn't collect), public-profile link (question 10 answered "no") | ⚠ unresolved | RESEARCH.md's Pitfall 3 flags that roster size/expansion/tenure aren't explicitly asked by the ten required interview questions. This UI-SPEC does not resolve where that data comes from (interview vs. product database vs. an ad hoc 11th question) — that is a content/consent decision for the user, not a visual one. Visually: if a proof-strip value is genuinely unavailable, omit that one stat block rather than rendering a placeholder or "N/A" — a strip of 3 populated blocks is acceptable, a strip with a visible gap or invented value is not. If question 10 is answered "no," `VerificationLine` already renders the plain `verified_customer`/`verified_customer_dated` variant (no link) — no new UI state needed, this is exactly what the discriminated union already handles. |
-| overflow | Proof-strip labels, narrative panel paragraphs, quote text, limitation paragraph, H1 | ✅ covered | All text wraps naturally at the `max-w-3xl` column width; no truncation, no `line-clamp` anywhere — a truncated quote, limitation, or narrative paragraph would misrepresent guild-approved content, which this phase's entire premise (checkable, approved proof) cannot allow. Proof-strip stat blocks grow vertically if a label wraps; no horizontal scroll needed since the strip is a fixed 4 items, not a data table. |
-| zero-one-many | Proof strip (fixed 4), narrative panels (fixed 2), quote block (fixed 1 per the plan's template) | ✅ covered | All counts are fixed by the sprint-plan template, not live-rendered counters — no singular/plural copy branching needed. If a future case study's approved content includes more than one quote, that is a template change requiring its own UI-SPEC revision, not a silent extension of this contract. |
-| long-text | Narrative panels, quote text, limitation paragraph, lead paragraph | ✅ covered | Long-form editorial text wraps naturally, same `prose`-adjacent treatment as Phase 3's body copy — no truncation or ellipsis, since these are the guild's own words and cutting them would misrepresent what was approved. |
+**Elements:** E1 proof strip · E2 before/after narrative panels · E3 quote block + verification line · E4 credible-limitation section · E5 contextual CTA box · E6 page header · E7 route/page shell (`/customers/{guild-slug}`)
+
+| Category | Element | Status | Resolution |
+|----------|---------|--------|------------|
+| empty | E1 proof strip | ✅ covered | A proof strip never renders with zero stats: the page only exists once approved data exists (see E7 empty). No zero-stat UI state to design. |
+| loading | E1 proof strip | ✅ covered | Build-time data-module import in a Server Component (mirrors Phase 3's D-05) — no fetch, no skeleton, no loading transition. |
+| error | E1 proof strip | ✅ covered | No runtime data source to fail. Malformed data is a build-time failure, not a rendered state. |
+| populated | E1 proof strip | ✅ covered | Exactly 4 stat blocks: 4-up row (desktop, `gap-6`) / 2×2 grid (mobile, `gap-4`), 42px accent numbers over muted 16px captions on `bg-background-elevated`. |
+| partial | E1 proof strip | ⚠ unresolved — planner must treat as assumption | Where roster size/expansion/tenure data comes from is unresolved: RESEARCH.md Pitfall 3 notes the ten required interview questions don't explicitly collect it (interview vs. product database vs. ad hoc 11th question is a user content/consent decision). Visual rule IS locked: a genuinely unavailable stat's block is omitted entirely — a 3-block strip is acceptable; a visible gap, "N/A", placeholder, or invented value is not. |
+| overflow | E1 proof strip | ✅ covered | Stat labels wrap; blocks grow vertically; no truncation and no horizontal scroll — the strip is a fixed 4 items, not a data table. |
+| zero-one-many | E1 proof strip | ✅ covered | Cardinality fixed by the sprint-plan template (4, or fewer via the partial omit-rule) — not a live counter; no singular/plural copy branching. |
+| long-text | E1 proof strip | ✅ covered | Numbers are short by nature; long captions wrap naturally at block width, never ellipsized. |
+| empty | E2 narrative panels | ✅ covered | Panels only exist with guild-approved narrative content; a case study without it does not ship (see E7 empty). No runtime empty state. |
+| loading | E2 narrative panels | ✅ covered | Static build-time content — no loading state exists. |
+| error | E2 narrative panels | ✅ covered | No fetch or submission — no error state exists. |
+| partial | E2 narrative panels | ✅ covered | The template requires both panels (Before and After); a story missing either does not ship as a case study. Fixed at exactly 2 — no partial render. |
+| overflow | E2 narrative panels | ✅ covered | Prose wraps at the `max-w-3xl` column; panels grow vertically; side-by-side (desktop) collapses to stacked (mobile). No clipping. |
+| long-text | E2 narrative panels | ✅ covered | No truncation or `line-clamp` ever — these are the guild's approved words; cutting them would misrepresent what was approved. |
+| loading | E3 quote block | ✅ covered | Static content, reused `QuoteCard` — no async state. |
+| error | E3 quote block | ✅ covered | The outbound public-profile link is guild-supplied and verified at copy sign-off (Pattern 2); a broken link is a content-accuracy defect, not a rendered UI error state. If question 10 is answered "no," `VerificationLine` renders its existing `verified_customer`/`verified_customer_dated` variant (no link) — already handled by the discriminated union, no new state. |
+| overflow | E3 quote block | ✅ covered | Quote text wraps fully within the card; no clamp. Attribution line wraps to multiple lines when long. |
+| long-text | E3 quote block | ✅ covered | The full approved quote renders verbatim — no ellipsis, no "read more". Long guild/character names wrap. |
+| overflow | E4 limitation section | ✅ covered | The `p-8` box grows with its content; prose wraps at column width. |
+| long-text | E4 limitation section | ✅ covered | The limitation paragraph renders in full, standard body treatment (no accent, no destructive) — never truncated. |
+| loading | E5 CTA box | ✅ covered | The CTA is a static link-styled `Button` navigating to signup — no async submit on this page, no pending state. |
+| error | E5 CTA box | ✅ covered | No form and no submission on this page — failure states belong to the signup flow it links to. See Copywriting Contract "Error state." |
+| overflow | E5 CTA box | ✅ covered | Button label is short fixed copy ("Create your guild free"); heading and body wrap naturally within the box. |
+| long-text | E5 CTA box | ✅ covered | CTA copy is fixed and sign-off gated; if revised longer, it wraps — the button never ellipsizes its label. |
+| empty | E6 page header | ✅ covered | The header is always fully populated from the data-module entry; the page cannot exist without one (see E7 empty). |
+| loading | E6 page header | ✅ covered | Static — no loading state. |
+| error | E6 page header | ✅ covered | No runtime data source — no error state. |
+| populated | E6 page header | ✅ covered | Optional accent eyebrow ("Case Study"), 32px bold outcome-focused H1, muted byline meta row with inline `&middot;` separators. |
+| partial | E6 page header | ✅ covered | The eyebrow is optional and omitted cleanly; any byline meta item not collected is omitted entirely and its separator collapses — never a placeholder or blank slot (same omit-rule as E1 partial). |
+| overflow | E6 page header | ✅ covered | The H1 wraps at 32px across all breakpoints — no clamp, no responsive size split. |
+| zero-one-many | E6 page header | ✅ covered | Byline meta is a fixed small set from the template — no plural/singular branching. |
+| long-text | E6 page header | ✅ covered | Long guild names and long title-token resolutions wrap; no ellipsis anywhere in the header. |
+| empty | E7 route/page | ✅ covered | Zero published case studies → `generateStaticParams()` returns `[]` → route unreachable (not renderable-but-empty). Unmatched slug → standard Next.js 404. No "coming soon" page at a reachable URL (Pitfall 1). See Copywriting Contract "Empty state." |
+| loading | E7 route/page | ✅ covered | Statically generated Server Component — no client fetch, no route-level loading UI needed. |
+| error | E7 route/page | ✅ covered | No runtime data errors are possible; a malformed data-module entry fails the build (typecheck/CI), never renders. See Copywriting Contract "Error state." |
+| partial | E7 route/page | ✅ covered | The case-study data module's required template fields are typed non-optional (TypeScript strict mode); optional fields (public-profile link, an omittable proof-strip stat) are typed optional. An incomplete entry fails `npm run typecheck` at build time — an incomplete page can never render. |
+| long-text | E7 route/page | ✅ covered | `max-w-3xl` article column with `pt-32 pb-20` shell; all long-form text wraps within it; no horizontal scroll at any breakpoint. |
 
 <!-- Status vocabulary (locked by probe-core projectTruths):
      ✅ covered   → a plain truth string lifted into must_haves.truths
@@ -169,11 +200,11 @@ No third-party registries are used or requested for this phase. `QuoteCard`/`Ver
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** APPROVED — gsd-ui-checker, 2026-09-05 (6/6 dimensions, 0 blocking issues, 0 flags)
