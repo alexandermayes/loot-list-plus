@@ -82,7 +82,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 **Blocked on user action** (structured as explicit phase checkpoints, not assumed):
 
 - ~~MEAS-01 (Phase 1)~~ RESOLVED 2026-08-28: GSC OAuth credentials restored and verified working
-- EVID-05 (Phase 4): user must conduct the guild interview and obtain quote approval
+- EVID-05 (Phase 4): as of 2026-09-06, Phase 4 shipped the tested page template and the committed interview kit (`04-INTERVIEW-KIT.md`); only the content remains blocked. User must conduct the guild interview and obtain written quote approval; the unblock path from an approved interview to a live page is `.planning/phases/04-verified-guild-case-study/04-PUBLISH-RUNBOOK.md`.
 
 ---
 *Requirements defined: 2026-08-27*
