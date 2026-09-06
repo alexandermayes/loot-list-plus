@@ -356,6 +356,24 @@ def build_parser() -> argparse.ArgumentParser:
 def main():
     args = build_parser().parse_args()
 
+    # WR-01: --start/--end previously only relabeled the artifact's cosmetic
+    # `window` field -- every committed .sql file has WINDOW_START/WINDOW_END
+    # baked in as literals (assert_window_literals enforces this), so
+    # overriding these flags never changed what was actually queried, only
+    # what the published window claimed. Refuse instead of silently
+    # mislabeling: the window is changed by editing the .sql files' literals,
+    # not by this flag.
+    if args.start != WINDOW_START or args.end != WINDOW_END:
+        print(
+            "error: --start/--end must match the committed queries' window "
+            f"({WINDOW_START}..{WINDOW_END}); edit the .sql files' literals "
+            "instead -- every query has the window baked in as a literal, so "
+            "overriding these flags would only mislabel the published "
+            "artifact's window field, not change what was actually queried",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     try:
         linted = lint_queries(args.queries_dir)
     except ValueError as e:
