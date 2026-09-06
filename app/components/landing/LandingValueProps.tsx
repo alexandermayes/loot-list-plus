@@ -56,12 +56,12 @@ function StatCard({ value, label, className }: { value: string; label: string; c
 }
 
 // Discriminated union: exactly one variant renders per quote (UI-SPEC E2 zero-one-many).
-type TestimonialVerification =
+export type TestimonialVerification =
   | { type: 'wcl_link'; url: string; monthYear?: string }
   | { type: 'verified_customer' }
   | { type: 'verified_customer_dated'; monthYear: string }
 
-type QuoteAuthor = {
+export type QuoteAuthor = {
   name: string
   guild: string
   role?: string
@@ -69,7 +69,7 @@ type QuoteAuthor = {
   verification?: TestimonialVerification
 }
 
-function VerificationLine({ verification }: { verification: TestimonialVerification }) {
+export function VerificationLine({ verification }: { verification: TestimonialVerification }) {
   const text =
     verification.type === 'verified_customer_dated'
       ? `Verified LootList+ customer ∙ Interviewed ${verification.monthYear}`
@@ -79,7 +79,7 @@ function VerificationLine({ verification }: { verification: TestimonialVerificat
   )
 }
 
-function QuoteCard({ quote, author, className }: { quote: string; author?: QuoteAuthor; className?: string }) {
+export function QuoteCard({ quote, author, className }: { quote: string; author?: QuoteAuthor; className?: string }) {
   return (
     <TiltCard
       className={`flex flex-col items-center justify-center overflow-hidden rounded-[20px] md:rounded-[28px] p-6 md:p-12 lg:p-20 ${className || ''}`}
