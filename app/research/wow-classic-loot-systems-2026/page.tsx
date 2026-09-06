@@ -131,6 +131,25 @@ function formatWindowDate(iso: string): string {
   })
 }
 
+// CR-03: every other piece of copy for a finding (H2, number-sentence,
+// officer-meaning, limits, callout-label -- all below via `approved(...)`)
+// is bound by `metric_id`, never by array position. The value/denominator
+// tokens must be bound the same way, or a reorder/reselection of
+// published-findings.txt would silently misattribute one finding's number
+// into another finding's prose section. Looking a finding up by id and
+// throwing loudly when it's missing turns that failure mode into a build
+// error instead of a silent misattribution.
+const findingsById: Record<string, Finding> = Object.fromEntries(
+  findings.map((f) => [f.metric_id, f])
+)
+function requireFinding(metricId: string): Finding {
+  const finding = findingsById[metricId]
+  if (!finding) {
+    throw new Error(`Expected published finding "${metricId}" not found in the committed aggregates artifact`)
+  }
+  return finding
+}
+
 // The single place every `{token}` in an approved string resolves against
 // the committed artifact (T-03-29). Every value here is read off `aggregates`
 // -- nothing is a hand-typed numeral -- so a number on this page can never
@@ -143,14 +162,14 @@ const TOKENS: Record<string, string> = {
   sample_loot_awards: aggregates.sample.loot_awards.toLocaleString('en-US'),
   sample_raiders: aggregates.sample.raiders_with_approved_lists.toLocaleString('en-US'),
   guild_floor: aggregates.guild_floor.toLocaleString('en-US'),
-  finding_median_list_length_value: findings[0].display,
-  finding_median_list_length_denominator: (findings[0].denominator ?? 0).toLocaleString('en-US'),
-  finding_attendance_weighting_value: findings[1].display,
-  finding_attendance_weighting_denominator: (findings[1].denominator ?? 0).toLocaleString('en-US'),
-  finding_blp_usage_value: findings[2].display,
-  finding_blp_usage_denominator: (findings[2].denominator ?? 0).toLocaleString('en-US'),
-  finding_top_priority_bracket_value: findings[3].display,
-  finding_top_priority_bracket_denominator: (findings[3].denominator ?? 0).toLocaleString('en-US'),
+  finding_median_list_length_value: requireFinding('median-list-length').display,
+  finding_median_list_length_denominator: (requireFinding('median-list-length').denominator ?? 0).toLocaleString('en-US'),
+  finding_attendance_weighting_value: requireFinding('attendance-weighting').display,
+  finding_attendance_weighting_denominator: (requireFinding('attendance-weighting').denominator ?? 0).toLocaleString('en-US'),
+  finding_blp_usage_value: requireFinding('blp-usage').display,
+  finding_blp_usage_denominator: (requireFinding('blp-usage').denominator ?? 0).toLocaleString('en-US'),
+  finding_top_priority_bracket_value: requireFinding('top-priority-bracket').display,
+  finding_top_priority_bracket_denominator: (requireFinding('top-priority-bracket').denominator ?? 0).toLocaleString('en-US'),
 }
 
 function resolveTokens(template: string, tokens: Record<string, string>): string {
