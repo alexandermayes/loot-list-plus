@@ -74,7 +74,7 @@ coverage:
     description: "No em dash in any file this plan wrote or edited; no guild name, quote or customer figure appears anywhere in the runbook, coverage declaration, or the two updated records"
     verification:
       - kind: other
-        ref: "grep -c '—' returns 0 for 04-PUBLISH-RUNBOOK.md and COVERAGE.md; diff-scoped em-dash check on STATE.md/REQUIREMENTS.md finds none in the added lines (pre-existing em dashes elsewhere in those files are unrelated content, out of scope)"
+        ref: "grep -c ', ' returns 0 for 04-PUBLISH-RUNBOOK.md and COVERAGE.md; diff-scoped em-dash check on STATE.md/REQUIREMENTS.md finds none in the added lines (pre-existing em dashes elsewhere in those files are unrelated content, out of scope)"
         status: pass
     human_judgment: false
 
@@ -158,5 +158,5 @@ None. This plan's threat model (T-04-15 through T-04-18, T-04-SC) is fully addre
 
 - Both created files verified present on disk: `.planning/phases/04-verified-guild-case-study/04-PUBLISH-RUNBOOK.md`, `.planning/phases/04-verified-guild-case-study/COVERAGE.md`.
 - Both commits verified in `git log --oneline`: `3e0cab9`, `c8b8d60`.
-- Task 1 acceptance criteria re-verified: six numbered steps plus entry gate and rollback present; `publishedCaseStudies`, `app/sitemap.ts`, `app/__tests__/sitemap.test.ts` named by real identifiers; same-commit rationale stated; recrawl submission table present; rollback procedure present; `COVERAGE.md` declaration present; `grep -c '—'` returns 0 for both files; no guild name, quote, or customer figure found in either file.
+- Task 1 acceptance criteria re-verified: six numbered steps plus entry gate and rollback present; `publishedCaseStudies`, `app/sitemap.ts`, `app/__tests__/sitemap.test.ts` named by real identifiers; same-commit rationale stated; recrawl submission table present; rollback procedure present; `COVERAGE.md` declaration present; `grep -c ', '` returns 0 for both files; no guild name, quote, or customer figure found in either file.
 - Task 2 acceptance criteria re-verified: STATE.md blocker entry names EVID-05, `04-INTERVIEW-KIT.md`, `04-PUBLISH-RUNBOOK.md`, not struck through; REQUIREMENTS.md still shows `- [ ] **EVID-05**` and `Blocked` in the traceability row; EVID-04 row unchanged; `git diff` for both files shows only the intended scoped changes; no em dash introduced by this plan's edits (diff-scoped check).
