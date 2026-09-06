@@ -4,7 +4,7 @@
     "start": "2026-06-01",
     "end": "2026-08-31"
   },
-  "generated_at": "2026-09-04T23:07:04Z",
+  "generated_at": "2026-09-06T01:01:48Z",
   "guild_floor": 10,
   "definitions": {
     "active_guild": "A guild qualifies as active if, during the window, it has at least one non-skipped raid event, OR at least one loot award, OR at least five approved loot lists. A raid_events row with is_skipped true is excluded. An approved list counts when COALESCE(reviewed_at, submitted_at) falls inside the window.",
@@ -14,7 +14,7 @@
     "active_guilds": 33,
     "raid_events": 454,
     "loot_awards": 5432,
-    "raiders_with_approved_lists": 452
+    "raiders_with_approved_lists": 451
   },
   "findings": [
     {
@@ -23,7 +23,7 @@
       "kind": "median",
       "value": 18,
       "display": "18.0",
-      "denominator": 583,
+      "denominator": 581,
       "share_basis": "measured",
       "sums_to_100": null,
       "segments": [],
@@ -63,9 +63,9 @@
       "metric_id": "top-priority-bracket",
       "label": "Share of awarded items that were in the winner's top priority bracket",
       "kind": "percentage",
-      "value": 29.486062717770032,
+      "value": 29.50391644908616,
       "display": "29.5",
-      "denominator": 2296,
+      "denominator": 2298,
       "share_basis": "active_guilds",
       "sums_to_100": null,
       "segments": [],
