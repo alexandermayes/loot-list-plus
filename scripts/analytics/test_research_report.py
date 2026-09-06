@@ -36,6 +36,7 @@ from research_report import (
     build_artifact,
     decide_top_bracket_coverage,
     load_selection_file,
+    parse_query_header,
     quantize_display,
     render_menu,
     resolve_output_path,
@@ -254,6 +255,56 @@ class TestWriteCsv(unittest.TestCase):
             with open(path, "rb") as f:
                 second = f.read()
         self.assertEqual(first, second)
+
+
+class TestParseQueryHeader(unittest.TestCase):
+    def test_parses_the_four_required_keys(self):
+        header = parse_query_header(
+            "-- metric-id: foo\n"
+            "-- label: Foo label\n"
+            "-- columns: a,b\n"
+            "-- window: 2026-06-01..2026-08-31\n"
+        )
+        self.assertEqual(header["metric-id"], "foo")
+        self.assertEqual(header["label"], "Foo label")
+        self.assertEqual(header["columns"], ["a", "b"])
+        self.assertEqual(header["window"], "2026-06-01..2026-08-31")
+
+    def test_raises_when_a_required_key_is_missing(self):
+        with self.assertRaises(ValueError):
+            parse_query_header(
+                "-- metric-id: foo\n"
+                "-- label: Foo label\n"
+                "-- window: 2026-06-01..2026-08-31\n"
+            )
+
+    def test_stops_at_first_blank_comment_line_ignoring_later_colon_prose(self):
+        # WR-03: a descriptive prose line below the blank `--` separator
+        # that happens to contain a colon (e.g. "plan 03-01 (SUMMARY: ...")
+        # must never be absorbed into the header dict.
+        header = parse_query_header(
+            "-- metric-id: foo\n"
+            "-- label: Foo label\n"
+            "-- columns: a,b\n"
+            "-- window: 2026-06-01..2026-08-31\n"
+            "--\n"
+            '-- endpoint in plan 03-01 (SUMMARY: "some text: with colons")\n'
+        )
+        self.assertNotIn("endpoint in plan 03-01 (SUMMARY", header)
+        self.assertEqual(set(header) - {"columns"}, {"metric-id", "label", "window"})
+
+    def test_a_prose_key_colliding_with_a_required_key_never_overwrites_it(self):
+        # Before WR-03, a prose line starting with "window:" below the
+        # separator would silently overwrite the real header["window"].
+        header = parse_query_header(
+            "-- metric-id: foo\n"
+            "-- label: Foo label\n"
+            "-- columns: a,b\n"
+            "-- window: 2026-06-01..2026-08-31\n"
+            "--\n"
+            "-- window: this prose line must never win\n"
+        )
+        self.assertEqual(header["window"], "2026-06-01..2026-08-31")
 
 
 class TestResolveOutputPath(unittest.TestCase):

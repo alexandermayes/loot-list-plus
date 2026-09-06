@@ -144,19 +144,46 @@ def run_sql(project_ref: str, token: str, sql: str):
         raise RuntimeError(f"Management API error (HTTP {e.code}): {body}") from None
 
 
-def lint_queries(queries_dir: str):
+def lint_queries(queries_dir: str, metrics=None):
     """Offline preflight: parses and guards every .sql file in
     `queries_dir`. Returns [(path, header), ...] on success; raises
     ValueError naming the file on the first failure. Runs first on every
     invocation (not only under --lint-queries) so a bad query can never
-    reach production."""
+    reach production.
+
+    WR-03: when `metrics` (the parsed metrics.json registry) is given,
+    also cross-checks every registry entry with a `query_file` against
+    that file's own parsed `metric-id` header, so a copy-paste mistake
+    wiring the wrong .sql file to the wrong metric_id in metrics.json is
+    caught here instead of silently publishing a mislabeled number."""
     results = []
+    headers_by_path = {}
     for path in sorted(Path(queries_dir).glob("*.sql")):
         text = path.read_text()
         header = parse_query_header(text)
         assert_window_literals(text, str(path))
         assert_no_forbidden_columns(text, str(path))
         results.append((str(path), header))
+        headers_by_path[str(path)] = header
+
+    if metrics is not None:
+        for metric in metrics:
+            query_file = metric.get("query_file")
+            if not query_file:
+                continue
+            path = str(Path(queries_dir) / query_file)
+            header = headers_by_path.get(path)
+            if header is None:
+                raise ValueError(
+                    f"{path}: registry entry {metric['metric_id']!r} references "
+                    "a query file that was not found under queries_dir"
+                )
+            if header["metric-id"] != metric["metric_id"]:
+                raise ValueError(
+                    f"{path}: header metric-id {header['metric-id']!r} does not "
+                    f"match registry metric_id {metric['metric_id']!r}"
+                )
+
     return results
 
 
@@ -374,8 +401,16 @@ def main():
         )
         sys.exit(1)
 
+    # WR-03: metrics.json is loaded before lint_queries so the registry
+    # cross-check (a query file's own header metric-id must match the
+    # metric_id that points at it) runs during the same offline preflight
+    # that already guards the window/forbidden-column literals -- a
+    # copy-paste mistake wiring the wrong .sql file to the wrong metric_id
+    # is caught here instead of silently publishing a mislabeled number.
+    metrics = load_metrics(args.queries_dir)
+
     try:
-        linted = lint_queries(args.queries_dir)
+        linted = lint_queries(args.queries_dir, metrics)
     except ValueError as e:
         print(f"lint failed: {e}", file=sys.stderr)
         sys.exit(1)
@@ -383,8 +418,6 @@ def main():
     if args.lint_queries:
         print(f"lint ok: {len(linted)} query file(s) passed the window and forbidden-column guards")
         return
-
-    metrics = load_metrics(args.queries_dir)
 
     if args.menu:
         token = get_access_token()

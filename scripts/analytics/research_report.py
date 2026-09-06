@@ -72,7 +72,18 @@ def parse_query_header(sql_text):
     """Parses the leading `-- key: value` comment block of a committed
     query file. Returns a dict with the four required keys, `columns`
     split into a list. Raises ValueError naming the missing key(s) if any
-    of `metric-id`, `label`, `columns`, `window` is absent."""
+    of `metric-id`, `label`, `columns`, `window` is absent.
+
+    WR-03: stops at the first blank `--` comment line (a `--` line with no
+    content after stripping the dashes) -- every committed query file
+    follows this shape: the four required `key: value` lines, then a bare
+    `--` line, then free-form descriptive prose. Without this stop, a
+    prose line that happens to start with a word containing a colon (e.g.
+    a line like "endpoint in plan 03-01 (SUMMARY: ...)") would be parsed as
+    an extra header key, and if a future prose line's key ever collided
+    with a required key (`window`, `columns`, etc. all appear constantly
+    in this report's own prose), it would silently overwrite the real
+    header value with no error surfaced anywhere."""
     header = {}
     for line in sql_text.splitlines():
         stripped = line.strip()
@@ -81,6 +92,10 @@ def parse_query_header(sql_text):
                 break
             continue
         content = stripped.lstrip("-").strip()
+        if not content:
+            if header:
+                break
+            continue
         if ":" not in content:
             continue
         key, _, value = content.partition(":")
