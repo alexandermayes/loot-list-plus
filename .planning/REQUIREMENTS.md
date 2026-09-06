@@ -21,7 +21,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **EVID-01**: Anonymized data report is published at `/research/wow-classic-loot-systems-2026` with methodology, date range, sample definitions, and at least 3 findings, each published segment ≥10 guilds
 - [x] **EVID-02**: Every published report number reproduces from a saved query committed to the repo
 - [x] **EVID-03**: Report page is self-canonical, in the sitemap, with metadata/structured data matching visible content and a contextual CTA
-- [ ] **EVID-04**: Case study page template exists at `/customers/{guild-slug}` following the plan's format (outcome H1, proof strip, before/after, credible limitation)
+- [x] **EVID-04**: Case study page template exists at `/customers/{guild-slug}` following the plan's format (outcome H1, proof strip, before/after, credible limitation)
 - [ ] **EVID-05**: Case study is published with user-approved interview content (blocked on user-conducted guild interview)
 
 ### Measurement
@@ -65,7 +65,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EVID-01 | Phase 3 | Complete |
 | EVID-02 | Phase 3 | Complete |
 | EVID-03 | Phase 3 | Complete |
-| EVID-04 | Phase 4 | Pending |
+| EVID-04 | Phase 4 | Complete |
 | EVID-05 | Phase 4 | Blocked (user interview) |
 | MEAS-01 | Phase 1 | Complete |
 | MEAS-02 | Phase 1 | Complete |
