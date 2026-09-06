@@ -60,6 +60,7 @@ from research_report import (
     assert_no_forbidden_columns,
     assert_window_literals,
     build_artifact,
+    decide_top_bracket_coverage,
     load_selection_file,
     parse_query_header,
     render_menu,
@@ -76,6 +77,14 @@ DEFAULT_PROJECT_REF = "zjnhjstbqekudlsozsvi"  # same ref the gen:types npm scrip
 MANAGEMENT_API = "https://api.supabase.com/v1/projects/{ref}/database/query"
 
 SAMPLE_METRIC_ID = "sample-definition"
+
+# CR-02: the one metric whose publish/withhold decision must be gated on a
+# support measurement rather than published unconditionally. The registry
+# (metrics.json) is ordered so TOP_BRACKET_COVERAGE_METRIC_ID's query runs
+# before TOP_BRACKET_METRIC_ID's, so its result is already in `results`
+# by the time the gate below reads it.
+TOP_BRACKET_METRIC_ID = "top-priority-bracket"
+TOP_BRACKET_COVERAGE_METRIC_ID = "top-bracket-coverage"
 
 # D-13/D-15 resolutions, restated verbatim in the published methodology so
 # the artifact's definitions block matches the SQL comment header.
@@ -268,6 +277,44 @@ def run_all_metrics(metrics, args, token):
 
         if metric["kind"] == "support":
             results[metric["metric_id"]] = assemble_support(metric, row)
+        elif metric["metric_id"] == TOP_BRACKET_METRIC_ID:
+            # CR-02: gate on the already-computed top-bracket-coverage
+            # support measurement instead of publishing unconditionally.
+            coverage_status, coverage_entry = results.get(
+                TOP_BRACKET_COVERAGE_METRIC_ID, (None, None)
+            )
+            if coverage_status != "finding":
+                results[metric["metric_id"]] = ("unavailable", {
+                    "metric_id": metric["metric_id"],
+                    "label": metric["label"],
+                    "reason": (
+                        f"{TOP_BRACKET_COVERAGE_METRIC_ID} support measurement "
+                        "is unavailable, so top-priority-bracket cannot be "
+                        "gated and is withheld"
+                    ),
+                })
+            else:
+                raw = coverage_entry["raw"]
+                decision = decide_top_bracket_coverage(
+                    raw["awards_in_window"],
+                    raw["awards_with_prior_snapshot"],
+                    raw["active_guilds_with_usable_snapshots"],
+                )
+                if not decision["publish"]:
+                    results[metric["metric_id"]] = ("unavailable", {
+                        "metric_id": metric["metric_id"],
+                        "label": metric["label"],
+                        "reason": decision["reason"],
+                    })
+                else:
+                    # Coverage clears both bars: fall through to the same
+                    # assembly every other percentage metric uses, keeping
+                    # the registry's own (static) definition_note. See
+                    # WR-04 in REVIEW-FIX.md for why the note is not also
+                    # rebuilt dynamically here.
+                    results[metric["metric_id"]] = assemble_percentage_from_counts(
+                        metric, row[columns[0]], row[columns[1]]
+                    )
         elif metric["kind"] == "percentage" and len(columns) == 2:
             results[metric["metric_id"]] = assemble_percentage_from_counts(
                 metric, row[columns[0]], row[columns[1]]
