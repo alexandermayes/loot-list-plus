@@ -131,6 +131,15 @@ function formatWindowDate(iso: string): string {
   })
 }
 
+// WR-05: formats the date-only portion of a full ISO datetime (e.g.
+// aggregates.generated_at, "2026-09-06T01:01:48Z") the same way
+// formatWindowDate formats a bare date, so the visible byline date and the
+// structured-data dates can be derived from the artifact instead of a
+// literal that goes stale the moment the pipeline reruns.
+function formatIsoDateOnly(iso: string): string {
+  return formatWindowDate(iso.slice(0, 10))
+}
+
 // CR-03: every other piece of copy for a finding (H2, number-sentence,
 // officer-meaning, limits, callout-label -- all below via `approved(...)`)
 // is bound by `metric_id`, never by array position. The value/denominator
@@ -269,6 +278,20 @@ const METHODOLOGY_FLOOR = approved('methodology.floor')
 const METHODOLOGY_ROUNDING = approved('methodology.rounding')
 const METHODOLOGY_ABSENCES = approved('methodology.absences')
 
+// WR-05: `PUBLISHED_ISO` is the page's original publish date -- fixed at
+// the 2026-09-04 copy sign-off (03-COPY-DRAFT.md), and intentionally does
+// not move on every pipeline rerun, the same way a blog post's "published"
+// date does not change just because a typo was fixed later. `MODIFIED_ISO`
+// is derived from the committed artifact's own `generated_at` field, so it
+// can never drift from the data actually backing the page (methodology.window
+// above states in approved copy that "the data page states when its
+// numbers were generated" -- this is that statement, wired to the artifact
+// instead of a literal).
+const PUBLISHED_ISO = '2026-09-04T00:00:00Z'
+const MODIFIED_ISO = aggregates.generated_at
+const MODIFIED_DATE_ONLY = MODIFIED_ISO.slice(0, 10)
+const MODIFIED_DATE_DISPLAY = formatIsoDateOnly(MODIFIED_ISO)
+
 export const metadata: Metadata = {
   title: PAGE_TITLE,
   description: PAGE_META_DESCRIPTION,
@@ -286,7 +309,8 @@ export const metadata: Metadata = {
     title: PAGE_TITLE,
     description: PAGE_META_DESCRIPTION,
     type: 'article',
-    publishedTime: '2026-09-04T00:00:00Z',
+    publishedTime: PUBLISHED_ISO,
+    modifiedTime: MODIFIED_ISO,
     authors: ['LootList+'],
     url: 'https://www.getlootlist.com/research/wow-classic-loot-systems-2026',
   },
@@ -300,8 +324,8 @@ const jsonLd = {
   // mismatch EVID-03 forbids.
   headline: PAGE_H1,
   description: PAGE_META_DESCRIPTION,
-  datePublished: '2026-09-04T00:00:00Z',
-  dateModified: '2026-09-04T00:00:00Z',
+  datePublished: PUBLISHED_ISO,
+  dateModified: MODIFIED_ISO,
   author: {
     '@type': 'Person',
     '@id': 'https://www.getlootlist.com/about#creator',
@@ -392,7 +416,7 @@ export default function ResearchReportPage() {
                 {BYLINE_AFTER_ZEV}
               </span>
               <span>&middot;</span>
-              <time dateTime="2026-09-04">September 4, 2026</time>
+              <time dateTime={MODIFIED_DATE_ONLY}>{MODIFIED_DATE_DISPLAY}</time>
               <span>&middot;</span>
               <span>{PAGE_READ_TIME}</span>
             </div>
