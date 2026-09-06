@@ -252,7 +252,7 @@ def run_all_metrics(metrics, args, token):
                 seg_col, count_col = columns[0], columns[1]
                 segment_counts[row[seg_col]] = int(row[count_col])
             denominator = sample.get("active_guilds") if sample else None
-            results[metric["metric_id"]] = assemble_breakdown(metric, segment_counts, denominator)
+            results[metric["metric_id"]] = assemble_breakdown(metric, segment_counts, denominator, floor=args.floor)
             continue
 
         if not rows:
