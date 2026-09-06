@@ -522,12 +522,21 @@ def validate_selection(selection_ids, metrics):
 
 def resolve_output_path(path):
     """Reuses gsc_export.resolve_export_path's guard shape with
-    OUTPUT_DIR as the default parent: rejects a `..` path segment, and
-    joins a bare filename onto OUTPUT_DIR."""
+    OUTPUT_DIR as the default parent: rejects a `..` path segment, joins a
+    bare filename onto OUTPUT_DIR, and (WR-02) confines the final resolved
+    path to OUTPUT_DIR -- a `..`-free path with no separator at all only
+    ever reaches the bare-filename branch above, but a `..`-free *absolute*
+    path (or one that steps outside OUTPUT_DIR via a symlinked parent) has
+    a separator and skips that branch entirely, so without this check it
+    would pass through untouched instead of being confined."""
     if ".." in path.split(os.sep):
         raise ValueError(f"refusing output path containing '..' segment: {path}")
     if os.sep not in path and (os.altsep is None or os.altsep not in path):
         path = os.path.join(OUTPUT_DIR, path)
+    resolved = os.path.abspath(path)
+    allowed_root = os.path.abspath(OUTPUT_DIR)
+    if resolved != allowed_root and not resolved.startswith(allowed_root + os.sep):
+        raise ValueError(f"refusing output path outside {OUTPUT_DIR}: {path}")
     parent = os.path.dirname(path)
     if parent:
         os.makedirs(parent, exist_ok=True)

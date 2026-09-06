@@ -23,6 +23,7 @@ from pathlib import Path
 from research_report import (
     FORBIDDEN_SQL_TOKENS,
     GUILD_FLOOR,
+    OUTPUT_DIR,
     TOP_BRACKET_SHARE_THRESHOLD,
     WINDOW_END,
     WINDOW_START,
@@ -218,7 +219,10 @@ class TestWriteCsv(unittest.TestCase):
         }
 
     def test_orders_sample_then_findings_then_segments_by_count_desc_name_asc(self):
-        with tempfile.TemporaryDirectory() as d:
+        # WR-02: resolve_output_path now confines writes to OUTPUT_DIR, so
+        # the scratch directory this test writes into must be inside it,
+        # not an arbitrary system tempdir.
+        with tempfile.TemporaryDirectory(dir=OUTPUT_DIR) as d:
             path = os.path.join(d, "out.csv")
             write_csv(self._sample_artifact(), path)
             with open(path, newline="") as f:
@@ -240,7 +244,8 @@ class TestWriteCsv(unittest.TestCase):
         self.assertEqual([r[3] for r in rows[6:9]], ["MoP", "Wrath", "Other"])
 
     def test_two_runs_over_unchanged_data_produce_identical_bytes(self):
-        with tempfile.TemporaryDirectory() as d:
+        # WR-02: same confinement note as the test above.
+        with tempfile.TemporaryDirectory(dir=OUTPUT_DIR) as d:
             path = os.path.join(d, "out.csv")
             write_csv(self._sample_artifact(), path)
             with open(path, "rb") as f:
@@ -255,6 +260,22 @@ class TestResolveOutputPath(unittest.TestCase):
     def test_rejects_dotdot_segment(self):
         with self.assertRaises(ValueError):
             resolve_output_path("../escape.json")
+
+    def test_rejects_absolute_path_outside_output_dir(self):
+        # WR-02: an absolute path contains no ".." segment and already has a
+        # separator, so it used to skip both guard branches untouched.
+        with self.assertRaises(ValueError):
+            resolve_output_path("/tmp/escape.json")
+
+    def test_accepts_bare_filename_joined_onto_output_dir(self):
+        resolved = resolve_output_path("some-file.json")
+        self.assertEqual(resolved, os.path.join(OUTPUT_DIR, "some-file.json"))
+
+    def test_accepts_relative_path_inside_output_dir(self):
+        with tempfile.TemporaryDirectory(dir=OUTPUT_DIR) as d:
+            path = os.path.join(d, "file.json")
+            resolved = resolve_output_path(path)
+            self.assertTrue(os.path.abspath(resolved).startswith(os.path.abspath(OUTPUT_DIR) + os.sep))
 
 
 # --- 03-02 Task 1: registry completeness, breakdown assembler, menu renderer ---
