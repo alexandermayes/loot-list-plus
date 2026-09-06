@@ -6,6 +6,7 @@ import BlogTracker from '@/app/components/landing/BlogTracker'
 import { QuoteCard } from '@/app/components/landing/LandingValueProps'
 import { listRoutableCaseStudies, requireCaseStudy } from '@/data/case-studies'
 import type { CaseStudy } from '@/data/case-studies/types'
+import { ProofStrip, NarrativePanels } from './sections'
 
 // ---------------------------------------------------------------------------
 // Approved copy (draft, this task only)
@@ -26,6 +27,12 @@ const APPROVED_STRINGS: Record<string, string> = {
   'page.h1-fallback': `How {guild} Made Every Loot Decision Explainable`,
   'page.meta-description': `How {guild}, a {size}-player {expansion_tier} guild, replaced {old_process} with ranked lists, attendance-weighted scores, and visible loot decisions.`,
   'page.lead': `{guild} is a {size}-player {expansion_tier} guild. Before LootList+, its officers used {old_process}. The system took {old_process_cost} and created {old_process_failure}. After {time_period} with LootList+, the guild {verified_result}.`,
+  'proofstrip.roster-caption': `Roster size`,
+  'proofstrip.expansion-caption': `Expansion and tier`,
+  'proofstrip.metric-caption': `Weekly admin time saved`,
+  'proofstrip.tenure-caption': `Months using LootList+`,
+  'narrative.before-label': `Before LootList+`,
+  'narrative.after-label': `After LootList+`,
 }
 
 function resolveTokens(template: string, tokens: Record<string, string>): string {
@@ -197,7 +204,37 @@ export default async function CaseStudyPage({
             <p className="text-lg text-foreground-secondary leading-relaxed">{lead}</p>
           </header>
 
-          <QuoteCard quote={entry.quote} author={entry.author} />
+          {/* Primary anchor (04-UI-SPEC.md Focal Point priority 1): the
+              proof strip must out-rank everything below it as soon as a
+              reader scrolls past the lead paragraph. Placed at the `lg`
+              (24px) gap the spacing scale specifies between the lead and
+              the strip. */}
+          <div className="mt-6">
+            <ProofStrip
+              stats={entry.proofStrip}
+              captions={{
+                roster: approved('proofstrip.roster-caption', tokens),
+                expansion: approved('proofstrip.expansion-caption', tokens),
+                metric: approved('proofstrip.metric-caption', tokens),
+                tenure: approved('proofstrip.tenure-caption', tokens),
+              }}
+            />
+          </div>
+
+          {/* Secondary anchor: the guild's own before-and-after account,
+              at the `xl` (32px) section gap. */}
+          <div className="mt-8">
+            <NarrativePanels
+              beforeLabel={approved('narrative.before-label', tokens)}
+              afterLabel={approved('narrative.after-label', tokens)}
+              beforeNarrative={entry.beforeNarrative}
+              afterNarrative={entry.afterNarrative}
+            />
+          </div>
+
+          <div className="mt-8">
+            <QuoteCard quote={entry.quote} author={entry.author} />
+          </div>
         </div>
       </article>
 

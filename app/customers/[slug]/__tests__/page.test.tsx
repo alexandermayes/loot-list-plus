@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import CaseStudyPage, { generateMetadata, generateStaticParams } from '../page'
+import { ProofStrip, NarrativePanels } from '../sections'
 import { exampleGuildFixture } from '@/data/case-studies/example-guild-fixture'
 import {
   publishedCaseStudies,
@@ -268,6 +269,119 @@ describe('app/customers/[slug]/page.tsx', () => {
       // pattern is applied before any such normalization could occur, so
       // this raw form is rejected outright.
       expect(CASE_STUDY_SLUG_PATTERN.test('examplé-guild')).toBe(false)
+    })
+  })
+
+  describe('ProofStrip (T-04-13 omit rule)', () => {
+    // Test-local caption strings, not the approved copy: ProofStrip is
+    // tested here as a generic presentational component, independent of
+    // which strings the page ultimately resolves for it. The full-page
+    // suite below proves those approved strings actually reach the DOM.
+    const captions = {
+      roster: 'Roster size',
+      expansion: 'Expansion and tier',
+      metric: 'Weekly admin time saved',
+      tenure: 'Months using LootList+',
+    }
+
+    it('renders exactly four blocks, in the contract order, when all four stats are present', () => {
+      const { container } = render(<ProofStrip stats={exampleGuildFixture.proofStrip} captions={captions} />)
+      const figures = container.querySelectorAll('.text-5xl')
+      expect(figures).toHaveLength(4)
+      expect(Array.from(figures).map((el) => el.textContent)).toEqual([
+        exampleGuildFixture.proofStrip.rosterSize,
+        exampleGuildFixture.proofStrip.expansionTier,
+        exampleGuildFixture.proofStrip.adminTimeDelta,
+        exampleGuildFixture.proofStrip.monthsUsing,
+      ])
+    })
+
+    it('each figure element carries the 42px size token and the accent colour token, and each block carries its caption', () => {
+      const { container } = render(<ProofStrip stats={exampleGuildFixture.proofStrip} captions={captions} />)
+      const figure = container.querySelector('.text-5xl')
+      expect(figure).not.toBeNull()
+      expect(figure?.className).toContain('text-5xl')
+      expect(figure?.className).toContain('text-accent')
+      expect(container.textContent).toContain(captions.roster)
+      expect(container.textContent).toContain(captions.tenure)
+    })
+
+    it('omits the tenure block cleanly when its figure is absent, with no not-applicable marker, dash, ellipsis, or empty block', () => {
+      const stats = { ...exampleGuildFixture.proofStrip, monthsUsing: undefined }
+      const { container } = render(<ProofStrip stats={stats} captions={captions} />)
+      const figures = container.querySelectorAll('.text-5xl')
+      expect(figures).toHaveLength(3)
+      expect(container.textContent).not.toContain('N/A')
+      expect(container.textContent).not.toContain('n/a')
+      expect(container.textContent).not.toContain('...')
+      for (const figure of figures) {
+        const text = figure.textContent?.trim()
+        expect(text).not.toBe('')
+        expect(text).not.toBe('-')
+      }
+    })
+
+    it('omits the roster block cleanly when its figure is absent, proving the omit rule is positional-independent', () => {
+      const stats = { ...exampleGuildFixture.proofStrip, rosterSize: undefined }
+      const { container } = render(<ProofStrip stats={stats} captions={captions} />)
+      const figures = container.querySelectorAll('.text-5xl')
+      expect(figures).toHaveLength(3)
+      expect(container.textContent).not.toContain(captions.roster)
+      for (const figure of figures) {
+        expect(figure.textContent?.trim()).not.toBe('')
+      }
+    })
+
+    it('the container carries the mobile gap-4 and desktop gap-6 spacing tokens, with no clipping utility class inside it', () => {
+      const { container } = render(<ProofStrip stats={exampleGuildFixture.proofStrip} captions={captions} />)
+      const grid = container.firstElementChild
+      expect(grid?.className).toContain('gap-4')
+      expect(grid?.className).toContain('md:gap-6')
+      expect(container.innerHTML).not.toMatch(/truncate|line-clamp/)
+    })
+  })
+
+  describe('NarrativePanels', () => {
+    it('renders exactly two panels carrying the approved labels and the entry narratives, with no accent colour on either body', () => {
+      const { container } = render(
+        <NarrativePanels
+          beforeLabel="Before LootList+"
+          afterLabel="After LootList+"
+          beforeNarrative={exampleGuildFixture.beforeNarrative}
+          afterNarrative={exampleGuildFixture.afterNarrative}
+        />
+      )
+      const headings = container.querySelectorAll('.text-2xl.font-bold')
+      expect(headings).toHaveLength(2)
+      expect(headings[0].textContent).toBe('Before LootList+')
+      expect(headings[1].textContent).toBe('After LootList+')
+      expect(container.textContent).toContain(exampleGuildFixture.beforeNarrative)
+      expect(container.textContent).toContain(exampleGuildFixture.afterNarrative)
+      const bodies = container.querySelectorAll('p')
+      for (const body of bodies) {
+        expect(body.className).not.toContain('text-accent')
+      }
+    })
+  })
+
+  describe('Full page: proof strip and narrative panels wired in', () => {
+    it('renders the four-block proof strip and both narrative panels, and the page still has exactly one H1 matching the Article headline', async () => {
+      const { container } = await renderFixturePage()
+      const figures = container.querySelectorAll('.text-5xl')
+      expect(figures).toHaveLength(4)
+
+      const panelHeadings = Array.from(container.querySelectorAll('.text-2xl.font-bold')).map((el) => el.textContent)
+      expect(panelHeadings).toEqual(expect.arrayContaining(['Before LootList+', 'After LootList+']))
+
+      const h1 = screen.getByRole('heading', { level: 1 })
+      const objects = getJsonLdObjects(container)
+      const article = objects.find((o) => o['@type'] === 'Article')
+      expect(article.headline).toBe(h1.textContent)
+    })
+
+    it('contains no element with a clipping utility class anywhere on the page', async () => {
+      const { container } = await renderFixturePage()
+      expect(container.innerHTML).not.toMatch(/truncate|line-clamp/)
     })
   })
 })
