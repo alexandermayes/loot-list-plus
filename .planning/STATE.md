@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 04
 current_phase_name: Verified Guild Case Study
 status: executing
-stopped_at: "Phase 04: all 4 plans done, VERIFICATION human_needed (1 UAT item: visual review of fixture page); awaiting /gsd-verify-work 04"
-last_updated: "2026-09-07T05:18:51.806Z"
+stopped_at: "Completed 04-05-PLAN.md (gap closure: G-04-1 proof-strip overflow, G-04-3 doubled unit)"
+last_updated: "2026-09-07T05:59:08.800Z"
 last_activity: 2026-09-06
 last_activity_desc: Phase 04 execution started
-state_head: 27406b55250a5d41e7c6a9703e504576e1d026d4
+state_head: 9bf3e98168cd5006492593f4f1db9ba4ba49dd49
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 22
-  completed_plans: 22
+  total_plans: 23
+  completed_plans: 23
   percent: 50
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-09-03)
 ## Current Position
 
 Phase: 04 (Verified Guild Case Study) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-09-06 - Completed quick task 260906-ure: /research and /customers made public in middleware (closes G-04-2)
 
@@ -74,6 +74,7 @@ Progress: [████████████████████] 12/12 p
 | Phase 04 P02 | 40min | 3 tasks | 2 files |
 | Phase 04 P03 | 40min | 2 tasks | 3 files |
 | Phase 04 P04 | 17min | 2 tasks | 4 files |
+| Phase 04 P05 | 15min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -111,6 +112,8 @@ Recent decisions affecting current work:
 - [Phase 04]: Case-study page chrome (breadcrumb, byline, byline meta, eyebrow) uses text-lg 16px, not the report page's text-sm, so exactly four type sizes (16/20/32/42) ship on the page — 04-03 acceptance criterion on the UI-SPEC type scale; QuoteCard's inherited sizes remain the accepted Phase 3 exception
 - [Phase 04]: Publish runbook (04-PUBLISH-RUNBOOK.md) written now, while the route contract is fresh, per D-07: it carries its own atomic robots/sitemap/test commit, contextual link sweep, and one-time recrawl so the case study can publish self-contained after Phase 5's recrawl pass has already run without it.
 - [Phase 04]: EVID-05 blocker record honestly updated, not resolved: STATE.md and REQUIREMENTS.md now name the interview kit and the publish runbook as the two artifacts that unblock EVID-05, while the checkbox and traceability row stay unchecked/Blocked.
+- [Phase 04]: [Phase 04, plan 05] Proof-strip figure sizing kept on the four already-locked pixel values (42/32/20), not a new fifth size, closing G-04-1 without expanding the type scale — Nearest locked-scale values to the plan's suggested ~28/~22px; staying on-scale avoids introducing an untested fifth type size for a two-gap fix
+- [Phase 04]: [Phase 04, plan 05] Fixture size corrected to bare '28' rather than splitting CaseStudy.proofStrip into value+unit fields, closing G-04-3's doubled-unit defect at the data layer with a module-load guard (CASE_STUDY_SIZE_PATTERN) — Templates already append the unit; the data-shape change was explicitly out of scope per the recorded user decision
 
 ### Pending Todos
 
@@ -152,6 +155,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-06T22:47:53.812Z
-Stopped at: Phase 04: all 4 plans done, VERIFICATION human_needed (1 UAT item: visual review of fixture page); awaiting /gsd-verify-work 04
-Resume file: .planning/phases/04-verified-guild-case-study/04-UAT.md
+Last session: 2026-09-07T05:59:08.543Z
+Stopped at: Completed 04-05-PLAN.md (gap closure: G-04-1 proof-strip overflow, G-04-3 doubled unit)
+Resume file: None
