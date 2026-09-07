@@ -1,44 +1,44 @@
 ---
 gsd_state_version: 1.0
-current_phase: 04
-current_phase_name: Verified Guild Case Study
-status: executing
-stopped_at: "Completed 04-05-PLAN.md (gap closure: G-04-1 proof-strip overflow, G-04-3 doubled unit)"
-last_updated: "2026-09-07T05:59:08.800Z"
+current_phase: 5
+current_phase_name: Internal Authority & Recrawl
+status: planning
+stopped_at: Phase 04 complete, ready to plan Phase 5
+last_updated: "2026-09-07T06:09:16.796Z"
 last_activity: 2026-09-06
-last_activity_desc: Phase 04 execution started
-state_head: 9bf3e98168cd5006492593f4f1db9ba4ba49dd49
+last_activity_desc: Phase 04 complete, transitioned to Phase 5
+state_head: 3843568f7d8bf0f8afdaa3abb032c2094454ecb5
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 23
   completed_plans: 23
-  percent: 50
+  percent: 67
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-03)
+See: .planning/PROJECT.md (updated 2026-09-06)
 
 **Core value:** An officer who lands on the site immediately understands the category, trusts checkable proof, and completes enough setup to become an activated guild (+30% weekly activated guilds by the Sep 18 to 24 cohort)
-**Current focus:** Phase 04 — Verified Guild Case Study
+**Current focus:** Phase 05 — Internal Authority & Recrawl (blocked on deploying Phases 2 to 4 first)
 
 ## Current Position
 
-Phase: 04 (Verified Guild Case Study) — EXECUTING
-Plan: 3 of 4
-Status: Ready to execute
-Last activity: 2026-09-06 - Completed quick task 260906-ure: /research and /customers made public in middleware (closes G-04-2)
+Phase: 5 — Internal Authority & Recrawl
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-06 — Phase 04 complete, transitioned to Phase 5
 
-Progress: [████████████████████] 12/12 plans ([█████░░░░░] 50%) — Phases 1-2 of 6 complete
+Progress: [████████████████████] 23/23 plans (100%)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 18
+- Total plans completed: 23
 - Average duration: -
 - Total execution time: 0 hours
 
@@ -49,6 +49,7 @@ Progress: [████████████████████] 12/12 p
 | 02 | 7 | - | - |
 | 1 | 5 | - | - |
 | 03 | 6 | - | - |
+| 04 | 5 | - | - |
 
 **Recent Trend:**
 
@@ -130,6 +131,8 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
+- **[Deploy] Nothing from Phases 2 to 4 is live.** Local `main` is roughly 100 commits ahead of `origin/main`; production still serves the pre-sprint build (old sitemap, no research report, and an auth-gated /research path). Push and deploy before Phase 5, because the one-time recrawl requests must follow the final deployment.
+- **[Phase 4 security] Two medium items open, non-blocking.** JSON-LD is injected without escaping `<`, and the guild public-profile URL has no https-only check; both belong in the case-study publish commit (`04-SECURITY.md` T-04-CR1, T-04-CR2).
 - ~~**[Phase 1] GSC OAuth credentials wiped.**~~ RESOLVED 2026-08-28: user recreated the OAuth client (Testing mode, added as test user), authorized via `scripts/analytics/gsc-auth.py` (new local-loopback helper, not yet committed), and `pull-gsc.py` verified a full pull. App published to production and token re-minted 2026-08-28, so no 7-day expiry.
 - **[Phase 4] Guild interview not conducted; EVID-05 blocked.** EVID-04 shipped as a tested template at `/customers/[slug]` with an empty published registry, so no case-study URL is reachable in production. The committed interview kit (`04-INTERVIEW-KIT.md`) names the twelve questions and the written-approval checklist the user runs the interview from. EVID-05 remains blocked on the user conducting that interview and obtaining written approval; `04-PUBLISH-RUNBOOK.md` is the self-contained path from an approved interview to a live page. No quote, guild name or outcome number may be drafted on the guild's behalf.
 - **[Timeline] Sprint window closes Sep 24, 2026.** Phase 6 is calendar-bound to Sep 20 to 24, which leaves Phases 1 through 5 to land by Sep 19.
@@ -155,6 +158,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-07T05:59:08.543Z
-Stopped at: Completed 04-05-PLAN.md (gap closure: G-04-1 proof-strip overflow, G-04-3 doubled unit)
+Last session: 2026-09-07T06:10:09Z
+Stopped at: Phase 4 complete (5/5 plans, UAT 2/2, verification passed, security verified); ready to discuss Phase 5 after deploy
 Resume file: None

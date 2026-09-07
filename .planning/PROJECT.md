@@ -28,6 +28,16 @@ An officer who lands on the site immediately understands the category, trusts ch
 - ✓ Sprint #4: acquisition + activation funnel events, guild_funnel_milestones, four pinned PostHog dashboards (2036463–2036466) — shipped #245–#246
 - ✓ Sprint #9: consistent Zev author identity (Person schema + visible byline) on all 9 blog posts — shipped #247
 
+### Validated (Phase 4)
+
+- ✓ Sprint #12 (template half): case-study template at `/customers/{guild-slug}` with outcome H1, length-aware proof strip, before/after panels, credible-limitation section, one contextual CTA; every visible string byte-matched to the signed-off copy draft; production reachability zero until publish (empty registry, interim noindex, sitemap guard) — Phase 4 (UAT passed 2026-09-06, 18/18 must-haves)
+- ✓ Interview kit (ten verbatim questions plus roster, tier and tenure asks, written-approval checklist) and self-contained publish runbook — Phase 4. The interview itself and the published case study (EVID-05) remain blocked on the user.
+- ✓ Middleware fix: `/research` and `/customers` are public routes with boundary matching (`lib/public-routes.ts`, tested); before this, the Phase 3 report and the case study redirected every logged-out visitor and crawler to the landing page — Phase 4 (quick task 260906-ure)
+
+### Validated (Phase 3)
+
+- ✓ Sprint #11: anonymized product-data report at `/research/wow-classic-loot-systems-2026` with methodology, four published findings, the 10-guild floor on every segment, saved SQL and committed JSON/CSV artifacts, reproducible against the pinned final snapshot — Phase 3 (completed 2026-09-05)
+
 ### Validated (Phase 2)
 
 - ✓ Signup page copy rewrite (sprint #3, second half) — approved copy shipped through metadata, component, cross-domain link, and render test — Phase 2 (UAT passed 2026-09-01)
@@ -40,8 +50,9 @@ An officer who lands on the site immediately understands the category, trusts ch
 
 ### Active
 
-- [ ] Sprint #11: anonymized product-data report at `/research/wow-classic-loot-systems-2026` — methodology, ≥3 findings, ≥10 guilds per published segment, numbers reproducible from saved queries (prod data via Supabase Management API)
-- [ ] Sprint #12: verified guild case study page at `/customers/{guild-slug}` — page template + publish; content blocked on user-conducted interview (questions in plan)
+- [ ] Sprint #12 (publish half): conduct the guild interview from `04-INTERVIEW-KIT.md`, obtain written approval, then follow `04-PUBLISH-RUNBOOK.md` (EVID-05, blocked on user)
+- [ ] Deploy Phases 2 to 4: local `main` is far ahead of `origin/main`; nothing from the sprint is live, and Phase 5's one-time recrawl must wait for that deploy
+- [ ] Harden the case-study publish commit: escape `<` in JSON-LD injection and assert https-only public-profile URLs at registry load (two medium findings in `04-SECURITY.md`)
 - [ ] Sprint #14: contextual internal linking across marketing pages + one-time recrawl requests after everything is final
 - [ ] Sprint #15: week-4 review — cohort comparison vs baseline, CTR/query review, pick the next bet from data
 
@@ -83,6 +94,9 @@ An officer who lands on the site immediately understands the category, trusts ch
 | Blog titles keep indexed-title decision; title mirrors kept in agreement | Preserve existing rankings while sweeping repositioning copy | ✓ Good |
 | Partial cohort shipped labelled, complete window re-pulled on dated follow-up (D-03) | GSC final-data lag must not hold the phase hostage, and missing days are never approximated | ✓ Good (closed 2026-09-03) |
 | Premium Discord role sync verified live in prod; hardening deferred to post-sprint task | Grant+revoke pipeline confirmed working (env vars, webhook, discord_id coverage); gaps are structural: no backfill/reconciliation, comped guilds excluded, fire-and-forget call | — Pending (design awaiting user sign-off) |
+| Proof-strip figures use length-aware sizing (42/32/20px tiers) rather than a value/unit data split | Guild answers are phrases, not numerals; sizing keeps approved copy and the data shape intact with no re-sign-off | ✓ Good (visual re-check 2026-09-06) |
+| Middleware public-route allowlist extended with boundary matching for /research and /customers | Both evidence pages were auth-gated for crawlers; boundary matching keeps lookalikes such as /researchers gated | ✓ Good (tests + live probe) |
+| Case-study CTA analytics namespace accepted as-is (AR-04-01) | Attribution holds through BlogTracker delegation; renaming is analytics cleanup already in the todo list | — Accepted |
 
 ## Evolution
 
@@ -102,4 +116,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-03 after Phase 1*
+*Last updated: 2026-09-06 after Phase 4*
