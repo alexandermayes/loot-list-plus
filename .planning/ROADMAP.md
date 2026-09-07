@@ -188,14 +188,34 @@ Plans:
 **Plans**: 9 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 05-01-PLAN.md — Deploy one: the baseline push that makes the report a live, checkable URL, plus the production probe
 - [ ] 05-02-PLAN.md — The single append-only recrawl log, its writer, the URL Inspection caller, and the runbook pointer
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 05-03-PLAN.md — The one consolidated copy sign-off: every anchor, every connective sentence, the guide subset, the frozen recrawl list
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 05-04-PLAN.md — Contextual report links on the homepage, About, Compare and Pricing, byte-matched to the sign-off
 - [ ] 05-05-PLAN.md — The report's outbound links to Compare and Pricing, and the topic-matched guides linking in
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 05-06-PLAN.md — The committed dates module, the written bump rule, and a sitemap that guesses no dates
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 05-07-PLAN.md — Blog structured-data date parity against the module and the sitemap, across all nine posts
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [ ] 05-08-PLAN.md — Deploy two, the six-check production probe over the frozen list, and Search Console inspection
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
 - [ ] 05-09-PLAN.md — The one-time recrawl: one human request per URL, recorded once, never repeated
 
 ### Phase 6: Week-4 Review & Next Bet
