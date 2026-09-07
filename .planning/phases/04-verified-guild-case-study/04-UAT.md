@@ -3,7 +3,7 @@ status: testing
 phase: 04-verified-guild-case-study
 source: [04-VERIFICATION.md]
 started: 2026-09-06T22:47:53Z
-updated: 2026-09-06T22:47:53Z
+updated: 2026-09-07T04:16:47Z
 ---
 
 ## Current Test
@@ -27,13 +27,35 @@ awaiting: user response
 expected: Layout and hierarchy match 04-UI-SPEC.md's Focal Point, Typography, and Color contracts as judged by eye (the seven checklist items above). This is the D6/D7 coverage item 04-01 and 04-03 could not complete in their sandboxed worktrees because no .env.local was materialized there.
 result: [pending]
 
+### 2. Case-study page reachable while logged out
+expected: A visitor with no LootList+ session (an officer arriving from a search result, or a crawler) who opens /customers/example-guild-fixture under npm run dev, or /customers/{slug} in production once published, receives the page with HTTP 200 rather than a redirect to the landing page.
+result: issue
+reported: "Orchestrator probe during environment setup: local dev server (placeholder Supabase env) answers GET /customers/example-guild-fixture with 307 to /?next=%2Fcustomers%2Fexample-guild-fixture. Production shows the same for the Phase 3 report: https://www.lootlistplus.com/research/wow-classic-loot-systems-2026 returns 307 to /?next=... while /about returns 200."
+severity: blocker
+
 ## Summary
 
-total: 1
+total: 2
 passed: 0
-issues: 0
+issues: 1
 pending: 1
 skipped: 0
 blocked: 0
 
 ## Gaps
+
+- gap_id: G-04-2
+  truth: "A logged-out visitor or crawler receives the case-study page (and the Phase 3 research report) with HTTP 200 instead of a redirect to the landing page"
+  status: failed
+  reason: "Orchestrator probe: proxy.ts redirects unauthenticated requests for /customers/* and /research/* to /?next=<path>; confirmed on production for the live research report"
+  severity: blocker
+  test: 2
+  root_cause: "proxy.ts isPublicRoute allowlist (lines 297 to 304) enumerates public paths explicitly and was never extended for /research (Phase 3) or /customers (Phase 4); every other path falls through to refreshSupabaseSession and the unauthenticated redirect at line 319"
+  artifacts:
+    - path: "proxy.ts"
+      issue: "isPublicRoute lacks pathname.startsWith('/research') and pathname.startsWith('/customers/')"
+  missing:
+    - "Add /research and /customers/ prefixes to isPublicRoute in proxy.ts"
+    - "Add a regression test asserting the public-route predicate admits /research/... and /customers/... and still gates /overview"
+    - "Deploy so the live research report stops redirecting crawlers"
+  debug_session: ""
