@@ -520,6 +520,32 @@ describe('app/customers/[slug]/page.tsx', () => {
       const { container } = await renderFixturePage()
       expect(container.innerHTML).not.toMatch(/truncate|line-clamp/)
     })
+
+    it('the proof-strip subtree specifically carries no nowrap, truncate, clamp, or ellipsis class, the figure count matches the number of defined stats, and every applied size class is one of the three tiers', async () => {
+      const { container } = await renderFixturePage()
+      const firstFigure = container.querySelector('[data-proof-figure]')
+      expect(firstFigure).not.toBeNull()
+      const stripContainer = firstFigure?.closest('.grid')
+      expect(stripContainer).not.toBeNull()
+
+      const figures = stripContainer!.querySelectorAll('[data-proof-figure]')
+      const definedStatCount = Object.values(exampleGuildFixture.proofStrip).filter(
+        (value) => typeof value === 'string' && value.length > 0
+      ).length
+      expect(figures).toHaveLength(definedStatCount)
+
+      // Scoped to the strip subtree, not the whole document, so unrelated
+      // page chrome cannot influence the result.
+      expect(stripContainer!.innerHTML).not.toMatch(/whitespace-nowrap|truncate|line-clamp|text-ellipsis/)
+
+      const SIZE_CLASS_REGEX = /^text-(5xl|4xl|3xl|2xl|xl|lg|md|sm|xs|base)$/
+      const ALLOWED_TIERS = ['text-5xl', 'text-4xl', 'text-2xl']
+      for (const figure of Array.from(figures)) {
+        const sizeClasses = figure.className.split(/\s+/).filter((c) => SIZE_CLASS_REGEX.test(c))
+        expect(sizeClasses).toHaveLength(1)
+        expect(ALLOWED_TIERS).toContain(sizeClasses[0])
+      }
+    })
   })
 
   describe('buildBylineMeta', () => {
