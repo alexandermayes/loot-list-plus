@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
+import { isPublicPathname } from '@/lib/public-routes'
 
 // Check if Upstash credentials are configured
 const hasUpstashConfig = !!(
@@ -294,14 +295,7 @@ export async function proxy(request: NextRequest) {
 
   // Page navigations (not API/auth routes — those have their own auth checks)
   if (!pathname.startsWith('/api') && !pathname.startsWith('/auth')) {
-    const isPublicRoute = ['/', '/login', '/guild-select', '/updates', '/dev-login', '/compare', '/about', '/premium', '/pricing', '/sitemap.xml', '/robots.txt', '/landing'].includes(pathname)
-      || pathname.startsWith('/legal/')
-      || pathname.startsWith('/guild-select/')
-      || pathname.startsWith('/blog')
-      || pathname.startsWith('/changelog')
-      || pathname.startsWith('/terms')
-      || pathname.startsWith('/privacy')
-      || pathname.startsWith('/reserve/')
+    const isPublicRoute = isPublicPathname(pathname)
 
     // Public routes: skip the getUser() call entirely to reduce TTFB.
     // The client-side GuildContext will handle session state independently.
