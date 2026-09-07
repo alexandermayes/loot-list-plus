@@ -9,6 +9,7 @@ import {
   publishedCaseStudies,
   requireCaseStudy,
   CASE_STUDY_SLUG_PATTERN,
+  CASE_STUDY_SIZE_PATTERN,
 } from '@/data/case-studies'
 
 // jsdom implements neither matchMedia nor IntersectionObserver; LandingNav,
@@ -271,6 +272,58 @@ describe('app/customers/[slug]/page.tsx', () => {
       // pattern is applied before any such normalization could occur, so
       // this raw form is rejected outright.
       expect(CASE_STUDY_SLUG_PATTERN.test('examplé-guild')).toBe(false)
+    })
+  })
+
+  describe('CASE_STUDY_SIZE_PATTERN (G-04-3)', () => {
+    it('accepts a bare digit string', () => {
+      expect(CASE_STUDY_SIZE_PATTERN.test('28')).toBe(true)
+    })
+
+    it('rejects a value carrying the unit', () => {
+      expect(CASE_STUDY_SIZE_PATTERN.test('28-player')).toBe(false)
+    })
+
+    it('rejects a value carrying trailing whitespace', () => {
+      expect(CASE_STUDY_SIZE_PATTERN.test('28 ')).toBe(false)
+    })
+
+    it('rejects an empty string', () => {
+      expect(CASE_STUDY_SIZE_PATTERN.test('')).toBe(false)
+    })
+
+    it('rejects a spelled-out number', () => {
+      expect(CASE_STUDY_SIZE_PATTERN.test('twenty-eight')).toBe(false)
+    })
+
+    it('every entry in both registries, plus the fixture, has a size matching CASE_STUDY_SIZE_PATTERN', () => {
+      const allEntries = [...publishedCaseStudies, exampleGuildFixture]
+      expect(allEntries.length).toBeGreaterThan(0)
+      for (const entry of allEntries) {
+        expect(CASE_STUDY_SIZE_PATTERN.test(entry.size)).toBe(true)
+      }
+    })
+  })
+
+  describe('The proof-strip size token renders its unit exactly once (G-04-3)', () => {
+    it('the resolved lead paragraph contains the hyphenated unit followed by a space exactly once, and the page text never contains the doubled unit', async () => {
+      const { container } = await renderFixturePage()
+      const leadEl = Array.from(container.querySelectorAll('p')).find(
+        (p) => p.textContent === EXPECTED_LEAD
+      )
+      expect(leadEl).toBeDefined()
+      const leadText = leadEl?.textContent ?? ''
+      const occurrences = leadText.match(/-player /g) ?? []
+      expect(occurrences).toHaveLength(1)
+      expect(container.textContent).not.toContain('-player-player')
+    })
+
+    it('the description from generateMetadata contains the hyphenated unit followed by a space exactly once, and never contains the doubled unit', async () => {
+      const metadata = await generateMetadata({ params: Promise.resolve({ slug: FIXTURE_SLUG }) })
+      const description = metadata.description ?? ''
+      const occurrences = description.match(/-player /g) ?? []
+      expect(occurrences).toHaveLength(1)
+      expect(description).not.toContain('-player-player')
     })
   })
 

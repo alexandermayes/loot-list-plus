@@ -9,6 +9,13 @@ import { exampleGuildFixture } from './example-guild-fixture'
 // percent-decoding ambiguity possible.
 export const CASE_STUDY_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
+// Every registered entry's size must be a bare digit-only count. The
+// approved lead and meta-description templates append the "-player" unit
+// after the token themselves (app/customers/[slug]/page.tsx), so a value
+// that already carries its own unit renders a doubled unit. See the doc
+// comment on CaseStudy.size in data/case-studies/types.ts.
+export const CASE_STUDY_SIZE_PATTERN = /^[0-9]+$/
+
 // The published registry stays empty until the interview clears (D-06).
 // Adding the first entry, once a guild's written approval is on file, is
 // the publish plan's job, not this plan's. A production build with an empty
@@ -37,6 +44,11 @@ const fixtureCaseStudies: CaseStudy[] = [exampleGuildFixture]
 for (const entry of [...publishedCaseStudies, ...fixtureCaseStudies]) {
   if (!CASE_STUDY_SLUG_PATTERN.test(entry.slug)) {
     throw new Error(`Case-study slug "${entry.slug}" does not match CASE_STUDY_SLUG_PATTERN`)
+  }
+  if (!CASE_STUDY_SIZE_PATTERN.test(entry.size)) {
+    throw new Error(
+      `Case-study size "${entry.size}" for slug "${entry.slug}" does not match CASE_STUDY_SIZE_PATTERN`
+    )
   }
 }
 

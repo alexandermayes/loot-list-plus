@@ -45,6 +45,14 @@ export interface CaseStudy {
   title: CaseStudyTitle
   proofStrip: CaseStudyProofStrip
   guild: string
+  /**
+   * Bare roster count, digits only. The approved lead and meta-description
+   * templates in app/customers/[slug]/page.tsx already append the
+   * "-player" unit after this token, so a value that already carries its
+   * own unit renders a doubled unit (for example "28-player-player").
+   * CASE_STUDY_SIZE_PATTERN in data/case-studies/index.ts enforces this at
+   * module load.
+   */
   size: string
   expansionTier: string
   oldProcess: string

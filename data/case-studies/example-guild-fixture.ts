@@ -27,7 +27,7 @@ export const exampleGuildFixture: CaseStudy = {
     monthsUsing: '5 months using LootList+',
   },
   guild: 'Example Guild (Fixture)',
-  size: '28-player',
+  size: '28',
   expansionTier: 'Cataclysm Classic Tier 11',
   oldProcess: 'a shared spreadsheet with manually typed loot council notes',
   oldProcessCost: 'about six hours a week of officer time reconciling who was owed what',
