@@ -152,7 +152,7 @@ Plans:
   4. The page shows how the story was verified (public profile link where permitted, otherwise a verified-customer note) and claims no outcome the interview did not support
 
 **Checkpoint (user action required)**: EVID-05 is blocked on the user conducting the guild interview (the plan's ten questions, including question ten on public linking) and obtaining quote approval. EVID-04, the template, can ship without it. If the interview has not happened when this phase runs, ship the template, leave the case study unpublished, and record the block in STATE.md. Do not draft or infer customer quotes, guild names, or outcome numbers.
-**Plans:** 4/4 plans executed
+**Plans:** 5 plans (4 executed, 1 gap closure pending)
 **UI hint**: yes
 
 Plans:
@@ -168,6 +168,10 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [x] 04-04-PLAN.md - Self-contained publish runbook and the honest EVID-05 blocked record
+
+**Wave 4** *(gap closure from UAT, blocked on Wave 2 completion)*
+
+- [ ] 04-05-PLAN.md - Gap closure for G-04-1 and G-04-3: length-aware proof-strip figure sizing with a card overflow backstop, and a bare-count size token validated at module load
 
 ### Phase 5: Internal Authority & Recrawl
 
