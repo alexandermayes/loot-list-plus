@@ -29,15 +29,15 @@ result: [pending]
 
 ### 2. Case-study page reachable while logged out
 expected: A visitor with no LootList+ session (an officer arriving from a search result, or a crawler) who opens /customers/example-guild-fixture under npm run dev, or /customers/{slug} in production once published, receives the page with HTTP 200 rather than a redirect to the landing page.
-result: issue
+result: pass
 reported: "Orchestrator probe during environment setup: local dev server (placeholder Supabase env) answers GET /customers/example-guild-fixture with 307 to /?next=%2Fcustomers%2Fexample-guild-fixture. Production shows the same for the Phase 3 report: https://www.lootlistplus.com/research/wow-classic-loot-systems-2026 returns 307 to /?next=... while /about returns 200."
-severity: blocker
+note: "Fixed in quick-260906-ure, commit e16de7e: lib/public-routes.ts adds a tested isPublicPathname predicate that admits /research and /customers, with regression coverage in lib/__tests__/public-routes.test.ts."
 
 ## Summary
 
 total: 2
-passed: 0
-issues: 1
+passed: 1
+issues: 0
 pending: 1
 skipped: 0
 blocked: 0
@@ -46,7 +46,9 @@ blocked: 0
 
 - gap_id: G-04-2
   truth: "A logged-out visitor or crawler receives the case-study page (and the Phase 3 research report) with HTTP 200 instead of a redirect to the landing page"
-  status: failed
+  status: resolved
+  resolved_by: quick-260906-ure
+  resolved_at: 2026-09-06
   reason: "Orchestrator probe: proxy.ts redirects unauthenticated requests for /customers/* and /research/* to /?next=<path>; confirmed on production for the live research report"
   severity: blocker
   test: 2
