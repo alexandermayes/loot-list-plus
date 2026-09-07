@@ -4,10 +4,10 @@ current_phase: 04
 current_phase_name: Verified Guild Case Study
 status: executing
 stopped_at: "Phase 04: all 4 plans done, VERIFICATION human_needed (1 UAT item: visual review of fixture page); awaiting /gsd-verify-work 04"
-last_updated: "2026-09-06T22:47:54.101Z"
+last_updated: "2026-09-07T05:18:51.806Z"
 last_activity: 2026-09-06
 last_activity_desc: Phase 04 execution started
-state_head: baaeba09749e0044a8fb9ec01d70538b83b0e3aa
+state_head: 27406b55250a5d41e7c6a9703e504576e1d026d4
 progress:
   total_phases: 6
   completed_phases: 3
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-03)
 Phase: 04 (Verified Guild Case Study) — EXECUTING
 Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-09-06 — Phase 04 execution started
+Last activity: 2026-09-06 - Completed quick task 260906-ure: /research and /customers made public in middleware (closes G-04-2)
 
 Progress: [████████████████████] 12/12 plans ([█████░░░░░] 50%) — Phases 1-2 of 6 complete
 
@@ -140,6 +140,7 @@ Recent decisions affecting current work:
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260901-hkj | Harden premium Discord role sync: await webhook role call, discordFetch retry, multi-guild revoke guard, daily reconciliation cron with backfill | 2026-09-01 | 1c13170 | [260901-hkj-harden-the-premium-discord-role-sync-awa](./quick/260901-hkj-harden-the-premium-discord-role-sync-awa/) |
+| 2 | Make /research and /customers public routes in proxy.ts (crawlers and logged-out visitors got 307 to /?next=); predicate extracted to lib/public-routes.ts with regression tests; closes UAT gap G-04-2 | 2026-09-07 | 27406b5 | — |
 
 ## Deferred Items
 
