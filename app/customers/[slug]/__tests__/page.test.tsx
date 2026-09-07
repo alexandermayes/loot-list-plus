@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { describe, it, expect, vi, beforeAll, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import CaseStudyPage, { generateMetadata, generateStaticParams, Eyebrow } from '../page'
-import { ProofStrip, NarrativePanels, buildBylineMeta } from '../sections'
+import { ProofStrip, NarrativePanels, buildBylineMeta, proofFigureSizeClass } from '../sections'
 import { exampleGuildFixture } from '@/data/case-studies/example-guild-fixture'
 import {
   publishedCaseStudies,
@@ -274,6 +274,50 @@ describe('app/customers/[slug]/page.tsx', () => {
     })
   })
 
+  describe('proofFigureSizeClass (G-04-1)', () => {
+    const shortNumeralLed: Array<[string, string]> = [
+      ['28', 'a bare roster count'],
+      ['5', 'a single digit'],
+      ['45 min', 'a short numeral-led figure with a unit word'],
+      ['12345678', 'the eight-character all-digit boundary'],
+    ]
+    for (const [input, description] of shortNumeralLed) {
+      it(`returns the 42px class for ${description} ("${input}")`, () => {
+        expect(proofFigureSizeClass(input)).toBe('text-5xl')
+      })
+    }
+
+    const middleTier: Array<[string, string]> = [
+      ['28 raiders', 'a short numeral-led phrase, not digit-led-and-short'],
+      ['Tier 11', 'a short but not numeral-led figure'],
+      ['123456789', 'the nine-character boundary case'],
+    ]
+    for (const [input, description] of middleTier) {
+      it(`returns the 32px class for ${description} ("${input}")`, () => {
+        expect(proofFigureSizeClass(input)).toBe('text-4xl')
+      })
+    }
+
+    const longTier: Array<[string, string]> = [
+      ['Cataclysm Classic, Tier 11', 'an expansion and tier phrase'],
+      ['6 hours to 45 minutes a week', 'a long numeral-led admin-time phrase'],
+      ['5 months using LootList+', 'a long numeral-led tenure phrase'],
+    ]
+    for (const [input, description] of longTier) {
+      it(`returns the 20px class for ${description} ("${input}")`, () => {
+        expect(proofFigureSizeClass(input)).toBe('text-2xl')
+      })
+    }
+
+    it('returns the 20px class for a short-but-unbreakable single word longer than nine characters, proving the longest-word rule applies, not only total length', () => {
+      expect(proofFigureSizeClass('Bloodthirsty')).toBe('text-2xl')
+    })
+
+    it('ignores surrounding whitespace, so a padded copy of a short figure resolves to the same class as its trimmed form', () => {
+      expect(proofFigureSizeClass('  28  ')).toBe(proofFigureSizeClass('28'))
+    })
+  })
+
   describe('ProofStrip (T-04-13 omit rule)', () => {
     // Test-local caption strings, not the approved copy: ProofStrip is
     // tested here as a generic presentational component, independent of
@@ -288,7 +332,7 @@ describe('app/customers/[slug]/page.tsx', () => {
 
     it('renders exactly four blocks, in the contract order, when all four stats are present', () => {
       const { container } = render(<ProofStrip stats={exampleGuildFixture.proofStrip} captions={captions} />)
-      const figures = container.querySelectorAll('.text-5xl')
+      const figures = container.querySelectorAll('[data-proof-figure]')
       expect(figures).toHaveLength(4)
       expect(Array.from(figures).map((el) => el.textContent)).toEqual([
         exampleGuildFixture.proofStrip.rosterSize,
@@ -298,20 +342,50 @@ describe('app/customers/[slug]/page.tsx', () => {
       ])
     })
 
-    it('each figure element carries the 42px size token and the accent colour token, and each block carries its caption', () => {
+    it("each figure element's class list is exactly the class proofFigureSizeClass returns for its own text, plus the bold and accent tokens, and each block carries its caption", () => {
       const { container } = render(<ProofStrip stats={exampleGuildFixture.proofStrip} captions={captions} />)
-      const figure = container.querySelector('.text-5xl')
-      expect(figure).not.toBeNull()
-      expect(figure?.className).toContain('text-5xl')
-      expect(figure?.className).toContain('text-accent')
+      const figures = container.querySelectorAll('[data-proof-figure]')
+      expect(figures).toHaveLength(4)
+      for (const figure of Array.from(figures)) {
+        const expectedSize = proofFigureSizeClass(figure.textContent ?? '')
+        expect(figure.className).toContain(expectedSize)
+        expect(figure.className).toContain('font-bold')
+        expect(figure.className).toContain('text-accent')
+      }
       expect(container.textContent).toContain(captions.roster)
       expect(container.textContent).toContain(captions.tenure)
+    })
+
+    it('renders four figures all carrying the 42px class when every stat is a short numeral-led value, proving the focal size still exists after the step-down rule lands', () => {
+      const stats = {
+        rosterSize: '28',
+        expansionTier: '5',
+        adminTimeDelta: '45 min',
+        monthsUsing: '12345678',
+      }
+      const { container } = render(<ProofStrip stats={stats} captions={captions} />)
+      const figures = container.querySelectorAll('[data-proof-figure]')
+      expect(figures).toHaveLength(4)
+      for (const figure of Array.from(figures)) {
+        expect(figure.className).toContain('text-5xl')
+      }
+    })
+
+    it('every card shrinks below its content and wraps long words, with no nowrap, truncate, clamp, or ellipsis class on any figure or card', () => {
+      const { container } = render(<ProofStrip stats={exampleGuildFixture.proofStrip} captions={captions} />)
+      const cards = container.querySelectorAll(':scope > div > div')
+      expect(cards.length).toBeGreaterThan(0)
+      for (const card of Array.from(cards)) {
+        expect(card.className).toContain('min-w-0')
+        expect(card.className).toContain('break-words')
+      }
+      expect(container.innerHTML).not.toMatch(/whitespace-nowrap|truncate|line-clamp|text-ellipsis/)
     })
 
     it('omits the tenure block cleanly when its figure is absent, with no not-applicable marker, dash, ellipsis, or empty block', () => {
       const stats = { ...exampleGuildFixture.proofStrip, monthsUsing: undefined }
       const { container } = render(<ProofStrip stats={stats} captions={captions} />)
-      const figures = container.querySelectorAll('.text-5xl')
+      const figures = container.querySelectorAll('[data-proof-figure]')
       expect(figures).toHaveLength(3)
       expect(container.textContent).not.toContain('N/A')
       expect(container.textContent).not.toContain('n/a')
@@ -326,12 +400,20 @@ describe('app/customers/[slug]/page.tsx', () => {
     it('omits the roster block cleanly when its figure is absent, proving the omit rule is positional-independent', () => {
       const stats = { ...exampleGuildFixture.proofStrip, rosterSize: undefined }
       const { container } = render(<ProofStrip stats={stats} captions={captions} />)
-      const figures = container.querySelectorAll('.text-5xl')
+      const figures = container.querySelectorAll('[data-proof-figure]')
       expect(figures).toHaveLength(3)
       expect(container.textContent).not.toContain(captions.roster)
       for (const figure of figures) {
         expect(figure.textContent?.trim()).not.toBe('')
       }
+    })
+
+    it('the container carries the two-column base class, the lg four-column variant, and no md four-column variant', () => {
+      const { container } = render(<ProofStrip stats={exampleGuildFixture.proofStrip} captions={captions} />)
+      const grid = container.firstElementChild
+      expect(grid?.className).toContain('grid-cols-2')
+      expect(grid?.className).toContain('lg:grid-cols-4')
+      expect(grid?.className).not.toContain('md:grid-cols-4')
     })
 
     it('the container carries the mobile gap-4 and desktop gap-6 spacing tokens, with no clipping utility class inside it', () => {
@@ -369,7 +451,7 @@ describe('app/customers/[slug]/page.tsx', () => {
   describe('Full page: proof strip and narrative panels wired in', () => {
     it('renders the four-block proof strip and both narrative panels, and the page still has exactly one H1 matching the Article headline', async () => {
       const { container } = await renderFixturePage()
-      const figures = container.querySelectorAll('.text-5xl')
+      const figures = container.querySelectorAll('[data-proof-figure]')
       expect(figures).toHaveLength(4)
 
       const panelHeadings = Array.from(container.querySelectorAll('.text-2xl.font-bold')).map((el) => el.textContent)
