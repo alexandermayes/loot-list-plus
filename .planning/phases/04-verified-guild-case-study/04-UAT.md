@@ -3,7 +3,7 @@ status: complete
 phase: 04-verified-guild-case-study
 source: [04-VERIFICATION.md]
 started: 2026-09-06T22:47:53Z
-updated: 2026-09-07T05:27:24Z
+updated: 2026-09-07T06:00:49Z
 ---
 
 ## Current Test
@@ -14,9 +14,9 @@ updated: 2026-09-07T05:27:24Z
 
 ### 1. Visual review of the rendered case-study template at /customers/example-guild-fixture
 expected: Layout and hierarchy match 04-UI-SPEC.md's Focal Point, Typography, and Color contracts as judged by eye (the seven checklist items above). This is the D6/D7 coverage item 04-01 and 04-03 could not complete in their sandboxed worktrees because no .env.local was materialized there.
-result: issue
+result: pass
 reported: "Visual pass (orchestrator in Chrome at 1710px, plus the user screenshot): items 1, 3, 4, 5 and 6 hold, the H1 wraps at one 32px size, no horizontal scroll at desktop. Item 1 is undermined and the strip is visibly broken: every proof-strip figure overflows its card at 42px (measured clientWidth 142 vs scrollWidth 155 to 238); Cataclysm Classic, Tier 11 is clipped to Cataclys and 6 hours to 45 minutes a week spills over the card edge. Separately the lead reads a 28-player-player Cataclysm Classic Tier 11 guild. Mobile could not be captured (window would not shrink); the same 2-column strip math applies there."
-severity: blocker
+note: "Re-checked after gap plan 04-05 (commits 6d9eb76, 20cf110, 9bf3e98) in Chrome at 1543px: all four figures fit their cards (scrollWidth equals clientWidth), sizes 32/20/20/20px, no horizontal scroll, lead reads a 28-player Cataclysm Classic Tier 11 guild. Screenshot saved for the user."
 
 ### 2. Case-study page reachable while logged out
 expected: A visitor with no LootList+ session (an officer arriving from a search result, or a crawler) who opens /customers/example-guild-fixture under npm run dev, or /customers/{slug} in production once published, receives the page with HTTP 200 rather than a redirect to the landing page.
@@ -27,8 +27,8 @@ note: "Fixed in quick-260906-ure, commit e16de7e: lib/public-routes.ts adds a te
 ## Summary
 
 total: 2
-passed: 1
-issues: 1
+passed: 2
+issues: 0
 pending: 0
 skipped: 0
 blocked: 0
@@ -55,7 +55,9 @@ blocked: 0
 
 - gap_id: G-04-1
   truth: "The four proof-strip figures are the most visually dominant element below the H1 and every figure fits inside its card at every width"
-  status: failed
+  status: resolved
+  resolved_by: 04-05-PLAN.md
+  resolved_at: 2026-09-06
   reason: "User reported: proof-strip figures overflow and clip their cards (Cataclysm Classic, Tier 11 clipped to Cataclys; 6 hours to 45 minutes a week spills past the card edge); confirmed by measurement, all four figures have scrollWidth greater than clientWidth"
   severity: blocker
   test: 1
@@ -72,7 +74,9 @@ blocked: 0
   debug_session: ""
 - gap_id: G-04-3
   truth: "The lead paragraph reads 'a 28-player Cataclysm Classic Tier 11 guild', with the size token resolving to a bare count"
-  status: failed
+  status: resolved
+  resolved_by: 04-05-PLAN.md
+  resolved_at: 2026-09-06
   reason: "User reported: lead renders 'a 28-player-player Cataclysm Classic Tier 11 guild'"
   severity: major
   test: 1
