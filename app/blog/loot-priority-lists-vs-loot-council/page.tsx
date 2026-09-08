@@ -192,6 +192,13 @@ export default function BlogPost() {
               same: raiders declare what they want in advance, and the system
               resolves conflicts automatically.
             </p>
+            <p>
+              Across our data,{' '}
+              <a href="/research/wow-classic-loot-systems-2026">
+                the median loot list runs 18 items long
+              </a>
+              .
+            </p>
 
             <h3>Loot council</h3>
             <p>
