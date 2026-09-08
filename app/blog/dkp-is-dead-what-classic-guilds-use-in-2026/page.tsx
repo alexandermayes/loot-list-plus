@@ -46,7 +46,7 @@ const jsonLd = {
   description:
     'DKP had its time, but Classic guilds in 2026 have moved on. Here\'s what replaced it, why, and what the best guilds are running today.',
   datePublished: '2026-04-02T00:00:00Z',
-  dateModified: '2026-04-02T00:00:00Z',
+  dateModified: '2026-09-08T00:00:00Z',
   author: {
     '@type': 'Person',
     '@id': 'https://www.getlootlist.com/about#creator',

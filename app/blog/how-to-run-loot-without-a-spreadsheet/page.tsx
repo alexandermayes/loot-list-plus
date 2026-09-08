@@ -46,7 +46,7 @@ const jsonLd = {
   description:
     'Spreadsheets were the default for Classic loot tracking, but they break at scale. Here\'s how to run a clean loot system without one.',
   datePublished: '2026-05-07T00:00:00Z',
-  dateModified: '2026-05-07T00:00:00Z',
+  dateModified: '2026-09-08T00:00:00Z',
   author: {
     '@type': 'Person',
     '@id': 'https://www.getlootlist.com/about#creator',

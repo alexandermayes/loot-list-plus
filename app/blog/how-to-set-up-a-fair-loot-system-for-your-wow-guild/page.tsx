@@ -43,7 +43,7 @@ const jsonLd = {
   description:
     'Compare DKP, EPGP, Loot Council, and Suicide Kings. Learn what makes a loot system fair and how to set one up for your World of Warcraft guild.',
   datePublished: '2026-03-23T00:00:00Z',
-  dateModified: '2026-03-23T00:00:00Z',
+  dateModified: '2026-09-08T00:00:00Z',
   author: {
     '@type': 'Person',
     '@id': 'https://www.getlootlist.com/about#creator',

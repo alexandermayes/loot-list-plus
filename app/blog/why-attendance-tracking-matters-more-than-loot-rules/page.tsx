@@ -44,7 +44,7 @@ const jsonLd = {
   description:
     'Your loot system is only as good as your attendance data. Learn why tracking attendance consistently is the single most important thing a WoW guild can do for fair loot.',
   datePublished: '2026-03-26T00:00:00Z',
-  dateModified: '2026-03-26T00:00:00Z',
+  dateModified: '2026-09-08T00:00:00Z',
   author: {
     '@type': 'Person',
     '@id': 'https://www.getlootlist.com/about#creator',
