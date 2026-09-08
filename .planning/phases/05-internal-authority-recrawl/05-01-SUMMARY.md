@@ -145,3 +145,11 @@ None - no external service configuration required.
 ---
 *Phase: 05-internal-authority-recrawl*
 *Completed: 2026-09-08*
+
+## Self-Check: PASSED
+
+- FOUND: scripts/analytics/probe-recrawl-urls.py
+- FOUND: scripts/analytics/test_probe_recrawl_urls.py
+- FOUND: .planning/phases/05-internal-authority-recrawl/05-01-SUMMARY.md
+- FOUND commit: 40f92ec (feat(05-01): add stdlib-only production recrawl-readiness probe)
+- FOUND commit: c86d55a (docs(05-01): complete deploy-one and probe plan)

@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 05
 current_phase_name: Internal Authority & Recrawl
 status: executing
-stopped_at: Phase 5 context gathered
-last_updated: "2026-09-08T00:06:19.186Z"
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-09-08T00:28:13.222Z"
 last_activity: 2026-09-07
 last_activity_desc: Phase 05 execution started
-state_head: 5e6da2c6fd9a2db3d25b8b4b7ca09f5267f85764
+state_head: c86d55a7e86760de485050010fde63ca509732e9
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 32
-  completed_plans: 23
+  completed_plans: 24
   percent: 67
 ---
 
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 ## Current Position
 
 Phase: 05 (Internal Authority & Recrawl) — EXECUTING
-Plan: 1 of 9
-Status: Executing Phase 05
+Plan: 2 of 9
+Status: Ready to execute
 Last activity: 2026-09-07 — Phase 05 execution started
 
-Progress: [████████████████████] 23/23 plans (100%)
+Progress: [████████████████████] 23/23 plans ([███████░░░] 67%)
 
 ## Performance Metrics
 
@@ -76,6 +76,7 @@ Progress: [████████████████████] 23/23 p
 | Phase 04 P03 | 40min | 2 tasks | 3 files |
 | Phase 04 P04 | 17min | 2 tasks | 4 files |
 | Phase 04 P05 | 15min | 3 tasks | 5 files |
+| Phase 05 P01 | 35min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -115,6 +116,7 @@ Recent decisions affecting current work:
 - [Phase 04]: EVID-05 blocker record honestly updated, not resolved: STATE.md and REQUIREMENTS.md now name the interview kit and the publish runbook as the two artifacts that unblock EVID-05, while the checkbox and traceability row stay unchecked/Blocked.
 - [Phase 04]: [Phase 04, plan 05] Proof-strip figure sizing kept on the four already-locked pixel values (42/32/20), not a new fifth size, closing G-04-1 without expanding the type scale — Nearest locked-scale values to the plan's suggested ~28/~22px; staying on-scale avoids introducing an untested fifth type size for a two-gap fix
 - [Phase 04]: [Phase 04, plan 05] Fixture size corrected to bare '28' rather than splitting CaseStudy.proofStrip into value+unit fields, closing G-04-3's doubled-unit defect at the data layer with a module-load guard (CASE_STUDY_SIZE_PATTERN) — Templates already append the unit; the data-shape change was explicitly out of scope per the recorded user decision
+- [Phase 05]: push-now: pushed 99 pending commits to origin/main as the phase's baseline deploy (D-13); npm run lint's pre-existing config-resolution error confirmed via npm ci and treated as non-blocking per RESEARCH.md Pitfall 6 — Unblocks the entire phase per the plan's checkpoint:decision; the probe script is ready and no Search Console request was made
 
 ### Pending Todos
 
@@ -158,6 +160,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-07T20:35:35.376Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-internal-authority-recrawl/05-CONTEXT.md
+Last session: 2026-09-08T00:28:12.415Z
+Stopped at: Completed 05-01-PLAN.md
+Resume file: None
