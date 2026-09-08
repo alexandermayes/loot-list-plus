@@ -53,11 +53,7 @@ Phase 5 (ROADMAP.md LINK-01/LINK-02) will already have run its own contextual-li
 
 Submit a Search Console URL Inspection recrawl request exactly once for the new case-study URL, and exactly once for each page whose links changed in step four. Do not submit a request more than once for the same URL under any circumstance: repeat requests do not accelerate indexing, and the one-request-per-URL discipline (ROADMAP.md LINK-02) is not a courtesy, it is the rule this whole runbook is built to satisfy without exception.
 
-Record every submitted URL and the date it was submitted in the table below before this step is considered complete, so that nobody reading this runbook after the fact mistakes an already-submitted URL for one still needing a request.
-
-| URL | Submitted (date) |
-|-----|-------------------|
-| _(fill in at publish time)_ | |
+This file does not track submitted URLs. `scripts/analytics/RECRAWL-LOG.md` is the single append-only record, shared with Phase 5's own link sweep, and it is the only place to check. Before submitting a URL, run `python3 scripts/analytics/log-recrawl.py --check <url>` to confirm it has not already been requested. Immediately after each submission, append the requested event to the log with `python3 scripts/analytics/log-recrawl.py --url <url> --deploy-sha <sha> --deploy-build-id <build-id> --probe-result <result> --inspection-result <result> --request-date <date> --requester <name>`, so a later reader has exactly one place to look rather than two records that can disagree.
 
 ## Step 6: The Record
 
