@@ -141,14 +141,28 @@ def summarize(result):
 
 
 def load_url_list(path):
-    """Read one URL per line; blank lines and lines beginning with # are ignored."""
-    urls = []
+    """Read a URL list, accepting two file shapes.
+
+    One URL per line (blank lines and lines beginning with # ignored), or a
+    JSON array of target objects shaped like
+    scripts/analytics/recrawl-targets.json ({"url": ..., ...} per entry, in
+    file order). The JSON shape is detected by the file's first
+    non-whitespace character being "[", so the same targets file that
+    freezes the recrawl list can be passed straight to --url-list here too.
+    """
     with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            urls.append(line)
+        raw = f.read()
+
+    if raw.lstrip().startswith("["):
+        entries = json.loads(raw)
+        return [entry["url"] for entry in entries]
+
+    urls = []
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        urls.append(line)
     return urls
 
 

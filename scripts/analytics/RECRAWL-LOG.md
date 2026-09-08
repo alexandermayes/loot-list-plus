@@ -24,3 +24,14 @@ this file exists. Only `scripts/analytics/log-recrawl.py` writes to it.
 
 | url | deploy_sha | deploy_build_id | probe_result | inspection_result | request_date | requester |
 |-----|------------|------------------|--------------|--------------------|--------------|-----------|
+| https://www.getlootlist.com | ded23d70 | dpl_E5T45BTuDDrSZSDZrYv4oH6XkQLX | pass (6/6 checks, 2 runs identical) | NEUTRAL, INDEXING_ALLOWED, SUCCESSFUL |  |  |
+| https://www.getlootlist.com/compare | ded23d70 | dpl_E5T45BTuDDrSZSDZrYv4oH6XkQLX | pass (6/6 checks, 2 runs identical) | NEUTRAL, INDEXING_ALLOWED, SUCCESSFUL |  |  |
+| https://www.getlootlist.com/pricing | ded23d70 | dpl_E5T45BTuDDrSZSDZrYv4oH6XkQLX | pass (6/6 checks, 2 runs identical) | NEUTRAL, no crawl history yet |  |  |
+| https://www.getlootlist.com/about | ded23d70 | dpl_E5T45BTuDDrSZSDZrYv4oH6XkQLX | pass (6/6 checks, 2 runs identical) | NEUTRAL, INDEXING_ALLOWED, SUCCESSFUL |  |  |
+| https://www.getlootlist.com/research/wow-classic-loot-systems-2026 | ded23d70 | dpl_E5T45BTuDDrSZSDZrYv4oH6XkQLX | pass (6/6 checks, 2 runs identical) | NEUTRAL, no crawl history yet |  |  |
+| https://www.getlootlist.com/blog/loot-priority-lists-vs-loot-council | ded23d70 | dpl_E5T45BTuDDrSZSDZrYv4oH6XkQLX | pass (6/6 checks, 2 runs identical) | NEUTRAL, no crawl history yet |  |  |
+| https://www.getlootlist.com/blog/dkp-is-dead-what-classic-guilds-use-in-2026 | ded23d70 | dpl_E5T45BTuDDrSZSDZrYv4oH6XkQLX | pass (6/6 checks, 2 runs identical) | NEUTRAL, INDEXING_ALLOWED, SUCCESSFUL |  |  |
+| https://www.getlootlist.com/blog/how-to-handle-loot-drama-without-losing-raiders | ded23d70 | dpl_E5T45BTuDDrSZSDZrYv4oH6XkQLX | pass (6/6 checks, 2 runs identical) | NEUTRAL, INDEXING_ALLOWED, SUCCESSFUL |  |  |
+| https://www.getlootlist.com/blog/how-to-run-loot-without-a-spreadsheet | ded23d70 | dpl_E5T45BTuDDrSZSDZrYv4oH6XkQLX | pass (6/6 checks, 2 runs identical) | NEUTRAL, INDEXING_ALLOWED, SUCCESSFUL |  |  |
+| https://www.getlootlist.com/blog/why-attendance-tracking-matters-more-than-loot-rules | ded23d70 | dpl_E5T45BTuDDrSZSDZrYv4oH6XkQLX | pass (6/6 checks, 2 runs identical) | NEUTRAL, INDEXING_ALLOWED, SUCCESSFUL |  |  |
+| https://www.getlootlist.com/blog/how-to-set-up-a-fair-loot-system-for-your-wow-guild | ded23d70 | dpl_E5T45BTuDDrSZSDZrYv4oH6XkQLX | pass (6/6 checks, 2 runs identical) | NEUTRAL, INDEXING_ALLOWED, SUCCESSFUL |  |  |
