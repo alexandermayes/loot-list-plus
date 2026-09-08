@@ -1,4 +1,4 @@
-STATUS: DRAFT
+STATUS: APPROVED
 
 # Phase 5 Copy Draft: Internal Authority Links
 
@@ -7,6 +7,10 @@ STATUS: DRAFT
 Figure-bearing anchors are checked against `public/research/wow-classic-loot-systems-2026-aggregates.json`. Each such row names the `metric_id` it restates and the aggregate's own `label`, so a wording change that outruns the data is visible here rather than three plans later.
 
 No em dash appears anywhere in this file. All `APPROVED-STRING` values use straight apostrophes and straight quotes only.
+
+SIGN-OFF: APPROVED 2026-09-08
+
+**Sign-off:** received via the orchestrator's checkpoint on 2026-09-08, reply `edit-rows`. Two rows were reworded to fix a duplicated word (Link 7: "the median loot list runs 18 items long", dropping the doubled "our data"; Link 9: "45.5% turn on bad-luck protection for exactly this reason", dropping the doubled "active guilds"). Every other row (1, 2, 3, 4, 5, 6, 8, 10, 11, 12) is approved byte-for-byte as drafted. All four open questions below are answered in this reply: the attendance-anchor rewording is confirmed, the officer-burnout guide stays no-link, the homepage slot is the subhead, and the reused-metric distribution is accepted as drafted with no redistribution.
 
 ---
 
@@ -97,9 +101,9 @@ Each entry shows the page, the file, the sentence immediately before the new sen
 - **File:** `app/blog/loot-priority-lists-vs-loot-council/page.tsx`
 - **Slot:** end of the "Priority lists" `<h3>` section (lines 181-188), before the "Loot council" `<h3>` begins.
 - **Sentence before:** "Some guilds add brackets, point costs, or caps to prevent one person from vacuuming up every drop. But the core idea is the same: raiders declare what they want in advance, and the system resolves conflicts automatically."
-- **Sentence carrying the link:** "Across our data, **the median loot list in our data runs 18 items long**."
+- **Sentence carrying the link:** "Across our data, **the median loot list runs 18 items long**."
 - **Sentence after:** the "Loot council" heading follows; no prose sentence directly after.
-- **Anchor text:** `the median loot list in our data runs 18 items long`
+- **Anchor text:** `the median loot list runs 18 items long`
 - **Target:** `/research/wow-classic-loot-systems-2026`
 - **Metric ID:** `median-list-length`
 - **Case-study slot note:** a case-study link could sit in the "Which One Should Your Guild Use?" section as a real example of a guild that switched to priority lists.
@@ -123,9 +127,9 @@ Each entry shows the page, the file, the sentence immediately before the new sen
 - **File:** `app/blog/how-to-handle-loot-drama-without-losing-raiders/page.tsx`
 - **Slot:** end of the "Show the data" `<h3>` section (lines 332-341).
 - **Sentence before:** "If your system is transparent, the data is your best argument. Pull up the score comparison. Show both candidates' rankings, attendance, and modifiers. Walk through why the system produced this outcome. Most raiders accept the result once they understand how it was calculated. The ones who don't are usually arguing with the rules, not the outcome, and that's a conversation you can have between tiers."
-- **Sentence carrying the link:** "Across active guilds, **45.5% of active guilds turn on bad-luck protection for exactly this reason**."
+- **Sentence carrying the link:** "Across active guilds, **45.5% turn on bad-luck protection for exactly this reason**."
 - **Sentence after:** the "Building a Drama-Resistant System" `<h2>` follows; no prose sentence directly after.
-- **Anchor text:** `45.5% of active guilds turn on bad-luck protection for exactly this reason`
+- **Anchor text:** `45.5% turn on bad-luck protection for exactly this reason`
 - **Target:** `/research/wow-classic-loot-systems-2026`
 - **Metric ID:** `blp-usage`
 - **Case-study slot note:** a case-study link could sit in "Building a Drama-Resistant System" as a real example of a guild whose drama dropped.
@@ -179,9 +183,9 @@ APPROVED-STRING: pricing.link-1 = the median loot list runs 18 items long
 APPROVED-STRING: about.link-1 = 29.5% of awarded items went to a top-priority-bracket pick
 APPROVED-STRING: report.link-1 = how LootList+ compares to TMB, DKP, EPGP and loot council
 APPROVED-STRING: report.link-2 = the free core plan and Premium pricing
-APPROVED-STRING: blog-loot-priority-lists-vs-loot-council.link-1 = the median loot list in our data runs 18 items long
+APPROVED-STRING: blog-loot-priority-lists-vs-loot-council.link-1 = the median loot list runs 18 items long
 APPROVED-STRING: blog-dkp-is-dead-what-classic-guilds-use-in-2026.link-1 = 29.5% of awarded items go to a top-priority-bracket rank
-APPROVED-STRING: blog-how-to-handle-loot-drama-without-losing-raiders.link-1 = 45.5% of active guilds turn on bad-luck protection for exactly this reason
+APPROVED-STRING: blog-how-to-handle-loot-drama-without-losing-raiders.link-1 = 45.5% turn on bad-luck protection for exactly this reason
 APPROVED-STRING: blog-how-to-run-loot-without-a-spreadsheet.link-1 = 84.8% of active guilds run attendance settings that differ from the defaults
 APPROVED-STRING: blog-why-attendance-tracking-matters-more-than-loot-rules.link-1 = how 84.8% of active guilds tune their attendance weighting
 APPROVED-STRING: blog-how-to-set-up-a-fair-loot-system-for-your-wow-guild.link-1 = raiders rank lists that run a median of 18 items long
@@ -258,8 +262,16 @@ This list covers exactly the pages that carry at least one approved link row abo
 
 1. **The attendance-anchor discrepancy (see full explanation above).** The user previously endorsed "84.8% of guilds weight attendance." This draft ships the faithful rewording instead ("have changed their attendance weighting from the defaults" and its two variants) on Links 2, 10 and 11. Confirm this rewording, or provide different wording that still matches the metric's label: "Share of active guilds whose attendance configuration differs from the shipped defaults."
 
+   **ANSWERED (2026-09-08):** Rewording confirmed. Rows 2, 10 and 11 ship the faithful "changed / differ from the defaults / tune their attendance weighting" variants exactly as drafted. The originally endorsed "84.8% of guilds weight attendance" is not used.
+
 2. **The officer-burnout guide (`the-officer-burnout-problem-and-how-to-fix-it`).** Drafted as no-link. It is not a loot-system post and not a recruitment post, and the report has no officer-time finding to back a claim on it (see the `officer-time-survey` entry in `unavailable`). Confirm no-link, or say what claim (if any) belongs there and which finding backs it.
+
+   **ANSWERED (2026-09-08):** No link, confirmed. The guide subset is final as drafted: six included, two excluded, the officer-burnout guide excluded.
 
 3. **The homepage slot: subhead vs. caption.** Link 1 is drafted against the subhead paragraph ("Every candidate's list rank, attendance, and bad-luck protection roll into one Loot Score anyone can inspect.") because it already names the inputs the report measures. The caption ("Anonymized example. In the app, every score opens into its full calculation.") is the other candidate slot named in CONTEXT.md. Confirm the subhead, or say to move the link to the caption instead.
 
+   **ANSWERED (2026-09-08):** Subhead, confirmed.
+
 4. **Reused metrics across pages.** Attendance-weighting appears on three pages (Compare, the spreadsheet guide, the attendance guide) and median-list-length on three pages (Pricing, the priority-lists guide, the fair-system guide), each with page-specific wording. This is allowed under D-07 (the cap is one link per target per page, not one use of a metric across the whole site), but flagging it in case a different distribution is preferred, for example swapping one guide to cite top-priority-bracket or blp-usage instead for variety.
+
+   **ANSWERED (2026-09-08):** Accepted as drafted; no redistribution.
