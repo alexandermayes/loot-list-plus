@@ -399,4 +399,77 @@ describe('ResearchReportPage', () => {
       expect(container.textContent).toContain(APPROVED['cta.body'])
     })
   })
+
+  // Phase 5 (05-COPY-DRAFT.md Links 5 and 6): outbound connective text to
+  // /compare and /pricing. These anchor strings are approved in
+  // 05-COPY-DRAFT.md, not 03-COPY-DRAFT.md, so they are reproduced here as
+  // independent literals rather than pulled from the APPROVED record above.
+  const COMPARE_CONNECTIVE_ANCHOR = 'how LootList+ compares to TMB, DKP, EPGP and loot council'
+  const PRICING_CONNECTIVE_ANCHOR = 'the free core plan and Premium pricing'
+
+  describe('outbound connective links (Phase 5)', () => {
+    it('links to /compare exactly once, inside the article, with the approved anchor text', () => {
+      const { container } = render(<ResearchReportPage />)
+      const article = container.querySelector('article') as HTMLElement
+      const compareLinks = within(article).getAllByRole('link', { name: COMPARE_CONNECTIVE_ANCHOR })
+      expect(compareLinks).toHaveLength(1)
+      expect(compareLinks[0]).toHaveAttribute('href', '/compare')
+    })
+
+    it('links to /pricing exactly once, inside the article, with the approved anchor text', () => {
+      const { container } = render(<ResearchReportPage />)
+      const article = container.querySelector('article') as HTMLElement
+      const pricingLinks = within(article).getAllByRole('link', { name: PRICING_CONNECTIVE_ANCHOR })
+      expect(pricingLinks).toHaveLength(1)
+      expect(pricingLinks[0]).toHaveAttribute('href', '/pricing')
+    })
+
+    it('keeps the level-2 heading count at findings + 2 and the level-1 heading count at 1', () => {
+      const { container } = render(<ResearchReportPage />)
+      expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+      const article = container.querySelector('article') as HTMLElement
+      const h2s = within(article).getAllByRole('heading', { level: 2 })
+      expect(h2s).toHaveLength(aggregates.findings.length + 2)
+    })
+
+    it('keeps the app-host contextual CTA link count at exactly one, unchanged', () => {
+      const { container } = render(<ResearchReportPage />)
+      const article = container.querySelector('article') as HTMLElement
+      const ctaLink = within(article).getByRole('link', { name: APPROVED['cta.button'] })
+      expect(ctaLink).toHaveAttribute('href', 'https://www.lootlistplus.com')
+    })
+
+    it('renders every existing approved string unaltered', () => {
+      const { container } = render(<ResearchReportPage />)
+      // page.title and page.meta-description are metadata-only (rendered
+      // into <head>, not the article body); render() here does not include
+      // <head>, so those two keys are excluded from this body-text check.
+      const bodyRenderedKeys = Object.keys(APPROVED).filter(
+        (key) => key !== 'page.title' && key !== 'page.meta-description'
+      )
+      for (const key of bodyRenderedKeys) {
+        expect(container.textContent).toContain(resolveTokens(APPROVED[key]))
+      }
+      for (const finding of aggregates.findings) {
+        const copy = FINDING_APPROVED[finding.metric_id]
+        expect(container.textContent).toContain(resolveTokens(copy['number-sentence']))
+      }
+    })
+
+    it('contains no anchor pointing at a case-study URL', () => {
+      const { container } = render(<ResearchReportPage />)
+      const links = within(container).getAllByRole('link') as HTMLAnchorElement[]
+      for (const link of links) {
+        expect(link.getAttribute('href') ?? '').not.toMatch(/^\/customers\//)
+      }
+    })
+
+    it('emits no new structured-data type: still exactly Article and BreadcrumbList', () => {
+      const { container } = render(<ResearchReportPage />)
+      const objects = getJsonLdObjects(container)
+      expect(objects).toHaveLength(2)
+      const types = objects.map((o) => o['@type']).sort()
+      expect(types).toEqual(['Article', 'BreadcrumbList'])
+    })
+  })
 })
