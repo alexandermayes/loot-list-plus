@@ -258,6 +258,13 @@ export default function ComparePage() {
             <p>
               The difference is what happens to that number. In TMB, attendance is a number displayed next to a raider&apos;s name while your officers assign prios. It informs the decision, but a human still has to weigh it against everyone else&apos;s attendance, their list position, and what they&apos;ve already received. In LootList+, attendance is a weighted component of the score itself, so a raider at 95% and a raider at 60% are already separated before anyone opens Discord, and both of them can see exactly how many points that gap was worth.
             </p>
+            <p>
+              See the data:{' '}
+              <a href="/research/wow-classic-loot-systems-2026">
+                84.8% of active guilds have changed their attendance weighting from the defaults
+              </a>
+              , according to our research report.
+            </p>
 
             {/* Q5 */}
             <h3 className="!text-accent">

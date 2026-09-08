@@ -68,6 +68,16 @@ export default function PricingPage() {
             Start with the complete core loot system for free. Upgrade the whole guild only
             when you need multiple raid teams or deeper officer oversight.
           </p>
+          <p className="font-poppins text-[16px] text-[#bababa] leading-relaxed max-w-2xl mx-auto mt-3">
+            Curious how real guilds use it? Across our data,{' '}
+            <a
+              href="/research/wow-classic-loot-systems-2026"
+              className="text-white underline hover:text-[#9940ec] transition-colors"
+            >
+              the median loot list runs 18 items long
+            </a>
+            .
+          </p>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">

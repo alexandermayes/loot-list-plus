@@ -84,6 +84,16 @@ export default function AboutPage() {
             score can be explained.
           </Body>
           <Body>
+            Across active guilds,{' '}
+            <a
+              href="/research/wow-classic-loot-systems-2026"
+              className="text-accent underline underline-offset-2 hover:text-accent/80"
+            >
+              29.5% of awarded items went to a top-priority-bracket pick
+            </a>
+            , the kind of number a spreadsheet never surfaces.
+          </Body>
+          <Body>
             It supports Classic Era, The Burning Crusade, Wrath of the Lich King, Cataclysm,
             and Mists of Pandaria, with Discord, Warcraft Logs, Battle.net, WowSims, and
             in-game distribution workflows.
