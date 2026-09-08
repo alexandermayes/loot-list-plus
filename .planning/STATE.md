@@ -4,15 +4,15 @@ current_phase: 05
 current_phase_name: Internal Authority & Recrawl
 status: executing
 stopped_at: Completed 05-03-PLAN.md
-last_updated: "2026-09-08T04:41:55.897Z"
+last_updated: "2026-09-08T17:25:56.995Z"
 last_activity: 2026-09-07
 last_activity_desc: Phase 05 execution started
-state_head: 65719d9fa43dac4fc044e536a28eb283a737332f
+state_head: 6bac6ed78bb4620bb24b62d0b7ef4116c26e608d
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 32
-  completed_plans: 26
+  completed_plans: 28
   percent: 67
 ---
 
@@ -123,6 +123,7 @@ Recent decisions affecting current work:
 - [Phase 05]: [Phase 05] Copy sign-off received for 05-COPY-DRAFT.md (edit-rows, 2026-09-08): 10 of 12 link rows approved byte-for-byte; Link 7 and Link 9 reworded to fix a duplicated word ('our data'/'active guilds') with no change to page, slot, target, or metric_id.
 - [Phase 05]: [Phase 05] Attendance-anchor rewording confirmed over the originally endorsed 'X% of guilds weight attendance' phrasing (rows 2, 10, 11 ship the faithful 'changed/differ from the defaults/tune their attendance weighting' variants) because the endorsed phrasing overstated what the attendance-weighting metric measures.
 - [Phase 05]: [Phase 05] Guide subset finalized: 6 topic-matched guides linked, 2 recruitment/onboarding guides excluded, officer-burnout guide confirmed no-link. Homepage link slot confirmed as the subhead paragraph. Reused metrics across pages accepted as drafted with no redistribution. 05-COPY-DRAFT.md now STATUS: APPROVED with dated SIGN-OFF, unblocking plans 05-04, 05-05, 05-06.
+- [Phase 05]: ui.safety-gate override at wave 3: user chose to continue without a Phase 05 UI-SPEC because the wave adds only inline anchor text inside existing prose (no new components or layout blocks, per D-01), byte-matched to 05-COPY-DRAFT.md by the internal-links and guide-report-links parity suites; the same acknowledgement covers waves 4 and 5 (sitemap and blog-date changes)
 
 ### Pending Todos
 
