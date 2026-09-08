@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 05
 current_phase_name: Internal Authority & Recrawl
 status: executing
-stopped_at: Completed 05-03-PLAN.md
-last_updated: "2026-09-08T17:25:56.995Z"
+stopped_at: Completed 05-08-PLAN.md
+last_updated: "2026-09-08T18:51:09.026Z"
 last_activity: 2026-09-07
 last_activity_desc: Phase 05 execution started
-state_head: 6bac6ed78bb4620bb24b62d0b7ef4116c26e608d
+state_head: 8c6442fd085e1a7c257a2faf1b27dd642d408bdc
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 32
-  completed_plans: 28
+  completed_plans: 31
   percent: 67
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 ## Current Position
 
 Phase: 05 (Internal Authority & Recrawl) — EXECUTING
-Plan: 4 of 9
+Plan: 5 of 9
 Status: Ready to execute
 Last activity: 2026-09-07 — Phase 05 execution started
 
@@ -79,6 +79,7 @@ Progress: [████████████████████] 23/23 p
 | Phase 05 P01 | 35min | 2 tasks | 2 files |
 | Phase 05 P02 | 15min | 3 tasks | 5 files |
 | Phase 05 P03 | 15min | 3 tasks | 2 files |
+| Phase 05 P08 | 55min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -124,6 +125,8 @@ Recent decisions affecting current work:
 - [Phase 05]: [Phase 05] Attendance-anchor rewording confirmed over the originally endorsed 'X% of guilds weight attendance' phrasing (rows 2, 10, 11 ship the faithful 'changed/differ from the defaults/tune their attendance weighting' variants) because the endorsed phrasing overstated what the attendance-weighting metric measures.
 - [Phase 05]: [Phase 05] Guide subset finalized: 6 topic-matched guides linked, 2 recruitment/onboarding guides excluded, officer-burnout guide confirmed no-link. Homepage link slot confirmed as the subhead paragraph. Reused metrics across pages accepted as drafted with no redistribution. 05-COPY-DRAFT.md now STATUS: APPROVED with dated SIGN-OFF, unblocking plans 05-04, 05-05, 05-06.
 - [Phase 05]: ui.safety-gate override at wave 3: user chose to continue without a Phase 05 UI-SPEC because the wave adds only inline anchor text inside existing prose (no new components or layout blocks, per D-01), byte-matched to 05-COPY-DRAFT.md by the internal-links and guide-report-links parity suites; the same acknowledgement covers waves 4 and 5 (sitemap and blog-date changes)
+- [Phase 05]: [Phase 05] Deploy two is live (buildId dpl_E5T45BTuDDrSZSDZrYv4oH6XkQLX at ded23d70): the link sweep, honest sitemap dates and blog-post date parity are now publicly visible; production probe (11 URLs x 6 checks, twice, identical) and Search Console URL Inspection both confirm readiness with no blocking state; 3 URLs have no crawl history yet (documented normal outcome). — D-13/D-14: recrawl requests must follow deploy two and be proven, not assumed, before the one-shot request in plan 05-09
+- [Phase 05]: [Phase 05] Fixed a real file-shape mismatch (Rule 3) between probe-recrawl-urls.py/inspect-url.py's original flat-map design (plans 05-01/05-02) and the nested content-dates.json plus array-shaped recrawl-targets.json this plan needed to pass them; added normalize_dates_map/normalize_anchors_map and a dual-shape load_url_list to both scripts, with 23 new unit tests (172/172 total). — Without the fix, --dates-file and --anchors-file would silently skip every check or crash outright, defeating the plan's own double-proof requirement
 
 ### Pending Todos
 
@@ -167,6 +170,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-08T04:41:55.573Z
-Stopped at: Completed 05-03-PLAN.md
+Last session: 2026-09-08T18:51:08.787Z
+Stopped at: Completed 05-08-PLAN.md
 Resume file: None
