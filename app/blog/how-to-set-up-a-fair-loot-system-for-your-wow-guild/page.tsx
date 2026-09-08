@@ -299,6 +299,13 @@ export default function BlogPost() {
               decided&quot; with no visibility into why breeds resentment. Let
               raiders express their priorities.
             </p>
+            <p>
+              Across our data,{' '}
+              <a href="/research/wow-classic-loot-systems-2026">
+                raiders rank lists that run a median of 18 items long
+              </a>
+              , evidence that they take this seriously when given the chance.
+            </p>
 
             <h3>3. Transparency isn&apos;t optional</h3>
             <p>

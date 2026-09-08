@@ -231,6 +231,13 @@ export default function BlogPost() {
               data. If the two live in different tools, one of them is
               always out of date.
             </p>
+            <p>
+              Across our data,{' '}
+              <a href="/research/wow-classic-loot-systems-2026">
+                84.8% of active guilds run attendance settings that differ from the defaults
+              </a>
+              , proof that attendance rules are not one-size-fits-all.
+            </p>
 
             <h3>Scales badly</h3>
             <p>

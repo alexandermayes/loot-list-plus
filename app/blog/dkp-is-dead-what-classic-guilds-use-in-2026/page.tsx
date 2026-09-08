@@ -297,6 +297,13 @@ export default function BlogPost() {
               opaque or gameable.
             </p>
             <p>
+              Across active guilds,{' '}
+              <a href="/research/wow-classic-loot-systems-2026">
+                29.5% of awarded items go to a top-priority-bracket rank
+              </a>
+              , exactly the kind of pick priority lists are built to protect.
+            </p>
+            <p>
               Priority lists work because they align incentives correctly:
             </p>
             <ul>

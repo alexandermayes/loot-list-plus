@@ -283,6 +283,13 @@ export default function BlogPost() {
               judgment calls.
             </p>
             <p>
+              See{' '}
+              <a href="/research/wow-classic-loot-systems-2026">
+                how 84.8% of active guilds tune their attendance weighting
+              </a>{' '}
+              away from the shipped defaults.
+            </p>
+            <p>
               LootList+ tracks attendance per raid with support for:
             </p>
             <ul>

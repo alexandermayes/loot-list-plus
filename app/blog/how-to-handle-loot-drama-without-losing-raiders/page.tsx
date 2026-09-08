@@ -340,6 +340,13 @@ export default function BlogPost() {
               not the outcome, and that&apos;s a conversation you can
               have between tiers.
             </p>
+            <p>
+              Across active guilds,{' '}
+              <a href="/research/wow-classic-loot-systems-2026">
+                45.5% turn on bad-luck protection for exactly this reason
+              </a>
+              .
+            </p>
 
             <h3>Don&apos;t overturn decisions</h3>
             <p>

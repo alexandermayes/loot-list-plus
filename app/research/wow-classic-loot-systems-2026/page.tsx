@@ -266,6 +266,25 @@ const CTA_BODY = approved('cta.body')
 const CTA_BUTTON_LABEL = approved('cta.button')
 const CTA_URL = 'https://www.lootlistplus.com'
 
+// Phase 5 outbound connective text (05-COPY-DRAFT.md Links 5 and 6),
+// deliberately kept out of the approved-copy record above and out of the
+// approved() resolver: these two sentences are signed off in
+// 05-COPY-DRAFT.md, not 03-COPY-DRAFT.md, and the Phase 3 approved-string
+// parity gate must keep asserting only against 03-COPY-DRAFT.md's own set.
+// Each constant is split into its before-anchor, anchor, and after-anchor
+// pieces so the anchor text can be wrapped in a real <a> while the
+// rendered sentence stays exactly the approved wording.
+const COMPARE_CONNECTIVE = {
+  before: 'If you are comparing systems, see ',
+  anchor: 'how LootList+ compares to TMB, DKP, EPGP and loot council',
+  after: '.',
+}
+const PRICING_CONNECTIVE = {
+  before: "LootList+'s core loot and attendance tools are free for one raid team; see ",
+  anchor: 'the free core plan and Premium pricing',
+  after: ' for the full breakdown.',
+}
+
 const OPENING_PARAGRAPH_1 = approved('opening.paragraph-1')
 const OPENING_PARAGRAPH_2 = approved('opening.paragraph-2')
 
@@ -523,6 +542,27 @@ export default function ResearchReportPage() {
               <a href={JSON_DOWNLOAD_HREF}>{DOWNLOADS_JSON_LABEL}</a>
             </div>
           </div>
+
+          {/* Phase 5 outbound connective paragraphs (05-COPY-DRAFT.md Links
+              5 and 6): rendered as plain <p> siblings outside the prose
+              wrapper above, same reasoning as the Contextual CTA comment
+              below -- these are wholly new sentences, not edits to any
+              approved-copy value, and neither gets a heading so the
+              article's h2 count (findings + 2) stays exactly what it was. */}
+          <p className="text-lg text-foreground-secondary leading-relaxed mb-4">
+            {COMPARE_CONNECTIVE.before}
+            <a href="/compare" className="text-accent underline underline-offset-2 hover:text-accent/80">
+              {COMPARE_CONNECTIVE.anchor}
+            </a>
+            {COMPARE_CONNECTIVE.after}
+          </p>
+          <p className="text-lg text-foreground-secondary leading-relaxed mb-4">
+            {PRICING_CONNECTIVE.before}
+            <a href="/pricing" className="text-accent underline underline-offset-2 hover:text-accent/80">
+              {PRICING_CONNECTIVE.anchor}
+            </a>
+            {PRICING_CONNECTIVE.after}
+          </p>
 
           {/* Contextual CTA (EVID-03): rendered as a sibling outside the
               prose wrapper above, not nested inside it. The wrapper's
