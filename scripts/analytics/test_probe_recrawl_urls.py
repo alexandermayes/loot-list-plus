@@ -12,7 +12,9 @@ path with importlib instead, following test_ai_answer_log.py's pattern.
 Run: python3 -m unittest discover -s scripts/analytics -p 'test_*.py' -v
 """
 import importlib.util
+import json
 import os
+import tempfile
 import unittest
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -29,6 +31,9 @@ has_noindex_meta = probe.has_noindex_meta
 has_noindex_header = probe.has_noindex_header
 contains_anchor = probe.contains_anchor
 dates_equal = probe.dates_equal
+normalize_anchors_map = probe.normalize_anchors_map
+normalize_dates_map = probe.normalize_dates_map
+load_url_list = probe.load_url_list
 
 
 # A document shaped exactly like the one Next.js's app/sitemap.ts actually
@@ -179,6 +184,100 @@ class DatesEqualTests(unittest.TestCase):
     def test_fails_when_either_side_is_missing(self):
         self.assertFalse(dates_equal(None, "2026-09-04"))
         self.assertFalse(dates_equal("2026-09-04", None))
+
+
+class NormalizeAnchorsMapTests(unittest.TestCase):
+    def test_flat_map_passes_through_unchanged(self):
+        flat = {"https://www.getlootlist.com/compare": {"text": "see the data", "href": "/research/x"}}
+        self.assertEqual(normalize_anchors_map(flat), flat)
+
+    def test_targets_list_becomes_url_keyed_map(self):
+        targets = [
+            {"url": "https://www.getlootlist.com/compare", "anchor": "see the data", "href": "/research/x"},
+            {"url": "https://www.getlootlist.com/pricing", "anchor": "18 items long", "href": "/research/x"},
+        ]
+        result = normalize_anchors_map(targets)
+        self.assertEqual(
+            result["https://www.getlootlist.com/compare"],
+            {"text": "see the data", "href": "/research/x"},
+        )
+        self.assertEqual(
+            result["https://www.getlootlist.com/pricing"],
+            {"text": "18 items long", "href": "/research/x"},
+        )
+
+    def test_empty_list_becomes_empty_map(self):
+        self.assertEqual(normalize_anchors_map([]), {})
+
+
+class NormalizeDatesMapTests(unittest.TestCase):
+    ORIGIN = "https://www.getlootlist.com"
+
+    def test_flat_map_passes_through_unchanged(self):
+        flat = {"https://www.getlootlist.com/compare": "2026-09-08"}
+        self.assertEqual(normalize_dates_map(flat, self.ORIGIN), flat)
+
+    def test_nested_routes_and_blog_posts_become_flat_url_map(self):
+        nested = {
+            "routes": {"/": "2026-09-08", "/compare": "2026-09-08", "/premium": "2026-07-25"},
+            "blogPosts": {"loot-priority-lists-vs-loot-council": "2026-09-08"},
+        }
+        result = normalize_dates_map(nested, self.ORIGIN)
+        self.assertEqual(result["https://www.getlootlist.com"], "2026-09-08")
+        self.assertEqual(result["https://www.getlootlist.com/compare"], "2026-09-08")
+        self.assertEqual(result["https://www.getlootlist.com/premium"], "2026-07-25")
+        self.assertEqual(
+            result["https://www.getlootlist.com/blog/loot-priority-lists-vs-loot-council"],
+            "2026-09-08",
+        )
+
+    def test_root_path_maps_to_bare_origin_not_origin_slash(self):
+        nested = {"routes": {"/": "2026-09-08"}, "blogPosts": {}}
+        result = normalize_dates_map(nested, self.ORIGIN)
+        self.assertIn(self.ORIGIN, result)
+        self.assertNotIn(self.ORIGIN + "/", result)
+
+    def test_trailing_slash_on_origin_is_tolerated(self):
+        nested = {"routes": {"/compare": "2026-09-08"}, "blogPosts": {}}
+        result = normalize_dates_map(nested, self.ORIGIN + "/")
+        self.assertEqual(result["https://www.getlootlist.com/compare"], "2026-09-08")
+
+    def test_missing_blog_posts_key_does_not_raise(self):
+        nested = {"routes": {"/": "2026-09-08"}}
+        result = normalize_dates_map(nested, self.ORIGIN)
+        self.assertEqual(result, {self.ORIGIN: "2026-09-08"})
+
+
+class LoadUrlListTests(unittest.TestCase):
+    def _write(self, content):
+        f = tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False, encoding="utf-8")
+        f.write(content)
+        f.close()
+        self.addCleanup(os.unlink, f.name)
+        return f.name
+
+    def test_plain_line_list_ignores_blanks_and_comments(self):
+        path = self._write("https://www.getlootlist.com/compare\n\n# a comment\nhttps://www.getlootlist.com/pricing\n")
+        self.assertEqual(
+            load_url_list(path),
+            ["https://www.getlootlist.com/compare", "https://www.getlootlist.com/pricing"],
+        )
+
+    def test_json_array_of_target_objects_extracts_url_in_order(self):
+        targets = [
+            {"url": "https://www.getlootlist.com/compare", "anchor": "a", "href": "/x"},
+            {"url": "https://www.getlootlist.com/pricing", "anchor": "b", "href": "/y"},
+        ]
+        path = self._write(json.dumps(targets))
+        self.assertEqual(
+            load_url_list(path),
+            ["https://www.getlootlist.com/compare", "https://www.getlootlist.com/pricing"],
+        )
+
+    def test_json_array_with_leading_whitespace_is_still_detected(self):
+        targets = [{"url": "https://www.getlootlist.com", "anchor": "a", "href": "/x"}]
+        path = self._write("\n  " + json.dumps(targets))
+        self.assertEqual(load_url_list(path), ["https://www.getlootlist.com"])
 
 
 if __name__ == "__main__":

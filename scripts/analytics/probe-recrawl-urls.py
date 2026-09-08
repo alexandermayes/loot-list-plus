@@ -327,15 +327,69 @@ def probe_url(url, sitemap_map, expected_anchor, dates_map, opts):
     return {"url": url, "checks": checks}
 
 
+def normalize_anchors_map(data):
+    """Normalize an anchors file into a flat mapping of URL to {"text", "href"}.
+
+    Accepts two shapes: a flat mapping already keyed by URL (the original
+    --anchors-file design: {"<url>": {"text": ..., "href": ...}, ...}), or a
+    list of target objects shaped like scripts/analytics/recrawl-targets.json
+    ({"url": ..., "anchor": ..., "href": ...} per entry, one per recrawl-list
+    URL). The list shape is detected by isinstance(data, list); anything
+    else is treated as already a flat url-keyed map, unchanged.
+    """
+    if isinstance(data, list):
+        return {entry["url"]: {"text": entry.get("anchor"), "href": entry.get("href")} for entry in data}
+    return data
+
+
+def normalize_dates_map(data, origin):
+    """Normalize a dates file into a flat mapping of full URL to lastmod date.
+
+    Accepts two shapes: a flat mapping already keyed by full URL (the
+    original --dates-file design), or the two-map data/content-dates.json
+    source shape ({"routes": {...}, "blogPosts": {...}}), where routes are
+    relative paths keyed exactly as lib/content-dates.ts reads them (e.g.
+    "/", "/compare") and blogPosts are slugs served under /blog/. The
+    nested shape is detected by the presence of a "routes" or "blogPosts"
+    top-level key; anything else is treated as already a flat url->date
+    map, unchanged.
+    """
+    if isinstance(data, dict) and ("routes" in data or "blogPosts" in data):
+        origin = origin.rstrip("/")
+        flat = {}
+        for path, date in (data.get("routes") or {}).items():
+            url = origin if path == "/" else origin + path
+            flat[url] = date
+        for slug, date in (data.get("blogPosts") or {}).items():
+            flat[f"{origin}/blog/{slug}"] = date
+        return flat
+    return data
+
+
 def load_url_list(path):
-    """Read one URL per line; blank lines and lines beginning with # are ignored."""
-    urls = []
+    """Read a URL list, accepting two file shapes.
+
+    One URL per line (blank lines and lines beginning with # ignored), or a
+    JSON array of target objects shaped like
+    scripts/analytics/recrawl-targets.json ({"url": ..., ...} per entry, in
+    file order). The JSON shape is detected by the file's first
+    non-whitespace character being "["; that same targets file can then
+    also serve as --anchors-file (see normalize_anchors_map) without
+    maintaining a second, driftable plain-text copy of the same URL list.
+    """
     with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            urls.append(line)
+        raw = f.read()
+
+    if raw.lstrip().startswith("["):
+        entries = json.loads(raw)
+        return [entry["url"] for entry in entries]
+
+    urls = []
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        urls.append(line)
     return urls
 
 
@@ -381,7 +435,7 @@ def main(argv=None):
     dates_map = {}
     if args.dates_file and not args.skip_dates:
         try:
-            dates_map = load_json_file(args.dates_file)
+            dates_map = normalize_dates_map(load_json_file(args.dates_file), args.origin)
         except Exception as e:
             print(f"Failed to load dates file {args.dates_file}: {e}", file=sys.stderr)
             return 1
@@ -389,7 +443,7 @@ def main(argv=None):
     anchors_map = {}
     if args.anchors_file and not args.skip_anchor:
         try:
-            anchors_map = load_json_file(args.anchors_file)
+            anchors_map = normalize_anchors_map(load_json_file(args.anchors_file))
         except Exception as e:
             print(f"Failed to load anchors file {args.anchors_file}: {e}", file=sys.stderr)
             return 1
