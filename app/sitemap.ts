@@ -1,118 +1,122 @@
 import { MetadataRoute } from 'next'
+import * as contentDates from '@/lib/content-dates'
 
+// Every lastModified value below is read from data/content-dates.json via
+// lib/content-dates.ts. See lib/CONTENT-DATES.md for the rule on what
+// bumps a date and what does not. This file restates no date of its own.
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
       url: 'https://www.getlootlist.com',
-      lastModified: new Date(),
+      lastModified: contentDates.contentDate('/'),
       changeFrequency: 'weekly',
       priority: 1,
     },
     {
       url: 'https://www.getlootlist.com/compare',
-      lastModified: new Date(2026, 3, 3),
+      lastModified: contentDates.contentDate('/compare'),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
       url: 'https://www.getlootlist.com/about',
-      lastModified: new Date(2026, 7, 26),
+      lastModified: contentDates.contentDate('/about'),
       changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
       url: 'https://www.getlootlist.com/pricing',
-      lastModified: new Date(2026, 7, 26),
+      lastModified: contentDates.contentDate('/pricing'),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
       url: 'https://www.getlootlist.com/premium',
-      lastModified: new Date(2026, 7, 25),
+      lastModified: contentDates.contentDate('/premium'),
       changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
       url: 'https://www.getlootlist.com/blog',
-      lastModified: new Date(),
+      lastModified: contentDates.latestBlogDate(),
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
       url: 'https://www.getlootlist.com/blog/guild-recruitment-guide-find-raiders-who-stay',
-      lastModified: new Date(2026, 4, 21),
+      lastModified: contentDates.blogPostDate('guild-recruitment-guide-find-raiders-who-stay'),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
       url: 'https://www.getlootlist.com/blog/how-to-handle-loot-drama-without-losing-raiders',
-      lastModified: new Date(2026, 4, 7),
+      lastModified: contentDates.blogPostDate('how-to-handle-loot-drama-without-losing-raiders'),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
       url: 'https://www.getlootlist.com/blog/how-to-run-loot-without-a-spreadsheet',
-      lastModified: new Date(2026, 4, 7),
+      lastModified: contentDates.blogPostDate('how-to-run-loot-without-a-spreadsheet'),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
       url: 'https://www.getlootlist.com/blog/loot-priority-lists-vs-loot-council',
-      lastModified: new Date(2026, 3, 28),
+      lastModified: contentDates.blogPostDate('loot-priority-lists-vs-loot-council'),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
       url: 'https://www.getlootlist.com/blog/the-officer-burnout-problem-and-how-to-fix-it',
-      lastModified: new Date(2026, 3, 19),
+      lastModified: contentDates.blogPostDate('the-officer-burnout-problem-and-how-to-fix-it'),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
       url: 'https://www.getlootlist.com/blog/how-to-onboard-new-raiders-without-killing-morale',
-      lastModified: new Date(2026, 3, 10),
+      lastModified: contentDates.blogPostDate('how-to-onboard-new-raiders-without-killing-morale'),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
       url: 'https://www.getlootlist.com/blog/how-to-set-up-a-fair-loot-system-for-your-wow-guild',
-      lastModified: new Date(2026, 2, 23),
+      lastModified: contentDates.blogPostDate('how-to-set-up-a-fair-loot-system-for-your-wow-guild'),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
       url: 'https://www.getlootlist.com/blog/dkp-is-dead-what-classic-guilds-use-in-2026',
-      lastModified: new Date(2026, 3, 2),
+      lastModified: contentDates.blogPostDate('dkp-is-dead-what-classic-guilds-use-in-2026'),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
       url: 'https://www.getlootlist.com/blog/why-attendance-tracking-matters-more-than-loot-rules',
-      lastModified: new Date(2026, 2, 26),
+      lastModified: contentDates.blogPostDate('why-attendance-tracking-matters-more-than-loot-rules'),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
       url: 'https://www.getlootlist.com/research/wow-classic-loot-systems-2026',
-      lastModified: new Date(2026, 8, 4),
+      lastModified: contentDates.contentDate('/research/wow-classic-loot-systems-2026'),
       changeFrequency: 'monthly',
       priority: 0.9,
     },
     {
       url: 'https://www.getlootlist.com/changelog',
-      lastModified: new Date(),
+      lastModified: contentDates.latestChangelogDate(),
       changeFrequency: 'weekly',
       priority: 0.5,
     },
     {
       url: 'https://www.getlootlist.com/terms',
-      lastModified: new Date(2026, 1, 6),
+      lastModified: contentDates.contentDate('/terms'),
       changeFrequency: 'yearly',
       priority: 0.3,
     },
     {
       url: 'https://www.getlootlist.com/privacy',
-      lastModified: new Date(2026, 1, 6),
+      lastModified: contentDates.contentDate('/privacy'),
       changeFrequency: 'yearly',
       priority: 0.3,
     },
