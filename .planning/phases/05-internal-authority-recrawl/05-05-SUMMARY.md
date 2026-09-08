@@ -174,3 +174,13 @@ None - no external service configuration required.
 ---
 *Phase: 05-internal-authority-recrawl*
 *Completed: 2026-09-08*
+
+## Self-Check: PASSED
+
+- FOUND: app/blog/__tests__/guide-report-links.test.tsx
+- FOUND: app/research/wow-classic-loot-systems-2026/page.tsx
+- FOUND: .planning/phases/05-internal-authority-recrawl/05-05-SUMMARY.md
+- FOUND commit: c5fd816 (feat(05-05): report page links out to /compare and /pricing)
+- FOUND commit: c28551e (feat(05-05): wire first three guides to the research report)
+- FOUND commit: a259b98 (feat(05-05): wire remaining guides and prove both link directions)
+- FOUND commit: 661b172 (docs(05-05): complete internal authority link sweep plan)
