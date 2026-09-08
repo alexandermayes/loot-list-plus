@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 current_phase: 05
 current_phase_name: Internal Authority & Recrawl
 status: executing
-stopped_at: Completed 05-02-PLAN.md
-last_updated: "2026-09-08T00:40:10.787Z"
+stopped_at: Completed 05-03-PLAN.md
+last_updated: "2026-09-08T04:41:55.897Z"
 last_activity: 2026-09-07
 last_activity_desc: Phase 05 execution started
-state_head: 473ab231439edd7b222e198f83a73ad23fe6676f
+state_head: 65719d9fa43dac4fc044e536a28eb283a737332f
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 32
-  completed_plans: 25
+  completed_plans: 26
   percent: 67
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 ## Current Position
 
 Phase: 05 (Internal Authority & Recrawl) — EXECUTING
-Plan: 3 of 9
+Plan: 4 of 9
 Status: Ready to execute
 Last activity: 2026-09-07 — Phase 05 execution started
 
@@ -78,6 +78,7 @@ Progress: [████████████████████] 23/23 p
 | Phase 04 P05 | 15min | 3 tasks | 5 files |
 | Phase 05 P01 | 35min | 2 tasks | 2 files |
 | Phase 05 P02 | 15min | 3 tasks | 5 files |
+| Phase 05 P03 | 15min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -119,6 +120,9 @@ Recent decisions affecting current work:
 - [Phase 04]: [Phase 04, plan 05] Fixture size corrected to bare '28' rather than splitting CaseStudy.proofStrip into value+unit fields, closing G-04-3's doubled-unit defect at the data layer with a module-load guard (CASE_STUDY_SIZE_PATTERN) — Templates already append the unit; the data-shape change was explicitly out of scope per the recorded user decision
 - [Phase 05]: push-now: pushed 99 pending commits to origin/main as the phase's baseline deploy (D-13); npm run lint's pre-existing config-resolution error confirmed via npm ci and treated as non-blocking per RESEARCH.md Pitfall 6 — Unblocks the entire phase per the plan's checkpoint:decision; the probe script is ready and no Search Console request was made
 - [Phase 05]: [Phase 05] Recrawl log built as a Markdown table with a validate-then-append writer (log-recrawl.py), a two-row event model (prepared/requested), and a mechanical already-requested check (--check exits 1 for a URL already requested); Search Console URL Inspection caller (inspect-url.py) reuses pull-gsc.py's OAuth token exchange verbatim with no new consent; 04-PUBLISH-RUNBOOK.md step 5 now points at the one log instead of its own table
+- [Phase 05]: [Phase 05] Copy sign-off received for 05-COPY-DRAFT.md (edit-rows, 2026-09-08): 10 of 12 link rows approved byte-for-byte; Link 7 and Link 9 reworded to fix a duplicated word ('our data'/'active guilds') with no change to page, slot, target, or metric_id.
+- [Phase 05]: [Phase 05] Attendance-anchor rewording confirmed over the originally endorsed 'X% of guilds weight attendance' phrasing (rows 2, 10, 11 ship the faithful 'changed/differ from the defaults/tune their attendance weighting' variants) because the endorsed phrasing overstated what the attendance-weighting metric measures.
+- [Phase 05]: [Phase 05] Guide subset finalized: 6 topic-matched guides linked, 2 recruitment/onboarding guides excluded, officer-burnout guide confirmed no-link. Homepage link slot confirmed as the subhead paragraph. Reused metrics across pages accepted as drafted with no redistribution. 05-COPY-DRAFT.md now STATUS: APPROVED with dated SIGN-OFF, unblocking plans 05-04, 05-05, 05-06.
 
 ### Pending Todos
 
@@ -162,6 +166,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-08T00:40:09.192Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-09-08T04:41:55.573Z
+Stopped at: Completed 05-03-PLAN.md
 Resume file: None
