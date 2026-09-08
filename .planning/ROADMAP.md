@@ -185,13 +185,13 @@ Plans:
   2. The sitemap contains only preferred canonical URLs, and `lastmod` is accurate for every page changed during this milestone
   3. URL Inspection recrawl requests are submitted exactly once per materially changed URL, after the final deployment, with the submitted URLs recorded so nobody re-requests them
 
-**Plans**: 1/9 plans executed
+**Plans**: 2/9 plans executed
 
 Plans:
 **Wave 1**
 
 - [x] 05-01-PLAN.md — Deploy one: the baseline push that makes the report a live, checkable URL, plus the production probe
-- [ ] 05-02-PLAN.md — The single append-only recrawl log, its writer, the URL Inspection caller, and the runbook pointer
+- [x] 05-02-PLAN.md — The single append-only recrawl log, its writer, the URL Inspection caller, and the runbook pointer
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -245,7 +245,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Checkable Conversion Copy | 7/7 | Complete    | 2026-09-01 |
 | 3. Anonymized Product-Data Report | 6/6 | Complete    | 2026-09-05 |
 | 4. Verified Guild Case Study | 5/5 | Complete    | 2026-09-06 |
-| 5. Internal Authority & Recrawl | 1/9 | In Progress|  |
+| 5. Internal Authority & Recrawl | 2/9 | In Progress|  |
 | 6. Week-4 Review & Next Bet | 0/TBD | Not started | - |
 
 ## Requirement Coverage
