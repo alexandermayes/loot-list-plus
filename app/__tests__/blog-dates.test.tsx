@@ -146,26 +146,26 @@ const ORIGINAL_DATE: Record<string, string> = {
   'the-officer-burnout-problem-and-how-to-fix-it': '2026-04-19',
 }
 
-// Linked guides whose JSON-LD dateModified has been bumped to the module's
-// deploy-two date so far. Task 2 moves the remaining three linked guides
-// into this array as it bumps them, following the LINKED_GUIDES/
-// UNLINKED_GUIDES split precedent in guide-report-links.test.tsx, so the
-// same invariant (every array below always names all nine posts combined)
-// holds true at every point across this two-task plan, not only at the end.
+// All six linked guides, now fully bumped to the module's deploy-two date
+// (task 1 bumped the first three, task 2 bumps the remaining three below).
+// Following the LINKED_GUIDES/UNLINKED_GUIDES split precedent in
+// guide-report-links.test.tsx, so the same invariant (every array below
+// always names all nine posts combined) held true at every point across
+// this two-task plan, not only at the end.
 const BUMPED_SLUGS = [
   'loot-priority-lists-vs-loot-council',
   'dkp-is-dead-what-classic-guilds-use-in-2026',
   'how-to-handle-loot-drama-without-losing-raiders',
-]
-
-// Linked guides task 2 has not yet bumped. Their module date already holds
-// the deploy-two value (set by plan 05-06 for every linked guide at once);
-// only the post's own JSON-LD lags behind until task 2 bumps it.
-const NOT_YET_BUMPED_SLUGS = [
   'how-to-run-loot-without-a-spreadsheet',
   'why-attendance-tracking-matters-more-than-loot-rules',
   'how-to-set-up-a-fair-loot-system-for-your-wow-guild',
 ]
+
+// Empty after task 2: every linked guide is now in BUMPED_SLUGS. Kept as a
+// named (empty) array, rather than deleted, so ALL_SLUGS's construction and
+// the "names exactly nine slugs" assertion below stay unchanged in shape
+// across both tasks.
+const NOT_YET_BUMPED_SLUGS: string[] = []
 
 // The three guides this milestone's link sweep never touched. Their module
 // date should equal ORIGINAL_DATE for the same slug, proving no false
@@ -239,5 +239,23 @@ describe('blog post date parity', () => {
       const actual = isoDatePart(blogPostDate(slug).toISOString())
       expect(actual).toBe(expected)
     })
+  })
+
+  // LINKED_GUIDE_COUNT is the number of guides 05-05-SUMMARY.md recorded as
+  // linked to the research report: 6. Task 1's and this describe.each loop
+  // above already prove each named post individually agrees with the
+  // module; this case proves the module itself did not quietly redate a
+  // post that gained nothing. A post presented to crawlers as freshly
+  // modified when nothing a reader can see about it changed is a false
+  // freshness signal, which is precisely the thing this dates module
+  // exists to stop.
+  const LINKED_GUIDE_COUNT = 6
+
+  it('the number of posts whose module date differs from their carried-forward value equals the number of linked guides', () => {
+    const redated = ALL_SLUGS.filter(
+      (slug) => isoDatePart(blogPostDate(slug).toISOString()) !== ORIGINAL_DATE[slug]
+    )
+    expect(redated).toHaveLength(LINKED_GUIDE_COUNT)
+    expect([...redated].sort()).toEqual([...BUMPED_SLUGS].sort())
   })
 })
