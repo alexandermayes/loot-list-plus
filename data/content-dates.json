@@ -1,0 +1,23 @@
+{
+  "routes": {
+    "/": "2026-09-08",
+    "/about": "2026-09-08",
+    "/compare": "2026-09-08",
+    "/pricing": "2026-09-08",
+    "/premium": "2026-07-25",
+    "/terms": "2026-02-06",
+    "/privacy": "2026-02-06",
+    "/research/wow-classic-loot-systems-2026": "2026-09-08"
+  },
+  "blogPosts": {
+    "guild-recruitment-guide-find-raiders-who-stay": "2026-05-21",
+    "how-to-handle-loot-drama-without-losing-raiders": "2026-09-08",
+    "how-to-run-loot-without-a-spreadsheet": "2026-09-08",
+    "loot-priority-lists-vs-loot-council": "2026-09-08",
+    "the-officer-burnout-problem-and-how-to-fix-it": "2026-04-19",
+    "how-to-onboard-new-raiders-without-killing-morale": "2026-03-10",
+    "how-to-set-up-a-fair-loot-system-for-your-wow-guild": "2026-09-08",
+    "dkp-is-dead-what-classic-guilds-use-in-2026": "2026-09-08",
+    "why-attendance-tracking-matters-more-than-loot-rules": "2026-09-08"
+  }
+}
