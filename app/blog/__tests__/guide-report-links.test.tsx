@@ -68,11 +68,9 @@ const POSTS: Record<string, React.ComponentType> = {
   'the-officer-burnout-problem-and-how-to-fix-it': TheOfficerBurnoutProblemAndHowToFixIt,
 }
 
-// LINKED_GUIDES: guides that carry a report link at THIS point in the plan.
-// Task 2 (this task) wires the first three, in 05-COPY-DRAFT.md's sign-off
-// row order. Task 3 moves the remaining three approved guides here as it
-// wires them, so this array grows without the negative list ever
-// double-counting a slug.
+// LINKED_GUIDES: all six approved guides from 05-COPY-DRAFT.md's D-03 guide
+// subset, each carrying exactly one report anchor with the approved anchor
+// text (copied character for character from the sign-off table).
 const LINKED_GUIDES: { slug: string; anchor: string }[] = [
   {
     slug: 'loot-priority-lists-vs-loot-council',
@@ -86,19 +84,25 @@ const LINKED_GUIDES: { slug: string; anchor: string }[] = [
     slug: 'how-to-handle-loot-drama-without-losing-raiders',
     anchor: '45.5% turn on bad-luck protection for exactly this reason',
   },
+  {
+    slug: 'how-to-run-loot-without-a-spreadsheet',
+    anchor: '84.8% of active guilds run attendance settings that differ from the defaults',
+  },
+  {
+    slug: 'why-attendance-tracking-matters-more-than-loot-rules',
+    anchor: 'how 84.8% of active guilds tune their attendance weighting',
+  },
+  {
+    slug: 'how-to-set-up-a-fair-loot-system-for-your-wow-guild',
+    anchor: 'raiders rank lists that run a median of 18 items long',
+  },
 ]
 
-// UNLINKED_GUIDES: every guide that renders zero report anchors right now.
-// Three of these (the-officer-burnout-problem-and-how-to-fix-it,
-// guild-recruitment-guide-find-raiders-who-stay,
-// how-to-onboard-new-raiders-without-killing-morale) are permanently
-// excluded per 05-COPY-DRAFT.md's D-03 guide subset and never move. The
-// other three are approved but not yet wired -- task 3 moves them into
-// LINKED_GUIDES.
+// UNLINKED_GUIDES: the three guides 05-COPY-DRAFT.md's D-03 guide subset
+// permanently excludes -- recruitment and onboarding content, plus the
+// officer-burnout guide the sign-off confirmed no-link. These render zero
+// report anchors and never move into LINKED_GUIDES.
 const UNLINKED_GUIDES: string[] = [
-  'how-to-run-loot-without-a-spreadsheet',
-  'why-attendance-tracking-matters-more-than-loot-rules',
-  'how-to-set-up-a-fair-loot-system-for-your-wow-guild',
   'guild-recruitment-guide-find-raiders-who-stay',
   'how-to-onboard-new-raiders-without-killing-morale',
   'the-officer-burnout-problem-and-how-to-fix-it',
@@ -144,25 +148,24 @@ describe('guide-to-report links', () => {
     })
   })
 
-  it('no rendered guide contains a generic click-through anchor', () => {
-    for (const slug of Object.keys(POSTS)) {
-      const Post = POSTS[slug]
-      const { container } = render(<Post />)
-      const links = within(container).getAllByRole('link')
-      for (const link of links) {
-        expect((link.textContent ?? '').toLowerCase()).not.toMatch(/learn more|read more/)
-      }
+  // Split per-slug (rather than one test looping over all nine renders) so
+  // a single slow render under CPU load times out its own small test
+  // instead of the default 5000ms budget being spent across all nine.
+  it.each(Object.keys(POSTS))('%s renders no generic click-through anchor', (slug) => {
+    const Post = POSTS[slug]
+    const { container } = render(<Post />)
+    const links = within(container).getAllByRole('link')
+    for (const link of links) {
+      expect((link.textContent ?? '').toLowerCase()).not.toMatch(/learn more|read more/)
     }
   })
 
-  it('no rendered guide contains an anchor pointing at a case-study URL', () => {
-    for (const slug of Object.keys(POSTS)) {
-      const Post = POSTS[slug]
-      const { container } = render(<Post />)
-      const links = within(container).getAllByRole('link')
-      for (const link of links) {
-        expect(link.getAttribute('href') ?? '').not.toMatch(/^\/customers\//)
-      }
+  it.each(Object.keys(POSTS))('%s renders no anchor pointing at a case-study URL', (slug) => {
+    const Post = POSTS[slug]
+    const { container } = render(<Post />)
+    const links = within(container).getAllByRole('link')
+    for (const link of links) {
+      expect(link.getAttribute('href') ?? '').not.toMatch(/^\/customers\//)
     }
   })
 
@@ -173,4 +176,22 @@ describe('guide-to-report links', () => {
       expect(anchor).not.toMatch(/[‘’“”]/)
     }
   })
+
+  // Task 2's per-slug cases (above) prove each named guide is right. This
+  // proves no unnamed guide slipped in, which a per-slug loop cannot see:
+  // count every post that renders a report anchor and require it to equal
+  // LINKED_GUIDES.length exactly, no more and no less. Explicit timeout
+  // (rather than the 5000ms default) since this renders all nine posts in
+  // one test.
+  it(
+    'the number of posts carrying a report link equals LINKED_GUIDES.length exactly',
+    () => {
+      const linkedCount = Object.entries(POSTS).filter(([, Post]) => {
+        const { container } = render(<Post />)
+        return reportLinksIn(container).length > 0
+      }).length
+      expect(linkedCount).toBe(LINKED_GUIDES.length)
+    },
+    15000
+  )
 })
