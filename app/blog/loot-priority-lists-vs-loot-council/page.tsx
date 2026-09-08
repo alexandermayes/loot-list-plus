@@ -46,7 +46,7 @@ const jsonLd = {
   description:
     'Two of the most popular loot systems in WoW, compared honestly. When priority lists win, when council wins, and when you should use both.',
   datePublished: '2026-04-28T00:00:00Z',
-  dateModified: '2026-04-28T00:00:00Z',
+  dateModified: '2026-09-08T00:00:00Z',
   author: {
     '@type': 'Person',
     '@id': 'https://www.getlootlist.com/about#creator',

@@ -46,7 +46,7 @@ const jsonLd = {
   description:
     'Loot drama kills more guilds than bad mechanics. Here\'s how to prevent it, defuse it when it happens, and build a system raiders actually trust.',
   datePublished: '2026-05-07T00:00:00Z',
-  dateModified: '2026-05-07T00:00:00Z',
+  dateModified: '2026-09-08T00:00:00Z',
   author: {
     '@type': 'Person',
     '@id': 'https://www.getlootlist.com/about#creator',
