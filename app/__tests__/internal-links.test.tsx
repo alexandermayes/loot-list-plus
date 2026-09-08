@@ -1,7 +1,11 @@
+import type { ComponentType } from 'react'
 import { describe, it, expect, vi, beforeAll } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import LandingLootDecision from '../components/landing/LandingLootDecision'
 import AboutPage from '../about/page'
+import ComparePage from '../compare/page'
+import PricingPage from '../pricing/page'
+import { metadata as reportMetadata } from '../research/wow-classic-loot-systems-2026/page'
 
 // jsdom implements neither matchMedia nor IntersectionObserver. This file's
 // sibling parallax decoration (ParallaxItem -> useMouseParallax) and framer-motion's
@@ -54,6 +58,8 @@ const REPORT_PATH = '/research/wow-classic-loot-systems-2026'
 const APPROVED = {
   homepage: '45.5% of active guilds turn on bad-luck protection',
   about: '29.5% of awarded items went to a top-priority-bracket pick',
+  compare: '84.8% of active guilds have changed their attendance weighting from the defaults',
+  pricing: 'the median loot list runs 18 items long',
 } as const
 
 const GENERIC_ANCHOR_RE = /learn more|read more/i
@@ -127,6 +133,82 @@ describe('marketing page contextual links to the research report', () => {
       anchors.forEach((a) => {
         expect(a.textContent || '').not.toMatch(GENERIC_ANCHOR_RE)
         expect(a.getAttribute('href') || '').not.toMatch(/^\/customers\//)
+      })
+    })
+  })
+
+  describe('compare (ComparePage)', () => {
+    it('links the approved anchor to the report', () => {
+      render(<ComparePage />)
+      const link = screen.getByRole('link', { name: APPROVED.compare })
+      expect(link).toHaveAttribute('href', REPORT_PATH)
+    })
+
+    it('carries exactly one link to the report', () => {
+      const { container } = render(<ComparePage />)
+      expect(reportLinksIn(container)).toHaveLength(1)
+    })
+
+    it('still renders its existing Discord anchor with its original href', () => {
+      render(<ComparePage />)
+      const discordLink = screen.getByRole('link', { name: 'Tell us on Discord' })
+      expect(discordLink).toHaveAttribute('href', 'https://discord.gg/JNJewThYAB')
+    })
+  })
+
+  describe('pricing (PricingPage)', () => {
+    it('links the approved anchor to the report', () => {
+      render(<PricingPage />)
+      const link = screen.getByRole('link', { name: APPROVED.pricing })
+      expect(link).toHaveAttribute('href', REPORT_PATH)
+    })
+
+    it('carries exactly one link to the report', () => {
+      const { container } = render(<PricingPage />)
+      expect(reportLinksIn(container)).toHaveLength(1)
+    })
+
+    it('still renders both plan cards and both existing call-to-action anchors', () => {
+      render(<PricingPage />)
+      expect(screen.getByRole('link', { name: 'Create your guild free' })).toHaveAttribute(
+        'href',
+        'https://www.lootlistplus.com'
+      )
+      expect(screen.getByRole('link', { name: 'Start free trial' })).toHaveAttribute('href', '/premium')
+    })
+  })
+
+  describe('cross-page density and safety checks', () => {
+    const pages: Array<{ name: string; Component: ComponentType }> = [
+      { name: 'homepage', Component: LandingLootDecision },
+      { name: 'about', Component: AboutPage },
+      { name: 'compare', Component: ComparePage },
+      { name: 'pricing', Component: PricingPage },
+    ]
+
+    it.each(pages)('$name carries exactly one report-path anchor', ({ Component }) => {
+      const { container } = render(<Component />)
+      expect(reportLinksIn(container)).toHaveLength(1)
+    })
+
+    it('no anchor across the four renders is a generic click-through invitation or a case-study link', () => {
+      pages.forEach(({ Component }) => {
+        const { container } = render(<Component />)
+        const anchors = Array.from(container.querySelectorAll('a'))
+        anchors.forEach((a) => {
+          expect(a.textContent || '').not.toMatch(GENERIC_ANCHOR_RE)
+          expect(a.getAttribute('href') || '').not.toMatch(/^\/customers\//)
+        })
+      })
+    })
+
+    it("no anchor across the four renders repeats the report page's own title", () => {
+      pages.forEach(({ Component }) => {
+        const { container } = render(<Component />)
+        const anchors = Array.from(container.querySelectorAll('a'))
+        anchors.forEach((a) => {
+          expect((a.textContent || '').trim()).not.toBe(reportMetadata.title)
+        })
       })
     })
   })
