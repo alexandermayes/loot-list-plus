@@ -5,7 +5,7 @@ import { motion, useInView } from 'framer-motion'
 import { fadeInUp, staggerContainer } from '@/lib/animations'
 import { trackClientEvent } from '@/utils/analytics/client'
 
-// WoW class colors — the small authenticity cues matter to this audience
+// WoW class colors: the small authenticity cues matter to this audience
 const CLASS_COLORS: Record<string, string> = {
   Warrior: '#C79C6E',
   Hunter: '#ABD473',
@@ -49,7 +49,14 @@ export default function LandingLootDecision() {
             className="font-poppins font-medium text-[16px] text-[#bababa] mt-4 max-w-[560px] mx-auto"
           >
             Every candidate&apos;s list rank, attendance, and bad-luck protection roll into one
-            Loot Score anyone can inspect.
+            Loot Score anyone can inspect. See the real numbers:{' '}
+            <a
+              href="/research/wow-classic-loot-systems-2026"
+              className="text-accent underline underline-offset-2 hover:text-accent/80"
+            >
+              45.5% of active guilds turn on bad-luck protection
+            </a>
+            , according to our research report on how guilds actually run loot.
           </motion.p>
         </motion.div>
 
