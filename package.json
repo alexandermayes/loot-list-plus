@@ -90,7 +90,7 @@
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.22.4",
     "typescript": "^5",
-    "vitest": "^4.1.0",
+    "vitest": "^4.1.11",
     "wow-classic-items": "^2.0.1"
   },
   "overrides": {
