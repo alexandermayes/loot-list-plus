@@ -66,6 +66,10 @@ npm run dev:local       # next dev wired to the local stack
 
 See [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md) for details.
 
+### Building locally
+
+`npm run build` prerenders pages, and the root layout's context providers construct the Supabase browser client during that prerender. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env.local`, or export them in your shell, or the build fails at the static generation step. Both are public values that ship to the browser anyway, not secrets. `npm run typecheck`, `npm run lint` and `npm run test` run without them. Vercel builds supply them automatically.
+
 ## Project structure
 
 ```
