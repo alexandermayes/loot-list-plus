@@ -160,7 +160,7 @@ five grandfathered warn overrides are byte-identical to before.
 Commit atomically:
 `fix(lint): scope react-hooks rules and ignore local agent tooling dirs (#258)`
 with a body explaining the plugin-registration mismatch, ending with the line
-`Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>`.
+`Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
   </done>
 </task>
 
@@ -243,7 +243,7 @@ Commit atomically:
 `fix(build): stop prerendering /api/guild-count at build time (#257)`
 with a body explaining the ISR to force-dynamic swap and the header-based cache
 replacement, ending with the line
-`Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>`.
+`Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
   </done>
 </task>
 
