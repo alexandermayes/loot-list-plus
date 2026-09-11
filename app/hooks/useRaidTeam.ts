@@ -6,10 +6,18 @@ import { createClient } from '@/utils/supabase/client'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { hasFeature } from '@/domain/guild/feature-flags'
 import { resolveRollingWeeks, resolveRaidDays } from '@/domain/raid-team/settings'
+import { resolveTeamSelection, ALL_TEAMS_SENTINEL } from '@/domain/raid-team/select-default-team'
 import type { RaidTeam } from '@/domain/raid-team/types'
 
 const STORAGE_KEY = 'lootlist_active_team'
 
+/**
+ * Returns the stored team id for this guild, the All-teams sentinel if the
+ * officer previously chose All teams on purpose, or null when there is no
+ * record for this guild at all. A null return must not be conflated with an
+ * All-teams choice — `resolveTeamSelection` relies on the distinction to
+ * decide whether auto-selection is safe to apply.
+ */
 function getStoredTeamId(guildId: string): string | null {
   if (typeof window === 'undefined') return null
   try {
@@ -24,11 +32,10 @@ function getStoredTeamId(guildId: string): string | null {
 function storeTeamId(guildId: string, teamId: string | null) {
   if (typeof window === 'undefined') return
   try {
-    if (teamId) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ guildId, teamId }))
-    } else {
-      localStorage.removeItem(STORAGE_KEY)
-    }
+    // A null teamId records a deliberate All-teams choice via the sentinel,
+    // rather than clearing the key, so the record keeps distinguishing "chose
+    // All teams" from "never chose" for the next page load.
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ guildId, teamId: teamId ?? ALL_TEAMS_SENTINEL }))
   } catch { /* ignore */ }
 }
 
@@ -63,7 +70,12 @@ interface UseRaidTeamResult {
 /**
  * Hook for per-page team selection via URL params, persisted to localStorage.
  *
- * Priority: URL param > localStorage > null (All teams).
+ * Priority: URL param, then a stored choice (including a stored All-teams
+ * choice), then the guild's default team when the guild has teams and the
+ * officer has never chosen, then null. A team guild no longer strands an
+ * officer on All teams by default (GH-267 Path B): once a guild has any raid
+ * team, the ensure route refuses to create unassigned events, so leaving an
+ * officer on All teams by default meant the current week was never created.
  * When a team is selected, it's saved to localStorage so it persists across pages.
  */
 export function useRaidTeam(): UseRaidTeamResult {
@@ -106,14 +118,21 @@ export function useRaidTeam(): UseRaidTeamResult {
     return () => { cancelled = true }
   }, [activeGuild?.id, guildIsPro])
 
-  // Resolve active team: URL param > localStorage > null
+  // Resolve active team: URL param, then a stored choice (including a stored
+  // All-teams choice), then the guild's default team, then null. Derived
+  // rather than persisted, so an auto-selected team never masquerades as a
+  // user choice until the officer actually picks (or re-picks) one.
+  //
+  // One-time migration note: officers who chose All teams before this change
+  // have no stored record, are indistinguishable from officers who never
+  // chose, and will be auto-selected onto a team once. Re-choosing All teams
+  // afterward persists via the All-teams sentinel.
   const resolvedTeamId = useMemo(() => {
-    if (teamIdParam) return teamIdParam
-    if (guildId && teams.length > 0) {
-      const stored = getStoredTeamId(guildId)
-      if (stored && teams.some(t => t.id === stored)) return stored
-    }
-    return null
+    return resolveTeamSelection({
+      urlParam: teamIdParam,
+      stored: guildId ? getStoredTeamId(guildId) : null,
+      teams,
+    })
   }, [teamIdParam, guildId, teams])
 
   const activeTeam = useMemo(
