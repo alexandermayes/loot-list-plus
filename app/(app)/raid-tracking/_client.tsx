@@ -2498,11 +2498,15 @@ export default function RaidTrackingPage() {
         </div>
       </div>
 
-      {/* Warning: no team selected in a team-enabled guild */}
+      {/* Warning: no team selected in a team-enabled guild. Since commit
+          3606607 the ensure route refuses to create unassigned events in a
+          guild that has teams, so the All-teams view is read-only for event
+          creation (GH-267). */}
       {hasTeams && !activeTeamId && activeTab === 'tracking' && (
         <Alert variant="warning">
           <AlertDescription>
-            No team selected. New raid events will be unassigned. Select a team above to track team-specific attendance.
+            No team selected. Raid events are only created for a selected team, so this view shows
+            existing events but will not add new raid days. Select a team above to track this week.
           </AlertDescription>
         </Alert>
       )}
