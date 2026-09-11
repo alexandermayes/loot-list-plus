@@ -12,6 +12,15 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Local agent tooling directories. These are gitignored (.gitignore line
+    // 78 covers .claude/*, and .codex, .gsd, and .agents follow the same
+    // pattern) so CI never sees them. They hold CommonJS .cjs scripts that
+    // are not part of the shipped app; linting them is what makes a local
+    // `npm run lint` diverge from CI.
+    ".claude/**",
+    ".codex/**",
+    ".gsd/**",
+    ".agents/**",
   ]),
   // Plain `.js`/`.cjs` files in this repo (dev scripts under scripts/, the
   // separately-deployed discord-bot, k6 load tests) are CommonJS — the repo
@@ -30,7 +39,12 @@ const eslintConfig = defineConfig([
   // violations are fixed, remove it from its list; when a list is empty, drop
   // the override so the rule is fully enforced. (Paths under app/(app) and
   // [slug] escape the glob-special parens/brackets.)
+  // The files glob below mirrors the glob eslint-config-next uses to
+  // register the react-hooks plugin. Widening this glob without widening
+  // that upstream registration reintroduces GH-258, since ESLint aborts the
+  // whole run when a matched file has no react-hooks plugin registered.
   {
+    files: ["**/*.{js,jsx,mjs,ts,tsx,mts,cts}"],
     rules: {
       "react-hooks/purity": "error",
       "react-hooks/set-state-in-effect": "error",
