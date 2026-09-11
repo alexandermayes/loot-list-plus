@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 Phase: 05 (Internal Authority & Recrawl) — EXECUTING
 Plan: 9 of 9
 Status: Executed; LINK-02 partially complete pending 2 quota-blocked requests
-Last activity: 2026-09-10 - 05-09: 9 recrawl requests and sitemap resubmitted in Search Console; 2 URLs blocked by daily quota
+Last activity: 2026-09-10 - Completed quick task 260910-oyl: #267 current-week raids fix (3 commits)
 
 Progress: [████████████████████] 23/23 plans ([███████░░░] 67%)
 
@@ -165,6 +165,7 @@ Recent decisions affecting current work:
 | 2 | Make /research and /customers public routes in proxy.ts (crawlers and logged-out visitors got 307 to /?next=); predicate extracted to lib/public-routes.ts with regression tests; closes UAT gap G-04-2 | 2026-09-07 | 27406b5 | — |
 | 260910-oaz | Fix GH-258 (npm run lint aborting on untracked .cjs agent tooling dirs) by scoping the react-hooks ratchet block and ignoring .claude/.codex/.gsd/.agents; fix GH-257 (npm run build failing at static generation) by swapping /api/guild-count's ISR export for force-dynamic plus a Cache-Control header, with new vitest coverage | 2026-09-10 | 3cf9a3b | [260910-oaz-fix-258-repo-wide-npm-run-lint-fails-on-](./quick/260910-oaz-fix-258-repo-wide-npm-run-lint-fails-on-/) |
 | 260910-ook | Close GH-257 by documenting in README that a local npm run build needs NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY at build time (root layout providers construct the browser client during prerender) | 2026-09-10 | a0986c0 | [260910-ook-close-257-document-that-a-local-npm-run-](./quick/260910-ook-close-257-document-that-a-local-npm-run-/) |
+| 260910-oyl | Fix GH-267 (current-week raids missing on Raid Tracking for team guilds): ensure route resolves the team schedule from the expansion first via pickScheduleSource, useRaidTeam defaults to the guild default team with an explicit All-teams sentinel via resolveTeamSelection, and the All-teams banner now says events are only created for a selected team | 2026-09-10 | 98ebc17 | [260910-oyl-fix-267-current-week-raids-missing-on-ra](./quick/260910-oyl-fix-267-current-week-raids-missing-on-ra/) |
 
 ## Deferred Items
 
