@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 current_phase: 05
 current_phase_name: Internal Authority & Recrawl
 status: executing
-stopped_at: Completed 05-08-PLAN.md
-last_updated: "2026-09-08T18:51:09.026Z"
+stopped_at: Completed quick task 260910-oaz (GH-258 lint scope, GH-257 build-safe guild-count)
+last_updated: "2026-09-11T00:42:59.368Z"
 last_activity: 2026-09-07
 last_activity_desc: Phase 05 execution started
-state_head: 8c6442fd085e1a7c257a2faf1b27dd642d408bdc
+state_head: 3cf9a3bc14e8779ae2da1b0c8ee66e8b4078d35c
 progress:
   total_phases: 6
   completed_phases: 4
@@ -127,6 +127,7 @@ Recent decisions affecting current work:
 - [Phase 05]: ui.safety-gate override at wave 3: user chose to continue without a Phase 05 UI-SPEC because the wave adds only inline anchor text inside existing prose (no new components or layout blocks, per D-01), byte-matched to 05-COPY-DRAFT.md by the internal-links and guide-report-links parity suites; the same acknowledgement covers waves 4 and 5 (sitemap and blog-date changes)
 - [Phase 05]: [Phase 05] Deploy two is live (buildId dpl_E5T45BTuDDrSZSDZrYv4oH6XkQLX at ded23d70): the link sweep, honest sitemap dates and blog-post date parity are now publicly visible; production probe (11 URLs x 6 checks, twice, identical) and Search Console URL Inspection both confirm readiness with no blocking state; 3 URLs have no crawl history yet (documented normal outcome). — D-13/D-14: recrawl requests must follow deploy two and be proven, not assumed, before the one-shot request in plan 05-09
 - [Phase 05]: [Phase 05] Fixed a real file-shape mismatch (Rule 3) between probe-recrawl-urls.py/inspect-url.py's original flat-map design (plans 05-01/05-02) and the nested content-dates.json plus array-shaped recrawl-targets.json this plan needed to pass them; added normalize_dates_map/normalize_anchors_map and a dual-shape load_url_list to both scripts, with 23 new unit tests (172/172 total). — Without the fix, --dates-file and --anchors-file would silently skip every check or crash outright, defeating the plan's own double-proof requirement
+- [Phase 05]: GH-258/GH-257: scoped eslint react-hooks ratchet to eslint-config-next's plugin-registration glob and ignored local agent tooling dirs; swapped /api/guild-count ISR export for force-dynamic plus a Cache-Control header, with new vitest coverage, so npm run lint and the build-time prerender no longer fail locally
 
 ### Pending Todos
 
@@ -159,6 +160,7 @@ Recent decisions affecting current work:
 |---|-------------|------|--------|-----------|
 | 260901-hkj | Harden premium Discord role sync: await webhook role call, discordFetch retry, multi-guild revoke guard, daily reconciliation cron with backfill | 2026-09-01 | 1c13170 | [260901-hkj-harden-the-premium-discord-role-sync-awa](./quick/260901-hkj-harden-the-premium-discord-role-sync-awa/) |
 | 2 | Make /research and /customers public routes in proxy.ts (crawlers and logged-out visitors got 307 to /?next=); predicate extracted to lib/public-routes.ts with regression tests; closes UAT gap G-04-2 | 2026-09-07 | 27406b5 | — |
+| 260910-oaz | Fix GH-258 (npm run lint aborting on untracked .cjs agent tooling dirs) by scoping the react-hooks ratchet block and ignoring .claude/.codex/.gsd/.agents; fix GH-257 (npm run build failing at static generation) by swapping /api/guild-count's ISR export for force-dynamic plus a Cache-Control header, with new vitest coverage | 2026-09-10 | 3cf9a3b | [260910-oaz-fix-258-repo-wide-npm-run-lint-fails-on-](./quick/260910-oaz-fix-258-repo-wide-npm-run-lint-fails-on-/) |
 
 ## Deferred Items
 
@@ -170,6 +172,6 @@ Items acknowledged and deferred at milestone close, most recent first:
 
 ## Session Continuity
 
-Last session: 2026-09-08T18:51:08.787Z
-Stopped at: Completed 05-08-PLAN.md
+Last session: 2026-09-11T00:42:59.120Z
+Stopped at: Completed quick task 260910-oaz (GH-258 lint scope, GH-257 build-safe guild-count)
 Resume file: None
