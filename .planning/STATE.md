@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 current_phase: 05
 current_phase_name: Internal Authority & Recrawl
 status: executing
-stopped_at: Completed quick task 260910-oaz (GH-258 lint scope, GH-257 build-safe guild-count)
+stopped_at: Completed quick task 260910-ook (GH-257 README build env note)
 last_updated: "2026-09-11T00:42:59.368Z"
 last_activity: 2026-09-07
 last_activity_desc: Phase 05 execution started
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 Phase: 05 (Internal Authority & Recrawl) — EXECUTING
 Plan: 5 of 9
 Status: Ready to execute
-Last activity: 2026-09-07 — Phase 05 execution started
+Last activity: 2026-09-10 - Completed quick task 260910-ook: README note for local build env (#257)
 
 Progress: [████████████████████] 23/23 plans ([███████░░░] 67%)
 
@@ -161,6 +161,7 @@ Recent decisions affecting current work:
 | 260901-hkj | Harden premium Discord role sync: await webhook role call, discordFetch retry, multi-guild revoke guard, daily reconciliation cron with backfill | 2026-09-01 | 1c13170 | [260901-hkj-harden-the-premium-discord-role-sync-awa](./quick/260901-hkj-harden-the-premium-discord-role-sync-awa/) |
 | 2 | Make /research and /customers public routes in proxy.ts (crawlers and logged-out visitors got 307 to /?next=); predicate extracted to lib/public-routes.ts with regression tests; closes UAT gap G-04-2 | 2026-09-07 | 27406b5 | — |
 | 260910-oaz | Fix GH-258 (npm run lint aborting on untracked .cjs agent tooling dirs) by scoping the react-hooks ratchet block and ignoring .claude/.codex/.gsd/.agents; fix GH-257 (npm run build failing at static generation) by swapping /api/guild-count's ISR export for force-dynamic plus a Cache-Control header, with new vitest coverage | 2026-09-10 | 3cf9a3b | [260910-oaz-fix-258-repo-wide-npm-run-lint-fails-on-](./quick/260910-oaz-fix-258-repo-wide-npm-run-lint-fails-on-/) |
+| 260910-ook | Close GH-257 by documenting in README that a local npm run build needs NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY at build time (root layout providers construct the browser client during prerender) | 2026-09-10 | a0986c0 | [260910-ook-close-257-document-that-a-local-npm-run-](./quick/260910-ook-close-257-document-that-a-local-npm-run-/) |
 
 ## Deferred Items
 
@@ -173,5 +174,5 @@ Items acknowledged and deferred at milestone close, most recent first:
 ## Session Continuity
 
 Last session: 2026-09-11T00:42:59.120Z
-Stopped at: Completed quick task 260910-oaz (GH-258 lint scope, GH-257 build-safe guild-count)
+Stopped at: Completed quick task 260910-ook (GH-257 README build env note)
 Resume file: None
