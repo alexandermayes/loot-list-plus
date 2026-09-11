@@ -185,7 +185,7 @@ Plans:
   2. The sitemap contains only preferred canonical URLs, and `lastmod` is accurate for every page changed during this milestone
   3. URL Inspection recrawl requests are submitted exactly once per materially changed URL, after the final deployment, with the submitted URLs recorded so nobody re-requests them
 
-**Plans**: 8/9 plans executed
+**Plans**: 9/9 plans executed (LINK-02 partially complete: 2 recrawl requests await the next Search Console quota day)
 
 Plans:
 **Wave 1**
@@ -216,7 +216,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 05-09-PLAN.md — The one-time recrawl: one human request per URL, recorded once, never repeated
+- [x] 05-09-PLAN.md — The one-time recrawl: one human request per URL, recorded once, never repeated
 
 ### Phase 6: Week-4 Review & Next Bet
 
@@ -245,7 +245,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Checkable Conversion Copy | 7/7 | Complete    | 2026-09-01 |
 | 3. Anonymized Product-Data Report | 6/6 | Complete    | 2026-09-05 |
 | 4. Verified Guild Case Study | 5/5 | Complete    | 2026-09-06 |
-| 5. Internal Authority & Recrawl | 8/9 | In Progress|  |
+| 5. Internal Authority & Recrawl | 9/9 | In Progress (2 recrawl requests pending quota) |  |
 | 6. Week-4 Review & Next Bet | 0/TBD | Not started | - |
 
 ## Requirement Coverage
