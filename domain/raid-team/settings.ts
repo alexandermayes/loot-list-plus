@@ -10,7 +10,7 @@ import type { RaidDaysOverride } from './types'
 /**
  * Guild settings fields relevant to raid day configuration.
  */
-interface RaidDaySettings {
+export interface RaidDaySettings {
   raid_days_per_week: number
   first_raid_day: number | null
   second_raid_day: number | null

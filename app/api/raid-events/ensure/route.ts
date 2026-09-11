@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { toDateString } from '@/utils/date'
 import { resolveRaidDays } from '@/domain/raid-team/settings'
+import { pickScheduleSource } from '@/domain/raid-team/pick-schedule-source'
 import { isDateScheduled } from '@/domain/raid-team/schedule-history'
 import { revalidateGuildRaidEvents } from '@/lib/cache/dashboard-attendance'
 
@@ -97,8 +98,23 @@ export async function POST(request: NextRequest) {
     // creation, before its day override loads) can send dates from the
     // inherited guild schedule — which is how phantom past events get created
     // on a brand-new team (#248). Recheck every candidate date server-side.
+    // The base schedule is resolved expansion-first, matching the client's
+    // `generateRaidDates()` precedence, so this recheck cannot drop dates the
+    // client legitimately generated from an expansion-configured schedule (#267).
     if (raid_team_id && newDates.length > 0) {
-      const [{ data: team }, { data: gs }] = await Promise.all([
+      // Defensive: both current clients always send expansion_id, and the
+      // creation branch below requires it, but the filter's schedule source
+      // should be resolvable from the guild's active expansion on its own so
+      // the two stop being able to disagree.
+      const resolvedExpansionId = expansion_id || (
+        await serviceSupabase
+          .from('guilds')
+          .select('active_expansion_id')
+          .eq('id', guild_id)
+          .maybeSingle()
+      ).data?.active_expansion_id
+
+      const [{ data: team }, { data: gs }, { data: expansionRow }] = await Promise.all([
         serviceSupabase
           .from('raid_teams')
           .select('raid_days_override, schedule_history')
@@ -110,11 +126,20 @@ export async function POST(request: NextRequest) {
           .select('raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day')
           .eq('guild_id', guild_id)
           .maybeSingle(),
+        resolvedExpansionId
+          ? serviceSupabase
+            .from('expansions')
+            .select('raid_days_per_week, first_raid_day, second_raid_day, third_raid_day, fourth_raid_day, fifth_raid_day')
+            .eq('id', resolvedExpansionId)
+            .eq('guild_id', guild_id)
+            .maybeSingle()
+          : Promise.resolve({ data: null }),
       ])
       if (!team) {
         return NextResponse.json({ error: 'Raid team not found in this guild' }, { status: 404 })
       }
-      const teamDays = gs ? resolveRaidDays(gs, team.raid_days_override) : []
+      const scheduleSource = pickScheduleSource(expansionRow, gs)
+      const teamDays = scheduleSource ? resolveRaidDays(scheduleSource, team.raid_days_override) : []
       newDates = newDates.filter((d) =>
         isDateScheduled(d, new Date(`${d}T00:00:00Z`).getUTCDay(), teamDays, team.schedule_history)
       )
