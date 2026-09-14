@@ -51,8 +51,8 @@ The user submitted Request indexing in Search Console, once per URL, working dow
 | 7 | https://www.getlootlist.com/blog/dkp-is-dead-what-classic-guilds-use-in-2026 | yes | 2026-09-10 | Alex Mayes |
 | 8 | https://www.getlootlist.com/blog/how-to-handle-loot-drama-without-losing-raiders | yes | 2026-09-10 | Alex Mayes |
 | 9 | https://www.getlootlist.com/blog/how-to-run-loot-without-a-spreadsheet | yes | 2026-09-10 | Alex Mayes |
-| 10 | https://www.getlootlist.com/blog/why-attendance-tracking-matters-more-than-loot-rules | no (quota) | | |
-| 11 | https://www.getlootlist.com/blog/how-to-set-up-a-fair-loot-system-for-your-wow-guild | no (quota) | | |
+| 10 | https://www.getlootlist.com/blog/why-attendance-tracking-matters-more-than-loot-rules | yes (follow-up) | 2026-09-13 | Alex Mayes |
+| 11 | https://www.getlootlist.com/blog/how-to-set-up-a-fair-loot-system-for-your-wow-guild | yes (follow-up) | 2026-09-13 | Alex Mayes |
 
 Each requested row was appended only through `log-recrawl.py`, with `--check` run immediately before and exiting 0 (not yet requested). The two skipped URLs received no row at all; they remain available to request.
 
@@ -70,9 +70,13 @@ No URL was requested more than once, in Search Console or in the log.
 ## Requirements
 
 - **LINK-01:** Complete. Every marketing surface, the report and every approved guide carry their approved links (plans 05-04 and 05-05).
-- **LINK-02:** Partially complete. The sitemap reads the dates module and the parity suites are green (05-06, 05-07), and 9 of 11 requests are recorded. It closes when URLs 10 and 11 carry a request date. Marking it complete now would misstate the log.
+- **LINK-02:** Complete as of 2026-09-13. The sitemap reads the dates module and the parity suites are green (05-06, 05-07), and all 11 requests are recorded (9 on 2026-09-10, 2 on 2026-09-13 after the quota reset).
 
-## What closes LINK-02
+## Follow-up 2026-09-13
+
+The user requested indexing for URLs 10 and 11 after the daily quota reset and confirmed both. Two requested rows were appended through `log-recrawl.py` with `--check` exiting 0 immediately before each. The mechanical verification was re-run: 11 targets, 11 requested, 0 unsubmitted, no URL with two request dates, all 11 prepared rows byte-identical. LINK-02 is now Complete and Phase 05 is closed.
+
+## What closed LINK-02 (as written on 2026-09-10)
 
 On the next Search Console quota day (24 hours after the first request, roughly): inspect URLs 10 and 11, click Request indexing once each, then run `log-recrawl.py --check` for each, append the two requested rows through the writer, and flip LINK-02 to Complete. Recorded as a pending todo in STATE.md.
 

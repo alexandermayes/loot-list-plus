@@ -33,7 +33,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 ### Linking
 
 - [x] **LINK-01**: Homepage, Compare, Pricing, About, report, case study, and relevant guides interlink contextually with descriptive anchor text
-- [ ] **LINK-02**: Sitemap `lastmod` is accurate and one-time recrawl requests are made after all content is final
+- [x] **LINK-02**: Sitemap `lastmod` is accurate and one-time recrawl requests are made after all content is final
 
 ## v2 Requirements
 
@@ -71,7 +71,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MEAS-02 | Phase 1 | Complete |
 | MEAS-03 | Phase 6 | Pending |
 | LINK-01 | Phase 5 | Complete |
-| LINK-02 | Phase 5 | Partially complete: sitemap and dates done; 9 of 11 recrawl requests submitted 2026-09-10, 2 blocked by the daily Search Console quota (why-attendance-tracking-matters-more-than-loot-rules, how-to-set-up-a-fair-loot-system-for-your-wow-guild); closes when both carry a request date in scripts/analytics/RECRAWL-LOG.md |
+| LINK-02 | Phase 5 | Complete |
 
 **Coverage:**
 

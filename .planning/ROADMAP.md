@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Checkable Conversion Copy** - Signup and homepage say only things an officer can verify (completed 2026-09-01)
 - [x] **Phase 3: Anonymized Product-Data Report** - Publish a finding nobody else can produce, with every number reproducible (completed 2026-09-05)
 - [x] **Phase 4: Verified Guild Case Study** - A real guild's before and after, published with content that guild approved (completed 2026-09-06)
-- [ ] **Phase 5: Internal Authority & Recrawl** - Every marketing surface points at the new evidence, then Google is asked once to re-look
+- [x] **Phase 5: Internal Authority & Recrawl** - Every marketing surface points at the new evidence, then Google is asked once to re-look
 - [ ] **Phase 6: Week-4 Review & Next Bet** - Compare the Sep 18 to 24 cohort to baseline and choose what comes next from data
 
 ## Phase Details
@@ -185,7 +185,7 @@ Plans:
   2. The sitemap contains only preferred canonical URLs, and `lastmod` is accurate for every page changed during this milestone
   3. URL Inspection recrawl requests are submitted exactly once per materially changed URL, after the final deployment, with the submitted URLs recorded so nobody re-requests them
 
-**Plans**: 9/9 plans executed (LINK-02 partially complete: 2 recrawl requests await the next Search Console quota day)
+**Plans:** 9/9 plans complete
 
 Plans:
 **Wave 1**
@@ -245,7 +245,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Checkable Conversion Copy | 7/7 | Complete    | 2026-09-01 |
 | 3. Anonymized Product-Data Report | 6/6 | Complete    | 2026-09-05 |
 | 4. Verified Guild Case Study | 5/5 | Complete    | 2026-09-06 |
-| 5. Internal Authority & Recrawl | 9/9 | In Progress (2 recrawl requests pending quota) |  |
+| 5. Internal Authority & Recrawl | 9/9 | Complete    | 2026-09-13 |
 | 6. Week-4 Review & Next Bet | 0/TBD | Not started | - |
 
 ## Requirement Coverage

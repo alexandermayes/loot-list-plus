@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 current_phase: 05
 current_phase_name: Internal Authority & Recrawl
-status: executing
-stopped_at: Completed 05-09-PLAN.md (9 of 11 recrawl requests submitted; 2 await quota)
+status: between_phases
+stopped_at: Phase 05 complete (all 11 recrawl requests recorded 2026-09-13); Phase 06 is calendar-bound to Sep 20 to 24
 last_updated: "2026-09-11T00:42:59.368Z"
 last_activity: 2026-09-07
 last_activity_desc: Phase 05 execution started
 state_head: 3cf9a3bc14e8779ae2da1b0c8ee66e8b4078d35c
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 32
   completed_plans: 32
-  percent: 69
+  percent: 83
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 
 ## Current Position
 
-Phase: 05 (Internal Authority & Recrawl) — EXECUTING
+Phase: 05 (Internal Authority & Recrawl) complete; next is Phase 06 (Week-4 Review), Sep 20 to 24
 Plan: 9 of 9
-Status: Executed; LINK-02 partially complete pending 2 quota-blocked requests
-Last activity: 2026-09-13 - Completed quick task 260913-oer: #269 Naxx token names fix (3 commits, migration pending deploy)
+Status: Complete
+Last activity: 2026-09-13 - 05-09 follow-up: final 2 recrawl requests recorded; LINK-01 and LINK-02 complete; Phase 05 complete
 
 Progress: [████████████████████] 23/23 plans ([███████░░░] 67%)
 
@@ -126,13 +126,12 @@ Recent decisions affecting current work:
 - [Phase 05]: [Phase 05] Guide subset finalized: 6 topic-matched guides linked, 2 recruitment/onboarding guides excluded, officer-burnout guide confirmed no-link. Homepage link slot confirmed as the subhead paragraph. Reused metrics across pages accepted as drafted with no redistribution. 05-COPY-DRAFT.md now STATUS: APPROVED with dated SIGN-OFF, unblocking plans 05-04, 05-05, 05-06.
 - [Phase 05]: ui.safety-gate override at wave 3: user chose to continue without a Phase 05 UI-SPEC because the wave adds only inline anchor text inside existing prose (no new components or layout blocks, per D-01), byte-matched to 05-COPY-DRAFT.md by the internal-links and guide-report-links parity suites; the same acknowledgement covers waves 4 and 5 (sitemap and blog-date changes)
 - [Phase 05]: [Phase 05] Deploy two is live (buildId dpl_E5T45BTuDDrSZSDZrYv4oH6XkQLX at ded23d70): the link sweep, honest sitemap dates and blog-post date parity are now publicly visible; production probe (11 URLs x 6 checks, twice, identical) and Search Console URL Inspection both confirm readiness with no blocking state; 3 URLs have no crawl history yet (documented normal outcome). — D-13/D-14: recrawl requests must follow deploy two and be proven, not assumed, before the one-shot request in plan 05-09
+- [Phase 05]: [Phase 05] 05-09 follow-up 2026-09-13: URLs 10 and 11 requested by Alex Mayes after the quota reset and recorded through log-recrawl.py; all 11 frozen URLs now carry exactly one request date; LINK-02 flipped to Complete.
 - [Phase 05]: [Phase 05] 05-09 recrawl submissions recorded 2026-09-10 by Alex Mayes for 9 of 11 frozen URLs plus one sitemap resubmission; the daily Search Console quota blocked URLs 10 and 11, which got no row (a fabricated date would make them permanently unavailable), so LINK-02 is recorded as partially complete rather than complete. No URL was requested more than once.
 - [Phase 05]: [Phase 05] Fixed a real file-shape mismatch (Rule 3) between probe-recrawl-urls.py/inspect-url.py's original flat-map design (plans 05-01/05-02) and the nested content-dates.json plus array-shaped recrawl-targets.json this plan needed to pass them; added normalize_dates_map/normalize_anchors_map and a dual-shape load_url_list to both scripts, with 23 new unit tests (172/172 total). — Without the fix, --dates-file and --anchors-file would silently skip every check or crash outright, defeating the plan's own double-proof requirement
 - [Phase 05]: GH-258/GH-257: scoped eslint react-hooks ratchet to eslint-config-next's plugin-registration glob and ignored local agent tooling dirs; swapped /api/guild-count ISR export for force-dynamic plus a Cache-Control header, with new vitest coverage, so npm run lint and the build-time prerender no longer fail locally
 
 ### Pending Todos
-
-- (area: seo) captured 2026-09-10 from plan 05-09: request indexing for the two quota-blocked URLs on the next Search Console quota day (why-attendance-tracking-matters-more-than-loot-rules, how-to-set-up-a-fair-loot-system-for-your-wow-guild), run `log-recrawl.py --check` first, append their requested rows, then mark LINK-02 Complete
 
 6 pending:
 
@@ -179,5 +178,5 @@ Items acknowledged and deferred at milestone close, most recent first:
 ## Session Continuity
 
 Last session: 2026-09-11T00:42:59.120Z
-Stopped at: Completed 05-09-PLAN.md (9 of 11 recrawl requests submitted; 2 await quota)
+Stopped at: Phase 05 complete (all 11 recrawl requests recorded 2026-09-13); Phase 06 is calendar-bound to Sep 20 to 24
 Resume file: None
