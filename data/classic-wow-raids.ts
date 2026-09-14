@@ -674,7 +674,7 @@ export const zulGurub: Raid = {
     {
       name: "Jin'do the Hexxer",
       items: [
-        { name: "Jin'do's Judgment", slot: 'Two-Hand', wowhead_id: 19884 },
+        { name: "Jin'do's Judgement", slot: 'Two-Hand', wowhead_id: 19884 },
         { name: "Jin'do's Hexxer", slot: 'Weapon', wowhead_id: 19890 },
         { name: "Jin'do's Bag of Whammies", slot: 'Off-Hand', wowhead_id: 19891 },
         { name: "The Hexxer's Cover", slot: 'Head', wowhead_id: 19886 },
@@ -1143,38 +1143,33 @@ export const naxxramas: Raid = {
     {
       name: 'Tier 3 Tokens',
       items: [
-        // Chest Tokens
+        // GH-269: these 24 ids are authoritative (verified against Wowhead and the
+        // wow-classic-items package). Names below match what each id actually is;
+        // do not reorder or regroup by armor slot again.
         { name: 'Desecrated Breastplate', slot: 'Token', wowhead_id: 22349 },
         { name: 'Desecrated Tunic', slot: 'Token', wowhead_id: 22350 },
         { name: 'Desecrated Robe', slot: 'Token', wowhead_id: 22351 },
-        // Shoulder Tokens
-        { name: 'Desecrated Pauldrons', slot: 'Token', wowhead_id: 22352 },
-        { name: 'Desecrated Spaulders', slot: 'Token', wowhead_id: 22353 },
-        { name: 'Desecrated Mantle', slot: 'Token', wowhead_id: 22354 },
-        // Helm Tokens
-        { name: 'Desecrated Helmet', slot: 'Token', wowhead_id: 22355 },
-        { name: 'Desecrated Headpiece', slot: 'Token', wowhead_id: 22356 },
-        { name: 'Desecrated Circlet', slot: 'Token', wowhead_id: 22357 },
-        // Waist Tokens (from trash)
-        { name: 'Desecrated Waistguard', slot: 'Token', wowhead_id: 22358 },
-        { name: 'Desecrated Girdle', slot: 'Token', wowhead_id: 22359 },
-        { name: 'Desecrated Belt', slot: 'Token', wowhead_id: 22360 },
-        // Gloves Tokens
-        { name: 'Desecrated Gauntlets', slot: 'Token', wowhead_id: 22361 },
-        { name: 'Desecrated Handguards', slot: 'Token', wowhead_id: 22362 },
-        { name: 'Desecrated Gloves', slot: 'Token', wowhead_id: 22363 },
-        // Legs Tokens
-        { name: 'Desecrated Legplates', slot: 'Token', wowhead_id: 22364 },
-        { name: 'Desecrated Legguards', slot: 'Token', wowhead_id: 22365 },
+        { name: 'Desecrated Legplates', slot: 'Token', wowhead_id: 22352 },
+        { name: 'Desecrated Helmet', slot: 'Token', wowhead_id: 22353 },
+        { name: 'Desecrated Pauldrons', slot: 'Token', wowhead_id: 22354 },
+        { name: 'Desecrated Bracers', slot: 'Token', wowhead_id: 22355 },
+        { name: 'Desecrated Waistguard', slot: 'Token', wowhead_id: 22356 },
+        { name: 'Desecrated Gauntlets', slot: 'Token', wowhead_id: 22357 },
+        { name: 'Desecrated Sabatons', slot: 'Token', wowhead_id: 22358 },
+        { name: 'Desecrated Legguards', slot: 'Token', wowhead_id: 22359 },
+        { name: 'Desecrated Headpiece', slot: 'Token', wowhead_id: 22360 },
+        { name: 'Desecrated Spaulders', slot: 'Token', wowhead_id: 22361 },
+        { name: 'Desecrated Wristguards', slot: 'Token', wowhead_id: 22362 },
+        { name: 'Desecrated Girdle', slot: 'Token', wowhead_id: 22363 },
+        { name: 'Desecrated Handguards', slot: 'Token', wowhead_id: 22364 },
+        { name: 'Desecrated Boots', slot: 'Token', wowhead_id: 22365 },
         { name: 'Desecrated Leggings', slot: 'Token', wowhead_id: 22366 },
-        // Feet Tokens
-        { name: 'Desecrated Sandals', slot: 'Token', wowhead_id: 22367 },
-        { name: 'Desecrated Sabatons', slot: 'Token', wowhead_id: 22368 },
-        { name: 'Desecrated Boots', slot: 'Token', wowhead_id: 22369 },
-        // Wrist Tokens (from trash)
-        { name: 'Desecrated Bindings', slot: 'Token', wowhead_id: 22370 },
-        { name: 'Desecrated Wristguards', slot: 'Token', wowhead_id: 22371 },
-        { name: 'Desecrated Bracers', slot: 'Token', wowhead_id: 22372 },
+        { name: 'Desecrated Circlet', slot: 'Token', wowhead_id: 22367 },
+        { name: 'Desecrated Shoulderpads', slot: 'Token', wowhead_id: 22368 },
+        { name: 'Desecrated Bindings', slot: 'Token', wowhead_id: 22369 },
+        { name: 'Desecrated Belt', slot: 'Token', wowhead_id: 22370 },
+        { name: 'Desecrated Gloves', slot: 'Token', wowhead_id: 22371 },
+        { name: 'Desecrated Sandals', slot: 'Token', wowhead_id: 22372 },
       ],
     },
     {

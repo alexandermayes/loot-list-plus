@@ -40,41 +40,38 @@ export const TOKEN_CLASS_MAPPING: Record<string, WowClassName[]> = {
   'Forgotten Vanquisher': ['Mage', 'Druid', 'Rogue'],
 
   // ============================================================================
-  // CLASSIC TIER 3 TOKENS (Naxxramas - Desecrated items)
-  // Each token type maps to specific classes
+  // CLASSIC TIER 3 TOKENS (Naxxramas - Desecrated items) - GH-269
+  // Verified against Wowhead: three class-restricted armor sets, 8 tokens each.
   // ============================================================================
-  // Desecrated Breastplate/Pauldrons/etc - Warrior
-  'Desecrated Breastplate': ['Warrior'],
-  'Desecrated Pauldrons': ['Warrior'],
-  'Desecrated Helmet': ['Warrior'],
-  'Desecrated Gauntlets': ['Warrior'],
-  'Desecrated Legplates': ['Warrior'],
-  'Desecrated Waistguard': ['Warrior'],
-  'Desecrated Wristguards': ['Warrior'],
-  'Desecrated Sabatons': ['Warrior'],
+  // Plate set (Warrior, Rogue)
+  'Desecrated Breastplate': ['Warrior', 'Rogue'],
+  'Desecrated Legplates': ['Warrior', 'Rogue'],
+  'Desecrated Helmet': ['Warrior', 'Rogue'],
+  'Desecrated Pauldrons': ['Warrior', 'Rogue'],
+  'Desecrated Bracers': ['Warrior', 'Rogue'],
+  'Desecrated Waistguard': ['Warrior', 'Rogue'],
+  'Desecrated Gauntlets': ['Warrior', 'Rogue'],
+  'Desecrated Sabatons': ['Warrior', 'Rogue'],
 
-  // Desecrated Legguards - Hunter/Shaman (mail T3 leg piece)
-  'Desecrated Legguards': ['Hunter', 'Shaman'],
+  // Mail set (Paladin, Hunter, Shaman, Druid)
+  'Desecrated Tunic': ['Paladin', 'Hunter', 'Shaman', 'Druid'],
+  'Desecrated Legguards': ['Paladin', 'Hunter', 'Shaman', 'Druid'],
+  'Desecrated Headpiece': ['Paladin', 'Hunter', 'Shaman', 'Druid'],
+  'Desecrated Spaulders': ['Paladin', 'Hunter', 'Shaman', 'Druid'],
+  'Desecrated Wristguards': ['Paladin', 'Hunter', 'Shaman', 'Druid'],
+  'Desecrated Girdle': ['Paladin', 'Hunter', 'Shaman', 'Druid'],
+  'Desecrated Handguards': ['Paladin', 'Hunter', 'Shaman', 'Druid'],
+  'Desecrated Boots': ['Paladin', 'Hunter', 'Shaman', 'Druid'],
 
-  // Desecrated Tunic/Spaulders/etc - Rogue
-  'Desecrated Tunic': ['Rogue'],
-  'Desecrated Spaulders': ['Rogue'],
-  'Desecrated Headpiece': ['Rogue'],
-  'Desecrated Handguards': ['Rogue'],
-  'Desecrated Leggings': ['Rogue'],
-  'Desecrated Belt': ['Rogue'],
-  'Desecrated Bracers': ['Rogue'],
-  'Desecrated Boots': ['Rogue'],
-
-  // Desecrated Robe/Mantle/etc - Priest, Mage, Warlock
+  // Cloth set (Priest, Mage, Warlock)
   'Desecrated Robe': ['Priest', 'Mage', 'Warlock'],
-  'Desecrated Mantle': ['Priest', 'Mage', 'Warlock'],
+  'Desecrated Leggings': ['Priest', 'Mage', 'Warlock'],
   'Desecrated Circlet': ['Priest', 'Mage', 'Warlock'],
-  'Desecrated Gloves': ['Priest', 'Mage', 'Warlock'],
-  'Desecrated Pants': ['Priest', 'Mage', 'Warlock'],
+  'Desecrated Shoulderpads': ['Priest', 'Mage', 'Warlock'],
   'Desecrated Bindings': ['Priest', 'Mage', 'Warlock'],
+  'Desecrated Belt': ['Priest', 'Mage', 'Warlock'],
+  'Desecrated Gloves': ['Priest', 'Mage', 'Warlock'],
   'Desecrated Sandals': ['Priest', 'Mage', 'Warlock'],
-  'Desecrated Girdle': ['Priest', 'Mage', 'Warlock'],
 
   // ============================================================================
   // CLASSIC AQ40 TOKENS (Temple of Ahn'Qiraj)
