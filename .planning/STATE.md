@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 Phase: 05 (Internal Authority & Recrawl) — EXECUTING
 Plan: 9 of 9
 Status: Executed; LINK-02 partially complete pending 2 quota-blocked requests
-Last activity: 2026-09-10 - Completed quick task 260910-oyl: #267 current-week raids fix (3 commits)
+Last activity: 2026-09-13 - Completed quick task 260913-oer: #269 Naxx token names fix (3 commits, migration pending deploy)
 
 Progress: [████████████████████] 23/23 plans ([███████░░░] 67%)
 
@@ -166,6 +166,7 @@ Recent decisions affecting current work:
 | 260910-oaz | Fix GH-258 (npm run lint aborting on untracked .cjs agent tooling dirs) by scoping the react-hooks ratchet block and ignoring .claude/.codex/.gsd/.agents; fix GH-257 (npm run build failing at static generation) by swapping /api/guild-count's ISR export for force-dynamic plus a Cache-Control header, with new vitest coverage | 2026-09-10 | 3cf9a3b | [260910-oaz-fix-258-repo-wide-npm-run-lint-fails-on-](./quick/260910-oaz-fix-258-repo-wide-npm-run-lint-fails-on-/) |
 | 260910-ook | Close GH-257 by documenting in README that a local npm run build needs NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY at build time (root layout providers construct the browser client during prerender) | 2026-09-10 | a0986c0 | [260910-ook-close-257-document-that-a-local-npm-run-](./quick/260910-ook-close-257-document-that-a-local-npm-run-/) |
 | 260910-oyl | Fix GH-267 (current-week raids missing on Raid Tracking for team guilds): ensure route resolves the team schedule from the expansion first via pickScheduleSource, useRaidTeam defaults to the guild default team with an explicit All-teams sentinel via resolveTeamSelection, and the All-teams banner now says events are only created for a selected team | 2026-09-10 | 98ebc17 | [260910-oyl-fix-267-current-week-raids-missing-on-ra](./quick/260910-oyl-fix-267-current-week-raids-missing-on-ra/) |
+| 260913-oer | Fix GH-269 (Naxxramas Tier 3 token names and class restrictions wrong): 24 Desecrated token names corrected to their Wowhead ids in data/classic-wow-raids.ts, TOKEN_CLASS_MAPPING fixed per Wowhead (plate Warrior+Rogue, mail Paladin+Hunter+Shaman+Druid, cloth Priest+Mage+Warlock), regression test locks all 743 Classic item names to wow-classic-items, migration 20260913000000 relabels existing loot_items rows and rebuilds their class rows | 2026-09-13 | 280750b | [260913-oer-fix-269-naxxramas-tier-3-token-names-and](./quick/260913-oer-fix-269-naxxramas-tier-3-token-names-and/) |
 
 ## Deferred Items
 
