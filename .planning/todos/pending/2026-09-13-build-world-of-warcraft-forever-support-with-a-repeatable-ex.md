@@ -34,3 +34,15 @@ TBD in detail; direction:
 5. Route: `/gsd-new-milestone` after the sprint closes on 2026-09-24, with a research phase on the Forever data sources first.
 
 Triggers: 2026-09-17 beta (start data research), 2026-09-24 sprint end (open the milestone), 2026-11-04 launch (Forever guilds must be able to seed raids).
+
+## Data sources, checked 2026-09-13
+
+Nothing structured exists publicly yet; the Forever client is not downloadable until the beta opens 2026-09-17 (beta runs to 2026-10-21).
+
+- Confirmed content names to seed against: raids Barrow Deeps (10 player) and Hyjal Summit (20 player) at launch; Onyxia's Lair on the December roadmap; nine dungeons; new race Skyborne Elves (starts on Zephras Isle, levels 1 to 12); new professions; new battleground.
+- wago.tools: the earliest structured source. It publishes client DB2 tables per product branch (Item, ItemSparse, ItemEffect, JournalInstance, JournalEncounter, JournalEncounterItem, ChrRaces, ChrClasses). A Forever branch should appear when the beta client ships. The site returns 403 to plain scripted fetches, so pulls need a browser session or its documented API; check before automating. Precedent: wowforevertalents.com uses Classic Era client tables (1.15.9.69722) as its baseline and plans to regenerate from the Forever client.
+- Wowhead: wowhead.com/forever is a launch countdown plus guides today, no item database. Expect the database to populate during beta; when it does, its item ids become the second verification source.
+- Blizzard game data API: Classic uses namespace static-classic-{region}. Watch for a Forever namespace on the Battle.net developer portal; if none appears, the API will not be a source at launch.
+- Not usable: the wow-classic-items npm package (Classic Era only) cannot verify Forever items. The verification gate for Forever must target wago.tools or Wowhead exports instead.
+
+Day-one checklist for 2026-09-17: (1) does wago.tools list a Forever product, and do Item and JournalEncounter tables have rows for Barrow Deeps and Hyjal Summit; (2) does Wowhead show a Forever database; (3) does the developer portal list a Forever namespace; (4) record item-id ranges and any new item slot or token conventions observed.
