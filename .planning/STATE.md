@@ -133,7 +133,9 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-6 pending:
+7 pending:
+
+- (area: data) captured 2026-09-13: build World of Warcraft Forever support (announced BlizzCon 2026-09-12, beta 2026-09-17, launch 2026-11-04) with a repeatable expansion-onboarding format replacing the hand-built per-expansion data files and displayName if/else chains in expansionSeeder.ts; natural next milestone after the sprint closes 2026-09-24. See .planning/todos/pending/2026-09-13-build-world-of-warcraft-forever-support-with-a-repeatable-ex.md
 
 - (area: seo) captured 2026-08-28 from the GSC baseline:
   - Fix "loot list" query cannibalization (changelog vs homepage)
