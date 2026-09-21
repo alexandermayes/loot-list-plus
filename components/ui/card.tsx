@@ -1,9 +1,20 @@
+"use client"
+
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
 /**
  * Card Component - LootList+ Design System
+ *
+ * Client component: Card shares its `variant` with CardHeader/CardContent/
+ * CardFooter through React context, and context is a client-only React
+ * feature -- React's `react-server` conditional build exports no
+ * createContext/useContext at all. Without this directive, any React Server
+ * Component that imports Card (app/blog/*, app/research/*, app/customers/*)
+ * compiles the real module into the RSC layer and the build dies at
+ * "Collecting page data" with `TypeError: c.createContext is not a function`.
+ * Same reason components/ui/modal.tsx carries the directive.
  *
  * Elevated surface with subtle border and background differentiation.
  * Uses background-elevated for visual layering.
