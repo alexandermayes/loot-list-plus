@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { getExpansionDisplayName } from '@/utils/expansionVisuals'
 
 interface DiscordGuild {
   id: string
@@ -41,12 +42,16 @@ interface CreateGuildModalProps {
 
 type Step = 'discord' | 'details' | 'settings'
 
+// Client component: never import app/services/expansionSeeder.ts here (it pulls
+// every raid data file into the browser bundle). Ids must match the seeder
+// registry keys in app/services/expansionSeeder.ts.
 const EXPANSIONS = [
   { id: 'Classic', name: 'Classic', image: '/images/expansions/WoWlogo.webp', available: true },
   { id: 'The Burning Crusade', name: 'TBC', image: '/images/expansions/TBCLogo.webp', available: true },
   { id: 'Wrath of the Lich King', name: 'WotLK', image: '/images/expansions/WrathLogo.webp', available: true },
   { id: 'Cataclysm', name: 'Cata', image: '/images/expansions/Cataclysmlogo.webp', available: true },
   { id: 'Mists of Pandaria', name: 'MoP', image: '/images/expansions/MoPlogo.webp', available: true },
+  { id: 'Forever', name: 'WoW Forever', image: '/images/expansions/ForeverLogo.webp', available: true },
 ]
 
 export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServerId, suggestedName }: CreateGuildModalProps) {
@@ -695,7 +700,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                   {/* Expansion */}
                   <div>
                     <Label className="mb-2">Starting expansion</Label>
-                    <div className="grid grid-cols-5 gap-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                       {EXPANSIONS.map((exp) => (
                         <div key={exp.id} className="relative group">
                           <Button
@@ -713,7 +718,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                             }`}>
                               <img src={exp.image} alt={exp.name} className="w-full h-full object-contain p-2" />
                             </div>
-                            <span className={`text-[10px] font-medium transition-colors ${
+                            <span className={`text-[10px] font-medium text-center leading-tight transition-colors ${
                               !exp.available
                                 ? 'text-foreground-muted'
                                 : expansion === exp.id ? 'text-accent' : 'text-muted-foreground'
@@ -816,7 +821,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                     <div className="space-y-1">
                       <p className="text-[14px] text-foreground font-medium">{guildName}</p>
                       <p className="text-[12px] text-muted-foreground">
-                        {expansion} • {realm || 'No realm selected'} • {faction}
+                        {getExpansionDisplayName(expansion)} • {realm || 'No realm selected'} • {faction}
                       </p>
                       {selectedGuild && (
                         <p className="text-[12px] text-muted-foreground">

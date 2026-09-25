@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { seedExpansionForGuild } from '@/app/services/expansionSeeder'
+import { seedExpansionForGuild, isSupportedExpansion } from '@/app/services/expansionSeeder'
 import { getCached, invalidateCache, cacheKeys } from '@/utils/cache'
 import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 import { trackApiError, trackEvent, setUserMilestone } from '@/utils/analytics/server'
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate expansion
-    if (!expansion || !['Classic', 'The Burning Crusade', 'Wrath of the Lich King', 'Cataclysm', 'Mists of Pandaria'].includes(expansion)) {
+    if (!isSupportedExpansion(expansion)) {
       return NextResponse.json(
         { error: 'Valid expansion is required' },
         { status: 400 }

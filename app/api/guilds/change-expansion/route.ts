@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { seedExpansionForGuild } from '@/app/services/expansionSeeder'
+import { seedExpansionForGuild, isSupportedExpansion } from '@/app/services/expansionSeeder'
 import { verifyPermission } from '@/utils/server-roles'
 
 /**
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate expansion
-    if (!['Classic', 'The Burning Crusade', 'Wrath of the Lich King', 'Cataclysm', 'Mists of Pandaria'].includes(expansion)) {
+    if (!isSupportedExpansion(expansion)) {
       return NextResponse.json(
         { error: 'Invalid expansion' },
         { status: 400 }

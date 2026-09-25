@@ -671,7 +671,7 @@ export default function CreateGuildPage() {
           {/* Expansion */}
           <div className="space-y-2">
             <Label className="text-base">Expansion</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
               <Button
                 type="button"
                 variant="ghost"
@@ -755,6 +755,24 @@ export default function CreateGuildPage() {
                   src="https://beta.softres.it/img/editions/mop.big.png"
                   alt="Mists of Pandaria"
                   className="w-full h-full object-cover"
+                />
+              </Button>
+              {/* Id must match the seeder registry key in app/services/expansionSeeder.ts */}
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setExpansion('Forever')}
+                disabled={creating}
+                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
+                  expansion === 'Forever'
+                    ? 'border-primary ring-2 ring-primary/50'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <img
+                  src="/images/expansions/ForeverLogo.webp"
+                  alt="WoW Forever"
+                  className="w-full h-full object-contain p-2"
                 />
               </Button>
             </div>

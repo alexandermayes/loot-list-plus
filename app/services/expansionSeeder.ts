@@ -16,6 +16,7 @@ import { CATA_ITEM_ROLES } from '@/data/cata-item-roles'
 import { MOP_ITEM_ROLES } from '@/data/mop-item-roles'
 import { EXPANSION_PHASES, getExpansionSlug } from '@/data/expansion-phases'
 import { getTokenClasses, isTokenSlot } from '@/data/token-class-mapping'
+import { getExpansionDisplayName } from '@/utils/expansionVisuals'
 
 /**
  * Expansion Seeding Service
@@ -197,6 +198,15 @@ const MOP_DATA: ExpansionDefinition = {
   raids: transformMoPRaids()
 }
 
+// WoW Forever expansion data
+// Raid tiers arrive later once Forever raid data exists; seeding creates the
+// expansion row only, with zero raid tiers.
+const FOREVER_DATA: ExpansionDefinition = {
+  name: 'Forever',
+  displayName: 'Forever',
+  raids: []
+}
+
 // Map of all available expansions
 // Expansions with null have no loot data yet (shown as "coming soon" in UI)
 const EXPANSION_DATA: Record<string, ExpansionDefinition | null> = {
@@ -205,6 +215,7 @@ const EXPANSION_DATA: Record<string, ExpansionDefinition | null> = {
   'Wrath of the Lich King': WOTLK_DATA,
   'Cataclysm': CATA_DATA,
   'Mists of Pandaria': MOP_DATA,
+  'Forever': FOREVER_DATA,
   'Warlords of Draenor': null,
   'Legion': null,
   'Battle for Azeroth': null,
@@ -212,6 +223,42 @@ const EXPANSION_DATA: Record<string, ExpansionDefinition | null> = {
   'Dragonflight': null,
   'The War Within': null,
 }
+
+/**
+ * Look up an expansion definition by name, guarding against
+ * prototype-pollution lookups ('constructor', '__proto__', 'toString', ...)
+ * by requiring the name to be an own, non-null property of EXPANSION_DATA.
+ */
+function getExpansionDefinition(name: unknown): ExpansionDefinition | null {
+  if (typeof name !== 'string' || !Object.prototype.hasOwnProperty.call(EXPANSION_DATA, name)) {
+    return null
+  }
+  return EXPANSION_DATA[name]
+}
+
+/**
+ * All expansion names the seeder can create data for, in registry order.
+ * The API routes validate incoming expansion names against this list (via
+ * isSupportedExpansion), so this registry is the single source of truth --
+ * no route should hand-list its own expansion array.
+ */
+export const SUPPORTED_EXPANSIONS: readonly string[] = Object.keys(EXPANSION_DATA).filter(
+  (name) => EXPANSION_DATA[name] !== null
+)
+
+/**
+ * Type guard: true only for names that resolve to a non-null EXPANSION_DATA
+ * entry. Safe against prototype-pollution names and non-string input.
+ */
+export function isSupportedExpansion(name: unknown): name is string {
+  return getExpansionDefinition(name) !== null
+}
+
+// Human-readable "Currently supported" list for the unsupported-expansion
+// error message, built from the registry so it always matches reality.
+const SUPPORTED_EXPANSIONS_LABEL = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' }).format(
+  SUPPORTED_EXPANSIONS.map((name) => getExpansionDisplayName(name))
+)
 
 /**
  * Check if a guild already has a specific expansion
@@ -276,13 +323,13 @@ export async function seedExpansionForGuild(
   setAsCurrent: boolean = true,
   useServiceRole: boolean = false
 ): Promise<{ expansionId: string; error?: string }> {
-  const expansionData = EXPANSION_DATA[expansionName]
+  const expansionData = getExpansionDefinition(expansionName)
 
   // Check if expansion data is available
   if (!expansionData) {
     return {
       expansionId: '',
-      error: `No data available for ${expansionName} yet. Currently supported: Classic, The Burning Crusade, Wrath of the Lich King, Cataclysm, and Mists of Pandaria. Please select one of these or wait for other expansion data to be added.`
+      error: `No data available for ${expansionName} yet. Currently supported: ${SUPPORTED_EXPANSIONS_LABEL}. Please select one of these or wait for other expansion data to be added.`
     }
   }
 
@@ -292,7 +339,7 @@ export async function seedExpansionForGuild(
     if (alreadyHas) {
       return {
         expansionId: '',
-        error: `Guild already has ${expansionData.displayName}. Each expansion can only be added once per guild.`
+        error: `Guild already has ${getExpansionDisplayName(expansionData.displayName)}. Each expansion can only be added once per guild.`
       }
     }
 
