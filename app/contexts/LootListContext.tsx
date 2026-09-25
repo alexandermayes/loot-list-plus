@@ -106,6 +106,9 @@ interface LootListDataContextType {
   isSaving: boolean
   isImportingBis: boolean
   isGearLoading: boolean
+  // True once tiers have loaded and the active expansion has zero raid tiers
+  // (a new expansion such as WoW Forever, or every current tier disabled).
+  hasNoRaidTiers: boolean
 
   // Computed
   hasChanges: boolean
@@ -1113,6 +1116,11 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   const isLoading = guildLoading || !bootstrapReady || tiersLoading
   const isContentLoading = !bootstrapReady || itemsLoading || submissionLoading
 
+  // A failed tiers fetch leaves tiersData undefined, so errors do not
+  // masquerade as "no raids" -- this only flips true once tiers have
+  // actually loaded and come back empty.
+  const hasNoRaidTiers = !isLoading && tiersData !== undefined && tiersData.tiers.length === 0
+
   // Filter loot items to only include those from active tiers
   // This is a client-side safety filter in case the API cache is stale
   const filteredLootItems = useMemo(() => {
@@ -1157,6 +1165,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     isSaving,
     isImportingBis,
     isGearLoading: gearLoading,
+    hasNoRaidTiers,
     hasChanges,
     initialRankings,
     originalStatus,
@@ -1180,6 +1189,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     isSaving,
     isImportingBis,
     gearLoading,
+    hasNoRaidTiers,
     hasChanges,
     initialRankings,
     originalStatus,
