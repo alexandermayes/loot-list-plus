@@ -38,6 +38,7 @@ const EXPANSION_TO_WOWHEAD_DOMAIN: Record<string, string> = {
   'Wrath of the Lich King': 'wotlk',
   'Cataclysm': 'cata',
   'Mists of Pandaria': 'mop-classic',
+  'Forever': 'forever',
   'Warlords of Draenor': 'wow',
   'Legion': 'wow',
   'Battle for Azeroth': 'wow',

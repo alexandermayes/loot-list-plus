@@ -23,6 +23,7 @@ import { BattlenetCharacterPickerModal } from '@/app/components/BattlenetCharact
 import Image from 'next/image'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { hasFeature } from '@/domain/guild/feature-flags'
+import { isClassAvailableForExpansion } from '@/domain/expansion/classes'
 
 interface RaidTeamOption {
   id: string
@@ -48,36 +49,6 @@ interface CreateCharacterModalProps {
   onSuccess?: () => void
   suggestedName?: string // Discord username to show as placeholder hint
   required?: boolean // When true, hides close/cancel buttons (first-run flow)
-}
-
-// Classes gated by expansion - only show if guild's expansion is at or after the class's debut
-const EXPANSION_CLASS_GATES: Record<string, string> = {
-  'Death Knight': 'Wrath of the Lich King',
-  'Monk': 'Mists of Pandaria',
-}
-
-const EXPANSION_ORDER = [
-  'Classic', 'Classic WoW',
-  'The Burning Crusade',
-  'Wrath of the Lich King',
-  'Cataclysm',
-  'Mists of Pandaria',
-  'Warlords of Draenor',
-  'Legion',
-  'Battle for Azeroth',
-  'Shadowlands',
-  'Dragonflight',
-  'The War Within',
-]
-
-function isClassAvailableForExpansion(className: string, expansionName: string | undefined): boolean {
-  const gate = EXPANSION_CLASS_GATES[className]
-  if (!gate) return true // Most classes available everywhere
-  if (!expansionName) return true // No expansion set, show all
-  const gateIndex = EXPANSION_ORDER.indexOf(gate)
-  const currentIndex = EXPANSION_ORDER.indexOf(expansionName)
-  if (gateIndex === -1 || currentIndex === -1) return true
-  return currentIndex >= gateIndex
 }
 
 export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName, required = false }: CreateCharacterModalProps) {
