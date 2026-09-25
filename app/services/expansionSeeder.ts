@@ -229,7 +229,7 @@ const EXPANSION_DATA: Record<string, ExpansionDefinition | null> = {
  * prototype-pollution lookups ('constructor', '__proto__', 'toString', ...)
  * by requiring the name to be an own, non-null property of EXPANSION_DATA.
  */
-function getExpansionDefinition(name: unknown): ExpansionDefinition | null {
+export function getExpansionDefinition(name: unknown): ExpansionDefinition | null {
   if (typeof name !== 'string' || !Object.prototype.hasOwnProperty.call(EXPANSION_DATA, name)) {
     return null
   }
