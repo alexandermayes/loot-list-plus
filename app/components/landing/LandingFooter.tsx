@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { fadeIn } from '@/lib/animations'
 import Image from 'next/image'
+import posthog from 'posthog-js'
 
 export default function LandingFooter() {
   return (
@@ -91,10 +92,20 @@ export default function LandingFooter() {
             <p>
               Parses by{' '}
               <a
-                href="https://parseforge.gg"
+                href="https://parseforge.gg/?utm_source=lootlistplus&utm_medium=footer&utm_campaign=cross_promo"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#bababa] hover:text-white transition-colors"
+                onClick={() => {
+                  try {
+                    posthog.capture('cross_promo_click', {
+                      destination: 'parseforge',
+                      placement: 'landing_footer',
+                    })
+                  } catch {
+                    // PostHog not initialized
+                  }
+                }}
               >
                 parseforge.gg
               </a>
