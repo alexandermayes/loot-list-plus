@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { WOW_REALMS, REALM_REGIONS, getVersionsForRegion, getRealmsByVersion, type RealmRegion } from '@/data/wow-realms'
+import { WOW_REALMS, REALM_REGIONS, REGION_CODES, getVersionsForRegion, getRealmsByVersion, type RealmRegion } from '@/data/wow-realms'
 import { ComboDropdown, type DropdownOption, type DropdownGroup } from '@/components/ui/searchable-dropdown'
 
 interface RealmSelectorProps {
@@ -10,14 +10,6 @@ interface RealmSelectorProps {
   onRegionChange: (region: string) => void
   onRealmChange: (realm: string) => void
   disabled?: boolean
-}
-
-const REGION_CODES: Record<string, string> = {
-  'All': 'All',
-  'Americas & Oceania': 'US',
-  'Europe': 'EU',
-  'Korea': 'KR',
-  'Taiwan': 'TW'
 }
 
 export default function RealmSelector({

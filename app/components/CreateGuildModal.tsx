@@ -9,6 +9,7 @@ import { Tick01Icon, ArrowRight01Icon, Link01Icon, File01Icon, Settings01Icon } 
 import { Spinner, LoadingSpinner } from '@/components/ui/loading-spinner'
 import Image from 'next/image'
 import RealmSelector from '@/app/components/RealmSelector'
+import ForeverRulesetSelector from '@/app/components/ForeverRulesetSelector'
 import {
   Modal,
   ModalHeader,
@@ -83,6 +84,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
   const [realm, setRealm] = useState('')
   const [faction, setFaction] = useState<'Alliance' | 'Horde'>('Alliance')
   const [expansion, setExpansion] = useState('Classic')
+  const isForeverExpansion = expansion === 'Forever'
 
   // Validation state
   const [checkingName, setCheckingName] = useState(false)
@@ -109,6 +111,14 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
       if (suggestedName) setGuildName(suggestedName)
     }
   }, [isOpen, preselectedServerId, suggestedName])
+
+  // Clear the realm/ruleset value whenever the expansion toggles between
+  // Forever and a non-Forever expansion, so a Classic realm can never be
+  // submitted for a Forever guild or vice versa.
+  useEffect(() => {
+    setRealm('')
+    setRealmRegion('All')
+  }, [isForeverExpansion])
 
   const loadUserData = async () => {
     setLoading(true)
@@ -313,7 +323,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
     }
 
     if (!realm.trim()) {
-      setError('Realm is required')
+      setError(isForeverExpansion ? 'Ruleset is required' : 'Realm is required')
       return
     }
 
@@ -746,18 +756,31 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
               {/* Step 3: Server Settings */}
               {currentStep === 'settings' && (
                 <div className="space-y-5">
-                  {/* Realm */}
+                  {/* Realm / Ruleset (WoW Forever has no realms) */}
                   <div>
                     <Label className="mb-2">
-                      Realm <span className="text-destructive">*</span>
+                      {isForeverExpansion ? 'Ruleset' : 'Realm'} <span className="text-destructive">*</span>
                     </Label>
-                    <RealmSelector
-                      region={realmRegion}
-                      realm={realm}
-                      onRegionChange={setRealmRegion}
-                      onRealmChange={setRealm}
-                      disabled={creating}
-                    />
+                    {isForeverExpansion ? (
+                      <ForeverRulesetSelector
+                        value={realm}
+                        onChange={setRealm}
+                        disabled={creating}
+                      />
+                    ) : (
+                      <RealmSelector
+                        region={realmRegion}
+                        realm={realm}
+                        onRegionChange={setRealmRegion}
+                        onRealmChange={setRealm}
+                        disabled={creating}
+                      />
+                    )}
+                    {isForeverExpansion && (
+                      <p className="text-[11px] text-muted-foreground mt-2">
+                        WoW Forever has no realms. Pick the region and ruleset your guild plays on.
+                      </p>
+                    )}
                   </div>
 
                   {/* Faction */}
@@ -821,7 +844,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                     <div className="space-y-1">
                       <p className="text-[14px] text-foreground font-medium">{guildName}</p>
                       <p className="text-[12px] text-muted-foreground">
-                        {getExpansionDisplayName(expansion)} • {realm || 'No realm selected'} • {faction}
+                        {getExpansionDisplayName(expansion)} • {realm || (isForeverExpansion ? 'No ruleset selected' : 'No realm selected')} • {faction}
                       </p>
                       {selectedGuild && (
                         <p className="text-[12px] text-muted-foreground">

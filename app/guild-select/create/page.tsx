@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import RealmSelector from '@/app/components/RealmSelector'
+import ForeverRulesetSelector from '@/app/components/ForeverRulesetSelector'
 
 interface DiscordGuild {
   id: string
@@ -42,6 +43,7 @@ export default function CreateGuildPage() {
   const [realm, setRealm] = useState('')
   const [faction, setFaction] = useState<'Alliance' | 'Horde'>('Alliance')
   const [expansion, setExpansion] = useState('Classic')
+  const isForeverExpansion = expansion === 'Forever'
 
   // Guild name validation state
   const [checkingName, setCheckingName] = useState(false)
@@ -277,6 +279,14 @@ export default function CreateGuildPage() {
     }
   }, [selectedDiscordServer, manualServerId, botInstalled, showManualEntry])
 
+  // Clear the realm/ruleset value whenever the expansion toggles between
+  // Forever and a non-Forever expansion, so a Classic realm can never be
+  // submitted for a Forever guild or vice versa.
+  useEffect(() => {
+    setRealm('')
+    setRealmRegion('All')
+  }, [isForeverExpansion])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -313,7 +323,7 @@ export default function CreateGuildPage() {
     }
 
     if (!realm.trim()) {
-      setError('Realm is required. Select your guild\'s realm.')
+      setError(isForeverExpansion ? 'Ruleset is required. Select your guild\'s ruleset.' : 'Realm is required. Select your guild\'s realm.')
       return
     }
 
@@ -781,18 +791,31 @@ export default function CreateGuildPage() {
             </p>
           </div>
 
-          {/* Region & Realm */}
+          {/* Region & Realm / Ruleset (WoW Forever has no realms) */}
           <div className="space-y-2">
             <Label className="text-base">
-              Realm <span className="text-destructive">*</span>
+              {isForeverExpansion ? 'Ruleset' : 'Realm'} <span className="text-destructive">*</span>
             </Label>
-            <RealmSelector
-              region={realmRegion}
-              realm={realm}
-              onRegionChange={setRealmRegion}
-              onRealmChange={setRealm}
-              disabled={creating}
-            />
+            {isForeverExpansion ? (
+              <ForeverRulesetSelector
+                value={realm}
+                onChange={setRealm}
+                disabled={creating}
+              />
+            ) : (
+              <RealmSelector
+                region={realmRegion}
+                realm={realm}
+                onRegionChange={setRealmRegion}
+                onRealmChange={setRealm}
+                disabled={creating}
+              />
+            )}
+            {isForeverExpansion && (
+              <p className="text-sm text-muted-foreground mt-2">
+                WoW Forever has no realms. Pick the region and ruleset your guild plays on.
+              </p>
+            )}
           </div>
 
           {/* Faction */}

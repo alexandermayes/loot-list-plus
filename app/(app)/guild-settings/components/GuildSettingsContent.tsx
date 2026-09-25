@@ -10,7 +10,9 @@ import RoleManager from './RoleManager'
 import ExpansionManager from './ExpansionManager'
 import { BillingSection } from './BillingSection'
 import RealmSelector from '@/app/components/RealmSelector'
-import { getRegionForRealm } from '@/data/wow-realms'
+import ForeverRulesetSelector from '@/app/components/ForeverRulesetSelector'
+import { getRegionForRealm, parseForeverRuleset } from '@/data/wow-realms'
+import { useExpansionData } from '@/app/contexts/ExpansionContext'
 import { GuildSettingsContentSkeleton } from '@/components/ui/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'
 import {
@@ -92,6 +94,11 @@ export default function GuildSettingsContent() {
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer, hasPermission, refreshGuilds, user } = useGuildContext()
   const { showNotification } = useNotification()
+  const { currentExpansion } = useExpansionData()
+
+  // Forever guild: active expansion is 'Forever', or the saved realm already
+  // parses as a Forever ruleset (covers guilds created before this field existed).
+  const isForeverGuild = currentExpansion?.expansion_name === 'Forever' || parseForeverRuleset(realm) !== null
 
   // Fetch guild members for ownership transfer
   const { data: membersData } = useGuildMembers(activeGuild?.id || null)
@@ -542,14 +549,31 @@ export default function GuildSettingsContent() {
               </div>
 
               <div className="space-y-2">
-                <Label>Realm</Label>
-                <RealmSelector
-                  region={realmRegion}
-                  realm={realm}
-                  onRegionChange={setRealmRegion}
-                  onRealmChange={setRealm}
-                  disabled={!isGuildCreator || saving}
-                />
+                <Label>
+                  {isForeverGuild ? (
+                    <>Ruleset <span className="text-destructive">*</span></>
+                  ) : 'Realm'}
+                </Label>
+                {isForeverGuild ? (
+                  <ForeverRulesetSelector
+                    value={realm}
+                    onChange={setRealm}
+                    disabled={!isGuildCreator || saving}
+                  />
+                ) : (
+                  <RealmSelector
+                    region={realmRegion}
+                    realm={realm}
+                    onRegionChange={setRealmRegion}
+                    onRealmChange={setRealm}
+                    disabled={!isGuildCreator || saving}
+                  />
+                )}
+                {isForeverGuild && (
+                  <p className="text-[11px] text-muted-foreground">
+                    WoW Forever has no realms. Pick the region and ruleset your guild plays on.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
