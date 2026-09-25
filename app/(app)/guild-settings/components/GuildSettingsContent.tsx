@@ -189,7 +189,7 @@ export default function GuildSettingsContent() {
 
     // Validate required fields
     if (!realm.trim()) {
-      showNotification('error', 'Please select a realm')
+      showNotification('error', isForeverGuild ? 'Please select a ruleset' : 'Please select a realm')
       return
     }
 
