@@ -9,7 +9,7 @@ import { useNotification } from '@/app/contexts/NotificationContext'
 import { Heading } from '@/components/ui/typography'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons'
-import { getExpansionVisuals } from '@/utils/expansionVisuals'
+import { getExpansionVisuals, getExpansionDisplayName } from '@/utils/expansionVisuals'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { resolvePhaseGroups, isMergedGroup, type PhaseGroup } from '@/domain/expansion/phase-groups'
 import { Button } from '@/components/ui/button'
@@ -217,7 +217,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
   useEffect(() => {
     if (expansion) {
-      document.title = `LootList+ • ${expansion.expansion_name} Raid Tiers`
+      document.title = `LootList+ • ${getExpansionDisplayName(expansion.expansion_name)} Raid Tiers`
     }
   }, [expansion])
 
@@ -671,8 +671,8 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
           >
             <img
               src={visuals.logoUrl}
-              alt={expansion.expansion_name}
-              className="w-full h-full object-cover"
+              alt={getExpansionDisplayName(expansion.expansion_name)}
+              className={`w-full h-full ${visuals.logoFit === 'contain' ? 'object-contain p-1' : 'object-cover'}`}
             />
           </div>
 
@@ -682,7 +682,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                 className="text-2xl font-bold"
                 style={{ color: visuals.textColor }}
               >
-                {expansion.expansion_name}
+                {getExpansionDisplayName(expansion.expansion_name)}
               </h1>
               {expansion.is_current && (
                 <span

@@ -3,6 +3,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
 import { NextRequest, NextResponse } from 'next/server'
 import { seedExpansionForGuild, getGuildExpansions, getAvailableExpansions } from '@/app/services/expansionSeeder'
+import { getExpansionDisplayName } from '@/utils/expansionVisuals'
 
 /**
  * GET /api/guilds/[id]/expansions
@@ -117,7 +118,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       expansionId: result.expansionId,
-      message: `${expansionName} has been added to your guild!`
+      message: `${getExpansionDisplayName(expansionName)} has been added to your guild!`
     })
   } catch (error) {
     console.error('Error in POST /api/guilds/[id]/expansions:', error)

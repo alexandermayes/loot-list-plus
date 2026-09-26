@@ -18,6 +18,7 @@ import { Calendar03Icon, LockIcon, CheckmarkCircle01Icon, UserMultiple02Icon, Di
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { getRaidIcon } from '@/utils/raidIcons'
 import { canClassReserveItem } from '@/utils/wowClassRestrictions'
+import { getExpansionClassNames } from '@/domain/expansion/classes'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import ManagementToolbar from './components/ManagementToolbar'
@@ -40,22 +41,9 @@ const WOW_CLASSES = [
   { name: 'Druid', color: '#FF7D0A' },
 ]
 
-// Which classes are available in which expansion. Used to filter the
-// class picker on the join page so a TBC raid doesn't show Death Knight.
-const CLASSIC_CLASSES = [
-  'Druid', 'Hunter', 'Mage', 'Paladin', 'Priest', 'Rogue', 'Shaman', 'Warlock', 'Warrior',
-]
-const WRATH_CLASSES = [...CLASSIC_CLASSES, 'Death Knight']
-const MOP_CLASSES = [...WRATH_CLASSES, 'Monk']
-
-const EXPANSION_CLASSES: Record<string, string[]> = {
-  'Classic': CLASSIC_CLASSES,
-  'Classic WoW': CLASSIC_CLASSES,
-  'The Burning Crusade': CLASSIC_CLASSES,
-  'Wrath of the Lich King': WRATH_CLASSES,
-  'Cataclysm': WRATH_CLASSES,
-  'Mists of Pandaria': MOP_CLASSES,
-}
+// Classes available per expansion are resolved via getExpansionClassNames
+// (@/domain/expansion/classes), which filters the class picker on the join
+// page so a TBC raid doesn't show Death Knight.
 
 const EXPANSION_SHORT_NAME: Record<string, string> = {
   'Classic': 'Classic',
@@ -64,6 +52,7 @@ const EXPANSION_SHORT_NAME: Record<string, string> = {
   'Wrath of the Lich King': 'Wrath',
   'Cataclysm': 'Cata',
   'Mists of Pandaria': 'MoP',
+  'Forever': 'WoW Forever',
 }
 
 // Supported specs per class, spanning Classic through Mists of Pandaria.
@@ -575,7 +564,7 @@ export default function ReserveJoinPage() {
   // if the expansion isn't recognized (safer than hiding everything).
   const availableClasses = useMemo(() => {
     if (!run?.expansion_name) return WOW_CLASSES
-    const allowed = EXPANSION_CLASSES[run.expansion_name]
+    const allowed = getExpansionClassNames(run.expansion_name)
     if (!allowed) return WOW_CLASSES
     return WOW_CLASSES.filter((c) => allowed.includes(c.name))
   }, [run?.expansion_name])
@@ -584,7 +573,7 @@ export default function ReserveJoinPage() {
   // (e.g. a WotLK Death Knight selected from localStorage viewing a TBC run)
   useEffect(() => {
     if (!run?.expansion_name || !characterClass) return
-    const allowed = EXPANSION_CLASSES[run.expansion_name]
+    const allowed = getExpansionClassNames(run.expansion_name)
     if (allowed && !allowed.includes(characterClass)) {
       setCharacterClass('')
       setCharacterSpec('')

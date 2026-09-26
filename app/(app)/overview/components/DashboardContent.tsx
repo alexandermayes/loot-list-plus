@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic'
 import WelcomeScreen from '@/app/components/WelcomeScreen'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserIcon, CheckmarkCircle01Icon, AlertCircleIcon, Award01Icon, Cancel01Icon, Add01Icon, Calendar03Icon, Shield01Icon, AnalyticsUpIcon } from '@hugeicons/core-free-icons'
+import { NoRaidsEmptyState } from '@/app/components/NoRaidsEmptyState'
 
 // Lazy load modals to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -366,6 +367,9 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
   const { activeGuild, activeMember, activeCharacter, userGuilds, loading: guildLoading, isOfficer, hasPermission, currentExpansion, characterMemberships, user, refreshCharacters } = useGuildContext()
   const { showNotification } = useNotification()
   const [raidTiers, setRaidTiers] = useState<RaidTier[]>([])
+  // True once tiers have loaded and come back empty for the active expansion
+  // (a new expansion such as WoW Forever, or every current tier disabled).
+  const [noRaidTiers, setNoRaidTiers] = useState(false)
   const [loading, setLoading] = useState(true)
   const [insightsLoading, setInsightsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -643,6 +647,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
 
       // If no active guild, show WelcomeScreen (don't redirect to preserve sidebar)
       if (!activeGuild) {
+        setNoRaidTiers(false)
         setLoading(false)
         return
       }
@@ -650,6 +655,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
       // Check if guild has active expansion set
       if (!activeGuild.active_expansion_id) {
         setRaidTiers([])
+        setNoRaidTiers(false)
         setError('Your guild needs an active expansion. Ask an Officer to set one in expansion settings.')
         setLoading(false)
         return
@@ -659,6 +665,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
       const expansionId = currentExpansion?.expansion_id || activeGuild.active_expansion_id
       if (!expansionId) {
         setRaidTiers([])
+        setNoRaidTiers(false)
         setLoading(false)
         return
       }
@@ -685,8 +692,10 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
         if (tiersError) {
           console.error('Error loading raid tiers:', tiersError)
           setRaidTiers([])
+          setNoRaidTiers(false)
         } else {
           setRaidTiers(tiersData || [])
+          setNoRaidTiers((tiersData || []).length === 0)
         }
 
         const { data: expansionDeadlineData } = deadlineResult
@@ -2017,6 +2026,11 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
             </div>
           )}
 
+          {/* No raid tiers yet for the active expansion (e.g. a new
+              expansion such as WoW Forever, or every current tier disabled) */}
+          {noRaidTiers && !error && (
+            <NoRaidsEmptyState />
+          )}
 
           {/* Insights: load progressively (don't block stats above) */}
           {insightsLoading ? (

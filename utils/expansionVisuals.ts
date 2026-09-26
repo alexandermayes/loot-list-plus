@@ -15,6 +15,8 @@ export interface ExpansionVisuals {
   logoUrl: string
   // Background pattern or artwork
   artworkUrl: string
+  // Logos that must not be cropped use 'contain'; square icons keep the default 'cover'.
+  logoFit?: 'cover' | 'contain'
 }
 
 // Classic visuals (shared between 'Classic' and 'Classic WoW' for backwards compatibility)
@@ -76,6 +78,18 @@ const expansionVisuals: Record<string, ExpansionVisuals> = {
     borderColor: '#3D7A5A',
     logoUrl: 'https://wow.zamimg.com/images/wow/icons/large/inv_helm_armor_bamboohat_c_01.jpg',
     artworkUrl: 'https://bnetcmsus-a.akamaihd.net/cms/blog_header/IOCQV46WYXS01536272302862.jpg'
+  },
+  'Forever': {
+    name: 'WoW Forever',
+    shortName: 'WoW Forever',
+    gradient: 'linear-gradient(135deg, #1F6F78 0%, #0B2A2E 100%)',
+    bgColor: '#0B1C1F',
+    accentColor: '#D9B45A',
+    textColor: '#E6F4F1',
+    borderColor: '#2E7D86',
+    logoUrl: '/images/expansions/ForeverLogo.webp',
+    logoFit: 'contain',
+    artworkUrl: ''
   },
   'Warlords of Draenor': {
     name: 'Warlords of Draenor',
@@ -143,6 +157,29 @@ const expansionVisuals: Record<string, ExpansionVisuals> = {
     logoUrl: 'https://wow.zamimg.com/images/wow/icons/large/achievement_raid_dvl.jpg',
     artworkUrl: 'https://bnetcmsus-a.akamaihd.net/cms/blog_header/5u/5UPGYSPSWXOD1699551183432.png'
   }
+}
+
+/**
+ * Display-label overrides for expansions whose stored name (expansions.name,
+ * EXPANSION_DATA key, picker id) differs from what should be shown to users.
+ * Only 'Forever' differs today; everything else keeps its stored name as-is.
+ */
+const EXPANSION_DISPLAY_NAMES: Record<string, string> = {
+  'Forever': 'WoW Forever',
+}
+
+/**
+ * Get the user-facing display label for a stored expansion name. Falls back
+ * to the name unchanged when there is no override -- this must not be
+ * derived from the partial-match lookup below, or legacy 'Classic WoW'
+ * guilds would get renamed to 'Classic'.
+ */
+export function getExpansionDisplayName(name: string | null | undefined): string {
+  if (name === null || name === undefined) return ''
+  if (Object.prototype.hasOwnProperty.call(EXPANSION_DISPLAY_NAMES, name)) {
+    return EXPANSION_DISPLAY_NAMES[name]
+  }
+  return name
 }
 
 /**

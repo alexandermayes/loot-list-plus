@@ -13,7 +13,7 @@ import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { DatePicker } from '@/components/ui/date-picker'
-import { getExpansionVisuals } from '@/utils/expansionVisuals'
+import { getExpansionVisuals, getExpansionDisplayName } from '@/utils/expansionVisuals'
 
 interface GuildExpansion {
   expansion_id: string
@@ -458,8 +458,8 @@ export default function ExpansionManager() {
                       >
                         <img
                           src={visuals.logoUrl}
-                          alt={exp.expansion_name}
-                          className="w-full h-full object-cover"
+                          alt={getExpansionDisplayName(exp.expansion_name)}
+                          className={`w-full h-full ${visuals.logoFit === 'contain' ? 'object-contain p-1' : 'object-cover'}`}
                         />
                       </div>
 
@@ -469,7 +469,7 @@ export default function ExpansionManager() {
                             className="text-lg font-semibold truncate"
                             style={{ color: visuals.textColor }}
                           >
-                            {exp.expansion_name}
+                            {getExpansionDisplayName(exp.expansion_name)}
                           </h3>
                           {exp.is_current && (
                             <span
@@ -835,8 +835,8 @@ export default function ExpansionManager() {
                     >
                       <img
                         src={visuals.logoUrl}
-                        alt={exp.name}
-                        className="w-full h-full object-cover"
+                        alt={getExpansionDisplayName(exp.name)}
+                        className={`w-full h-full ${visuals.logoFit === 'contain' ? 'object-contain p-1' : 'object-cover'}`}
                       />
                     </div>
 
@@ -845,7 +845,7 @@ export default function ExpansionManager() {
                         className="text-[16px] font-semibold mb-1 truncate"
                         style={{ color: visuals.textColor }}
                       >
-                        {exp.name}
+                        {getExpansionDisplayName(exp.name)}
                       </p>
                       <p
                         className="text-[12px]"

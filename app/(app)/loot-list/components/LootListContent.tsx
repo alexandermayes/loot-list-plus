@@ -43,6 +43,8 @@ import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent, usePagePerf } from '@/utils/analytics/client'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
+import { NoRaidsEmptyState } from '@/app/components/NoRaidsEmptyState'
+import { getExpansionDisplayName } from '@/utils/expansionVisuals'
 // BisImportModal is lazy-loaded — its ~326-line chunk only downloads when
 // the user actually clicks "Import BiS" rather than on every page load.
 const BisImportModal = dynamic(
@@ -772,6 +774,7 @@ export default function LootListContent({
     isContentLoading,
     isSaving,
     isImportingBis,
+    hasNoRaidTiers,
     hasChanges,
     originalStatus,
     removedItems,
@@ -1606,14 +1609,14 @@ export default function LootListContent({
                 serverHeading ?? <Heading level={1}>Loot Lists</Heading>
               )}
               <p className="text-muted-foreground mt-1 text-base">
-                {isLoading ? 'Loading phases...' : (() => {
+                {!hasNoRaidTiers && (isLoading ? 'Loading phases...' : (() => {
                   const group = resolvedGroups.find(g => g.canonicalPhase === selectedPhase)
                   const label = group ? getPhaseGroupShortLabel(group).replace(/^P/, 'Phase ').replace(/\+P/g, '+') : `Phase ${selectedPhase}`
                   return `Rank your preferred items for ${label}${phaseTiers.length > 0 ? ` (${phaseTiers.map(t => t.name).join(', ')})` : ''}`
-                })()}
+                })())}
                 {viewingExpansionId && (
                   <span className="ml-2 px-3 py-1 bg-blue-950/50 border border-blue-600/50 text-blue-300 text-xs font-medium rounded-full">
-                    Viewing Past: {guildExpansions.find(e => e.expansion_id === viewingExpansionId)?.expansion_name}
+                    Viewing Past: {getExpansionDisplayName(guildExpansions.find(e => e.expansion_id === viewingExpansionId)?.expansion_name)}
                   </span>
                 )}
               </p>
@@ -1631,7 +1634,7 @@ export default function LootListContent({
                 >
                   {guildExpansions.map((expansion) => (
                     <option key={expansion.expansion_id} value={expansion.expansion_id}>
-                      {expansion.expansion_name}{expansion.is_current ? ' ★' : ''}
+                      {getExpansionDisplayName(expansion.expansion_name)}{expansion.is_current ? ' ★' : ''}
                     </option>
                   ))}
                 </Select>
@@ -1646,6 +1649,12 @@ export default function LootListContent({
           </div>
         </div>
 
+        {hasNoRaidTiers ? (
+          <div className="px-4 sm:px-6 lg:px-8 pt-2">
+            <NoRaidsEmptyState size="lg" />
+          </div>
+        ) : (
+        <>
         {/* Sticky Header: Phase Tabs + Status Banner pinned together */}
         <div className="sticky top-14 sm:top-0 z-20 bg-background">
         {isLoading ? (
@@ -2517,6 +2526,8 @@ export default function LootListContent({
           </div>
         </div>
         </div>
+        </>
+        )}
       </div>
       <DragOverlay dropAnimation={null}>
         {activeDragItem ? (

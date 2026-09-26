@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import StyledSelect from '@/app/components/StyledSelect'
 import { specMapping, allRoles, getSpecsForRole } from '@/domain/loot/spec-role-mapping'
+import { isClassAvailableForExpansion } from '@/domain/expansion/classes'
 import { Search01Icon } from '@hugeicons/core-free-icons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { ErrorState } from '@/components/ui/error-state'
@@ -95,14 +96,6 @@ interface ItemClassRelation {
   class_id: string
   spec_id: string | null
   spec_type: string // 'primary' or 'secondary'
-}
-
-// Classes that didn't exist in earlier expansions
-const EXPANSION_CLASS_EXCLUSIONS: Record<string, string[]> = {
-  'Classic': ['Death Knight', 'Monk'],
-  'The Burning Crusade': ['Death Knight', 'Monk'],
-  'Wrath of the Lich King': ['Monk'],
-  'Cataclysm': ['Monk'],
 }
 
 // Define raid tier progression order (Classic + TBC + WotLK)
@@ -600,7 +593,9 @@ export default function LootSettingsContent({
 
       // Filter classes by expansion exclusions
       if (expansionResult.data) {
-        const excluded = EXPANSION_CLASS_EXCLUSIONS[expansionResult.data.name] || []
+        const excluded = classesData
+          .filter((c: WowClass) => !isClassAvailableForExpansion(c.name, expansionResult.data.name))
+          .map((c: WowClass) => c.name)
         if (excluded.length > 0) {
           classesData = classesData.filter((c: WowClass) => !excluded.includes(c.name))
           setClasses(classesData)

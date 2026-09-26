@@ -9,6 +9,7 @@ import { Tick01Icon, ArrowRight01Icon, Link01Icon, File01Icon, Settings01Icon } 
 import { Spinner, LoadingSpinner } from '@/components/ui/loading-spinner'
 import Image from 'next/image'
 import RealmSelector from '@/app/components/RealmSelector'
+import ForeverRulesetSelector from '@/app/components/ForeverRulesetSelector'
 import {
   Modal,
   ModalHeader,
@@ -22,6 +23,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { getExpansionDisplayName } from '@/utils/expansionVisuals'
 
 interface DiscordGuild {
   id: string
@@ -41,12 +43,16 @@ interface CreateGuildModalProps {
 
 type Step = 'discord' | 'details' | 'settings'
 
+// Client component: never import app/services/expansionSeeder.ts here (it pulls
+// every raid data file into the browser bundle). Ids must match the seeder
+// registry keys in app/services/expansionSeeder.ts.
 const EXPANSIONS = [
   { id: 'Classic', name: 'Classic', image: '/images/expansions/WoWlogo.webp', available: true },
   { id: 'The Burning Crusade', name: 'TBC', image: '/images/expansions/TBCLogo.webp', available: true },
   { id: 'Wrath of the Lich King', name: 'WotLK', image: '/images/expansions/WrathLogo.webp', available: true },
   { id: 'Cataclysm', name: 'Cata', image: '/images/expansions/Cataclysmlogo.webp', available: true },
   { id: 'Mists of Pandaria', name: 'MoP', image: '/images/expansions/MoPlogo.webp', available: true },
+  { id: 'Forever', name: 'WoW Forever', image: '/images/expansions/ForeverLogo.webp', available: true },
 ]
 
 export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServerId, suggestedName }: CreateGuildModalProps) {
@@ -78,6 +84,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
   const [realm, setRealm] = useState('')
   const [faction, setFaction] = useState<'Alliance' | 'Horde'>('Alliance')
   const [expansion, setExpansion] = useState('Classic')
+  const isForeverExpansion = expansion === 'Forever'
 
   // Validation state
   const [checkingName, setCheckingName] = useState(false)
@@ -104,6 +111,14 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
       if (suggestedName) setGuildName(suggestedName)
     }
   }, [isOpen, preselectedServerId, suggestedName])
+
+  // Clear the realm/ruleset value whenever the expansion toggles between
+  // Forever and a non-Forever expansion, so a Classic realm can never be
+  // submitted for a Forever guild or vice versa.
+  useEffect(() => {
+    setRealm('')
+    setRealmRegion('All')
+  }, [isForeverExpansion])
 
   const loadUserData = async () => {
     setLoading(true)
@@ -308,7 +323,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
     }
 
     if (!realm.trim()) {
-      setError('Realm is required')
+      setError(isForeverExpansion ? 'Ruleset is required' : 'Realm is required')
       return
     }
 
@@ -695,7 +710,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                   {/* Expansion */}
                   <div>
                     <Label className="mb-2">Starting expansion</Label>
-                    <div className="grid grid-cols-5 gap-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                       {EXPANSIONS.map((exp) => (
                         <div key={exp.id} className="relative group">
                           <Button
@@ -713,7 +728,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                             }`}>
                               <img src={exp.image} alt={exp.name} className="w-full h-full object-contain p-2" />
                             </div>
-                            <span className={`text-[10px] font-medium transition-colors ${
+                            <span className={`text-[10px] font-medium text-center leading-tight transition-colors ${
                               !exp.available
                                 ? 'text-foreground-muted'
                                 : expansion === exp.id ? 'text-accent' : 'text-muted-foreground'
@@ -741,18 +756,31 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
               {/* Step 3: Server Settings */}
               {currentStep === 'settings' && (
                 <div className="space-y-5">
-                  {/* Realm */}
+                  {/* Realm / Ruleset (WoW Forever has no realms) */}
                   <div>
                     <Label className="mb-2">
-                      Realm <span className="text-destructive">*</span>
+                      {isForeverExpansion ? 'Ruleset' : 'Realm'} <span className="text-destructive">*</span>
                     </Label>
-                    <RealmSelector
-                      region={realmRegion}
-                      realm={realm}
-                      onRegionChange={setRealmRegion}
-                      onRealmChange={setRealm}
-                      disabled={creating}
-                    />
+                    {isForeverExpansion ? (
+                      <ForeverRulesetSelector
+                        value={realm}
+                        onChange={setRealm}
+                        disabled={creating}
+                      />
+                    ) : (
+                      <RealmSelector
+                        region={realmRegion}
+                        realm={realm}
+                        onRegionChange={setRealmRegion}
+                        onRealmChange={setRealm}
+                        disabled={creating}
+                      />
+                    )}
+                    {isForeverExpansion && (
+                      <p className="text-[11px] text-muted-foreground mt-2">
+                        WoW Forever has no realms. Pick the region and ruleset your guild plays on.
+                      </p>
+                    )}
                   </div>
 
                   {/* Faction */}
@@ -816,7 +844,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                     <div className="space-y-1">
                       <p className="text-[14px] text-foreground font-medium">{guildName}</p>
                       <p className="text-[12px] text-muted-foreground">
-                        {expansion} • {realm || 'No realm selected'} • {faction}
+                        {getExpansionDisplayName(expansion)} • {realm || (isForeverExpansion ? 'No ruleset selected' : 'No realm selected')} • {faction}
                       </p>
                       {selectedGuild && (
                         <p className="text-[12px] text-muted-foreground">

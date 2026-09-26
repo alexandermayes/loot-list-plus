@@ -159,6 +159,51 @@ export const REALM_REGIONS = ['Americas & Oceania', 'Europe', 'Korea', 'Taiwan']
 
 export type RealmRegion = typeof REALM_REGIONS[number]
 
+// Moved here from app/components/RealmSelector.tsx so the WoW Forever ruleset
+// helpers below can share the same region-name-to-code mapping.
+export const REGION_CODES: Record<string, string> = {
+  'All': 'All',
+  'Americas & Oceania': 'US',
+  'Europe': 'EU',
+  'Korea': 'KR',
+  'Taiwan': 'TW'
+}
+
+const CODE_TO_REGION = Object.fromEntries(
+  Object.entries(REGION_CODES)
+    .filter(([region]) => region !== 'All')
+    .map(([region, code]) => [code, region as RealmRegion])
+) as Record<string, RealmRegion>
+
+// WoW Forever is realmless (Blizzard, Sep 2026): players pick one of four
+// rulesets per region instead of a realm. See PLAN.md Addendum: Task 4.
+export const FOREVER_RULESETS = ['Normal', 'PvP', 'Roleplaying', 'Hardcore'] as const
+
+export type ForeverRuleset = typeof FOREVER_RULESETS[number]
+
+export const FOREVER_REGION_CODES = ['US', 'EU', 'KR', 'TW'] as const
+
+export type ForeverRegionCode = typeof FOREVER_REGION_CODES[number]
+
+/** Formats a WoW Forever ruleset + region into the string stored in guilds.realm, e.g. "PvP (US)". */
+export function formatForeverRuleset(ruleset: ForeverRuleset, region: ForeverRegionCode): string {
+  return `${ruleset} (${region})`
+}
+
+/** Parses a "{Ruleset} ({Region})" string back into its parts. Returns null for anything else, including a normal realm name. */
+export function parseForeverRuleset(value: string | null | undefined): { ruleset: ForeverRuleset; region: ForeverRegionCode } | null {
+  if (!value) return null
+
+  const match = /^(.+) \(([A-Z]{2})\)$/.exec(value.trim())
+  if (!match) return null
+
+  const [, rulesetRaw, regionRaw] = match
+  if (!(FOREVER_RULESETS as readonly string[]).includes(rulesetRaw)) return null
+  if (!(FOREVER_REGION_CODES as readonly string[]).includes(regionRaw)) return null
+
+  return { ruleset: rulesetRaw as ForeverRuleset, region: regionRaw as ForeverRegionCode }
+}
+
 export function getAllRealms(): RealmInfo[] {
   return Object.values(WOW_REALMS).flat().sort((a, b) => a.name.localeCompare(b.name))
 }
@@ -178,8 +223,13 @@ export function getVersionsForRegion(region: RealmRegion): string[] {
   return Array.from(versions).sort()
 }
 
-/** Look up which region a realm belongs to by name. Returns null if not found. */
+/** Look up which region a realm belongs to by name. Also handles a WoW Forever "{Ruleset} ({Region})" value. Returns null if not found. */
 export function getRegionForRealm(realmName: string): RealmRegion | null {
+  const forever = parseForeverRuleset(realmName)
+  if (forever) {
+    return CODE_TO_REGION[forever.region] || null
+  }
+
   for (const region of REALM_REGIONS) {
     if (WOW_REALMS[region]?.some(r => r.name === realmName)) {
       return region

@@ -22,6 +22,7 @@ import { useNotification } from '@/app/contexts/NotificationContext'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { TierTabsSkeleton, MasterSheetContentSkeleton, Skeleton } from '@/components/ui/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'
+import { NoRaidsEmptyState } from '@/app/components/NoRaidsEmptyState'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { SegmentedControl } from '@/components/ui/segmented-control'
@@ -628,6 +629,11 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
                 setSelectedPhase(activeTierCanonical ?? canonicalPhases[0])
               }
             }
+          } else {
+            // No raid tiers for this expansion (e.g. a new expansion such as
+            // WoW Forever, or every current tier disabled) -- also fixes
+            // stale tiers after an officer switches expansions in-session.
+            setRaidTiers([])
           }
         }
 
@@ -1695,6 +1701,11 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
     }
   }
 
+  // True once content has loaded and the active expansion has zero raid
+  // tiers (a new expansion such as WoW Forever, or every current tier
+  // disabled). Drives the shared no-raids empty state below.
+  const noRaidTiers = !contentLoading && raidTiers.length === 0
+
   return (
     <ExpansionGuard serverHeading={serverHeading}>
       <div className="font-poppins">
@@ -2033,7 +2044,9 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
             )}
 
             {/* Aggregate View (Officer Only) */}
-            {viewMode === 'aggregate' && canManageLoot ? (
+            {noRaidTiers ? (
+              <NoRaidsEmptyState />
+            ) : viewMode === 'aggregate' && canManageLoot ? (
               <LootListSummaryView
                 items={aggregateItems}
                 loading={aggregateLoading}

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { seedExpansionForGuild } from '@/app/services/expansionSeeder'
+import { seedExpansionForGuild, isSupportedExpansion } from '@/app/services/expansionSeeder'
+import { parseForeverRuleset } from '@/data/wow-realms'
 import { getCached, invalidateCache, cacheKeys } from '@/utils/cache'
 import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 import { trackApiError, trackEvent, setUserMilestone } from '@/utils/analytics/server'
@@ -53,9 +54,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate expansion
-    if (!expansion || !['Classic', 'The Burning Crusade', 'Wrath of the Lich King', 'Cataclysm', 'Mists of Pandaria'].includes(expansion)) {
+    if (!isSupportedExpansion(expansion)) {
       return NextResponse.json(
         { error: 'Valid expansion is required' },
+        { status: 400 }
+      )
+    }
+
+    // WoW Forever has no realms; guilds.realm stores a "{Ruleset} ({Region})"
+    // value instead. Other expansions keep their existing (unvalidated) realm.
+    if (expansion === 'Forever' && !parseForeverRuleset(realm)) {
+      return NextResponse.json(
+        { error: 'Select a valid WoW Forever ruleset.' },
         { status: 400 }
       )
     }
