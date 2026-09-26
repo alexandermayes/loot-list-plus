@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { seedExpansionForGuild, isSupportedExpansion } from '@/app/services/expansionSeeder'
+import { seedExpansionForGuild, isSupportedExpansion, getExpansionGame } from '@/app/services/expansionSeeder'
 import { parseForeverRuleset } from '@/data/wow-realms'
 import { getCached, invalidateCache, cacheKeys } from '@/utils/cache'
 import { revalidateUserBundle } from '@/lib/cache/user-bundle'
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json()
-    const { name, realm, faction, discord_server_id, expansion } = body
+    const { name, realm, faction, discord_server_id, expansion, game: requestedGame } = body
 
     // Validate required fields
     if (!name || !faction) {
@@ -61,9 +61,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Derive the game version from the registry (D-05, D-06) -- the
+    // expansion is the source of truth, never a client-sent value alone.
+    const derivedGame = getExpansionGame(expansion)
+    if (!derivedGame) {
+      return NextResponse.json(
+        { error: 'Valid expansion is required' },
+        { status: 400 }
+      )
+    }
+
+    if (requestedGame !== undefined && requestedGame !== derivedGame) {
+      return NextResponse.json(
+        { error: 'Game version does not match the selected expansion.' },
+        { status: 400 }
+      )
+    }
+
     // WoW Forever has no realms; guilds.realm stores a "{Ruleset} ({Region})"
     // value instead. Other expansions keep their existing (unvalidated) realm.
-    if (expansion === 'Forever' && !parseForeverRuleset(realm)) {
+    if (derivedGame === 'forever' && !parseForeverRuleset(realm)) {
       return NextResponse.json(
         { error: 'Select a valid WoW Forever ruleset.' },
         { status: 400 }
@@ -77,6 +94,7 @@ export async function POST(request: NextRequest) {
         name,
         realm: realm || null,
         faction,
+        game: derivedGame,
         discord_server_id: discord_server_id || null,
         created_by: user.id,
         is_active: true,

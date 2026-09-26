@@ -19,7 +19,8 @@ vi.mock('@/app/services/expansionSeeder', async (importOriginal) => ({
 type Call = { table: string; op: string; payload?: unknown; filters: Array<[string, unknown]> }
 
 /** Chainable, thenable Supabase stand-in that records every query it receives. */
-function makeClient(opts: { existing: Array<{ id: string; name: string }>; updateError?: unknown }) {
+function makeClient(opts: { existing: Array<{ id: string; name: string }>; updateError?: unknown; game?: string }) {
+  const game = opts.game ?? 'classic'
   const calls: Call[] = []
   const client = {
     from(table: string) {
@@ -37,6 +38,9 @@ function makeClient(opts: { existing: Array<{ id: string; name: string }>; updat
         update: (payload: unknown) => { call.op = 'update'; call.payload = payload; return builder },
         eq: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         in: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
+        single: () => Promise.resolve(
+          table === 'guilds' ? { data: { game }, error: null } : { data: null, error: null }
+        ),
         then: (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
           Promise.resolve(result()).then(resolve, reject),
       }
@@ -52,6 +56,7 @@ function request(body: unknown) {
 }
 
 const deletes = (calls: Call[]) => calls.filter(c => c.table === 'expansions' && c.op === 'delete')
+const guildsUpdate = (calls: Call[]) => calls.find(c => c.table === 'guilds' && c.op === 'update')
 
 describe('POST /api/guilds/change-expansion', () => {
   beforeEach(() => {
@@ -65,13 +70,13 @@ describe('POST /api/guilds/change-expansion', () => {
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
     vi.mocked(seedExpansionForGuild).mockResolvedValue({ expansionId: 'new-1' })
 
-    const res = await POST(request({ guild_id: 'g1', expansion: 'Forever' }))
+    const res = await POST(request({ guild_id: 'g1', expansion: 'The Burning Crusade' }))
 
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ success: true, expansion_id: 'new-1' })
     // Regression: the 4th argument is setAsCurrent and the 5th is useServiceRole
-    expect(seedExpansionForGuild).toHaveBeenCalledWith(client, 'g1', 'Forever', false, true)
-    const update = calls.find(c => c.table === 'guilds' && c.op === 'update')
+    expect(seedExpansionForGuild).toHaveBeenCalledWith(client, 'g1', 'The Burning Crusade', false, true)
+    const update = guildsUpdate(calls)
     expect(update?.payload).toEqual({ active_expansion_id: 'new-1' })
     expect(deletes(calls)).toEqual([
       expect.objectContaining({ filters: [['id', ['old-1']]] }),
@@ -85,12 +90,13 @@ describe('POST /api/guilds/change-expansion', () => {
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
     vi.mocked(seedExpansionForGuild).mockResolvedValue({ expansionId: '', error: 'Failed to create expansion' })
 
-    const res = await POST(request({ guild_id: 'g1', expansion: 'Forever' }))
+    const res = await POST(request({ guild_id: 'g1', expansion: 'The Burning Crusade' }))
 
     expect(res.status).toBe(500)
-    expect(calls.some(c => c.table === 'guilds')).toBe(false)
+    // No guilds update happened (the guild game lookup itself does read guilds)
+    expect(guildsUpdate(calls)).toBeUndefined()
     expect(deletes(calls)).toEqual([
-      expect.objectContaining({ filters: [['guild_id', 'g1'], ['name', 'Forever']] }),
+      expect.objectContaining({ filters: [['guild_id', 'g1'], ['name', 'The Burning Crusade']] }),
     ])
   })
 
@@ -102,7 +108,7 @@ describe('POST /api/guilds/change-expansion', () => {
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
     vi.mocked(seedExpansionForGuild).mockResolvedValue({ expansionId: 'new-1' })
 
-    const res = await POST(request({ guild_id: 'g1', expansion: 'Forever' }))
+    const res = await POST(request({ guild_id: 'g1', expansion: 'The Burning Crusade' }))
 
     expect(res.status).toBe(500)
     expect(deletes(calls)).toEqual([
@@ -112,15 +118,15 @@ describe('POST /api/guilds/change-expansion', () => {
 
   it('reuses an expansion the guild already has instead of reseeding it', async () => {
     const { client, calls } = makeClient({
-      existing: [{ id: 'old-1', name: 'Classic' }, { id: 'fe-1', name: 'Forever' }],
+      existing: [{ id: 'old-1', name: 'Classic' }, { id: 'tbc-1', name: 'The Burning Crusade' }],
     })
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
 
-    const res = await POST(request({ guild_id: 'g1', expansion: 'Forever' }))
+    const res = await POST(request({ guild_id: 'g1', expansion: 'The Burning Crusade' }))
 
     expect(res.status).toBe(200)
     expect(seedExpansionForGuild).not.toHaveBeenCalled()
-    expect(calls.find(c => c.table === 'guilds')?.payload).toEqual({ active_expansion_id: 'fe-1' })
+    expect(guildsUpdate(calls)?.payload).toEqual({ active_expansion_id: 'tbc-1' })
     expect(deletes(calls)).toEqual([
       expect.objectContaining({ filters: [['id', ['old-1']]] }),
     ])
@@ -134,5 +140,35 @@ describe('POST /api/guilds/change-expansion', () => {
 
     expect(res.status).toBe(400)
     expect(calls).toEqual([])
+  })
+
+  it('rejects The Burning Crusade for a Forever guild before seeding, switching or deleting anything', async () => {
+    const { client, calls } = makeClient({ existing: [{ id: 'fe-1', name: 'Forever' }], game: 'forever' })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: 'g1', expansion: 'The Burning Crusade' }))
+
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({
+      error: "The Burning Crusade isn't available for this guild's game version.",
+    })
+    expect(seedExpansionForGuild).not.toHaveBeenCalled()
+    expect(deletes(calls)).toEqual([])
+    expect(guildsUpdate(calls)).toBeUndefined()
+  })
+
+  it('rejects Forever for a Classic guild before seeding, switching or deleting anything', async () => {
+    const { client, calls } = makeClient({ existing: [{ id: 'c-1', name: 'Classic' }], game: 'classic' })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: 'g1', expansion: 'Forever' }))
+
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({
+      error: "WoW Forever isn't available for this guild's game version.",
+    })
+    expect(seedExpansionForGuild).not.toHaveBeenCalled()
+    expect(deletes(calls)).toEqual([])
+    expect(guildsUpdate(calls)).toBeUndefined()
   })
 })

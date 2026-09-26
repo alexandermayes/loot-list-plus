@@ -4,7 +4,11 @@ import {
   isSupportedExpansion,
   getAvailableExpansions,
   seedExpansionForGuild,
+  getExpansionDefinition,
+  getExpansionGame,
+  gameMismatchError,
 } from '../expansionSeeder'
+import { EXPANSION_GAMES } from '@/domain/expansion/game'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySupabase = any
@@ -120,6 +124,31 @@ describe('isSupportedExpansion', () => {
     expect(isSupportedExpansion('')).toBe(false)
     expect(isSupportedExpansion(undefined)).toBe(false)
     expect(isSupportedExpansion(42)).toBe(false)
+  })
+})
+
+describe('EXPANSION_GAMES registry consistency', () => {
+  it('has a key set equal to SUPPORTED_EXPANSIONS', () => {
+    expect(new Set(Object.keys(EXPANSION_GAMES))).toEqual(new Set(SUPPORTED_EXPANSIONS))
+  })
+
+  it('agrees with each ExpansionDefinition.game for every supported expansion', () => {
+    for (const name of SUPPORTED_EXPANSIONS) {
+      const definition = getExpansionDefinition(name)
+      expect(definition).not.toBeNull()
+      expect(definition?.game).toBe(getExpansionGame(name))
+    }
+  })
+})
+
+describe('gameMismatchError', () => {
+  it('names the display name and the game-version sentence', () => {
+    expect(gameMismatchError('Forever')).toBe(
+      "WoW Forever isn't available for this guild's game version."
+    )
+    expect(gameMismatchError('The Burning Crusade')).toBe(
+      "The Burning Crusade isn't available for this guild's game version."
+    )
   })
 })
 
