@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { getGuildGame } from '@/domain/expansion/game'
 import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
 import type { IconSvgElement } from '@hugeicons/react'
@@ -42,7 +43,8 @@ interface SetupGuideProps {
 export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion }: SetupGuideProps) {
   const router = useRouter()
   const supabase = createClient()
-  const { activeCharacter } = useGuildContext()
+  const { activeCharacter, activeGuild } = useGuildContext()
+  const isForeverGuild = getGuildGame(activeGuild) === 'forever'
   const [dismissed, setDismissed] = useState(false)
   const [steps, setSteps] = useState<SetupStep[]>([])
   const [loading, setLoading] = useState(true)
@@ -148,9 +150,15 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion }: S
         },
       ]
 
-      setSteps(newSteps)
+      // A Forever guild's game version is fixed at creation (D-02), so there
+      // is nothing to "choose" -- the expansion step never applies (D-03).
+      const visibleSteps = isForeverGuild
+        ? newSteps.filter(s => s.id !== 'expansion')
+        : newSteps
 
-      const firstIncomplete = newSteps.find(s => !s.complete)
+      setSteps(visibleSteps)
+
+      const firstIncomplete = visibleSteps.find(s => !s.complete)
       if (firstIncomplete) {
         setExpandedStep(firstIncomplete.id)
       }
@@ -159,7 +167,7 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion }: S
     } finally {
       setLoading(false)
     }
-  }, [guildId, guildName, hasExpansion, activeCharacter, supabase])
+  }, [guildId, guildName, hasExpansion, activeCharacter, isForeverGuild, supabase])
 
   useEffect(() => {
     checkSetupProgress()

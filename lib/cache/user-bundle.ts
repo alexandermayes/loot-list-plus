@@ -120,6 +120,7 @@ async function fetchUserBundle(userId: string): Promise<FetchedBundle> {
           require_discord_verification,
           active_expansion_id,
           subscription_tier,
+          game,
           guild_roles (
             name,
             position,

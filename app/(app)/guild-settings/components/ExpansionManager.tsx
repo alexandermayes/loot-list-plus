@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { DatePicker } from '@/components/ui/date-picker'
 import { getExpansionVisuals, getExpansionDisplayName } from '@/utils/expansionVisuals'
+import { getGuildGame, getExpansionGame } from '@/domain/expansion/game'
 
 interface GuildExpansion {
   expansion_id: string
@@ -106,6 +107,7 @@ export default function ExpansionManager() {
   const supabase = createClient()
   const { activeGuild, refreshExpansions } = useGuildContext()
   const { showNotification } = useNotification()
+  const isForeverGuild = getGuildGame(activeGuild) === 'forever'
 
   const loadData = useCallback(async () => {
     if (!activeGuild) return
@@ -403,20 +405,29 @@ export default function ExpansionManager() {
     }))
   }
 
-  // Get expansions that can be added (have data and not already added)
+  // Get expansions that can be added (have data, not already added, and --
+  // for Classic guilds -- belong to the Classic game; a Forever guild never
+  // reaches this list because its Add Expansion section does not render).
   // Handle name variations (e.g., 'Classic' vs 'Classic WoW')
   const addableExpansions = availableExpansions.filter(
-    exp => exp.hasData && !guildExpansions.some(ge =>
-      ge.expansion_name === exp.name ||
-      ge.expansion_name.toLowerCase().startsWith(exp.name.toLowerCase()) ||
-      exp.name.toLowerCase().startsWith(ge.expansion_name.toLowerCase())
-    )
+    exp => exp.hasData
+      && getExpansionGame(exp.name) === 'classic'
+      && !guildExpansions.some(ge =>
+        ge.expansion_name === exp.name ||
+        ge.expansion_name.toLowerCase().startsWith(exp.name.toLowerCase()) ||
+        exp.name.toLowerCase().startsWith(ge.expansion_name.toLowerCase())
+      )
   )
+
+  // A Forever guild only ever shows its own Forever expansion row (D-03, D-08).
+  const visibleExpansions = isForeverGuild
+    ? guildExpansions.filter(exp => getExpansionGame(exp.expansion_name) === 'forever')
+    : guildExpansions
 
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center">
-        <p className="text-muted-foreground">Loading expansions...</p>
+        <p className="text-muted-foreground">{isForeverGuild ? 'Loading...' : 'Loading expansions...'}</p>
       </div>
     )
   }
@@ -424,12 +435,14 @@ export default function ExpansionManager() {
   return (
     <div className="space-y-6">
       {/* Guild Expansions */}
-      {guildExpansions.length > 0 && (
+      {visibleExpansions.length > 0 && (
         <div>
-          <h3 className="text-[16px] font-semibold text-foreground mb-4">Your Expansions</h3>
+          <h3 className="text-[16px] font-semibold text-foreground mb-4">
+            {isForeverGuild ? 'Game version' : 'Your Expansions'}
+          </h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Keep expansions in original order (by created_at) */}
-            {guildExpansions.map((exp) => {
+            {visibleExpansions.map((exp) => {
               const visuals = getExpansionVisuals(exp.expansion_name)
               const isExpanded = expandedCards[exp.expansion_id] || false
               const schedule = raidSchedules[exp.expansion_id]
@@ -471,7 +484,7 @@ export default function ExpansionManager() {
                           >
                             {getExpansionDisplayName(exp.expansion_name)}
                           </h3>
-                          {exp.is_current && (
+                          {exp.is_current && !isForeverGuild && (
                             <span
                               className="px-3 py-1 text-xs font-semibold rounded-full flex-shrink-0"
                               style={{
@@ -489,7 +502,7 @@ export default function ExpansionManager() {
                         </p>
                       </div>
 
-                      {!exp.is_current && (
+                      {!exp.is_current && !isForeverGuild && (
                         <Button
                           onClick={() => handleSetCurrent(exp.expansion_id)}
                           disabled={updating === exp.expansion_id}
@@ -793,8 +806,8 @@ export default function ExpansionManager() {
         </div>
       )}
 
-      {/* Add New Expansion */}
-      {addableExpansions.length > 0 && (
+      {/* Add New Expansion (Classic guilds only, D-08) */}
+      {!isForeverGuild && addableExpansions.length > 0 && (
         <div>
           <h3 className="text-[16px] font-semibold text-foreground mb-4">Add Expansion</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -877,7 +890,7 @@ export default function ExpansionManager() {
         </div>
       )}
 
-      {guildExpansions.length === 0 && addableExpansions.length === 0 && (
+      {!isForeverGuild && guildExpansions.length === 0 && addableExpansions.length === 0 && (
         <div className="p-12 bg-background-elevated border border-border rounded-xl text-center">
           <p className="text-muted-foreground text-[16px]">No expansions available to add</p>
         </div>

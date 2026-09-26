@@ -8,6 +8,7 @@ import WelcomeScreen from '@/app/components/WelcomeScreen'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserIcon, CheckmarkCircle01Icon, AlertCircleIcon, Award01Icon, Cancel01Icon, Add01Icon, Calendar03Icon, Shield01Icon, AnalyticsUpIcon } from '@hugeicons/core-free-icons'
 import { NoRaidsEmptyState } from '@/app/components/NoRaidsEmptyState'
+import { getGuildGame } from '@/domain/expansion/game'
 
 // Lazy load modals to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -2029,7 +2030,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
           {/* No raid tiers yet for the active expansion (e.g. a new
               expansion such as WoW Forever, or every current tier disabled) */}
           {noRaidTiers && !error && (
-            <NoRaidsEmptyState />
+            <NoRaidsEmptyState game={getGuildGame(activeGuild)} />
           )}
 
           {/* Insights: load progressively (don't block stats above) */}

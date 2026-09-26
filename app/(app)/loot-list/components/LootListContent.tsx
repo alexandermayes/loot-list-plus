@@ -17,6 +17,7 @@ import {
 } from '@dnd-kit/core'
 import SearchableItemSelect from '@/app/components/SearchableItemSelect'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { getGuildGame } from '@/domain/expansion/game'
 import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { TierTabsSkeleton, LootListContentSkeleton, Skeleton } from '@/components/ui/skeletons'
 import {
@@ -754,6 +755,7 @@ export default function LootListContent({
     viewingExpansionId,
     setViewingExpansion
   } = useGuildContext()
+  const guildGame = getGuildGame(activeGuild)
 
   // Get all data and actions from context
   const {
@@ -1614,7 +1616,7 @@ export default function LootListContent({
                   const label = group ? getPhaseGroupShortLabel(group).replace(/^P/, 'Phase ').replace(/\+P/g, '+') : `Phase ${selectedPhase}`
                   return `Rank your preferred items for ${label}${phaseTiers.length > 0 ? ` (${phaseTiers.map(t => t.name).join(', ')})` : ''}`
                 })())}
-                {viewingExpansionId && (
+                {viewingExpansionId && guildGame !== 'forever' && (
                   <span className="ml-2 px-3 py-1 bg-blue-950/50 border border-blue-600/50 text-blue-300 text-xs font-medium rounded-full">
                     Viewing Past: {getExpansionDisplayName(guildExpansions.find(e => e.expansion_id === viewingExpansionId)?.expansion_name)}
                   </span>
@@ -1623,7 +1625,7 @@ export default function LootListContent({
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
               {/* Expansion Selector - Dropdown */}
-              {guildExpansions.length > 1 && (
+              {guildGame !== 'forever' && guildExpansions.length > 1 && (
                 <Select
                   variant="rounded"
                   value={viewingExpansionId || guildExpansions.find(e => e.is_current)?.expansion_id || ''}
@@ -1651,7 +1653,7 @@ export default function LootListContent({
 
         {hasNoRaidTiers ? (
           <div className="px-4 sm:px-6 lg:px-8 pt-2">
-            <NoRaidsEmptyState size="lg" />
+            <NoRaidsEmptyState size="lg" game={guildGame} />
           </div>
         ) : (
         <>

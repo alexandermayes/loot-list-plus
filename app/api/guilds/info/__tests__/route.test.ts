@@ -14,8 +14,8 @@ vi.mock('@/utils/server-roles', () => ({
   verifyGuildMasterPermissions: vi.fn(),
 }))
 
-/** Minimal Supabase stand-in: a guild whose active expansion has the given name. */
-function makeClient(activeExpansionName: string | null) {
+/** Minimal Supabase stand-in: a guild with the given game version ('classic' or 'forever'), or a missing row when game is null. */
+function makeClient(game: string | null) {
   const updates: unknown[] = []
   const lookups: string[] = []
   const client = {
@@ -28,8 +28,8 @@ function makeClient(activeExpansionName: string | null) {
         eq: () => builder,
         single: () => Promise.resolve(
           table === 'guilds'
-            ? { data: { active_expansion_id: activeExpansionName ? 'exp-1' : null }, error: null }
-            : { data: activeExpansionName ? { name: activeExpansionName } : null, error: null }
+            ? { data: game === null ? null : { game }, error: null }
+            : { data: null, error: null }
         ),
         then: (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
           Promise.resolve(op === 'update' ? { error: null } : { data: null, error: null }).then(resolve, reject),
@@ -52,7 +52,7 @@ describe('PUT /api/guilds/info ruleset validation', () => {
   })
 
   it('rejects a realm name on a Forever guild', async () => {
-    const { client, updates } = makeClient('Forever')
+    const { client, updates } = makeClient('forever')
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
 
     const res = await put({ guild_id: 'g1', realm: 'Arugal' })
@@ -63,7 +63,7 @@ describe('PUT /api/guilds/info ruleset validation', () => {
   })
 
   it('saves a valid ruleset on a Forever guild', async () => {
-    const { client, updates } = makeClient('Forever')
+    const { client, updates } = makeClient('forever')
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
 
     const res = await put({ guild_id: 'g1', realm: 'PvP (US)' })
@@ -72,8 +72,18 @@ describe('PUT /api/guilds/info ruleset validation', () => {
     expect(updates).toEqual([{ realm: 'PvP (US)' }])
   })
 
-  it('leaves realm validation unchanged for other expansions', async () => {
-    const { client, updates } = makeClient('Classic')
+  it('saves a ruleset-shaped realm on a Classic guild without validating it as a ruleset', async () => {
+    const { client, updates } = makeClient('classic')
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await put({ guild_id: 'g1', realm: 'PvP (US)' })
+
+    expect(res.status).toBe(200)
+    expect(updates).toEqual([{ realm: 'PvP (US)' }])
+  })
+
+  it('leaves realm validation unchanged for a Classic guild (no realm heuristic)', async () => {
+    const { client, updates } = makeClient('classic')
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
 
     const res = await put({ guild_id: 'g1', realm: 'Arugal' })
@@ -82,8 +92,18 @@ describe('PUT /api/guilds/info ruleset validation', () => {
     expect(updates).toEqual([{ realm: 'Arugal' }])
   })
 
-  it('skips the expansion lookup when the realm is not being changed', async () => {
-    const { client, updates, lookups } = makeClient('Forever')
+  it('treats a missing guild row as classic (no ruleset validation)', async () => {
+    const { client, updates } = makeClient(null)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await put({ guild_id: 'g1', realm: 'Arugal' })
+
+    expect(res.status).toBe(200)
+    expect(updates).toEqual([{ realm: 'Arugal' }])
+  })
+
+  it('skips the game lookup when the realm is not being changed', async () => {
+    const { client, updates, lookups } = makeClient('forever')
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
 
     const res = await put({ guild_id: 'g1', name: 'Onslaught' })
@@ -91,5 +111,14 @@ describe('PUT /api/guilds/info ruleset validation', () => {
     expect(res.status).toBe(200)
     expect(lookups).toEqual([])
     expect(updates).toEqual([{ name: 'Onslaught' }])
+  })
+
+  it('reads only the guilds table when validating a realm change', async () => {
+    const { client, lookups } = makeClient('forever')
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    await put({ guild_id: 'g1', realm: 'PvP (US)' })
+
+    expect(lookups).toEqual(['guilds'])
   })
 })
