@@ -123,6 +123,15 @@ export const TOKEN_CLASS_MAPPING: Record<string, WowClassName[]> = {
   'Primal Hakkari Aegis': ['Hunter', 'Rogue', 'Priest'],
 
   // ============================================================================
+  // CLASSIC ONYXIA'S LAIR - GH-273
+  // Not a tier token, but a Hunter-only quest item (Rhok'delar). Its catalog
+  // slot is 'Token' so this entry hides it from other classes in the picker
+  // and the seeder gives it a Hunter class row. Class from the package
+  // "Classes: Hunter" tooltip line.
+  // ============================================================================
+  'Mature Black Dragon Sinew': ['Hunter'],
+
+  // ============================================================================
   // WOTLK TIER 7 TOKENS (Naxxramas, Obsidian Sanctum, Eye of Eternity)
   // ============================================================================
   // 10-man tokens use "Lost" prefix, 25-man tokens use "Valorous" prefix.

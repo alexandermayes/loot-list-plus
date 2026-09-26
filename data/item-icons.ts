@@ -5363,6 +5363,7 @@ export const ITEM_ICONS: Record<number, string> = {
   19139: 'inv_shoulder_23',
   18808: 'inv_gauntlets_03',
   19140: 'inv_jewelry_ring_39',
+  18563: 'spell_ice_lament',
   19716: 'inv_bracer_05',
   19717: 'inv_bracer_18',
   19718: 'inv_bracer_14',

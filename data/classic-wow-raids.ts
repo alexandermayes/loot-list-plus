@@ -198,6 +198,9 @@ export const moltenCore: Raid = {
         { name: 'Lawbringer Spaulders', slot: 'Shoulder', wowhead_id: 16856 },
         // Non-Tier Epic Drops
         { name: 'Seal of the Archmagus', slot: 'Finger', wowhead_id: 17110 },
+        // GH-273: left half of Thunderaan's prison (Thunderfury quest). The
+        // right half, same name, is 18564 under Garr; the two differ by boss.
+        { name: 'Bindings of the Windseeker', slot: 'Quest', wowhead_id: 18563 },
         { name: 'Talisman of Ephemeral Power', slot: 'Trinket', wowhead_id: 18820 },
         { name: 'Quick Strike Ring', slot: 'Finger', wowhead_id: 18821 },
         { name: 'Obsidian Edged Blade', slot: 'Two-Hand', wowhead_id: 18822 },
@@ -613,8 +616,10 @@ export const onyxiasLair: Raid = {
         { name: 'Ring of Binding', slot: 'Finger', wowhead_id: 18813 },
         // Quest Items
         { name: 'Head of Onyxia', slot: 'Quest', wowhead_id: 18423 },
-        // GH-273: Hunter quest item for Rhok'delar
-        { name: 'Mature Black Dragon Sinew', slot: 'Quest', wowhead_id: 18705 },
+        // GH-273: Hunter-only quest item for Rhok'delar. Slot 'Token' so the
+        // TOKEN_CLASS_MAPPING entry limits it to Hunters in the picker and
+        // the seeder gives it a Hunter class row.
+        { name: 'Mature Black Dragon Sinew', slot: 'Token', wowhead_id: 18705 },
       ],
     },
   ],

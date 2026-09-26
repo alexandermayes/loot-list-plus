@@ -1,6 +1,7 @@
 /**
  * GH-273 core scope: the Epic Classic raid drops that were never in
- * data/classic-wow-raids.ts, so no Classic (Era) guild could list them.
+ * data/classic-wow-raids.ts, so no Classic (Era) guild could list them, plus
+ * the left Bindings of the Windseeker (Legendary, added on review).
  *
  * Transcribed independently of the catalog from two loot sources that agree:
  * the wow-classic-items package (name, slot, quality) and AtlasLootClassic
@@ -9,8 +10,9 @@
  * groups the TBC, MoP and Naxxramas data already use, so every id appears once
  * per raid and the backfill migration's NOT EXISTS guard stays exact.
  *
- * Shared by the catalog completeness suite and the backfill migration suite so
- * both assert against the same list.
+ * Shared by the catalog completeness suite and the backfill migration suite
+ * (app/services/__tests__/classic-loot-backfill-migration.test.ts, which ships
+ * with the migration) so both assert against the same list.
  */
 
 export interface Gh273CoreItem {
@@ -60,8 +62,10 @@ export const GH273_CORE: Gh273CoreItem[] = [
   { raid: 'Blackwing Lair', boss: 'Trash', id: 19438, name: "Ringo's Blizzard Boots", slot: 'Feet' },
   { raid: 'Blackwing Lair', boss: 'Trash', id: 19439, name: 'Interlaced Shadow Jerkin', slot: 'Chest' },
 
-  // Molten Core (21): Tier 1 belts and bracers drop from trash, the rest from
-  // the Cache of the Firelord that Majordomo Executus leaves.
+  // Molten Core (22): Tier 1 belts and bracers drop from trash, three items
+  // from the Cache of the Firelord that Majordomo Executus leaves, and the
+  // left Bindings of the Windseeker from Baron Geddon. The right half shares
+  // the name but is 18564 under Garr, already in the catalog.
   { raid: 'Molten Core', boss: 'Trash', id: 16799, name: 'Arcanist Bindings', slot: 'Wrist' },
   { raid: 'Molten Core', boss: 'Trash', id: 16802, name: 'Arcanist Belt', slot: 'Waist' },
   { raid: 'Molten Core', boss: 'Trash', id: 16804, name: 'Felheart Bracers', slot: 'Wrist' },
@@ -83,6 +87,7 @@ export const GH273_CORE: Gh273CoreItem[] = [
   { raid: 'Molten Core', boss: 'Majordomo Executus', id: 19139, name: 'Fireguard Shoulders', slot: 'Shoulder' },
   { raid: 'Molten Core', boss: 'Majordomo Executus', id: 18808, name: 'Gloves of the Hypnotic Flame', slot: 'Hands' },
   { raid: 'Molten Core', boss: 'Majordomo Executus', id: 19140, name: 'Cauterizing Band', slot: 'Finger' },
+  { raid: 'Molten Core', boss: 'Baron Geddon', id: 18563, name: 'Bindings of the Windseeker', slot: 'Quest' },
 
   // Zul'Gurub (10): the Primal Hakkari tokens drop from the five High Priests,
   // Bloodlord Mandokir and Jin'do; the Seal from the five High Priests.
@@ -101,6 +106,7 @@ export const GH273_CORE: Gh273CoreItem[] = [
   { raid: "Ruins of Ahn'Qiraj", boss: 'Shared Boss Loot', id: 20886, name: 'Qiraji Spiked Hilt', slot: 'Quest' },
   { raid: "Ruins of Ahn'Qiraj", boss: 'Shared Boss Loot', id: 20890, name: 'Qiraji Ornate Hilt', slot: 'Quest' },
 
-  // Onyxia's Lair (1)
-  { raid: "Onyxia's Lair", boss: 'Onyxia', id: 18705, name: 'Mature Black Dragon Sinew', slot: 'Quest' },
+  // Onyxia's Lair (1): a Hunter-only quest item, slot 'Token' so the token
+  // class rules restrict it to Hunters.
+  { raid: "Onyxia's Lair", boss: 'Onyxia', id: 18705, name: 'Mature Black Dragon Sinew', slot: 'Token' },
 ]

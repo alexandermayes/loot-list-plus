@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { Items } from 'wow-classic-items'
 import { classicRaids } from '../classic-wow-raids'
-import { getTokenClasses, isTokenSlot } from '../token-class-mapping'
+import { canClassUseToken, getTokenClasses, isTokenSlot } from '../token-class-mapping'
 import { canUseWeaponType, type WeaponType, type WowClassName } from '../class-proficiencies'
 import { ITEM_ICONS } from '../item-icons'
 import { ITEM_TYPES, type ItemTypeInfo } from '../item-types'
@@ -21,7 +21,8 @@ import { GH273_CORE } from './fixtures/classic-gh273-core'
 //
 // RED evidence, measured against the pre-fix catalog: 171 of 200 assertions
 // failed, including 62 package misses (70 before the deliberate exclusions)
-// and all 66 core items absent. Reverting only the Imperial Qiraji or a Tier
+// and all 66 original core items absent (the fixture has since gained the left
+// Bindings of the Windseeker). Reverting only the Imperial Qiraji or a Tier
 // 2.5 class list, with the items present, fails the token checks.
 
 type PackageItem = InstanceType<typeof Items>[number]
@@ -51,7 +52,6 @@ const MAX_CLASSIC_ITEM_ID = 25000
 // reaching guilds as a silent gap.
 const DELIBERATELY_EXCLUDED: Record<number, string> = {
   18562: 'Elementium Ore: crafting material, not a loot-list item',
-  18563: 'Bindings of the Windseeker (left): legendary quest material',
   19002: 'Head of Nefarian (Horde copy): package only; the Alliance copy 19003 is listed',
   21110: 'Draconic for Dummies: quest item, package only',
   21138: 'Red Scepter Shard: quest material',
@@ -161,9 +161,20 @@ describe('Classic catalog completeness (#273)', () => {
     expect(stale).toEqual([])
   })
 
-  it('covers exactly the 66 core items in the fixture', () => {
-    expect(GH273_CORE).toHaveLength(66)
-    expect(new Set(GH273_CORE.map(item => `${item.raid}|${item.id}`)).size).toBe(66)
+  it('covers exactly the 67 core items in the fixture', () => {
+    expect(GH273_CORE).toHaveLength(67)
+    expect(new Set(GH273_CORE.map(item => `${item.raid}|${item.id}`)).size).toBe(67)
+  })
+
+  it('lists both Bindings of the Windseeker halves, under different bosses', () => {
+    const halves = catalogEntries
+      .filter(entry => entry.name === 'Bindings of the Windseeker')
+      .map(entry => `${entry.raid}|${entry.boss}|${entry.wowhead_id}|${entry.slot}`)
+      .sort()
+    expect(halves).toEqual([
+      'Molten Core|Baron Geddon|18563|Quest',
+      'Molten Core|Garr|18564|Quest',
+    ])
   })
 
   it.each(GH273_CORE)('$raid lists $name ($id) once, under $boss, as $slot', expected => {
@@ -176,11 +187,20 @@ describe('Classic catalog completeness (#273)', () => {
 describe('Classic token class restrictions (#273)', () => {
   const tokens = catalogEntries.filter(entry => isTokenSlot(entry.slot))
 
-  it('includes the AQ40 and ZG tokens', () => {
+  it('includes the AQ40, ZG and Onyxia tokens', () => {
     const tokenIds = new Set(tokens.map(token => token.wowhead_id))
     const expectedTokens = GH273_CORE.filter(item => item.slot === 'Token').map(item => item.id)
-    expect(expectedTokens).toHaveLength(19)
+    expect(expectedTokens).toHaveLength(20)
     expect(expectedTokens.filter(id => !tokenIds.has(id))).toEqual([])
+  })
+
+  // The picker (lib/loot-items-query.ts) filters Token-slot rows with
+  // canClassUseToken; any other slot skips class rules, so as 'Quest' the
+  // Sinew was offered to every class.
+  it.each(CLASSIC_CLASSES)('offers Mature Black Dragon Sinew to %s only if Hunter', className => {
+    const sinew = catalogEntries.find(entry => entry.wowhead_id === 18705)
+    expect(sinew && isTokenSlot(sinew.slot)).toBe(true)
+    expect(canClassUseToken('Mature Black Dragon Sinew', className)).toBe(className === 'Hunter')
   })
 
   it.each(tokens.map(token => [token.name, token.wowhead_id] as const))(
