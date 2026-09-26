@@ -6,8 +6,11 @@
  * app/services/expansionSeeder.ts copies this file into every guild's own
  * raid_tiers and loot_items when the guild adds Classic, so an item missing
  * here is missing for every guild seeded afterwards. Adding an item later also
- * needs a backfill migration for guilds that already exist (see
- * supabase/migrations/20260926000000_add_classic_missing_loot.sql).
+ * needs a backfill migration for guilds that already exist. Ship it in its own
+ * PR, merged after the app deploy that carries the data change: migrations
+ * apply seconds after merge, the app deploy minutes later, and a guild seeded
+ * in between would miss both. The GH-273 backfill,
+ * supabase/migrations/20260926233000_add_classic_missing_loot.sql, is the model.
  *
  * Covers the Epic drops of the seven Classic raids (Molten Core, Blackwing
  * Lair, Onyxia's Lair, Zul'Gurub, Ruins of Ahn'Qiraj, Temple of Ahn'Qiraj,
