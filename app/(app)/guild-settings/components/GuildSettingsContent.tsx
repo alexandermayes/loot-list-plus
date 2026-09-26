@@ -11,8 +11,8 @@ import ExpansionManager from './ExpansionManager'
 import { BillingSection } from './BillingSection'
 import RealmSelector from '@/app/components/RealmSelector'
 import ForeverRulesetSelector from '@/app/components/ForeverRulesetSelector'
-import { getRegionForRealm, parseForeverRuleset } from '@/data/wow-realms'
-import { useExpansionData } from '@/app/contexts/ExpansionContext'
+import { getRegionForRealm } from '@/data/wow-realms'
+import { getGuildGame } from '@/domain/expansion/game'
 import { GuildSettingsContentSkeleton } from '@/components/ui/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'
 import {
@@ -94,11 +94,10 @@ export default function GuildSettingsContent() {
   const router = useRouter()
   const { activeGuild, loading: guildLoading, isOfficer, hasPermission, refreshGuilds, user } = useGuildContext()
   const { showNotification } = useNotification()
-  const { currentExpansion } = useExpansionData()
 
-  // Forever guild: active expansion is 'Forever', or the saved realm already
-  // parses as a Forever ruleset (covers guilds created before this field existed).
-  const isForeverGuild = currentExpansion?.expansion_name === 'Forever' || parseForeverRuleset(realm) !== null
+  // Forever guild: reads guilds.game only (D-07); never the active expansion's
+  // name or a ruleset-shaped realm.
+  const isForeverGuild = getGuildGame(activeGuild) === 'forever'
 
   // Fetch guild members for ownership transfer
   const { data: membersData } = useGuildMembers(activeGuild?.id || null)

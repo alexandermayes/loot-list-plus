@@ -24,6 +24,8 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { getExpansionDisplayName } from '@/utils/expansionVisuals'
+import { GAME_VERSION_LABELS, resolveSignupExpansion } from '@/domain/expansion/game'
+import type { GameVersion } from '@/domain/expansion/game'
 
 interface DiscordGuild {
   id: string
@@ -43,16 +45,23 @@ interface CreateGuildModalProps {
 
 type Step = 'discord' | 'details' | 'settings'
 
-// Client component: never import app/services/expansionSeeder.ts here (it pulls
-// every raid data file into the browser bundle). Ids must match the seeder
-// registry keys in app/services/expansionSeeder.ts.
+// Client component: never import the expansion seeder service here (it pulls
+// every raid data file into the browser bundle). Ids must match the seeder's
+// registry keys.
+// These are the WoW Classic game's expansions, shown only when the Classic
+// game version tile is selected.
 const EXPANSIONS = [
   { id: 'Classic', name: 'Classic', image: '/images/expansions/WoWlogo.webp', available: true },
   { id: 'The Burning Crusade', name: 'TBC', image: '/images/expansions/TBCLogo.webp', available: true },
   { id: 'Wrath of the Lich King', name: 'WotLK', image: '/images/expansions/WrathLogo.webp', available: true },
   { id: 'Cataclysm', name: 'Cata', image: '/images/expansions/Cataclysmlogo.webp', available: true },
   { id: 'Mists of Pandaria', name: 'MoP', image: '/images/expansions/MoPlogo.webp', available: true },
-  { id: 'Forever', name: 'WoW Forever', image: '/images/expansions/ForeverLogo.webp', available: true },
+]
+
+// The two game version tiles shown first at signup (D-04).
+const GAME_VERSION_TILES: Array<{ id: GameVersion; name: string; image: string }> = [
+  { id: 'classic', name: GAME_VERSION_LABELS.classic, image: '/images/expansions/WoWlogo.webp' },
+  { id: 'forever', name: GAME_VERSION_LABELS.forever, image: '/images/expansions/ForeverLogo.webp' },
 ]
 
 export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServerId, suggestedName }: CreateGuildModalProps) {
@@ -83,8 +92,10 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
   const [realmRegion, setRealmRegion] = useState('All')
   const [realm, setRealm] = useState('')
   const [faction, setFaction] = useState<'Alliance' | 'Horde'>('Alliance')
-  const [expansion, setExpansion] = useState('Classic')
-  const isForeverExpansion = expansion === 'Forever'
+  const [game, setGame] = useState<GameVersion>('classic')
+  const [classicExpansion, setClassicExpansion] = useState('Classic')
+  const expansion = resolveSignupExpansion(game, classicExpansion)
+  const isForeverExpansion = game === 'forever'
 
   // Validation state
   const [checkingName, setCheckingName] = useState(false)
@@ -355,7 +366,8 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
           realm: realm.trim(),
           faction,
           discord_server_id: discordServerId,
-          expansion
+          expansion,
+          game
         })
       })
 
@@ -707,49 +719,81 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                     {nameAvailable === true && <p className="text-[12px] text-success mt-1">Name is available</p>}
                   </div>
 
-                  {/* Expansion */}
+                  {/* Game version */}
                   <div>
-                    <Label className="mb-2">Starting expansion</Label>
-                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                      {EXPANSIONS.map((exp) => (
-                        <div key={exp.id} className="relative group">
+                    <Label className="mb-2">Game version</Label>
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                      {GAME_VERSION_TILES.map((tile) => (
+                        <div key={tile.id} className="relative group">
                           <Button
                             variant="ghost"
-                            onClick={() => exp.available && setExpansion(exp.id)}
-                            disabled={!exp.available}
-                            className={`flex flex-col items-center gap-1 w-full h-auto p-0 !ring-0 !outline-none ${!exp.available ? 'cursor-not-allowed' : ''}`}
+                            onClick={() => setGame(tile.id)}
+                            aria-pressed={game === tile.id}
+                            className="flex flex-col items-center gap-1 w-full h-auto p-0 !ring-0 !outline-none"
                           >
                             <div className={`relative aspect-square w-full rounded-lg overflow-hidden border-2 transition-colors ${
-                              !exp.available
-                                ? 'border-border opacity-40'
-                                : expansion === exp.id
-                                  ? 'border-accent ring-2 ring-accent/30'
-                                  : 'border-border-strong hover:border-foreground-muted'
+                              game === tile.id
+                                ? 'border-accent ring-2 ring-accent/30'
+                                : 'border-border-strong hover:border-foreground-muted'
                             }`}>
-                              <img src={exp.image} alt={exp.name} className="w-full h-full object-contain p-2" />
+                              <img src={tile.image} alt={tile.name} className="w-full h-full object-contain p-2" />
                             </div>
                             <span className={`text-[10px] font-medium text-center leading-tight transition-colors ${
-                              !exp.available
-                                ? 'text-foreground-muted'
-                                : expansion === exp.id ? 'text-accent' : 'text-muted-foreground'
+                              game === tile.id ? 'text-accent' : 'text-muted-foreground'
                             }`}>
-                              {exp.name}
+                              {tile.name}
                             </span>
                           </Button>
-                          {/* Coming Soon Tooltip */}
-                          {!exp.available && (
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-muted border border-border-strong rounded-lg text-[10px] text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                              Coming Soon
-                              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-border-strong" />
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>
-                    <p className="text-[11px] text-muted-foreground mt-2">
-                      You can add more expansions from Admin settings later
-                    </p>
                   </div>
+
+                  {/* Expansion (Classic-only; Forever guilds skip the ladder entirely, D-03) */}
+                  {game === 'classic' && (
+                    <div>
+                      <Label className="mb-2">Starting expansion</Label>
+                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                        {EXPANSIONS.map((exp) => (
+                          <div key={exp.id} className="relative group">
+                            <Button
+                              variant="ghost"
+                              onClick={() => exp.available && setClassicExpansion(exp.id)}
+                              disabled={!exp.available}
+                              className={`flex flex-col items-center gap-1 w-full h-auto p-0 !ring-0 !outline-none ${!exp.available ? 'cursor-not-allowed' : ''}`}
+                            >
+                              <div className={`relative aspect-square w-full rounded-lg overflow-hidden border-2 transition-colors ${
+                                !exp.available
+                                  ? 'border-border opacity-40'
+                                  : classicExpansion === exp.id
+                                    ? 'border-accent ring-2 ring-accent/30'
+                                    : 'border-border-strong hover:border-foreground-muted'
+                              }`}>
+                                <img src={exp.image} alt={exp.name} className="w-full h-full object-contain p-2" />
+                              </div>
+                              <span className={`text-[10px] font-medium text-center leading-tight transition-colors ${
+                                !exp.available
+                                  ? 'text-foreground-muted'
+                                  : classicExpansion === exp.id ? 'text-accent' : 'text-muted-foreground'
+                              }`}>
+                                {exp.name}
+                              </span>
+                            </Button>
+                            {/* Coming Soon Tooltip */}
+                            {!exp.available && (
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-muted border border-border-strong rounded-lg text-[10px] text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                                Coming Soon
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-border-strong" />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-2">
+                        You can add more expansions from Admin settings later
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -23,6 +23,7 @@ import { ExpansionGuard } from '@/app/components/ExpansionGuard'
 import { TierTabsSkeleton, MasterSheetContentSkeleton, Skeleton } from '@/components/ui/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'
 import { NoRaidsEmptyState } from '@/app/components/NoRaidsEmptyState'
+import { getGuildGame } from '@/domain/expansion/game'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { SegmentedControl } from '@/components/ui/segmented-control'
@@ -2045,7 +2046,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
 
             {/* Aggregate View (Officer Only) */}
             {noRaidTiers ? (
-              <NoRaidsEmptyState />
+              <NoRaidsEmptyState game={getGuildGame(activeGuild)} />
             ) : viewMode === 'aggregate' && canManageLoot ? (
               <LootListSummaryView
                 items={aggregateItems}
