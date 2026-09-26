@@ -843,6 +843,59 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   20038: { weapon_type: 'Bow' },              // Mandokir's Sting
 
   // ============================================================================
+  // CLASSIC GH-273 ADDITIONS (trash epics, Tier 1 belts/bracers, missing boss
+  // drops). Types from the wow-classic-items package subclass; class-agnostic
+  // slots (Back, Finger, Trinket) and tokens need none.
+  // ============================================================================
+
+  // Molten Core trash: Tier 1 belts and bracers
+  16799: { armor_type: 'Cloth' },             // Arcanist Bindings
+  16802: { armor_type: 'Cloth' },             // Arcanist Belt
+  16804: { armor_type: 'Cloth' },             // Felheart Bracers
+  16806: { armor_type: 'Cloth' },             // Felheart Belt
+  16817: { armor_type: 'Cloth' },             // Girdle of Prophecy
+  16819: { armor_type: 'Cloth' },             // Vambraces of Prophecy
+  16825: { armor_type: 'Leather' },           // Nightslayer Bracelets
+  16827: { armor_type: 'Leather' },           // Nightslayer Belt
+  16828: { armor_type: 'Leather' },           // Cenarion Belt
+  16830: { armor_type: 'Leather' },           // Cenarion Bracers
+  16838: { armor_type: 'Mail' },              // Earthfury Belt
+  16840: { armor_type: 'Mail' },              // Earthfury Bracers
+  16850: { armor_type: 'Mail' },              // Giantstalker's Bracers
+  16851: { armor_type: 'Mail' },              // Giantstalker's Belt
+  16857: { armor_type: 'Plate' },             // Lawbringer Bracers
+  16858: { armor_type: 'Plate' },             // Lawbringer Belt
+  16861: { armor_type: 'Plate' },             // Bracers of Might
+  16864: { armor_type: 'Plate' },             // Belt of Might
+
+  // Molten Core: Majordomo Executus (Cache of the Firelord)
+  19139: { armor_type: 'Leather' },           // Fireguard Shoulders
+  18808: { armor_type: 'Cloth' },             // Gloves of the Hypnotic Flame
+
+  // Blackwing Lair trash
+  19437: { armor_type: 'Cloth' },             // Boots of Pure Thought
+  19438: { armor_type: 'Cloth' },             // Ringo's Blizzard Boots
+  19439: { armor_type: 'Leather' },           // Interlaced Shadow Jerkin
+  19435: { weapon_type: 'Wand' },             // Essence Gatherer
+  19362: { weapon_type: 'One-Handed Axe' },   // Doom's Edge
+  19358: { weapon_type: 'Two-Handed Mace' },  // Draconic Maul
+  19354: { weapon_type: 'Two-Handed Axe' },   // Draconic Avenger
+
+  // Temple of Ahn'Qiraj boss drops
+  21705: { armor_type: 'Mail' },              // Boots of the Fallen Prophet (The Prophet Skeram)
+  21693: { armor_type: 'Leather' },           // Guise of the Devourer (Silithid Royalty)
+  21682: { armor_type: 'Leather' },           // Bile-Covered Gauntlets (Silithid Royalty)
+  21684: { armor_type: 'Mail' },              // Mantle of the Desert's Fury (Silithid Royalty)
+  21675: { armor_type: 'Leather' },           // Thick Qirajihide Belt (Battleguard Sartura)
+
+  // Temple of Ahn'Qiraj trash
+  21838: { armor_type: 'Cloth' },             // Garb of Royal Ascension
+  21888: { armor_type: 'Cloth' },             // Gloves of the Immortal
+  21889: { armor_type: 'Plate' },             // Gloves of the Redeemed Prophecy
+  21856: { weapon_type: 'Two-Handed Axe' },   // Neretzek, The Blood Drinker
+  21837: { weapon_type: 'One-Handed Mace' },  // Anubisath Warhammer
+
+  // ============================================================================
   // MISTS OF PANDARIA — Siege of Orgrimmar "Shared Boss Loot"
   // ============================================================================
   // The shared loot pool drops one glove per armor type. Their names are
