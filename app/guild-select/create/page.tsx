@@ -743,9 +743,9 @@ export default function CreateGuildPage() {
                   }`}
                 >
                   <img
-                    src="https://beta.softres.it/img/editions/classic.big.png"
+                    src="/images/expansions/WoWlogo.webp"
                     alt="Classic"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain p-2"
                   />
                 </Button>
                 <Button
@@ -760,9 +760,9 @@ export default function CreateGuildPage() {
                   }`}
                 >
                   <img
-                    src="https://beta.softres.it/img/editions/tbc.big.png"
+                    src="/images/expansions/TBCLogo.webp"
                     alt="The Burning Crusade"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain p-2"
                   />
                 </Button>
                 <Button
@@ -777,9 +777,9 @@ export default function CreateGuildPage() {
                   }`}
                 >
                   <img
-                    src="https://beta.softres.it/img/editions/wotlk.big.png"
+                    src="/images/expansions/WrathLogo.webp"
                     alt="Wrath of the Lich King"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain p-2"
                   />
                 </Button>
                 <Button
@@ -794,9 +794,9 @@ export default function CreateGuildPage() {
                   }`}
                 >
                   <img
-                    src="https://beta.softres.it/img/editions/cata.big.png"
+                    src="/images/expansions/Cataclysmlogo.webp"
                     alt="Cataclysm"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain p-2"
                   />
                 </Button>
                 <Button
@@ -811,9 +811,9 @@ export default function CreateGuildPage() {
                   }`}
                 >
                   <img
-                    src="https://beta.softres.it/img/editions/mop.big.png"
+                    src="/images/expansions/MoPlogo.webp"
                     alt="Mists of Pandaria"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain p-2"
                   />
                 </Button>
               </div>
