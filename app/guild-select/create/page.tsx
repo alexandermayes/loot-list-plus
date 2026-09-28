@@ -16,6 +16,8 @@ import { Select } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import RealmSelector from '@/app/components/RealmSelector'
 import ForeverRulesetSelector from '@/app/components/ForeverRulesetSelector'
+import { GAME_VERSION_LABELS, resolveSignupExpansion } from '@/domain/expansion/game'
+import type { GameVersion } from '@/domain/expansion/game'
 
 interface DiscordGuild {
   id: string
@@ -42,8 +44,10 @@ export default function CreateGuildPage() {
   const [realmRegion, setRealmRegion] = useState('All')
   const [realm, setRealm] = useState('')
   const [faction, setFaction] = useState<'Alliance' | 'Horde'>('Alliance')
-  const [expansion, setExpansion] = useState('Classic')
-  const isForeverExpansion = expansion === 'Forever'
+  const [game, setGame] = useState<GameVersion>('classic')
+  const [classicExpansion, setClassicExpansion] = useState('Classic')
+  const expansion = resolveSignupExpansion(game, classicExpansion)
+  const isForeverExpansion = game === 'forever'
 
   // Guild name validation state
   const [checkingName, setCheckingName] = useState(false)
@@ -372,7 +376,8 @@ export default function CreateGuildPage() {
           realm: realm.trim(),
           faction,
           discord_server_id: discordServerId || null,
-          expansion
+          expansion,
+          game
         })
       })
 
@@ -678,118 +683,145 @@ export default function CreateGuildPage() {
             </>
           )}
 
-          {/* Expansion */}
+          {/* Game version */}
           <div className="space-y-2">
-            <Label className="text-base">Expansion</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            <Label className="text-base">Game version</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => setExpansion('Classic')}
+                onClick={() => setGame('classic')}
                 disabled={creating}
+                aria-pressed={game === 'classic'}
                 className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
-                  expansion === 'Classic'
+                  game === 'classic'
                     ? 'border-primary ring-2 ring-primary/50'
                     : 'border-border hover:border-primary/50'
                 }`}
               >
                 <img
-                  src="https://beta.softres.it/img/editions/classic.big.png"
-                  alt="Classic"
-                  className="w-full h-full object-cover"
+                  src="/images/expansions/WoWlogo.webp"
+                  alt={GAME_VERSION_LABELS.classic}
+                  className="w-full h-full object-contain p-2"
                 />
               </Button>
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => setExpansion('The Burning Crusade')}
+                onClick={() => setGame('forever')}
                 disabled={creating}
+                aria-pressed={game === 'forever'}
                 className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
-                  expansion === 'The Burning Crusade'
-                    ? 'border-primary ring-2 ring-primary/50'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <img
-                  src="https://beta.softres.it/img/editions/tbc.big.png"
-                  alt="The Burning Crusade"
-                  className="w-full h-full object-cover"
-                />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setExpansion('Wrath of the Lich King')}
-                disabled={creating}
-                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
-                  expansion === 'Wrath of the Lich King'
-                    ? 'border-primary ring-2 ring-primary/50'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <img
-                  src="https://beta.softres.it/img/editions/wotlk.big.png"
-                  alt="Wrath of the Lich King"
-                  className="w-full h-full object-cover"
-                />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setExpansion('Cataclysm')}
-                disabled={creating}
-                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
-                  expansion === 'Cataclysm'
-                    ? 'border-primary ring-2 ring-primary/50'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <img
-                  src="https://beta.softres.it/img/editions/cata.big.png"
-                  alt="Cataclysm"
-                  className="w-full h-full object-cover"
-                />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setExpansion('Mists of Pandaria')}
-                disabled={creating}
-                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
-                  expansion === 'Mists of Pandaria'
-                    ? 'border-primary ring-2 ring-primary/50'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <img
-                  src="https://beta.softres.it/img/editions/mop.big.png"
-                  alt="Mists of Pandaria"
-                  className="w-full h-full object-cover"
-                />
-              </Button>
-              {/* Id must match the seeder registry key in app/services/expansionSeeder.ts */}
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => setExpansion('Forever')}
-                disabled={creating}
-                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
-                  expansion === 'Forever'
+                  game === 'forever'
                     ? 'border-primary ring-2 ring-primary/50'
                     : 'border-border hover:border-primary/50'
                 }`}
               >
                 <img
                   src="/images/expansions/ForeverLogo.webp"
-                  alt="WoW Forever"
+                  alt={GAME_VERSION_LABELS.forever}
                   className="w-full h-full object-contain p-2"
                 />
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground mt-2">
-              Select your starting expansion. You can add additional expansions from the Admin panel after guild creation.
-            </p>
           </div>
+
+          {/* Expansion (Classic-only; Forever guilds skip the ladder entirely, D-03) */}
+          {game === 'classic' && (
+            <div className="space-y-2">
+              <Label className="text-base">Expansion</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setClassicExpansion('Classic')}
+                  disabled={creating}
+                  className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
+                    classicExpansion === 'Classic'
+                      ? 'border-primary ring-2 ring-primary/50'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <img
+                    src="/images/expansions/WoWlogo.webp"
+                    alt="Classic"
+                    className="w-full h-full object-contain p-2"
+                  />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setClassicExpansion('The Burning Crusade')}
+                  disabled={creating}
+                  className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
+                    classicExpansion === 'The Burning Crusade'
+                      ? 'border-primary ring-2 ring-primary/50'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <img
+                    src="/images/expansions/TBCLogo.webp"
+                    alt="The Burning Crusade"
+                    className="w-full h-full object-contain p-2"
+                  />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setClassicExpansion('Wrath of the Lich King')}
+                  disabled={creating}
+                  className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
+                    classicExpansion === 'Wrath of the Lich King'
+                      ? 'border-primary ring-2 ring-primary/50'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <img
+                    src="/images/expansions/WrathLogo.webp"
+                    alt="Wrath of the Lich King"
+                    className="w-full h-full object-contain p-2"
+                  />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setClassicExpansion('Cataclysm')}
+                  disabled={creating}
+                  className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
+                    classicExpansion === 'Cataclysm'
+                      ? 'border-primary ring-2 ring-primary/50'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <img
+                    src="/images/expansions/Cataclysmlogo.webp"
+                    alt="Cataclysm"
+                    className="w-full h-full object-contain p-2"
+                  />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setClassicExpansion('Mists of Pandaria')}
+                  disabled={creating}
+                  className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
+                    classicExpansion === 'Mists of Pandaria'
+                      ? 'border-primary ring-2 ring-primary/50'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                >
+                  <img
+                    src="/images/expansions/MoPlogo.webp"
+                    alt="Mists of Pandaria"
+                    className="w-full h-full object-contain p-2"
+                  />
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                Select your starting expansion. You can add additional expansions from the Admin panel after guild creation.
+              </p>
+            </div>
+          )}
 
           {/* Region & Realm / Ruleset (WoW Forever has no realms) */}
           <div className="space-y-2">

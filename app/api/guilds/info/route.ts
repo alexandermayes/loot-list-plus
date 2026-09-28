@@ -3,24 +3,18 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { isGuildCreator, verifyGuildMasterPermissions } from '@/utils/server-roles'
 import { parseForeverRuleset } from '@/data/wow-realms'
+import { getGuildGame } from '@/domain/expansion/game'
 
 type ServiceClient = ReturnType<typeof createServiceRoleClient>
 
-/** Name of the guild's active expansion, or null if it has none or the lookup fails. */
-async function getActiveExpansionName(client: ServiceClient, guildId: string): Promise<string | null> {
+/** The guild's game version (D-06, D-07). A missing row reads as classic. */
+async function getGuildGameVersion(client: ServiceClient, guildId: string) {
   const { data: guild } = await client
     .from('guilds')
-    .select('active_expansion_id')
+    .select('game')
     .eq('id', guildId)
     .single()
-  if (!guild?.active_expansion_id) return null
-
-  const { data: expansion } = await client
-    .from('expansions')
-    .select('name')
-    .eq('id', guild.active_expansion_id)
-    .single()
-  return expansion?.name ?? null
+  return getGuildGame(guild)
 }
 
 // PUT - Update guild basic info (name, realm, faction, discord_server_id)
@@ -57,9 +51,9 @@ export async function PUT(request: NextRequest) {
     }
 
     // Forever guilds store a ruleset ("PvP (US)") in the realm column, so a
-    // realm edit on one must still parse as a ruleset. Mirrors the check in
-    // POST /api/guilds at creation time.
-    if (realm !== undefined && (await getActiveExpansionName(serviceSupabase, guild_id)) === 'Forever') {
+    // realm edit on one must still parse as a ruleset. Keys on guilds.game
+    // (D-06, D-07), never on the active expansion's name.
+    if (realm !== undefined && (await getGuildGameVersion(serviceSupabase, guild_id)) === 'forever') {
       if (!parseForeverRuleset(realm)) {
         return NextResponse.json(
           { error: 'Select a valid WoW Forever ruleset.' },

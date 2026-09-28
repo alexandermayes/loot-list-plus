@@ -2,8 +2,9 @@ import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
 import { NextRequest, NextResponse } from 'next/server'
-import { seedExpansionForGuild, getGuildExpansions, getAvailableExpansions } from '@/app/services/expansionSeeder'
+import { seedExpansionForGuild, getGuildExpansions, getAvailableExpansions, getExpansionGame, gameMismatchError } from '@/app/services/expansionSeeder'
 import { getExpansionDisplayName } from '@/utils/expansionVisuals'
+import { getGuildGame } from '@/domain/expansion/game'
 
 /**
  * GET /api/guilds/[id]/expansions
@@ -100,6 +101,23 @@ export async function POST(
     const { hasPermission } = await verifyPermission(serviceSupabase, user.id, guildId, 'manage_settings')
     if (!hasPermission) {
       return NextResponse.json({ error: 'Officer permissions required' }, { status: 403 })
+    }
+
+    // Load the guild's fixed game version (D-02, D-06) before seeding -- a
+    // cross-game expansion is refused before the seeder ever runs.
+    const { data: guildRow, error: guildError } = await serviceSupabase
+      .from('guilds')
+      .select('game')
+      .eq('id', guildId)
+      .single()
+
+    if (guildError || !guildRow) {
+      return NextResponse.json({ error: 'Guild not found' }, { status: 404 })
+    }
+
+    const expansionGame = getExpansionGame(expansionName)
+    if (expansionGame !== null && expansionGame !== getGuildGame(guildRow)) {
+      return NextResponse.json({ error: gameMismatchError(expansionName) }, { status: 400 })
     }
 
     // Seed the expansion using service role to bypass RLS

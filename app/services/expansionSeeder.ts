@@ -17,6 +17,11 @@ import { MOP_ITEM_ROLES } from '@/data/mop-item-roles'
 import { EXPANSION_PHASES, getExpansionSlug } from '@/data/expansion-phases'
 import { getTokenClasses, isTokenSlot } from '@/data/token-class-mapping'
 import { getExpansionDisplayName } from '@/utils/expansionVisuals'
+import { EXPANSION_GAMES, getExpansionGame } from '@/domain/expansion/game'
+import type { GameVersion } from '@/domain/expansion/game'
+
+export { getExpansionGame }
+export type { GameVersion }
 
 /**
  * Expansion Seeding Service
@@ -30,6 +35,7 @@ export interface ExpansionDefinition {
   name: string
   displayName: string
   raids: RaidDefinition[]
+  game: GameVersion
 }
 
 export interface RaidDefinition {
@@ -167,35 +173,40 @@ function transformMoPRaids(): RaidDefinition[] {
 const CLASSIC_WOW_DATA: ExpansionDefinition = {
   name: 'Classic',
   displayName: 'Classic',
-  raids: transformClassicRaids()
+  raids: transformClassicRaids(),
+  game: EXPANSION_GAMES.Classic
 }
 
 // TBC expansion data
 const TBC_DATA: ExpansionDefinition = {
   name: 'The Burning Crusade',
   displayName: 'The Burning Crusade',
-  raids: transformTBCRaids()
+  raids: transformTBCRaids(),
+  game: EXPANSION_GAMES['The Burning Crusade']
 }
 
 // WotLK expansion data
 const WOTLK_DATA: ExpansionDefinition = {
   name: 'Wrath of the Lich King',
   displayName: 'Wrath of the Lich King',
-  raids: transformWrathRaids()
+  raids: transformWrathRaids(),
+  game: EXPANSION_GAMES['Wrath of the Lich King']
 }
 
 // Cataclysm expansion data
 const CATA_DATA: ExpansionDefinition = {
   name: 'Cataclysm',
   displayName: 'Cataclysm',
-  raids: transformCataRaids()
+  raids: transformCataRaids(),
+  game: EXPANSION_GAMES.Cataclysm
 }
 
 // Mists of Pandaria expansion data
 const MOP_DATA: ExpansionDefinition = {
   name: 'Mists of Pandaria',
   displayName: 'Mists of Pandaria',
-  raids: transformMoPRaids()
+  raids: transformMoPRaids(),
+  game: EXPANSION_GAMES['Mists of Pandaria']
 }
 
 // WoW Forever expansion data
@@ -204,7 +215,8 @@ const MOP_DATA: ExpansionDefinition = {
 const FOREVER_DATA: ExpansionDefinition = {
   name: 'Forever',
   displayName: 'Forever',
-  raids: []
+  raids: [],
+  game: EXPANSION_GAMES.Forever
 }
 
 // Map of all available expansions
@@ -252,6 +264,15 @@ export const SUPPORTED_EXPANSIONS: readonly string[] = Object.keys(EXPANSION_DAT
  */
 export function isSupportedExpansion(name: unknown): name is string {
   return getExpansionDefinition(name) !== null
+}
+
+/**
+ * Build the GV-C7 error message for an expansion that belongs to the other
+ * game version -- the guild's game is fixed at creation (D-02), so the
+ * expansion can be refused before any seeding, switching, or deleting.
+ */
+export function gameMismatchError(expansionName: string): string {
+  return `${getExpansionDisplayName(expansionName)} isn't available for this guild's game version.`
 }
 
 // Human-readable "Currently supported" list for the unsupported-expansion

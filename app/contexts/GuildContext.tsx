@@ -30,6 +30,9 @@ export interface Guild {
   created_at: string
   active_expansion_id: string | null
   subscription_tier?: string
+  // 'classic' or 'forever', fixed at creation. Read only through getGuildGame(),
+  // which defaults a missing or unknown value to 'classic'.
+  game?: string
 }
 
 export interface GuildMember {
@@ -363,6 +366,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
                 created_at,
                 active_expansion_id,
                 subscription_tier,
+                game,
                 guild_roles (
                   name,
                   position,

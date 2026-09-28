@@ -5,7 +5,10 @@ import {
   seedExpansionForGuild,
   isSupportedExpansion,
   getExpansionDefinition,
+  getExpansionGame,
+  gameMismatchError,
 } from '@/app/services/expansionSeeder'
+import { getGuildGame } from '@/domain/expansion/game'
 import { verifyPermission } from '@/utils/server-roles'
 
 /**
@@ -60,6 +63,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Only officers can change the guild expansion' },
         { status: 403 }
+      )
+    }
+
+    // Load the guild's fixed game version (D-02, D-06) before touching any
+    // expansion data -- a cross-game expansion is refused before seeding,
+    // switching or deleting anything.
+    const { data: guildRow, error: guildError } = await serviceSupabase
+      .from('guilds')
+      .select('game')
+      .eq('id', guild_id)
+      .single()
+
+    if (guildError || !guildRow) {
+      return NextResponse.json(
+        { error: 'Guild not found' },
+        { status: 404 }
+      )
+    }
+
+    const expansionGame = getExpansionGame(expansion)
+    if (expansionGame !== null && expansionGame !== getGuildGame(guildRow)) {
+      return NextResponse.json(
+        { error: gameMismatchError(expansion) },
+        { status: 400 }
       )
     }
 

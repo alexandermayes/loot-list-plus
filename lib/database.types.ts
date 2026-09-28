@@ -1110,6 +1110,7 @@ export type Database = {
           created_by: string | null
           discord_server_id: string | null
           faction: string | null
+          game: string
           icon_url: string | null
           id: string
           is_active: boolean | null
@@ -1124,6 +1125,7 @@ export type Database = {
           created_by?: string | null
           discord_server_id?: string | null
           faction?: string | null
+          game?: string
           icon_url?: string | null
           id?: string
           is_active?: boolean | null
@@ -1138,6 +1140,7 @@ export type Database = {
           created_by?: string | null
           discord_server_id?: string | null
           faction?: string | null
+          game?: string
           icon_url?: string | null
           id?: string
           is_active?: boolean | null
