@@ -6,6 +6,7 @@ import { POST } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { buildAddonAwardRow } from '@/lib/loot/loot-history-rows'
 
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
@@ -261,6 +262,66 @@ describe('POST /api/addon/loot-award', () => {
     expect(res.status).toBe(500)
     expect(body.error).not.toContain('No loot item found')
     expect(lootHistoryInsert(calls)).toBeUndefined()
+  })
+
+  it('GH #294: the insert payload carries raid_tier_id and expansion_id and matches buildAddonAwardRow', async () => {
+    const { client, calls } = makeClient(singleItemFixture({ id: 'item-19003', name: 'Head of Nefarian', wowhead_id: 19003 }))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({
+      guild_id: GUILD_ID,
+      wowhead_id: 19003,
+      character_name: 'Thrall',
+      awarded_date: '2026-09-20',
+    }))
+    expect(res.status).toBe(200)
+
+    const insert = lootHistoryInsert(calls)
+    const payload = insert?.filters.find(([col]) => col === '__insert_payload__')?.[1] as {
+      raid_tier_id: string
+      expansion_id: string
+    }
+    expect(payload.raid_tier_id).toBe('tier-1')
+    expect(payload.expansion_id).toBe('exp-1')
+    expect(payload).toEqual(
+      buildAddonAwardRow({
+        guildId: GUILD_ID,
+        item: { id: 'item-19003', raid_tier_id: 'tier-1', expansion_id: 'exp-1' },
+        characterId: null,
+        characterName: 'Thrall',
+        awardedDate: '2026-09-20',
+        awardedBy: 'user-1',
+        notes: undefined,
+        bossName: undefined,
+        today: '2026-09-20',
+      })
+    )
+  })
+
+  it('GH #294: records the active expansion tier and expansion id when the guild owns the item under two expansions', async () => {
+    const { client, calls } = makeClient({
+      activeExpansionId: 'exp-active',
+      expansions: [{ id: 'exp-old', guild_id: GUILD_ID }, { id: 'exp-active', guild_id: GUILD_ID }],
+      tiers: [{ id: 'tier-old', expansion_id: 'exp-old' }, { id: 'tier-active', expansion_id: 'exp-active' }],
+      items: [
+        { id: 'item-old', name: 'Head of Nefarian', raid_tier_id: 'tier-old', wowhead_id: 19003 },
+        { id: 'item-active', name: 'Head of Nefarian', raid_tier_id: 'tier-active', wowhead_id: 19003 },
+      ],
+    })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 19003, character_name: 'Thrall' }))
+    expect(res.status).toBe(200)
+
+    const insert = lootHistoryInsert(calls)
+    const payload = insert?.filters.find(([col]) => col === '__insert_payload__')?.[1] as {
+      loot_item_id: string
+      raid_tier_id: string
+      expansion_id: string
+    }
+    expect(payload.loot_item_id).toBe('item-active')
+    expect(payload.raid_tier_id).toBe('tier-active')
+    expect(payload.expansion_id).toBe('exp-active')
   })
 
   it('returns a 500 when the expansions query errors, not a false 404', async () => {

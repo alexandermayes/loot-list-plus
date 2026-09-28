@@ -32,6 +32,10 @@
  * such item" — silently returning the addon's existing 404, which is a
  * worse regression than GH #277 itself. Callers are expected to catch this
  * and surface a real error (500 / import-error entry), not a false 404.
+ *
+ * GH #294: the lookup now also supplies the expansion so award rows carry
+ * both required scope columns (raid_tier_id, expansion_id) a service-role
+ * loot_history insert needs.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -44,6 +48,16 @@ export interface GuildLootItemRow {
   id: string
   name: string
   raid_tier_id: string
+}
+
+/**
+ * GuildLootItemRow plus the expansion_id a loot_history insert also needs
+ * (GH #294 D-01). Returned only by resolveGuildLootItem, whose caller is
+ * always inserting a new award row; findGuildLootItemsByWowheadIds keeps
+ * returning the narrower GuildLootItemRow since its callers never insert.
+ */
+export interface ResolvedGuildLootItem extends GuildLootItemRow {
+  expansion_id: string
 }
 
 interface GuildRaidTier {
@@ -92,10 +106,10 @@ async function getGuildRaidTiers(supabase: QueryClient, guildId: string): Promis
 function pickDeterministic(
   rows: Array<GuildLootItemRow & { expansion_id: string }>,
   activeExpansionId: string | null
-): GuildLootItemRow {
+): ResolvedGuildLootItem {
   const active = activeExpansionId ? rows.find(row => row.expansion_id === activeExpansionId) : undefined
   const chosen = active ?? [...rows].sort((a, b) => a.raid_tier_id.localeCompare(b.raid_tier_id))[0]
-  return { id: chosen.id, name: chosen.name, raid_tier_id: chosen.raid_tier_id }
+  return { id: chosen.id, name: chosen.name, raid_tier_id: chosen.raid_tier_id, expansion_id: chosen.expansion_id }
 }
 
 /**
@@ -116,7 +130,7 @@ export async function resolveGuildLootItem(
   supabase: QueryClient,
   guildId: string,
   wowheadId: number
-): Promise<GuildLootItemRow | null> {
+): Promise<ResolvedGuildLootItem | null> {
   const tiers = await getGuildRaidTiers(supabase, guildId)
   if (tiers.length === 0) return null
 
@@ -147,10 +161,17 @@ export async function resolveGuildLootItem(
 
     const matches = (rows ?? []) as GuildLootItemRow[]
     if (matches.length > 0) {
-      const withExpansion = matches.map(row => ({
-        ...row,
-        expansion_id: expansionByTier.get(row.raid_tier_id) ?? '',
-      }))
+      const withExpansion = matches.map(row => {
+        const expansionId = expansionByTier.get(row.raid_tier_id)
+        if (expansionId === undefined) {
+          // Every match came from a tier id in tierIds, which is built from
+          // this guild's own expansion map above — a missing entry here
+          // would mean the map and the query fell out of sync, which is a
+          // bug, not a valid "no expansion" result.
+          throw new Error(`No expansion mapping for raid_tier_id ${row.raid_tier_id} (guild ${guildId})`)
+        }
+        return { ...row, expansion_id: expansionId }
+      })
       return pickDeterministic(withExpansion, activeExpansionId)
     }
   }

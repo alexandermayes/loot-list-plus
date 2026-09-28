@@ -93,7 +93,7 @@ describe('resolveGuildLootItem', () => {
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await resolveGuildLootItem(client as any, GUILD_A, 19002)
-    expect(result).toEqual({ id: 'item-19003', name: 'Head of Nefarian', raid_tier_id: 'tier-bwl' })
+    expect(result).toEqual({ id: 'item-19003', name: 'Head of Nefarian', raid_tier_id: 'tier-bwl', expansion_id: 'exp-a' })
   })
 
   it('never returns another guild row even when it is the first (and only) match', async () => {
@@ -157,6 +157,7 @@ describe('resolveGuildLootItem', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await resolveGuildLootItem(client as any, GUILD_A, 19003)
     expect(result?.id).toBe('item-active')
+    expect(result?.expansion_id).toBe('exp-active')
   })
 
   it('falls back to the lowest raid_tier_id deterministically when no row is the active expansion', async () => {

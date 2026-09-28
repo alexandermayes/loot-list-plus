@@ -6,6 +6,7 @@ import { trackApiError, trackEvent } from '@/utils/analytics/server'
 import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { notifyLootAward } from '@/lib/discord-loot-announcements'
 import { resolveGuildLootItem } from '@/lib/loot/guild-scoped-lookup'
+import { buildAddonAwardRow } from '@/lib/loot/loot-history-rows'
 
 interface LootAwardRequest {
   guild_id: string
@@ -22,7 +23,9 @@ interface LootAwardRequest {
  * Records a single loot award from the addon or companion app. Maps
  * wowhead_id to a loot_items row owned by the calling guild's own raid
  * tiers, trying the exact id first and its faction alias second (GH #277
- * D-03, SCOPE-01) — see lib/loot/guild-scoped-lookup.ts.
+ * D-03, SCOPE-01) — see lib/loot/guild-scoped-lookup.ts. The inserted row
+ * carries raid_tier_id and expansion_id from that same guild-scoped lookup
+ * (GH #294 D-01) via buildAddonAwardRow.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -82,19 +85,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Insert loot history entry
+    // Insert loot history entry. raid_tier_id and expansion_id come from the
+    // guild-scoped lookup above (GH #294 D-01) — not from the request.
+    const today = new Date().toISOString().split('T')[0]
     const { data: historyEntry, error: insertError } = await supabase
       .from('loot_history')
-      .insert({
-        guild_id,
-        character_id: characterId,
-        character_name,
-        loot_item_id: lootItem.id,
-        awarded_date: awarded_date || new Date().toISOString().split('T')[0],
-        awarded_by: user.id,
-        source: 'addon',
-        notes: notes || (boss_name ? `Dropped from ${boss_name}` : null),
-      })
+      .insert(
+        buildAddonAwardRow({
+          guildId: guild_id,
+          item: lootItem,
+          characterId,
+          characterName: character_name,
+          awardedDate: awarded_date,
+          awardedBy: user.id,
+          notes,
+          bossName: boss_name,
+          today,
+        })
+      )
       .select('id')
       .single()
 
