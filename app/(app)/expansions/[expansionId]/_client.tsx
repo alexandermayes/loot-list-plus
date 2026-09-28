@@ -12,6 +12,7 @@ import { ArrowLeft01Icon } from '@hugeicons/core-free-icons'
 import { getExpansionVisuals, getExpansionDisplayName } from '@/utils/expansionVisuals'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { resolvePhaseGroups, isMergedGroup, type PhaseGroup } from '@/domain/expansion/phase-groups'
+import { getGuildGame } from '@/domain/expansion/game'
 import { Button } from '@/components/ui/button'
 import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { Switch } from '@/components/ui/switch'
@@ -210,6 +211,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
   const { mutate } = useSWRConfig()
   const { activeGuild, loading: guildLoading, hasPermission } = useGuildContext()
   const { showNotification } = useNotification()
+  const isForeverGuild = getGuildGame(activeGuild) === 'forever'
 
   useEffect(() => {
     trackClientEvent('expansion_settings_page_viewed')
@@ -280,14 +282,14 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
       if (expError) {
         console.error('Error loading expansion:', expError)
-        showNotification('error', 'Couldn\'t load expansion. Check your connection and try again.')
+        showNotification('error', isForeverGuild ? 'Couldn\'t load data. Check your connection and try again.' : 'Couldn\'t load expansion. Check your connection and try again.')
         setLoading(false)
         return
       }
 
       const exp = expansions?.find((e: Expansion) => e.expansion_id === expansionId)
       if (!exp) {
-        showNotification('error', 'Expansion not found')
+        showNotification('error', isForeverGuild ? 'Page not found' : 'Expansion not found')
         setLoading(false)
         return
       }
@@ -629,7 +631,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
           <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
           Back
         </Button>
-        <p className="text-foreground-muted">Expansion not found</p>
+        <p className="text-foreground-muted">{isForeverGuild ? 'Page not found' : 'Expansion not found'}</p>
       </div>
     )
   }
@@ -952,7 +954,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       {/* Empty state */}
       {raidTiers.length === 0 && (
         <div className="p-8 bg-background-elevated border border-border rounded-xl text-center">
-          <p className="text-foreground-muted">No raid tiers found for this expansion</p>
+          <p className="text-foreground-muted">{isForeverGuild ? 'WoW Forever has no raids open yet.' : 'No raid tiers found for this expansion'}</p>
         </div>
       )}
     </div>

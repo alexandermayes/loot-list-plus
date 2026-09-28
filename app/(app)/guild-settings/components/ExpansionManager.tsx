@@ -120,7 +120,8 @@ export default function ExpansionManager() {
 
       if (expError) {
         console.error('Error loading expansions:', expError)
-        showNotification('error', 'Couldn\'t load expansions. Check your connection and try again.')
+        const isForeverGuildLoad = getGuildGame(activeGuild) === 'forever'
+        showNotification('error', isForeverGuildLoad ? 'Couldn\'t load data. Check your connection and try again.' : 'Couldn\'t load expansions. Check your connection and try again.')
       } else {
         setGuildExpansions(expansions || [])
 
