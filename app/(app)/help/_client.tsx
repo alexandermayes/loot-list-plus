@@ -16,6 +16,8 @@ import { helpCategories, getAllArticles, glossaryTerms, type HelpCategory, type 
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Heading, Text } from '@/components/ui/typography'
+import { useGuildContext } from '@/app/contexts/GuildContext'
+import { getGuildGame } from '@/domain/expansion/game'
 
 // Map icon names to actual icons
 const iconMap: Record<string, typeof Rocket01Icon> = {
@@ -82,6 +84,9 @@ function SearchResult({
 }
 
 // Loading screen tips — WoW style
+const EXPANSION_PHASE_TIP = 'Each expansion and phase has its own Loot List.'
+const FOREVER_PHASE_TIP = 'Each phase has its own Loot List.'
+
 const TIPS = [
   'Raiders who submit their Loot Lists early get reviewed first.',
   'You can rank up to 50 items on your Loot List.',
@@ -95,7 +100,7 @@ const TIPS = [
   'Trial members have a temporary penalty to their Loot Score.',
   'Excused absences don\'t count against your attendance.',
   'Invite codes let you recruit guildies without sharing a link.',
-  'Each expansion and phase has its own Loot List.',
+  EXPANSION_PHASE_TIP,
   'Your #1 priority item has the best chance of being awarded.',
 ]
 
@@ -108,6 +113,9 @@ export default function HelpPage() {
   // Approved community answers grown from Discord /help questions (DB-only).
   const [extraArticles, setExtraArticles] = useState<ArticleWithCategory[]>([])
   const [tip] = useState(() => TIPS[Math.floor(Math.random() * TIPS.length)])
+  const { activeGuild } = useGuildContext()
+  const isForeverGuild = getGuildGame(activeGuild) === 'forever'
+  const displayedTip = isForeverGuild && tip === EXPANSION_PHASE_TIP ? FOREVER_PHASE_TIP : tip
 
   useEffect(() => {
     document.title = 'LootList+ • Help Center'
@@ -190,7 +198,7 @@ export default function HelpPage() {
       {/* Loading screen tip */}
       {!searchQuery.trim() && (
         <p className="text-center text-[12px] text-muted-foreground/60 italic -mt-6 mb-10">
-          Tip: {tip}
+          Tip: {displayedTip}
         </p>
       )}
 

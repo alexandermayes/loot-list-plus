@@ -2,6 +2,8 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
 import { NextRequest, NextResponse } from 'next/server'
+import { getExpansionGame, gameMismatchError } from '@/app/services/expansionSeeder'
+import { getGuildGame } from '@/domain/expansion/game'
 
 /**
  * PATCH /api/guilds/[id]/expansions/[expansionId]
@@ -18,6 +20,9 @@ import { NextRequest, NextResponse } from 'next/server'
  *   fifthRaidDay?: number | null
  *   timezone?: string (IANA timezone, e.g. 'America/New_York')
  * }
+ *
+ * setAsCurrent refuses an expansion from the other game version (400) before
+ * any write; other fields are not game-checked.
  */
 export async function PATCH(
   request: NextRequest,
@@ -65,6 +70,25 @@ export async function PATCH(
 
     // Update guild's active expansion if requested
     if (setAsCurrent === true) {
+      // Refuse a cross-game set-current before any write (S-2, T-sfi-01):
+      // load the guild's fixed game version and compare against the target
+      // expansion's game. Schedule/timezone/phase-deadline edits below never
+      // reach this block, so they are not game-checked (T-sfi-03).
+      const { data: guildRow, error: guildError } = await serviceSupabase
+        .from('guilds')
+        .select('game')
+        .eq('id', guildId)
+        .single()
+
+      if (guildError || !guildRow) {
+        return NextResponse.json({ error: 'Guild not found' }, { status: 404 })
+      }
+
+      const expansionGame = getExpansionGame(expansion.name)
+      if (expansionGame !== null && expansionGame !== getGuildGame(guildRow)) {
+        return NextResponse.json({ error: gameMismatchError(expansion.name) }, { status: 400 })
+      }
+
       const { error: updateGuildError } = await serviceSupabase
         .from('guilds')
         .update({ active_expansion_id: expansionId })
