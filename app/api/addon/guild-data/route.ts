@@ -5,6 +5,7 @@ import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
 import { getAttendanceWindowEnd, resolveOwnedEvents, resolveActiveRaiderModifiers } from '@/domain/scoring'
 import { toDateString } from '@/utils/date'
+import { withFactionVariants } from '@/domain/loot/faction-item-aliases'
 
 /**
  * GET /api/addon/guild-data
@@ -111,8 +112,11 @@ export async function GET(request: NextRequest) {
       raidNameMap[rt.id] = rt.name
     }
 
-    // Build items
-    const items = (lootItemsResult.data || []).map(item => ({
+    // Build items. Mirrored under the other faction's id (GH #290): the
+    // companion and addon key items and member ranks by exact wowhead_id
+    // (see withFactionVariants' doc comment), so a Horde-looted quest head
+    // needs its own entry alongside the catalog's Alliance row.
+    const items = withFactionVariants((lootItemsResult.data || []).map(item => ({
       id: item.id,
       name: item.name,
       wowhead_id: item.wowhead_id,
@@ -121,7 +125,7 @@ export async function GET(request: NextRequest) {
       classification: item.classification,
       slot: item.slot,
       item_type: item.item_type,
-    }))
+    })))
 
     // Build submission lookup
     const submissionsByChar: Record<string, Array<{ wowhead_id: number; rank: number }>> = {}
@@ -134,7 +138,7 @@ export async function GET(request: NextRequest) {
           charItems.push({ wowhead_id: lootItem.wowhead_id, rank: item.rank })
         }
       }
-      submissionsByChar[sub.character_id] = charItems
+      submissionsByChar[sub.character_id] = withFactionVariants(charItems)
     }
 
     // Build members
