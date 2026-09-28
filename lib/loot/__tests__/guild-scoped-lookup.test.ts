@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { resolveGuildLootItem, findGuildLootItemsByWowheadIds } from '../guild-scoped-lookup'
+import { resolveGuildLootItem, findGuildLootItemsByWowheadIds, resolveGuildLootItemIds } from '../guild-scoped-lookup'
 
 type ExpansionRow = { id: string; guild_id: string }
 type TierRow = { id: string; expansion_id: string }
@@ -63,12 +63,21 @@ function makeClient(fixture: Fixture) {
             }
             const tierIdsFilter = call.filters.find(([col]) => col === 'raid_tier_id')?.[1] as string[] | undefined
             const wowheadFilter = call.filters.find(([col]) => col === 'wowhead_id')
+            const idFilter = call.filters.find(([col]) => col === 'id')
             const rows = fixture.items.filter(item => {
               const tierOk = (tierIdsFilter ?? []).includes(item.raid_tier_id)
-              if (!wowheadFilter) return tierOk
-              const [, val] = wowheadFilter
-              const idOk = Array.isArray(val) ? val.includes(item.wowhead_id) : item.wowhead_id === val
-              return tierOk && idOk
+              if (!tierOk) return false
+              if (wowheadFilter) {
+                const [, val] = wowheadFilter
+                const idOk = Array.isArray(val) ? val.includes(item.wowhead_id) : item.wowhead_id === val
+                if (!idOk) return false
+              }
+              if (idFilter) {
+                const [, val] = idFilter
+                const idOk = Array.isArray(val) ? val.includes(item.id) : item.id === val
+                if (!idOk) return false
+              }
+              return true
             })
             return Promise.resolve({ data: rows, error: null }).then(resolve)
           }
@@ -93,7 +102,7 @@ describe('resolveGuildLootItem', () => {
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await resolveGuildLootItem(client as any, GUILD_A, 19002)
-    expect(result).toEqual({ id: 'item-19003', name: 'Head of Nefarian', raid_tier_id: 'tier-bwl' })
+    expect(result).toEqual({ id: 'item-19003', name: 'Head of Nefarian', raid_tier_id: 'tier-bwl', expansion_id: 'exp-a' })
   })
 
   it('never returns another guild row even when it is the first (and only) match', async () => {
@@ -157,6 +166,7 @@ describe('resolveGuildLootItem', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await resolveGuildLootItem(client as any, GUILD_A, 19003)
     expect(result?.id).toBe('item-active')
+    expect(result?.expansion_id).toBe('exp-active')
   })
 
   it('falls back to the lowest raid_tier_id deterministically when no row is the active expansion', async () => {
@@ -289,6 +299,110 @@ describe('findGuildLootItemsByWowheadIds', () => {
     await expect(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       findGuildLootItemsByWowheadIds(client as any, GUILD_A, [19003]),
+    ).rejects.toThrow(/loot_items/i)
+  })
+})
+
+describe('resolveGuildLootItemIds', () => {
+  const ID_1 = '11111111-1111-1111-1111-111111111111'
+  const ID_2 = '22222222-2222-2222-2222-222222222222'
+  const ID_3 = '33333333-3333-3333-3333-333333333333'
+  const FOREIGN_ID = '99999999-9999-9999-9999-999999999999'
+  const NONEXISTENT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+
+  it('resolves ids the guild owns to id, raid_tier_id and expansion_id', async () => {
+    const { client } = makeClient({
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }],
+      tiers: [{ id: 'tier-a', expansion_id: 'exp-a' }],
+      items: [{ id: ID_1, name: 'Item 1', raid_tier_id: 'tier-a', wowhead_id: 1 }],
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await resolveGuildLootItemIds(client as any, GUILD_A, [ID_1])
+    expect(result.resolved.get(ID_1)).toEqual({ id: ID_1, raid_tier_id: 'tier-a', expansion_id: 'exp-a' })
+    expect(result.invalidIds).toEqual([])
+  })
+
+  it('puts an id owned by another guild and a nonexistent id both in invalidIds', async () => {
+    const { client } = makeClient({
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }, { id: 'exp-b', guild_id: GUILD_B }],
+      tiers: [{ id: 'tier-a', expansion_id: 'exp-a' }, { id: 'tier-b', expansion_id: 'exp-b' }],
+      items: [{ id: FOREIGN_ID, name: 'Foreign', raid_tier_id: 'tier-b', wowhead_id: 2 }],
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await resolveGuildLootItemIds(client as any, GUILD_A, [FOREIGN_ID, NONEXISTENT_ID])
+    expect(result.resolved.size).toBe(0)
+    expect(result.invalidIds).toEqual([FOREIGN_ID, NONEXISTENT_ID])
+  })
+
+  it('puts a non-UUID id in invalidIds without ever sending it to loot_items', async () => {
+    const { client, calls } = makeClient({
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }],
+      tiers: [{ id: 'tier-a', expansion_id: 'exp-a' }],
+      items: [{ id: ID_1, name: 'Item 1', raid_tier_id: 'tier-a', wowhead_id: 1 }],
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await resolveGuildLootItemIds(client as any, GUILD_A, ['not-a-uuid', ID_1])
+    expect(result.invalidIds).toEqual(['not-a-uuid'])
+    expect(result.resolved.get(ID_1)).toBeTruthy()
+
+    const lootItemsCall = calls.find(c => c.table === 'loot_items')
+    const idFilter = lootItemsCall?.filters.find(([col]) => col === 'id')?.[1] as string[]
+    expect(idFilter).toEqual([ID_1])
+  })
+
+  it('returns every id invalid and makes no loot_items query when the guild has no tiers', async () => {
+    const { client, calls } = makeClient({ expansions: [], tiers: [], items: [] })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await resolveGuildLootItemIds(client as any, GUILD_A, [ID_1, ID_2])
+    expect(result.resolved.size).toBe(0)
+    expect(result.invalidIds).toEqual([ID_1, ID_2])
+    expect(calls.some(c => c.table === 'loot_items')).toBe(false)
+  })
+
+  it('makes no query at all when every id is malformed', async () => {
+    const { client, calls } = makeClient({ expansions: [], tiers: [], items: [] })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await resolveGuildLootItemIds(client as any, GUILD_A, ['nope', 'also-nope'])
+    expect(result.invalidIds).toEqual(['nope', 'also-nope'])
+    expect(calls.some(c => c.table === 'expansions')).toBe(false)
+    expect(calls.some(c => c.table === 'loot_items')).toBe(false)
+  })
+
+  it('dedupes repeated ids, keeping first-seen order in invalidIds', async () => {
+    const { client } = makeClient({ expansions: [], tiers: [], items: [] })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await resolveGuildLootItemIds(client as any, GUILD_A, [ID_1, ID_2, ID_1])
+    expect(result.invalidIds).toEqual([ID_1, ID_2])
+  })
+
+  it('queries loot_items in chunks of 100 for 250 ids', async () => {
+    const items = Array.from({ length: 250 }, (_, i) => {
+      const hex = i.toString(16).padStart(8, '0')
+      return { id: `${hex}-0000-0000-0000-000000000000`, name: `Item ${i}`, raid_tier_id: 'tier-a', wowhead_id: i }
+    })
+    const { client, calls } = makeClient({
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }],
+      tiers: [{ id: 'tier-a', expansion_id: 'exp-a' }],
+      items,
+    })
+    const ids = items.map(i => i.id)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await resolveGuildLootItemIds(client as any, GUILD_A, ids)
+    expect(result.invalidIds).toEqual([])
+    expect(result.resolved.size).toBe(250)
+    expect(calls.filter(c => c.table === 'loot_items')).toHaveLength(3)
+  })
+
+  it('throws naming loot_items when the loot_items query errors', async () => {
+    const { client } = makeClient({
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }],
+      tiers: [{ id: 'tier-a', expansion_id: 'exp-a' }],
+      items: [],
+      errorOn: 'loot_items',
+    })
+    await expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      resolveGuildLootItemIds(client as any, GUILD_A, [ID_1, ID_2, ID_3]),
     ).rejects.toThrow(/loot_items/i)
   })
 })
