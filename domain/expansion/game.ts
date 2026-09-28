@@ -15,6 +15,13 @@
 
 export type GameVersion = 'classic' | 'forever'
 
+/**
+ * Whether the active expansion's raid tiers are still loading, came back
+ * empty, or exist. Drives the setup guide's Forever waiting rows (D-03) and
+ * the overview's raid-dependent card visibility (D-02).
+ */
+export type RaidTierStatus = 'loading' | 'none' | 'available'
+
 export const GAME_VERSIONS: readonly GameVersion[] = ['classic', 'forever']
 
 export const GAME_VERSION_LABELS: Record<GameVersion, string> = {
@@ -42,6 +49,15 @@ export const EXPANSION_GAMES = {
 
 export function isGameVersion(value: unknown): value is GameVersion {
   return value === 'classic' || value === 'forever'
+}
+
+/**
+ * A Forever guild's overview hides the raid-dependent cards (Insights row,
+ * Next in line, Recently received) until a raid tier is known to exist
+ * (D-02); Classic guilds always show them.
+ */
+export function hidesRaidDependentCards(game: GameVersion, status: RaidTierStatus): boolean {
+  return game === 'forever' && status !== 'available'
 }
 
 /**
