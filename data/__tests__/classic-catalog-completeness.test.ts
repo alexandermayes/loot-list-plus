@@ -6,6 +6,7 @@ import { canUseWeaponType, type WeaponType, type WowClassName } from '../class-p
 import { ITEM_ICONS } from '../item-icons'
 import { ITEM_TYPES, type ItemTypeInfo } from '../item-types'
 import { GH273_CORE } from './fixtures/classic-gh273-core'
+import { FACTION_ITEM_ALIASES } from '@/domain/loot/faction-item-aliases'
 
 // GH-273: Classic (Era) guilds could not find Carapace of the Old God, Ring of
 // the Martyr or Boots of Pure Thought, because data/classic-wow-raids.ts (which
@@ -52,7 +53,6 @@ const MAX_CLASSIC_ITEM_ID = 25000
 // reaching guilds as a silent gap.
 const DELIBERATELY_EXCLUDED: Record<number, string> = {
   18562: 'Elementium Ore: crafting material, not a loot-list item',
-  19002: 'Head of Nefarian (Horde copy): package only; the Alliance copy 19003 is listed',
   21110: 'Draconic for Dummies: quest item, package only',
   21138: 'Red Scepter Shard: quest material',
   21890: 'Gloves of the Fallen Prophet: package only, not in AtlasLootClassic',
@@ -141,14 +141,20 @@ function expectedTokenClasses(tokenId: number): string[] | null {
 }
 
 describe('Classic catalog completeness (#273)', () => {
-  it('lists every Epic or Legendary drop the package attributes to a Classic raid, unless deliberately excluded', () => {
+  it('lists every Epic or Legendary drop the package attributes to a Classic raid, unless deliberately excluded or covered by a faction alias', () => {
     const catalogKeys = new Set(catalogEntries.map(entry => `${entry.raid}|${entry.wowhead_id}`))
     const missing = packageItems
       .filter(item => item.itemId < MAX_CLASSIC_ITEM_ID)
       .filter(item => item.quality === 'Epic' || item.quality === 'Legendary')
       .filter(item => item.source?.zone !== undefined && CLASSIC_RAID_ZONES[item.source.zone] !== undefined)
       .filter(item => !(item.itemId in DELIBERATELY_EXCLUDED))
-      .filter(item => !catalogKeys.has(`${CLASSIC_RAID_ZONES[item.source.zone!]}|${item.itemId}`))
+      .filter(item => {
+        // GH #277: an aliased Horde id (e.g. 19002) has no catalog row of
+        // its own by design — it counts as present when its alias target
+        // (the Alliance catalog id) is listed under the same raid.
+        const catalogId = FACTION_ITEM_ALIASES[item.itemId] ?? item.itemId
+        return !catalogKeys.has(`${CLASSIC_RAID_ZONES[item.source.zone!]}|${catalogId}`)
+      })
       .map(item => `${CLASSIC_RAID_ZONES[item.source.zone!]}: ${item.name} (${item.itemId})`)
     expect(missing, `missing from data/classic-wow-raids.ts:\n${missing.join('\n')}`).toEqual([])
   })
@@ -181,6 +187,69 @@ describe('Classic catalog completeness (#273)', () => {
     const matches = catalogEntries.filter(entry => entry.raid === expected.raid && entry.wowhead_id === expected.id)
     expect(matches, `${expected.name} (${expected.id}) not found in ${expected.raid}`).toHaveLength(1)
     expect(matches[0]).toMatchObject({ boss: expected.boss, name: expected.name, slot: expected.slot })
+  })
+})
+
+describe('Classic faction-variant aliases (#277)', () => {
+  // Plan-time audit of wow-classic-items covered every package item with id
+  // below MAX_CLASSIC_ITEM_ID whose name equals a Classic catalog item's
+  // name. It found exactly two faction pairs: Head of Nefarian (19002
+  // Horde / 19003 Alliance) and Head of Onyxia (18422 Horde / 18423
+  // Alliance). Bindings of the Windseeker (18563/18564, left/right halves)
+  // and Warblade of the Hakkari (19865/19866, main-hand/off-hand) are also
+  // same-name pairs, but both halves are ALREADY in the catalog under
+  // different bosses (see the Windseeker test above) — they are distinct
+  // items, not a faction variant of one item, so they are correctly absent
+  // from FACTION_ITEM_ALIASES. The package has no faction field, so "same
+  // name as a catalog item, id not itself a catalog id" is the detection
+  // rule the sibling-set test below encodes; it fails loudly if a future
+  // package update adds a new pair.
+
+  it('maps Head of Nefarian (19002) to the catalog id 19003 listed under Blackwing Lair, Nefarian', () => {
+    expect(FACTION_ITEM_ALIASES[19002]).toBe(19003)
+    const match = catalogEntries.find(entry => entry.wowhead_id === 19003)
+    expect(match).toMatchObject({ raid: 'Blackwing Lair', boss: 'Nefarian', name: 'Head of Nefarian' })
+  })
+
+  it('maps Head of Onyxia (18422) to the catalog id 18423 listed under Onyxia\'s Lair, Onyxia', () => {
+    expect(FACTION_ITEM_ALIASES[18422]).toBe(18423)
+    const match = catalogEntries.find(entry => entry.wowhead_id === 18423)
+    expect(match).toMatchObject({ raid: "Onyxia's Lair", boss: 'Onyxia', name: 'Head of Onyxia' })
+  })
+
+  it.each(Object.entries(FACTION_ITEM_ALIASES).map(([key, target]) => [Number(key), target] as const))(
+    'alias %i -> %i: both ids exist in the package with the same name, the target is a catalog id, the key is not, and the key is not deliberately excluded or itself an alias target',
+    (key, target) => {
+      const keyItem = packageById.get(key)
+      const targetItem = packageById.get(target)
+      expect(keyItem, `package has no item ${key}`).toBeDefined()
+      expect(targetItem, `package has no item ${target}`).toBeDefined()
+      expect(keyItem!.name).toBe(targetItem!.name)
+
+      const catalogIds = new Set(catalogEntries.map(entry => entry.wowhead_id))
+      expect(catalogIds.has(target), `alias target ${target} must be a catalog id`).toBe(true)
+      expect(catalogIds.has(key), `alias key ${key} must NOT be a catalog id`).toBe(false)
+      expect(key in DELIBERATELY_EXCLUDED, `alias key ${key} must not also be deliberately excluded`).toBe(false)
+      expect(
+        Object.prototype.hasOwnProperty.call(FACTION_ITEM_ALIASES, target),
+        `alias target ${target} must not itself be an alias key (no chains)`,
+      ).toBe(false)
+    },
+  )
+
+  it('the alias key set equals every same-name, non-catalog faction sibling the package has today', () => {
+    const catalogNameSet = new Set(catalogEntries.map(entry => entry.name))
+    const catalogIds = new Set(catalogEntries.map(entry => entry.wowhead_id))
+
+    const siblings = packageItems
+      .filter(item => item.itemId < MAX_CLASSIC_ITEM_ID)
+      .filter(item => !catalogIds.has(item.itemId))
+      .filter(item => catalogNameSet.has(item.name))
+      .map(item => item.itemId)
+
+    expect(sorted(siblings.map(String))).toEqual(sorted(Object.keys(FACTION_ITEM_ALIASES)))
+    // Sanity: this is exactly the audited pair today, not an accidental match.
+    expect(siblings.sort((a, b) => a - b)).toEqual([18422, 19002])
   })
 })
 

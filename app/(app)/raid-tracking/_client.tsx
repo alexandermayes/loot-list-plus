@@ -44,6 +44,8 @@ import { isDateScheduled } from '@/domain/raid-team/schedule-history'
 import { resolveRaidDays } from '@/domain/raid-team/settings'
 import { TeamSelector } from '@/app/components/TeamSelector'
 import { paginatedSelect } from '@/utils/supabase/paginate'
+import { findByWowheadId, wowheadIdCandidates } from '@/domain/loot/faction-item-aliases'
+import { findGuildLootItemsByWowheadIds } from '@/lib/loot/guild-scoped-lookup'
 import type {
   Member,
   RaidLootEntry,
@@ -1344,7 +1346,7 @@ export default function RaidTrackingPage() {
       }
 
       const itemId = parseInt(itemIdMatch[1])
-      const matchedItem = lootItems.find(item => item.wowhead_id === itemId)
+      const matchedItem = findByWowheadId(lootItems, itemId)
       const charName = characterName.trim()
 
       if (matchedItem) {
@@ -1804,18 +1806,23 @@ export default function RaidTrackingPage() {
         }
 
         const itemId = parseInt(itemIdMatch[1])
-        const matchedItem = itemsToUse.find(item => item.wowhead_id === itemId)
+        const matchedItem = findByWowheadId(itemsToUse, itemId)
         const matchedCharacter = resolveNameForImport(characterName.trim(), resolvedMap)
 
         if (!matchedItem) {
           results.loot.failed++
-          const { data: directLookup } = await supabase
-            .from('loot_items')
-            .select('id, name, raid_tier_id')
-            .eq('wowhead_id', itemId)
-            .limit(1)
+          // Guild-scoped fallback (GH #277 D-03, SCOPE-01): search the
+          // guild's OWN raid tiers across all its expansions (not just the
+          // current one) so this "exists elsewhere" message is accurate
+          // without ever leaking another guild's row, and matches the
+          // Horde id's faction alias too.
+          const directLookup = await findGuildLootItemsByWowheadIds(
+            supabase,
+            activeGuild.id,
+            wowheadIdCandidates(itemId)
+          )
 
-          if (directLookup && directLookup.length > 0) {
+          if (directLookup.length > 0) {
             results.loot.errors.push(`Item #${itemId} (${directLookup[0].name}) exists but not in current expansion`)
           } else {
             results.loot.errors.push(`Item #${itemId} not in database - may need to add to loot tables`)
@@ -2003,7 +2010,7 @@ export default function RaidTrackingPage() {
       }
 
       // Try to match item by wowhead_id
-      const matchedItem = lootItems.find(item => item.wowhead_id === itemId)
+      const matchedItem = findByWowheadId(lootItems, itemId)
 
       // Try to match character by name (direct + alias + resolved)
       const matchedCharacter = resolveNameForImport(characterName.trim())
