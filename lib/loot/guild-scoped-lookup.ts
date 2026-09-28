@@ -314,6 +314,7 @@ export async function resolveGuildLootItemIds(
  * `invalid_loot_item_ids` field — this text never interpolates them, so it
  * cannot leak whether an id exists under another guild.
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for a stable call-site signature; OD-3 copy never interpolates ids
 export function formatInvalidLootItemIdsError(_invalidIds: string[]): string {
   return "Some loot items aren't in this guild's loot tables. Refresh the page and try again."
 }
