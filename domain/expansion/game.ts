@@ -52,6 +52,15 @@ export function isGameVersion(value: unknown): value is GameVersion {
 }
 
 /**
+ * A Forever guild's overview hides the raid-dependent cards (Insights row,
+ * Next in line, Recently received) until a raid tier is known to exist
+ * (D-02); Classic guilds always show them.
+ */
+export function hidesRaidDependentCards(game: GameVersion, status: RaidTierStatus): boolean {
+  return game === 'forever' && status !== 'available'
+}
+
+/**
  * Resolve an expansion name to its game version. Mirrors
  * getExpansionDefinition's guard: only an own, string-typed key of
  * EXPANSION_GAMES resolves, so prototype-pollution names ('constructor',

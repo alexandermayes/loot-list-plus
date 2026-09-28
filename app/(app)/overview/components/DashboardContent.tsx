@@ -8,7 +8,7 @@ import WelcomeScreen from '@/app/components/WelcomeScreen'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserIcon, CheckmarkCircle01Icon, AlertCircleIcon, Award01Icon, Cancel01Icon, Add01Icon, Calendar03Icon, Shield01Icon, AnalyticsUpIcon } from '@hugeicons/core-free-icons'
 import { NoRaidsEmptyState } from '@/app/components/NoRaidsEmptyState'
-import { getGuildGame, type RaidTierStatus } from '@/domain/expansion/game'
+import { getGuildGame, hidesRaidDependentCards, type RaidTierStatus } from '@/domain/expansion/game'
 
 // Lazy load modals to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -1843,6 +1843,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
   // loading only clears once the raid_tiers query for the active expansion
   // has resolved (see loadData), so this never flips before tiers are known.
   const raidTierStatus: RaidTierStatus = loading ? 'loading' : noRaidTiers ? 'none' : 'available'
+  const hideRaidCards = hidesRaidDependentCards(getGuildGame(activeGuild), raidTierStatus)
   const dataLoading = loading || guildLoading
 
   return (
@@ -2039,12 +2040,12 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
 
           {/* Insights: load progressively (don't block stats above) */}
           {insightsLoading ? (
-            activeCharacter && !dataLoading ? <DashboardDataSkeleton /> : null
+            activeCharacter && !dataLoading && !hideRaidCards ? <DashboardDataSkeleton /> : null
           ) : (
           <>
 
           {/* Insights Row */}
-          {activeCharacter && (scoreExplanation || attendanceData) && (
+          {!hideRaidCards && activeCharacter && (scoreExplanation || attendanceData) && (
             <div className={`grid grid-cols-1 ${trialData?.isTrial ? 'md:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-3'} gap-4`}>
               {/* Widget 1: Score Breakdown (contract-driven from explainScore) */}
               {scoreExplanation && (
@@ -2229,6 +2230,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
           )}
 
           {/* Loot Priority and Received Items Grid */}
+          {!hideRaidCards && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Next in Line - Top Items */}
             <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-6">
@@ -2415,6 +2417,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
               )}
             </div>
           </div>
+          )}
 
           {/* Actions Needed - Current Character */}
           {actionsNeeded.filter(submission => !dismissedActions.has(submission.id)).length > 0 && (

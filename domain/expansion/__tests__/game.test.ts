@@ -11,6 +11,7 @@ import {
   resolveSignupExpansion,
   DEFAULT_SIGNUP_GAME,
   parseGameParam,
+  hidesRaidDependentCards,
 } from '../game'
 
 describe('GAME_VERSIONS', () => {
@@ -135,5 +136,22 @@ describe('parseGameParam', () => {
     expect(parseGameParam('FOREVER')).toBe('forever')
     expect(parseGameParam('retail')).toBe('forever')
     expect(parseGameParam('__proto__')).toBe('forever')
+  })
+})
+
+describe('hidesRaidDependentCards', () => {
+  it('never hides cards for Classic guilds, regardless of raid tier status', () => {
+    expect(hidesRaidDependentCards('classic', 'loading')).toBe(false)
+    expect(hidesRaidDependentCards('classic', 'none')).toBe(false)
+    expect(hidesRaidDependentCards('classic', 'available')).toBe(false)
+  })
+
+  it('hides cards for Forever guilds until a raid tier is known to exist', () => {
+    expect(hidesRaidDependentCards('forever', 'none')).toBe(true)
+    expect(hidesRaidDependentCards('forever', 'loading')).toBe(true)
+  })
+
+  it('shows cards for Forever guilds once a raid tier exists', () => {
+    expect(hidesRaidDependentCards('forever', 'available')).toBe(false)
   })
 })
