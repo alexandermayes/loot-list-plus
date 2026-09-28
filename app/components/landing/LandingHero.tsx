@@ -164,7 +164,7 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
                 </MagneticButton>
               </div>
               <p className="font-poppins text-[13px] text-[#bababa]/70">
-                Free core plan · Discord sign-in · Classic Era through Mists of Pandaria
+                Free core plan · Discord sign-in · WoW Forever and WoW Classic
               </p>
             </div>
           </div>

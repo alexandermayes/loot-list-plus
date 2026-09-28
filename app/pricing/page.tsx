@@ -21,7 +21,7 @@ const FREE_FEATURES = [
   'Bad-luck protection and configurable modifiers',
   'Loot history, submissions, and Master Sheet',
   'Discord and raid-tool workflows',
-  'Classic Era through Mists of Pandaria',
+  'WoW Forever and WoW Classic, from Classic Era through Mists of Pandaria',
 ]
 
 const PREMIUM_FEATURES = [

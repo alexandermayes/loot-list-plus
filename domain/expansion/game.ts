@@ -78,3 +78,23 @@ export function getGuildGame(guild: { game?: string | null } | null | undefined)
 export function resolveSignupExpansion(game: GameVersion, classicExpansion: string): string {
   return game === 'forever' ? FOREVER_EXPANSION_NAME : classicExpansion
 }
+
+/**
+ * The signup default game version (D-07). WoW Forever is the default and
+ * first-listed tile in both signup pickers, distinct from getGuildGame's
+ * classic default for *stored* guilds -- that default protects a stale
+ * cached guild object (for example within the 60s user-bundle cache window)
+ * from mis-reading as Forever, and is unrelated to what a brand-new signup
+ * should default to.
+ */
+export const DEFAULT_SIGNUP_GAME: GameVersion = 'forever'
+
+/**
+ * Parse a `?game=` query value into a signup game version. Only the exact
+ * string 'classic' selects Classic; every other value (including 'forever',
+ * missing, empty, wrong case, or an unrecognized/hostile string) falls back
+ * to DEFAULT_SIGNUP_GAME so an unknown value never blocks signup.
+ */
+export function parseGameParam(value: string | null | undefined): GameVersion {
+  return value === 'classic' ? 'classic' : DEFAULT_SIGNUP_GAME
+}

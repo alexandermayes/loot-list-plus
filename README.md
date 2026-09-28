@@ -27,6 +27,7 @@ Comes with a full in-game addon for real-time loot distribution. No spreadsheets
 
 | Expansion | Status | Raids | Items |
 |-----------|--------|-------|-------|
+| WoW Forever | Guild setup (region and ruleset) | Forever raids aren't in LootList+ yet | - |
 | Classic | Full loot data | 6 phases (MC/Onyxia through Naxx) | 800+ |
 | The Burning Crusade | Full loot data | 5 phases (Kara through Sunwell) | 651 |
 | Wrath of the Lich King | Full loot data | 5 phases (Naxx/EoE through Ruby Sanctum) | 1,353 |

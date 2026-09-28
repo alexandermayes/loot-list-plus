@@ -94,9 +94,9 @@ export default function AboutPage() {
             , the kind of number a spreadsheet never surfaces.
           </Body>
           <Body>
-            It supports Classic Era, The Burning Crusade, Wrath of the Lich King, Cataclysm,
-            and Mists of Pandaria, with Discord, Warcraft Logs, Battle.net, WowSims, and
-            in-game distribution workflows.
+            It supports WoW Forever and WoW Classic (Classic Era, The Burning Crusade, Wrath
+            of the Lich King, Cataclysm, and Mists of Pandaria), with Discord, Warcraft Logs,
+            Battle.net, WowSims, and in-game distribution workflows.
           </Body>
         </Section>
 

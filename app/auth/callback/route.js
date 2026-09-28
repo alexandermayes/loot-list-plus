@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { resolvePostAuthRedirect } from '@/lib/post-auth-redirect'
 
 export async function GET(request) {
   const { searchParams, origin } = new URL(request.url)
@@ -45,7 +46,7 @@ export async function GET(request) {
       // Get the authenticated user
       const { data: { user } } = await supabase.auth.getUser()
 
-      let redirectPath = next || '/overview'
+      let redirectPath = resolvePostAuthRedirect({ next, hasMemberships: null })
 
       if (user) {
         // Check if user has any guild memberships via character system
@@ -72,9 +73,10 @@ export async function GET(request) {
           }
         }
 
-        // If user has no guilds, redirect to guild selection
+        // If user has no guilds, redirect to guild selection (unless next
+        // was the create-a-guild CTA, D-03)
         if (!hasMemberships) {
-          redirectPath = '/guild-select'
+          redirectPath = resolvePostAuthRedirect({ next, hasMemberships: false })
         } else {
           // If user has guilds, ensure they have an active guild set
           const { data: existingActive } = await supabase

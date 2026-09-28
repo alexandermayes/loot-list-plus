@@ -14,6 +14,41 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'September 27, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'WoW Forever guilds',
+        description: 'Create a guild for World of Warcraft: Forever. Pick WoW Forever at signup and choose your region and ruleset instead of a realm. Forever raids aren\'t in LootList+ yet, and we\'ll keep updating as we learn more.',
+      },
+      {
+        category: 'fix',
+        title: 'Missing Classic raid loot',
+        description: 'Tier tokens, trash drops and several boss drops were missing from the Classic raids, including Carapace of the Old God and Ring of the Martyr. They are now in the item picker for every Classic guild, and the AQ40 and Zul\'Gurub tokens list the right classes.',
+      },
+      {
+        category: 'fix',
+        title: 'Naxxramas Tier 3 token names',
+        description: 'The 24 Desecrated tokens from Naxxramas now show their correct names and the right classes.',
+      },
+      {
+        category: 'fix',
+        title: 'Current week missing from raid tracking',
+        description: 'In guilds with raid teams, this week\'s raids could be missing when an officer had never picked a team. Officers now start on the guild\'s default team, so the current week shows up.',
+      },
+      {
+        category: 'fix',
+        title: 'Attendance stuck at 0 of 0 raids',
+        description: 'A raid team with its attendance window set to 0 weeks showed every raider at 0 of 0 raids. Those teams now use the guild\'s window, and team windows must be between 1 and 52 weeks.',
+      },
+      {
+        category: 'fix',
+        title: 'Blank logos when creating a guild',
+        description: 'The expansion logos on the create a guild page could show up blank. They now load reliably.',
+      },
+    ],
+  },
+  {
     date: 'August 25, 2026',
     items: [
       {

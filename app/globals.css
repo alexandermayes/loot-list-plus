@@ -586,3 +586,13 @@ img[alt=""] {
     border-radius: var(--radius);
   }
 }
+
+/* WoW Forever announcement bar (D-02): the pre-paint script in
+   app/layout.tsx sets data-llp-forever-bar="dismissed" on <html> before the
+   body parses when a visitor previously dismissed the bar. This rule hides
+   the bar and its reserved-space spacer together (see lib/announcements.ts),
+   so a returning visitor sees no flash and no layout shift. Kept outside the
+   Tailwind layers so it always wins regardless of layer ordering. */
+html[data-llp-forever-bar="dismissed"] [data-announcement="wow-forever"] {
+  display: none;
+}

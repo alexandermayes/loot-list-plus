@@ -9,6 +9,8 @@ import {
   getExpansionGame,
   getGuildGame,
   resolveSignupExpansion,
+  DEFAULT_SIGNUP_GAME,
+  parseGameParam,
 } from '../game'
 
 describe('GAME_VERSIONS', () => {
@@ -110,5 +112,28 @@ describe('resolveSignupExpansion', () => {
 
   it('resolves classic to the chosen classic expansion unchanged', () => {
     expect(resolveSignupExpansion('classic', 'Cataclysm')).toBe('Cataclysm')
+  })
+})
+
+describe('DEFAULT_SIGNUP_GAME', () => {
+  it('is forever', () => {
+    expect(DEFAULT_SIGNUP_GAME).toBe('forever')
+  })
+})
+
+describe('parseGameParam', () => {
+  it('returns classic only for the exact string classic', () => {
+    expect(parseGameParam('classic')).toBe('classic')
+  })
+
+  it('returns forever for every other value, including forever, missing, empty, wrong case and hostile input', () => {
+    expect(parseGameParam('forever')).toBe('forever')
+    expect(parseGameParam(null)).toBe('forever')
+    expect(parseGameParam(undefined)).toBe('forever')
+    expect(parseGameParam('')).toBe('forever')
+    expect(parseGameParam('Classic')).toBe('forever')
+    expect(parseGameParam('FOREVER')).toBe('forever')
+    expect(parseGameParam('retail')).toBe('forever')
+    expect(parseGameParam('__proto__')).toBe('forever')
   })
 })

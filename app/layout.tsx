@@ -12,6 +12,7 @@ import { ChunkErrorReload } from "./components/ChunkErrorReload";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import NotificationContainer from "./components/NotificationContainer";
+import { FOREVER_BAR_PREPAINT_SCRIPT } from "@/lib/announcements";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
   // homepage, About page, GitHub README, JSON-LD, and directory listings.
   // Never claim "completely free" or "no paid tier": say "free core plan".
   description: "LootList+ is a transparent loot-management system for World of Warcraft guilds. Raiders submit ranked loot lists, officers track attendance, and Loot Scores show who has priority for each item and why. Core features are free; Premium adds multi-team support, an officer activity feed, and reserve runs for $4.99 per month or $39 per year per guild.",
-  keywords: ["WoW Classic", "loot management", "guild management", "raid loot", "loot tracking", "World of Warcraft", "loot council", "DKP alternative", "TBC Classic", "WotLK Classic"],
+  keywords: ["WoW Forever", "WoW Classic", "loot management", "guild management", "raid loot", "loot tracking", "World of Warcraft", "loot council", "DKP alternative", "TBC Classic", "WotLK Classic"],
   authors: [{ name: "LootList+" }],
   creator: "LootList+",
   publisher: "LootList+",
@@ -163,6 +164,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Runs before the body parses (D-02): if the WoW Forever
+            announcement bar was previously dismissed, mark it on <html>
+            right away so globals.css hides the bar and its spacer before
+            first paint, with no flash and no layout shift. */}
+        <script
+          id="llp-forever-bar-prepaint"
+          dangerouslySetInnerHTML={{ __html: FOREVER_BAR_PREPAINT_SCRIPT }}
+        />
         {/* Preconnect to critical third-party origins to shave ~100-300ms off
             the first Supabase/PostHog request by completing DNS+TCP+TLS early */}
         {process.env.NEXT_PUBLIC_SUPABASE_URL && (

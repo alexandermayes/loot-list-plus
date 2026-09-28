@@ -90,6 +90,10 @@ type ClientEvent =
   | 'attendance_tab_changed'
   | 'character_created'
   | 'character_deleted'
+  // Announcements
+  | 'announcement_viewed'
+  | 'announcement_cta_clicked'
+  | 'announcement_dismissed'
 
 export function trackClientEvent(event: ClientEvent, properties?: Record<string, unknown>): void {
   try {
