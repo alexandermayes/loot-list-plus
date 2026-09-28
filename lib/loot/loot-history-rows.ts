@@ -63,3 +63,44 @@ export function buildAddonAwardRow(input: BuildAddonAwardRowInput): LootHistoryI
     notes: notes || (bossName ? `Dropped from ${bossName}` : null),
   }
 }
+
+export interface BuildBulkAwardRowInput {
+  guildId: string
+  awardedBy: string
+  item: LootItemScope
+  raidEventId?: string | null
+  awardedDate?: string | null
+  characterId?: string | null
+  characterName?: string | null
+  notes: string | null
+}
+
+/**
+ * Builds the loot_history insert payload for POST /api/loot-history/bulk
+ * (GH #294 D-02). raid_tier_id and expansion_id come only from the
+ * server-resolved item scope, never from the request body — the route used
+ * to write the client's raw raid_tier_id and one expansion_id shared across
+ * every row in the batch.
+ *
+ * awarded_date is included only when a non-empty string is given, and
+ * character_id/character_name only when truthy, so the DB's own
+ * CURRENT_DATE default and the existing "omit when absent" behavior are
+ * preserved exactly. No `source` key is set, so the DB default ('web')
+ * still applies, matching today's bulk-insert behavior.
+ */
+export function buildBulkAwardRow(input: BuildBulkAwardRowInput): LootHistoryInsert {
+  const { guildId, awardedBy, item, raidEventId, awardedDate, characterId, characterName, notes } = input
+  const row: LootHistoryInsert = {
+    loot_item_id: item.id,
+    guild_id: guildId,
+    raid_tier_id: item.raid_tier_id,
+    expansion_id: item.expansion_id,
+    raid_event_id: raidEventId ?? null,
+    awarded_by: awardedBy,
+    notes,
+  }
+  if (awardedDate) row.awarded_date = awardedDate
+  if (characterId) row.character_id = characterId
+  if (characterName) row.character_name = characterName
+  return row
+}

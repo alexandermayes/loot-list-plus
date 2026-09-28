@@ -214,3 +214,106 @@ export async function findGuildLootItemsByWowheadIds(
     raid_tier_id: row.raid_tier_id,
   }))
 }
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const LOOT_ITEMS_CHUNK_SIZE = 100
+
+/** A loot_items row's ownership scope: the two columns a loot_history
+ * insert needs beyond the item's own id (GH #294 D-01/D-02). */
+export interface GuildScopedLootItem {
+  id: string
+  raid_tier_id: string
+  expansion_id: string
+}
+
+export interface GuildLootItemIdResolution {
+  /** loot_item_id -> its scope, for every id the calling guild owns. */
+  resolved: Map<string, GuildScopedLootItem>
+  /** Every requested id (deduped) that is not owned by the calling guild:
+   * malformed (not a UUID), well-formed but not found, or found only under
+   * another guild's tiers. The three cases are intentionally
+   * indistinguishable here — see the function doc. */
+  invalidIds: string[]
+}
+
+/**
+ * Resolves every client-supplied loot_item_id to its guild-owned scope
+ * (raid_tier_id, expansion_id), in one batched pass (GH #294 D-02). Ids the
+ * calling guild does not own — whether because another guild owns them, or
+ * because no such id exists at all, or because the string is not even a
+ * well-formed UUID — all land in `invalidIds` with no further distinction.
+ *
+ * There is deliberately no unscoped existence probe to tell "another
+ * guild's id" apart from "no such id": that query would itself require
+ * comparing against other guilds' data, which is exactly the kind of leak
+ * this function exists to prevent (T-294-03). Callers reject the whole
+ * request with a 400 listing `invalidIds` before any write.
+ *
+ * Ids are deduped (first-seen order) before querying. Non-UUID-shaped ids
+ * never reach `loot_items` — malformed input becomes a 400, not a Postgres
+ * 22P02 turned into a 500. When the guild has no raid tiers at all, every
+ * well-formed id is invalid and no `loot_items` query is made, matching
+ * `getGuildRaidTiers`' existing empty-scope short-circuit. Well-formed ids
+ * are queried against `loot_items` in chunks of 100 to keep PostgREST URLs
+ * short.
+ *
+ * Throws if any underlying query errors (see module doc).
+ */
+export async function resolveGuildLootItemIds(
+  supabase: QueryClient,
+  guildId: string,
+  lootItemIds: string[]
+): Promise<GuildLootItemIdResolution> {
+  const seen = new Set<string>()
+  const dedupedIds: string[] = []
+  for (const id of lootItemIds) {
+    if (seen.has(id)) continue
+    seen.add(id)
+    dedupedIds.push(id)
+  }
+
+  const wellFormedIds = dedupedIds.filter(id => UUID_PATTERN.test(id))
+  const resolved = new Map<string, GuildScopedLootItem>()
+
+  if (wellFormedIds.length > 0) {
+    const tiers = await getGuildRaidTiers(supabase, guildId)
+
+    if (tiers.length > 0) {
+      const tierIds = tiers.map(t => t.id)
+      const expansionByTier = new Map(tiers.map(t => [t.id, t.expansion_id]))
+
+      for (let i = 0; i < wellFormedIds.length; i += LOOT_ITEMS_CHUNK_SIZE) {
+        const chunk = wellFormedIds.slice(i, i + LOOT_ITEMS_CHUNK_SIZE)
+        const { data: rows, error } = await supabase
+          .from('loot_items')
+          .select('id, raid_tier_id')
+          .in('id', chunk)
+          .in('raid_tier_id', tierIds)
+
+        if (error) {
+          throw new Error(`Failed to look up loot_items for guild ${guildId}: ${error.message}`)
+        }
+
+        for (const row of (rows ?? []) as Array<{ id: string; raid_tier_id: string }>) {
+          const expansionId = expansionByTier.get(row.raid_tier_id)
+          if (expansionId === undefined) continue // tier came from tierIds; defensive only
+          resolved.set(row.id, { id: row.id, raid_tier_id: row.raid_tier_id, expansion_id: expansionId })
+        }
+      }
+    }
+  }
+
+  const invalidIds = dedupedIds.filter(id => !resolved.has(id))
+  return { resolved, invalidIds }
+}
+
+/**
+ * User-facing 400 message for a bulk or import-string request carrying a
+ * loot_item_id the calling guild does not own (GH #294 D-03, OD-3 exact
+ * copy). The offending ids belong only in the response body's
+ * `invalid_loot_item_ids` field — this text never interpolates them, so it
+ * cannot leak whether an id exists under another guild.
+ */
+export function formatInvalidLootItemIdsError(_invalidIds: string[]): string {
+  return "Some loot items aren't in this guild's loot tables. Refresh the page and try again."
+}

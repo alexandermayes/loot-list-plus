@@ -8,6 +8,8 @@ import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { notifyLootAward, type LootAward } from '@/lib/discord-loot-announcements'
 import { recomputeBlpForItems } from '@/utils/blp/recompute'
 import { routeRecordsToTeamEvents } from '@/utils/raid-events/team-routing'
+import { resolveGuildLootItemIds, formatInvalidLootItemIdsError } from '@/lib/loot/guild-scoped-lookup'
+import { buildBulkAwardRow } from '@/lib/loot/loot-history-rows'
 import type { AwardReason, AwardOutcomeType } from '@/domain/types'
 
 const AWARD_REASON_VALUES = new Set<AwardReason>(['', 'score', 'loot_council', 'override', 'offspec', 'roll'])
@@ -100,6 +102,12 @@ function composeNotesFromReason(reason: AwardReason | null | undefined, note: st
  * after verifying the caller has officer permissions.
  *
  * Body: { guild_id, items: Array<{ loot_item_id, raid_tier_id, raid_event_id, awarded_date, character_id?, character_name?, notes? }> }
+ *
+ * The body's `raid_tier_id` field is accepted for backward compatibility
+ * but ignored (GH #294 D-02): every item's raid_tier_id and expansion_id
+ * are resolved server-side from loot_item_id via resolveGuildLootItemIds.
+ * Any loot_item_id the calling guild does not own is rejected with 400
+ * before anything is written (D-03).
  */
 export async function POST(request: NextRequest) {
   try {
@@ -122,6 +130,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: permError || 'Insufficient permissions' }, { status: 403 })
     }
 
+    // Every item needs a loot_item_id before any guild-scope resolution or
+    // write happens (GH #294 D-02/D-03).
+    const invalidItemIndexes = items
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => !item || typeof item !== 'object' || typeof item.loot_item_id !== 'string' || item.loot_item_id.length === 0)
+      .map(({ index }) => index)
+    if (invalidItemIndexes.length > 0) {
+      return NextResponse.json(
+        { error: 'Every item needs a loot_item_id', invalid_item_indexes: invalidItemIndexes },
+        { status: 400 }
+      )
+    }
+
+    // Resolve every item's loot_item_id to a scope (raid_tier_id,
+    // expansion_id) owned by this guild. Ids the guild does not own are
+    // rejected with 400 before team routing, the BLP settings read, or any
+    // insert — never silently dropped (D-03).
+    const idResolution = await resolveGuildLootItemIds(
+      serviceSupabase,
+      guild_id,
+      items.map((item: { loot_item_id: string }) => item.loot_item_id)
+    )
+    if (idResolution.invalidIds.length > 0) {
+      return NextResponse.json(
+        {
+          error: formatInvalidLootItemIdsError(idResolution.invalidIds),
+          invalid_loot_item_ids: idResolution.invalidIds,
+        },
+        { status: 400 }
+      )
+    }
+
     // Team guilds: route each award onto the winner's team event for the night,
     // so loot lands where that raider's attendance lives (no-op for single-team /
     // no-team guilds). Mutates each item's raid_event_id in place before insert.
@@ -130,18 +170,6 @@ export async function POST(request: NextRequest) {
     const results: { index: number; success: boolean; error?: string; id?: string }[] = []
     // Parallel array of sanitized award metadata, used by the audit-log pass below.
     const awardMeta: { reason: AwardReason | null; note: string | null; notes: string | null; decisionContext: Record<string, unknown> | null }[] = []
-
-    // Look up expansion_id from raid_tier_id (first item's tier)
-    let expansionId: string | null = null
-    const firstTierId = items[0]?.raid_tier_id
-    if (firstTierId) {
-      const { data: tier } = await serviceSupabase
-        .from('raid_tiers')
-        .select('expansion_id')
-        .eq('id', firstTierId)
-        .single()
-      expansionId = tier?.expansion_id || null
-    }
 
     // Check BLP settings once (used after inserts).
     const { data: guildSettings } = await serviceSupabase
@@ -170,19 +198,25 @@ export async function POST(request: NextRequest) {
         : null
       const finalNotes = composedNotes ?? (typeof item.notes === 'string' ? item.notes : null)
 
-      const insertData: Record<string, unknown> = {
-        loot_item_id: item.loot_item_id,
-        guild_id,
-        raid_tier_id: item.raid_tier_id,
-        raid_event_id: item.raid_event_id,
-        awarded_date: item.awarded_date,
-        awarded_by: user.id,
-        notes: finalNotes,
-        expansion_id: expansionId,
+      // Resolved by resolveGuildLootItemIds above; unreachable in practice
+      // since every item's loot_item_id already passed that guild-scope
+      // check, but a defensive throw here reaches the outer 500 rather than
+      // silently inserting an unscoped row.
+      const scope = idResolution.resolved.get(item.loot_item_id)
+      if (!scope) {
+        throw new Error(`No resolved scope for loot_item_id ${item.loot_item_id} (guild ${guild_id})`)
       }
 
-      if (item.character_id) insertData.character_id = item.character_id
-      if (item.character_name) insertData.character_name = item.character_name
+      const insertData = buildBulkAwardRow({
+        guildId: guild_id,
+        awardedBy: user.id,
+        item: scope,
+        raidEventId: item.raid_event_id,
+        awardedDate: item.awarded_date,
+        characterId: item.character_id,
+        characterName: item.character_name,
+        notes: finalNotes,
+      })
 
       awardMeta.push({ reason, note, notes: finalNotes, decisionContext })
 
