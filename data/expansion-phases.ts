@@ -24,12 +24,18 @@ export function getExpansionSlug(expansionName: string): string | null {
   return EXPANSION_NAME_TO_SLUG[expansionName] || null
 }
 
+// Raid names in these phase lists must match the catalog's raid name exactly
+// (getRaidPhase in expansionSeeder.ts does an exact includes(), not a fuzzy
+// match). app/services/__tests__/raid-phase-coverage.test.ts enforces this
+// across every seeded expansion. See GH #279 for what an orphan name costs:
+// Classic Phase 4 was seeded to a NULL phase for the raid it actually calls
+// "Ruins of Ahn'Qiraj" (data/classic-wow-raids.ts) until this fix.
 export const EXPANSION_PHASES: Record<string, PhaseDefinition[]> = {
   classic: [
     { phase: 1, name: 'Phase 1', raids: ['Molten Core', "Onyxia's Lair"] },
     { phase: 2, name: 'Phase 2', raids: ['Blackwing Lair'] },
     { phase: 3, name: 'Phase 3', raids: ["Zul'Gurub"] },
-    { phase: 4, name: 'Phase 4', raids: ["Ahn'Qiraj"] },
+    { phase: 4, name: 'Phase 4', raids: ["Ruins of Ahn'Qiraj"] },
     { phase: 5, name: 'Phase 5', raids: ["Temple of Ahn'Qiraj"] },
     { phase: 6, name: 'Phase 6', raids: ['Naxxramas'] },
   ],
