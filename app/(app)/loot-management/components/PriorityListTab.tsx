@@ -15,6 +15,7 @@ import { allRoles, getRoleDisplayName, type Role } from '@/domain/loot/spec-role
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { getCurrentResetWeekEnd, type RaiderBonusEntry } from '@/domain/scoring'
 import { parseDate, toDateString } from '@/utils/date'
+import { getGuildGame } from '@/domain/expansion/game'
 
 // Lazy load the modal to reduce initial bundle size
 const PrioListItemModal = dynamic(() => import('@/app/components/PrioListItemModal').then(mod => ({ default: mod.PrioListItemModal })), {
@@ -166,6 +167,7 @@ export default function PriorityListTab() {
   const supabase = createClient()
   const { activeGuild, loading: guildLoading } = useGuildContext()
   const { showNotification } = useNotification()
+  const isForeverGuild = getGuildGame(activeGuild) === 'forever'
 
   // Get unique phases from raid tiers
   const availablePhases = useMemo(() => {
@@ -642,7 +644,9 @@ export default function PriorityListTab() {
       <div className="bg-background-elevated border border-border rounded-xl p-8 text-center">
         <p className="text-foreground font-medium mb-2">No raid tiers available</p>
         <p className="text-muted-foreground text-sm">
-          Enable raid tiers in Guild Settings → Expansions to set up priorities.
+          {isForeverGuild
+            ? 'Enable raid tiers in Guild Settings → Game version to set up priorities.'
+            : 'Enable raid tiers in Guild Settings → Expansions to set up priorities.'}
         </p>
       </div>
     )
