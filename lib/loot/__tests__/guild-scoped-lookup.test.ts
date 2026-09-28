@@ -2,19 +2,31 @@
 import { describe, it, expect } from 'vitest'
 import { resolveGuildLootItem, findGuildLootItemsByWowheadIds } from '../guild-scoped-lookup'
 
-type Row = { id: string; name: string; raid_tier_id: string; guild_id: string; expansion_id: string; wowhead_id: number }
+type ExpansionRow = { id: string; guild_id: string }
+type TierRow = { id: string; expansion_id: string }
+type ItemRow = { id: string; name: string; raid_tier_id: string; wowhead_id: number }
+type Call = { table: string; filters: Array<[string, unknown]> }
+
+interface Fixture {
+  expansions: ExpansionRow[]
+  tiers: TierRow[]
+  items: ItemRow[]
+  activeExpansionId?: string | null
+  errorOn?: 'expansions' | 'raid_tiers' | 'guilds' | 'loot_items'
+}
 
 /**
- * Recording fake modelled on the addon route test fakes: every builder
- * method returns the builder, and `eq`/`in` calls record the column and
- * value so the guild-scope filter itself is asserted on, not merely the
- * final returned rows.
+ * Recording fake matching the real (post-review) query sequence: plain
+ * single-column `.eq`/`.in` filters against `expansions`, `raid_tiers`,
+ * `guilds`, and `loot_items` in turn — no nested embed. Every call is
+ * recorded so the guild scope is asserted on the actual filter values
+ * flowing through each step, not just the final rows.
  */
-function makeClient(opts: { rows: Row[]; activeExpansionId?: string | null }) {
-  const calls: Array<{ table: string; filters: Array<[string, unknown]> }> = []
+function makeClient(fixture: Fixture) {
+  const calls: Call[] = []
   const client = {
     from(table: string) {
-      const call = { table, filters: [] as Array<[string, unknown]> }
+      const call: Call = { table, filters: [] }
       calls.push(call)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const builder: any = {
@@ -22,31 +34,45 @@ function makeClient(opts: { rows: Row[]; activeExpansionId?: string | null }) {
         eq: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         in: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         single: () => {
-          if (table === 'guilds') {
-            return Promise.resolve({ data: { active_expansion_id: opts.activeExpansionId ?? null }, error: null })
+          if (table !== 'guilds') return Promise.resolve({ data: null, error: null })
+          if (fixture.errorOn === 'guilds') {
+            return Promise.resolve({ data: null, error: { message: 'guilds boom' } })
           }
-          return Promise.resolve({ data: null, error: null })
+          return Promise.resolve({ data: { active_expansion_id: fixture.activeExpansionId ?? null }, error: null })
         },
         then: (resolve: (v: unknown) => unknown) => {
-          if (table !== 'loot_items') return Promise.resolve({ data: [], error: null }).then(resolve)
-          const guildIdFilter = call.filters.find(([col]) => col === 'raid_tiers.expansions.guild_id')?.[1]
-          const matches = opts.rows.filter(row => {
-            const guildOk = guildIdFilter === undefined || row.guild_id === guildIdFilter
-            const idFilter = call.filters.find(([col]) => col === 'wowhead_id')
-            if (!idFilter) return guildOk
-            const [, val] = idFilter
-            const idOk = Array.isArray(val) ? val.includes(row.wowhead_id) : row.wowhead_id === val
-            return guildOk && idOk
-          })
-          return Promise.resolve({
-            data: matches.map(row => ({
-              id: row.id,
-              name: row.name,
-              raid_tier_id: row.raid_tier_id,
-              raid_tiers: { expansion_id: row.expansion_id },
-            })),
-            error: null,
-          }).then(resolve)
+          if (table === 'expansions') {
+            if (fixture.errorOn === 'expansions') {
+              return Promise.resolve({ data: null, error: { message: 'expansions boom' } }).then(resolve)
+            }
+            const guildIdFilter = call.filters.find(([col]) => col === 'guild_id')?.[1]
+            const rows = fixture.expansions.filter(e => e.guild_id === guildIdFilter)
+            return Promise.resolve({ data: rows, error: null }).then(resolve)
+          }
+          if (table === 'raid_tiers') {
+            if (fixture.errorOn === 'raid_tiers') {
+              return Promise.resolve({ data: null, error: { message: 'raid_tiers boom' } }).then(resolve)
+            }
+            const expansionIdsFilter = call.filters.find(([col]) => col === 'expansion_id')?.[1] as string[] | undefined
+            const rows = fixture.tiers.filter(t => (expansionIdsFilter ?? []).includes(t.expansion_id))
+            return Promise.resolve({ data: rows, error: null }).then(resolve)
+          }
+          if (table === 'loot_items') {
+            if (fixture.errorOn === 'loot_items') {
+              return Promise.resolve({ data: null, error: { message: 'loot_items boom' } }).then(resolve)
+            }
+            const tierIdsFilter = call.filters.find(([col]) => col === 'raid_tier_id')?.[1] as string[] | undefined
+            const wowheadFilter = call.filters.find(([col]) => col === 'wowhead_id')
+            const rows = fixture.items.filter(item => {
+              const tierOk = (tierIdsFilter ?? []).includes(item.raid_tier_id)
+              if (!wowheadFilter) return tierOk
+              const [, val] = wowheadFilter
+              const idOk = Array.isArray(val) ? val.includes(item.wowhead_id) : item.wowhead_id === val
+              return tierOk && idOk
+            })
+            return Promise.resolve({ data: rows, error: null }).then(resolve)
+          }
+          return Promise.resolve({ data: null, error: null }).then(resolve)
         },
       }
       return builder
@@ -55,89 +81,214 @@ function makeClient(opts: { rows: Row[]; activeExpansionId?: string | null }) {
   return { client, calls }
 }
 
+const GUILD_A = 'guild-a'
+const GUILD_B = 'guild-b'
+
 describe('resolveGuildLootItem', () => {
   it('resolves the Horde id to the guild-owned Alliance row', async () => {
     const { client } = makeClient({
-      rows: [{ id: 'item-19003', name: 'Head of Nefarian', raid_tier_id: 'tier-bwl', guild_id: 'guild-a', expansion_id: 'exp-a', wowhead_id: 19003 }],
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }],
+      tiers: [{ id: 'tier-bwl', expansion_id: 'exp-a' }],
+      items: [{ id: 'item-19003', name: 'Head of Nefarian', raid_tier_id: 'tier-bwl', wowhead_id: 19003 }],
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await resolveGuildLootItem(client as any, 'guild-a', 19002)
+    const result = await resolveGuildLootItem(client as any, GUILD_A, 19002)
     expect(result).toEqual({ id: 'item-19003', name: 'Head of Nefarian', raid_tier_id: 'tier-bwl' })
   })
 
   it('never returns another guild row even when it is the first (and only) match', async () => {
+    // guild-b owns the Alliance row; guild-a has its own expansion/tier but no matching item.
     const { client } = makeClient({
-      rows: [{ id: 'other-guild-item', name: 'Head of Nefarian', raid_tier_id: 'tier-bwl', guild_id: 'guild-b', expansion_id: 'exp-b', wowhead_id: 19003 }],
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }, { id: 'exp-b', guild_id: GUILD_B }],
+      tiers: [{ id: 'tier-a', expansion_id: 'exp-a' }, { id: 'tier-b', expansion_id: 'exp-b' }],
+      items: [{ id: 'other-guild-item', name: 'Head of Nefarian', raid_tier_id: 'tier-b', wowhead_id: 19003 }],
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await resolveGuildLootItem(client as any, 'guild-a', 19002)
+    const result = await resolveGuildLootItem(client as any, GUILD_A, 19002)
     expect(result).toBeNull()
+  })
+
+  it('the guild scope comes from expansions -> raid_tiers: another guild tier id never reaches the loot_items query', async () => {
+    const { client, calls } = makeClient({
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }, { id: 'exp-b', guild_id: GUILD_B }],
+      tiers: [{ id: 'tier-a', expansion_id: 'exp-a' }, { id: 'tier-b', expansion_id: 'exp-b' }],
+      items: [],
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await resolveGuildLootItem(client as any, GUILD_A, 19003)
+
+    const expansionsCall = calls.find(c => c.table === 'expansions')
+    expect(expansionsCall?.filters).toEqual([['guild_id', GUILD_A]])
+
+    const raidTiersCall = calls.find(c => c.table === 'raid_tiers')
+    expect(raidTiersCall?.filters).toEqual([['expansion_id', ['exp-a']]])
+
+    const lootItemsCalls = calls.filter(c => c.table === 'loot_items')
+    for (const call of lootItemsCalls) {
+      const tierFilter = call.filters.find(([col]) => col === 'raid_tier_id')?.[1]
+      expect(tierFilter).toEqual(['tier-a'])
+    }
   })
 
   it('prefers the exact id over the alias when the calling guild owns both rows', async () => {
     const { client } = makeClient({
-      rows: [
-        { id: 'item-19003', name: 'Alliance', raid_tier_id: 'tier-bwl', guild_id: 'guild-a', expansion_id: 'exp-a', wowhead_id: 19003 },
-        { id: 'item-19002', name: 'Horde', raid_tier_id: 'tier-bwl-horde', guild_id: 'guild-a', expansion_id: 'exp-a', wowhead_id: 19002 },
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }],
+      tiers: [{ id: 'tier-bwl', expansion_id: 'exp-a' }, { id: 'tier-bwl-horde', expansion_id: 'exp-a' }],
+      items: [
+        { id: 'item-19003', name: 'Alliance', raid_tier_id: 'tier-bwl', wowhead_id: 19003 },
+        { id: 'item-19002', name: 'Horde', raid_tier_id: 'tier-bwl-horde', wowhead_id: 19002 },
       ],
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await resolveGuildLootItem(client as any, 'guild-a', 19002)
+    const result = await resolveGuildLootItem(client as any, GUILD_A, 19002)
     expect(result?.id).toBe('item-19002')
   })
 
   it('picks the active expansion row when the guild owns the item under two expansions', async () => {
     const { client } = makeClient({
       activeExpansionId: 'exp-active',
-      rows: [
-        { id: 'item-old', name: 'Head of Nefarian', raid_tier_id: 'tier-zzz', guild_id: 'guild-a', expansion_id: 'exp-old', wowhead_id: 19003 },
-        { id: 'item-active', name: 'Head of Nefarian', raid_tier_id: 'tier-aaa', guild_id: 'guild-a', expansion_id: 'exp-active', wowhead_id: 19003 },
+      expansions: [{ id: 'exp-old', guild_id: GUILD_A }, { id: 'exp-active', guild_id: GUILD_A }],
+      tiers: [{ id: 'tier-zzz', expansion_id: 'exp-old' }, { id: 'tier-aaa', expansion_id: 'exp-active' }],
+      items: [
+        { id: 'item-old', name: 'Head of Nefarian', raid_tier_id: 'tier-zzz', wowhead_id: 19003 },
+        { id: 'item-active', name: 'Head of Nefarian', raid_tier_id: 'tier-aaa', wowhead_id: 19003 },
       ],
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await resolveGuildLootItem(client as any, 'guild-a', 19003)
+    const result = await resolveGuildLootItem(client as any, GUILD_A, 19003)
     expect(result?.id).toBe('item-active')
   })
 
   it('falls back to the lowest raid_tier_id deterministically when no row is the active expansion', async () => {
     const { client } = makeClient({
       activeExpansionId: 'exp-neither',
-      rows: [
-        { id: 'item-zzz', name: 'Head of Nefarian', raid_tier_id: 'tier-zzz', guild_id: 'guild-a', expansion_id: 'exp-old', wowhead_id: 19003 },
-        { id: 'item-aaa', name: 'Head of Nefarian', raid_tier_id: 'tier-aaa', guild_id: 'guild-a', expansion_id: 'exp-older', wowhead_id: 19003 },
+      expansions: [{ id: 'exp-old', guild_id: GUILD_A }, { id: 'exp-older', guild_id: GUILD_A }],
+      tiers: [{ id: 'tier-zzz', expansion_id: 'exp-old' }, { id: 'tier-aaa', expansion_id: 'exp-older' }],
+      items: [
+        { id: 'item-zzz', name: 'Head of Nefarian', raid_tier_id: 'tier-zzz', wowhead_id: 19003 },
+        { id: 'item-aaa', name: 'Head of Nefarian', raid_tier_id: 'tier-aaa', wowhead_id: 19003 },
       ],
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await resolveGuildLootItem(client as any, 'guild-a', 19003)
+    const result = await resolveGuildLootItem(client as any, GUILD_A, 19003)
     expect(result?.id).toBe('item-aaa')
   })
 
   it('returns null when nothing matches any candidate', async () => {
-    const { client } = makeClient({ rows: [] })
+    const { client } = makeClient({
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }],
+      tiers: [{ id: 'tier-a', expansion_id: 'exp-a' }],
+      items: [],
+    })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await resolveGuildLootItem(client as any, 'guild-a', 99999)
+    const result = await resolveGuildLootItem(client as any, GUILD_A, 99999)
     expect(result).toBeNull()
+  })
+
+  it('returns null without querying loot_items when the guild has no expansions', async () => {
+    const { client, calls } = makeClient({ expansions: [], tiers: [], items: [] })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await resolveGuildLootItem(client as any, GUILD_A, 19003)
+    expect(result).toBeNull()
+    expect(calls.some(c => c.table === 'loot_items')).toBe(false)
+  })
+
+  it('returns null without querying loot_items when the guild has expansions but no raid tiers', async () => {
+    const { client, calls } = makeClient({
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }],
+      tiers: [],
+      items: [],
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await resolveGuildLootItem(client as any, GUILD_A, 19003)
+    expect(result).toBeNull()
+    expect(calls.some(c => c.table === 'loot_items')).toBe(false)
+  })
+
+  it('throws (does not return null) when the expansions query errors', async () => {
+    const { client } = makeClient({ expansions: [], tiers: [], items: [], errorOn: 'expansions' })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await expect(resolveGuildLootItem(client as any, GUILD_A, 19003)).rejects.toThrow(/expansions/i)
+  })
+
+  it('throws when the raid_tiers query errors', async () => {
+    const { client } = makeClient({
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }],
+      tiers: [],
+      items: [],
+      errorOn: 'raid_tiers',
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await expect(resolveGuildLootItem(client as any, GUILD_A, 19003)).rejects.toThrow(/raid.tiers/i)
+  })
+
+  it('throws when the guilds query errors', async () => {
+    const { client } = makeClient({
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }],
+      tiers: [{ id: 'tier-a', expansion_id: 'exp-a' }],
+      items: [],
+      errorOn: 'guilds',
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await expect(resolveGuildLootItem(client as any, GUILD_A, 19003)).rejects.toThrow(/guild/i)
+  })
+
+  it('throws (not a false 404-shaped null) when the loot_items query errors', async () => {
+    const { client } = makeClient({
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }],
+      tiers: [{ id: 'tier-a', expansion_id: 'exp-a' }],
+      items: [],
+      errorOn: 'loot_items',
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await expect(resolveGuildLootItem(client as any, GUILD_A, 19003)).rejects.toThrow(/loot_items/i)
   })
 })
 
 describe('findGuildLootItemsByWowheadIds', () => {
   it('finds a guild-owned row across candidates and excludes another guild row for the same id', async () => {
     const { client } = makeClient({
-      rows: [
-        { id: 'mine', name: 'Head of Nefarian', raid_tier_id: 'tier-a', guild_id: 'guild-a', expansion_id: 'exp-a', wowhead_id: 19003 },
-        { id: 'not-mine', name: 'Head of Nefarian', raid_tier_id: 'tier-b', guild_id: 'guild-b', expansion_id: 'exp-b', wowhead_id: 19003 },
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }, { id: 'exp-b', guild_id: GUILD_B }],
+      tiers: [{ id: 'tier-a', expansion_id: 'exp-a' }, { id: 'tier-b', expansion_id: 'exp-b' }],
+      items: [
+        { id: 'mine', name: 'Head of Nefarian', raid_tier_id: 'tier-a', wowhead_id: 19003 },
+        { id: 'not-mine', name: 'Head of Nefarian', raid_tier_id: 'tier-b', wowhead_id: 19003 },
       ],
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await findGuildLootItemsByWowheadIds(client as any, 'guild-a', [19002, 19003])
+    const result = await findGuildLootItemsByWowheadIds(client as any, GUILD_A, [19002, 19003])
     expect(result).toEqual([{ id: 'mine', name: 'Head of Nefarian', raid_tier_id: 'tier-a' }])
   })
 
   it('returns an empty array when the guild has no matching row', async () => {
-    const { client } = makeClient({ rows: [] })
+    const { client } = makeClient({
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }],
+      tiers: [{ id: 'tier-a', expansion_id: 'exp-a' }],
+      items: [],
+    })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await findGuildLootItemsByWowheadIds(client as any, 'guild-a', [99999])
+    const result = await findGuildLootItemsByWowheadIds(client as any, GUILD_A, [99999])
     expect(result).toEqual([])
   })
-})
 
+  it('returns an empty array without querying loot_items when the guild has no expansions', async () => {
+    const { client, calls } = makeClient({ expansions: [], tiers: [], items: [] })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await findGuildLootItemsByWowheadIds(client as any, GUILD_A, [19003])
+    expect(result).toEqual([])
+    expect(calls.some(c => c.table === 'loot_items')).toBe(false)
+  })
+
+  it('throws (does not return an empty array) when the loot_items query errors', async () => {
+    const { client } = makeClient({
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }],
+      tiers: [{ id: 'tier-a', expansion_id: 'exp-a' }],
+      items: [],
+      errorOn: 'loot_items',
+    })
+    await expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      findGuildLootItemsByWowheadIds(client as any, GUILD_A, [19003]),
+    ).rejects.toThrow(/loot_items/i)
+  })
+})

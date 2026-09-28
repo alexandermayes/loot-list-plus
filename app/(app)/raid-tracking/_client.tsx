@@ -1815,17 +1815,25 @@ export default function RaidTrackingPage() {
           // guild's OWN raid tiers across all its expansions (not just the
           // current one) so this "exists elsewhere" message is accurate
           // without ever leaking another guild's row, and matches the
-          // Horde id's faction alias too.
-          const directLookup = await findGuildLootItemsByWowheadIds(
-            supabase,
-            activeGuild.id,
-            wowheadIdCandidates(itemId)
-          )
+          // Horde id's faction alias too. A query failure here must NOT be
+          // swallowed into "not in database" — that would hide a real
+          // error behind an ordinary-looking result, so it is surfaced
+          // through the same import-errors list instead.
+          try {
+            const directLookup = await findGuildLootItemsByWowheadIds(
+              supabase,
+              activeGuild.id,
+              wowheadIdCandidates(itemId)
+            )
 
-          if (directLookup.length > 0) {
-            results.loot.errors.push(`Item #${itemId} (${directLookup[0].name}) exists but not in current expansion`)
-          } else {
-            results.loot.errors.push(`Item #${itemId} not in database - may need to add to loot tables`)
+            if (directLookup.length > 0) {
+              results.loot.errors.push(`Item #${itemId} (${directLookup[0].name}) exists but not in current expansion`)
+            } else {
+              results.loot.errors.push(`Item #${itemId} not in database - may need to add to loot tables`)
+            }
+          } catch (lookupError) {
+            console.error('Failed to look up item for guild scope:', lookupError)
+            results.loot.errors.push(`Item #${itemId}: couldn't verify against your guild's data - try again`)
           }
           continue
         }

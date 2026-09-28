@@ -21,17 +21,28 @@ vi.mock('next/server', async (importOriginal) => ({
 const GUILD_ID = 'guild-1'
 const OTHER_GUILD_ID = 'guild-2'
 
-type CatalogRow = { id: string; name: string; raid_tier_id: string; guild_id: string; expansion_id: string; wowhead_id: number }
+type ExpansionRow = { id: string; guild_id: string }
+type TierRow = { id: string; expansion_id: string }
+type ItemRow = { id: string; name: string; raid_tier_id: string; wowhead_id: number }
 type Call = { table: string; filters: Array<[string, unknown]> }
 
+interface Fixture {
+  expansions: ExpansionRow[]
+  tiers: TierRow[]
+  items: ItemRow[]
+  activeExpansionId?: string
+  characters?: Array<{ character_id: string; characters: { id: string; name: string } }>
+  errorOn?: 'expansions' | 'raid_tiers' | 'guilds' | 'loot_items'
+}
+
 /**
- * Recording fake modelled on app/api/guilds/change-expansion's test client:
- * every builder method returns the builder, and each eq/in call records its
- * column and value. `catalog` holds loot_items rows across (possibly
- * several) guilds; the fake honors the raid_tiers.expansions.guild_id
- * embedded filter the way real PostgREST would, so a wrong scope is caught.
+ * Recording fake matching the real (guild-scoped) query sequence: plain
+ * single-column `.eq`/`.in` filters against `expansions`, `raid_tiers`,
+ * `guilds`, and `loot_items` in turn, plus `character_guild_memberships`
+ * and `loot_history`. Every call is recorded so the guild scope is
+ * asserted on the actual filter values flowing through each step.
  */
-function makeClient(opts: { catalog: CatalogRow[]; activeExpansionId?: string; characters?: Array<{ character_id: string; characters: { id: string; name: string } }> }) {
+function makeClient(fixture: Fixture) {
   const calls: Call[] = []
   const client = {
     from(table: string) {
@@ -40,15 +51,14 @@ function makeClient(opts: { catalog: CatalogRow[]; activeExpansionId?: string; c
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const builder: any = {
         select: () => builder,
-        insert: (payload: unknown) => {
-          call.filters.push(['__insert_payload__', payload])
-          return builder
-        },
+        insert: (payload: unknown) => { call.filters.push(['__insert_payload__', payload]); return builder },
         eq: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
+        in: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         limit: () => builder,
         single: () => {
           if (table === 'guilds') {
-            return Promise.resolve({ data: { active_expansion_id: opts.activeExpansionId ?? null }, error: null })
+            if (fixture.errorOn === 'guilds') return Promise.resolve({ data: null, error: { message: 'guilds boom' } })
+            return Promise.resolve({ data: { active_expansion_id: fixture.activeExpansionId ?? null }, error: null })
           }
           if (table === 'loot_history') {
             return Promise.resolve({ data: { id: 'hist-1' }, error: null })
@@ -56,24 +66,33 @@ function makeClient(opts: { catalog: CatalogRow[]; activeExpansionId?: string; c
           return Promise.resolve({ data: null, error: null })
         },
         then: (resolve: (v: unknown) => unknown) => {
+          if (table === 'expansions') {
+            if (fixture.errorOn === 'expansions') {
+              return Promise.resolve({ data: null, error: { message: 'expansions boom' } }).then(resolve)
+            }
+            const guildIdFilter = call.filters.find(([col]) => col === 'guild_id')?.[1]
+            const rows = fixture.expansions.filter(e => e.guild_id === guildIdFilter)
+            return Promise.resolve({ data: rows, error: null }).then(resolve)
+          }
+          if (table === 'raid_tiers') {
+            if (fixture.errorOn === 'raid_tiers') {
+              return Promise.resolve({ data: null, error: { message: 'raid_tiers boom' } }).then(resolve)
+            }
+            const expansionIdsFilter = (call.filters.find(([col]) => col === 'expansion_id')?.[1] ?? []) as string[]
+            const rows = fixture.tiers.filter(t => expansionIdsFilter.includes(t.expansion_id))
+            return Promise.resolve({ data: rows, error: null }).then(resolve)
+          }
           if (table === 'loot_items') {
-            const guildIdFilter = call.filters.find(([col]) => col === 'raid_tiers.expansions.guild_id')?.[1]
+            if (fixture.errorOn === 'loot_items') {
+              return Promise.resolve({ data: null, error: { message: 'loot_items boom' } }).then(resolve)
+            }
+            const tierIdsFilter = (call.filters.find(([col]) => col === 'raid_tier_id')?.[1] ?? []) as string[]
             const wowheadFilter = call.filters.find(([col]) => col === 'wowhead_id')?.[1]
-            const matches = opts.catalog.filter(
-              row => row.guild_id === guildIdFilter && row.wowhead_id === wowheadFilter
-            )
-            return Promise.resolve({
-              data: matches.map(row => ({
-                id: row.id,
-                name: row.name,
-                raid_tier_id: row.raid_tier_id,
-                raid_tiers: { expansion_id: row.expansion_id },
-              })),
-              error: null,
-            }).then(resolve)
+            const rows = fixture.items.filter(item => tierIdsFilter.includes(item.raid_tier_id) && item.wowhead_id === wowheadFilter)
+            return Promise.resolve({ data: rows, error: null }).then(resolve)
           }
           if (table === 'character_guild_memberships') {
-            return Promise.resolve({ data: opts.characters ?? [], error: null }).then(resolve)
+            return Promise.resolve({ data: fixture.characters ?? [], error: null }).then(resolve)
           }
           return Promise.resolve({ data: null, error: null }).then(resolve)
         },
@@ -82,6 +101,15 @@ function makeClient(opts: { catalog: CatalogRow[]; activeExpansionId?: string; c
     },
   }
   return { client, calls }
+}
+
+/** One guild owning one item under one tier/expansion — the common case. */
+function singleItemFixture(item: { id: string; name: string; wowhead_id: number }, guildId = GUILD_ID) {
+  return {
+    expansions: [{ id: 'exp-1', guild_id: guildId }],
+    tiers: [{ id: 'tier-1', expansion_id: 'exp-1' }],
+    items: [{ id: item.id, name: item.name, raid_tier_id: 'tier-1', wowhead_id: item.wowhead_id }],
+  }
 }
 
 function request(body: unknown) {
@@ -102,9 +130,7 @@ describe('POST /api/addon/loot-award', () => {
   })
 
   it('resolves a Horde Head of Nefarian (19002) to the guild catalog Alliance row (19003)', async () => {
-    const { client, calls } = makeClient({
-      catalog: [{ id: 'item-19003', name: 'Head of Nefarian', raid_tier_id: 'tier-bwl', guild_id: GUILD_ID, expansion_id: 'exp-1', wowhead_id: 19003 }],
-    })
+    const { client, calls } = makeClient(singleItemFixture({ id: 'item-19003', name: 'Head of Nefarian', wowhead_id: 19003 }))
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
 
     const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 19002, character_name: 'Thrall' }))
@@ -122,9 +148,7 @@ describe('POST /api/addon/loot-award', () => {
   })
 
   it('resolves a Horde Head of Onyxia (18422) to the guild catalog Alliance row (18423)', async () => {
-    const { client, calls } = makeClient({
-      catalog: [{ id: 'item-18423', name: 'Head of Onyxia', raid_tier_id: 'tier-ony', guild_id: GUILD_ID, expansion_id: 'exp-1', wowhead_id: 18423 }],
-    })
+    const { client, calls } = makeClient(singleItemFixture({ id: 'item-18423', name: 'Head of Onyxia', wowhead_id: 18423 }))
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
 
     const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 18422, character_name: 'Thrall' }))
@@ -139,9 +163,11 @@ describe('POST /api/addon/loot-award', () => {
 
   it('prefers the exact id after one lookup when the guild owns both the Horde and Alliance rows', async () => {
     const { client, calls } = makeClient({
-      catalog: [
-        { id: 'item-19003', name: 'Alliance', raid_tier_id: 'tier-a', guild_id: GUILD_ID, expansion_id: 'exp-1', wowhead_id: 19003 },
-        { id: 'item-19002', name: 'Horde', raid_tier_id: 'tier-h', guild_id: GUILD_ID, expansion_id: 'exp-1', wowhead_id: 19002 },
+      expansions: [{ id: 'exp-1', guild_id: GUILD_ID }],
+      tiers: [{ id: 'tier-a', expansion_id: 'exp-1' }, { id: 'tier-h', expansion_id: 'exp-1' }],
+      items: [
+        { id: 'item-19003', name: 'Alliance', raid_tier_id: 'tier-a', wowhead_id: 19003 },
+        { id: 'item-19002', name: 'Horde', raid_tier_id: 'tier-h', wowhead_id: 19002 },
       ],
     })
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
@@ -155,9 +181,7 @@ describe('POST /api/addon/loot-award', () => {
   })
 
   it('makes one loot_items lookup for a non-alias id', async () => {
-    const { client, calls } = makeClient({
-      catalog: [{ id: 'item-19003', name: 'Head of Nefarian', raid_tier_id: 'tier-bwl', guild_id: GUILD_ID, expansion_id: 'exp-1', wowhead_id: 19003 }],
-    })
+    const { client, calls } = makeClient(singleItemFixture({ id: 'item-19003', name: 'Head of Nefarian', wowhead_id: 19003 }))
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
 
     const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 19003, character_name: 'Thrall' }))
@@ -166,7 +190,11 @@ describe('POST /api/addon/loot-award', () => {
   })
 
   it('returns 404 for an unknown wowhead_id, naming it, with no loot_history insert', async () => {
-    const { client, calls } = makeClient({ catalog: [] })
+    const { client, calls } = makeClient({
+      expansions: [{ id: 'exp-1', guild_id: GUILD_ID }],
+      tiers: [{ id: 'tier-1', expansion_id: 'exp-1' }],
+      items: [],
+    })
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
 
     const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 99999, character_name: 'Thrall' }))
@@ -179,9 +207,11 @@ describe('POST /api/addon/loot-award', () => {
   })
 
   it('SCOPE-01: never awards another guild row, even when it is the first (and only) match for the id', async () => {
-    // guild-2 has the Alliance catalog row; the requesting guild (guild-1) has none.
+    // guild-2 owns the Alliance catalog row under its own expansion/tier; guild-1 has none.
     const { client, calls } = makeClient({
-      catalog: [{ id: 'other-guild-item', name: 'Head of Nefarian', raid_tier_id: 'tier-bwl', guild_id: OTHER_GUILD_ID, expansion_id: 'exp-2', wowhead_id: 19003 }],
+      expansions: [{ id: 'exp-2', guild_id: OTHER_GUILD_ID }],
+      tiers: [{ id: 'tier-2', expansion_id: 'exp-2' }],
+      items: [{ id: 'other-guild-item', name: 'Head of Nefarian', raid_tier_id: 'tier-2', wowhead_id: 19003 }],
     })
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
 
@@ -191,5 +221,56 @@ describe('POST /api/addon/loot-award', () => {
     expect(res.status).toBe(404)
     expect(lootHistoryInsert(calls)).toBeUndefined()
     expect(body.error).toContain('19002')
+    // The requesting guild has no expansions of its own, so the scoped
+    // lookup must resolve to "no rows" without ever querying loot_items —
+    // proving guild-2's tier id never reached that query.
+    expect(lootItemsLookups(calls)).toHaveLength(0)
+  })
+
+  it('SCOPE-01: another guild tier id never reaches the loot_items query even when both guilds have data', async () => {
+    const { client, calls } = makeClient({
+      expansions: [{ id: 'exp-1', guild_id: GUILD_ID }, { id: 'exp-2', guild_id: OTHER_GUILD_ID }],
+      tiers: [{ id: 'tier-1', expansion_id: 'exp-1' }, { id: 'tier-2', expansion_id: 'exp-2' }],
+      items: [{ id: 'other-guild-item', name: 'Head of Nefarian', raid_tier_id: 'tier-2', wowhead_id: 19003 }],
+    })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 19002, character_name: 'Thrall' }))
+    expect(res.status).toBe(404)
+
+    const raidTiersCall = calls.find(c => c.table === 'raid_tiers')
+    expect(raidTiersCall?.filters).toEqual([['expansion_id', ['exp-1']]])
+    for (const call of lootItemsLookups(calls)) {
+      const tierFilter = call.filters.find(([col]) => col === 'raid_tier_id')?.[1]
+      expect(tierFilter).toEqual(['tier-1'])
+    }
+  })
+
+  it('returns a 500 distinct from the 404 no-match case when the guild-scope lookup query errors', async () => {
+    const { client, calls } = makeClient({
+      expansions: [{ id: 'exp-1', guild_id: GUILD_ID }],
+      tiers: [{ id: 'tier-1', expansion_id: 'exp-1' }],
+      items: [],
+      errorOn: 'loot_items',
+    })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 19002, character_name: 'Thrall' }))
+    const body = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(body.error).not.toContain('No loot item found')
+    expect(lootHistoryInsert(calls)).toBeUndefined()
+  })
+
+  it('returns a 500 when the expansions query errors, not a false 404', async () => {
+    const { client } = makeClient({ expansions: [], tiers: [], items: [], errorOn: 'expansions' })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 19003, character_name: 'Thrall' }))
+    const body = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(body.error).not.toContain('No loot item found')
   })
 })

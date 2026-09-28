@@ -42,6 +42,13 @@ describe('raid-tracking _client.tsx wowhead lookup source guard (GH #277)', () =
     const matches = SOURCE.match(/findGuildLootItemsByWowheadIds\(\s*supabase,\s*activeGuild\.id,\s*wowheadIdCandidates\(itemId\)\s*\)/g) ?? []
     expect(matches).toHaveLength(1)
   })
+
+  it('wraps the guild-scoped fallback query in a try/catch that surfaces a query failure through the existing import-errors list, not a silent "not in database"', () => {
+    const match = SOURCE.match(
+      /try\s*\{\s*const directLookup = await findGuildLootItemsByWowheadIds\([\s\S]{0,700}?\}\s*catch\s*\(lookupError\)\s*\{[\s\S]{0,300}?results\.loot\.errors\.push\([\s\S]{0,200}?\}/
+    )
+    expect(match, 'expected a try/catch around findGuildLootItemsByWowheadIds pushing to results.loot.errors on failure').not.toBeNull()
+  })
 })
 
 describe('raid-tracking Gargul import behaviour (GH #277)', () => {
