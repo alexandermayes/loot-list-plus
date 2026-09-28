@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server'
-import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { authenticateAddonRequest, authorizeAddonGuild } from '@/lib/addon/sync-tokens'
 import { trackApiError } from '@/utils/analytics/server'
 import { recomputeBlpForEvents } from '@/utils/blp/recompute'
 import { importAttendanceByTeam } from '@/utils/raid-events/team-routing'
@@ -26,10 +25,8 @@ interface AttendanceRequest {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const auth = await authenticateAddonRequest(request)
+    if (!auth.ok) return auth.response
 
     const body: AttendanceRequest = await request.json()
     const { guild_id, raid_date, raid_name, attended, boss_kills } = body
@@ -42,11 +39,9 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServiceRoleClient()
 
-    // Verify officer permissions
-    const verification = await verifyOfficerPermissions(supabase, user.id, guild_id)
-    if (!verification.hasPermission) {
-      return NextResponse.json({ error: 'Officer permissions required' }, { status: 403 })
-    }
+    // Officer check plus sync-token guild scope (GH #300 D-02)
+    const access = await authorizeAddonGuild(supabase, auth.principal, guild_id)
+    if (!access.ok) return access.response
 
     // Resolve character names to IDs (+ names for attendance matching)
     const { data: memberships } = await supabase
