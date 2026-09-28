@@ -6,6 +6,7 @@ import { trackApiError, trackEvent } from '@/utils/analytics/server'
 import { notifyLootAward, type LootAward } from '@/lib/discord-loot-announcements'
 import { recomputeBlpForEvents } from '@/utils/blp/recompute'
 import { importAttendanceByTeam } from '@/utils/raid-events/team-routing'
+import { resolveGuildLootItem } from '@/lib/loot/guild-scoped-lookup'
 import { inflateRawSync } from 'zlib'
 
 interface AddonAward {
@@ -161,15 +162,11 @@ async function processAward(
   userId: string,
   award: AddonAward
 ): Promise<LootAward | null> {
-  // Resolve wowhead_id to loot_item_id
+  // Resolve wowhead_id to a loot_item_id owned by this guild, trying the
+  // exact id first and its faction alias second (GH #277 D-03, SCOPE-01).
   let lootItemId = award.lootItemId
   if (!lootItemId && award.wowheadId) {
-    const { data: item } = await supabase
-      .from('loot_items')
-      .select('id')
-      .eq('wowhead_id', award.wowheadId)
-      .limit(1)
-      .single()
+    const item = await resolveGuildLootItem(supabase, guildId, award.wowheadId)
     lootItemId = item?.id
   }
 

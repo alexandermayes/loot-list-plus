@@ -5,6 +5,7 @@ import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError, trackEvent } from '@/utils/analytics/server'
 import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { notifyLootAward } from '@/lib/discord-loot-announcements'
+import { resolveGuildLootItem } from '@/lib/loot/guild-scoped-lookup'
 
 interface LootAwardRequest {
   guild_id: string
@@ -18,8 +19,10 @@ interface LootAwardRequest {
 /**
  * POST /api/addon/loot-award
  *
- * Records a single loot award from the addon or companion app.
- * Maps wowhead_id to loot_items.id via the guild's raid tiers.
+ * Records a single loot award from the addon or companion app. Maps
+ * wowhead_id to a loot_items row owned by the calling guild's own raid
+ * tiers, trying the exact id first and its faction alias second (GH #277
+ * D-03, SCOPE-01) — see lib/loot/guild-scoped-lookup.ts.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -45,27 +48,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Officer permissions required' }, { status: 403 })
     }
 
-    // Resolve wowhead_id to loot_item_id
-    const { data: lootItem } = await supabase
-      .from('loot_items')
-      .select('id, name, raid_tier_id')
-      .eq('wowhead_id', wowhead_id)
-      .limit(1)
-      .single()
+    // Resolve wowhead_id to a loot_item_id owned by this guild (GH #277 SCOPE-01).
+    // A query failure here must NOT be treated as "not found" (404) — that
+    // would silently hide a real error behind an ordinary-looking response.
+    let lootItem
+    try {
+      lootItem = await resolveGuildLootItem(supabase, guild_id, wowhead_id)
+    } catch (lookupError) {
+      console.error('Failed to resolve guild-scoped loot item:', lookupError)
+      trackApiError('unknown', 'POST /api/addon/loot-award', lookupError instanceof Error ? lookupError : new Error(String(lookupError)))
+      return NextResponse.json({ error: `Failed to resolve item for wowhead_id ${wowhead_id}` }, { status: 500 })
+    }
 
     if (!lootItem) {
       return NextResponse.json({ error: `No loot item found for wowhead_id ${wowhead_id}` }, { status: 404 })
-    }
-
-    // Verify the item belongs to this guild's active expansion
-    const { data: raidTier } = await supabase
-      .from('raid_tiers')
-      .select('expansion_id')
-      .eq('id', lootItem.raid_tier_id)
-      .single()
-
-    if (!raidTier) {
-      return NextResponse.json({ error: 'Raid tier not found for this item' }, { status: 404 })
     }
 
     // Resolve character name to character_id
