@@ -10,8 +10,11 @@ import {
   encodeGargulExport,
   decodeGargulExport,
   normalizeClassForGargul,
+  buildGargulSoftReserves,
+  buildGargulHardReserves,
   type GargulPayload,
 } from '../gargul-export'
+import { FACTION_ITEM_ALIASES } from '@/domain/loot/faction-item-aliases'
 
 // ─── Fixtures ───────────────────────────────────────────────
 
@@ -191,6 +194,127 @@ describe('Gargul importGargulData contract', () => {
     const decoded = await decodeGargulExport(await encodeGargulExport(makePayload()))
     for (const entry of decoded.softreserves) {
       expect(entry.plusOnes).toBeGreaterThanOrEqual(0)
+    }
+  })
+})
+
+// ─── buildGargulSoftReserves / buildGargulHardReserves ──────
+
+function itemsMap(rows: Array<{ id: string; wowhead_id: number | null }>) {
+  return new Map(rows.map(r => [r.id, { wowhead_id: r.wowhead_id }]))
+}
+
+describe('buildGargulSoftReserves', () => {
+  it('normalizes class, drops unknown loot item uuids and non-positive/null wowhead ids', () => {
+    const items = itemsMap([
+      { id: 'item-a', wowhead_id: 1001 },
+      { id: 'item-zero', wowhead_id: 0 },
+      { id: 'item-null', wowhead_id: null },
+    ])
+    const result = buildGargulSoftReserves(
+      [
+        {
+          character_name: 'Arthas',
+          character_class: 'DeathKnight',
+          items: ['item-a', 'item-unknown', 'item-zero', 'item-null'],
+        },
+      ],
+      items
+    )
+    expect(result).toEqual([
+      { name: 'Arthas', class: 'death knight', note: '', plusOnes: 0, items: [{ id: 1001 }] },
+    ])
+  })
+
+  it('omits a submission with no resolvable items entirely', () => {
+    const items = itemsMap([{ id: 'item-a', wowhead_id: 1001 }])
+    const result = buildGargulSoftReserves(
+      [
+        { character_name: 'Ghost', character_class: 'Mage', items: ['item-unknown'] },
+        { character_name: 'Bob', character_class: 'Warrior', items: ['item-a'] },
+      ],
+      items
+    )
+    expect(result).toHaveLength(1)
+    expect(result[0].name).toBe('Bob')
+  })
+
+  it('note is empty and plusOnes is 0', () => {
+    const items = itemsMap([{ id: 'item-a', wowhead_id: 1001 }])
+    const result = buildGargulSoftReserves(
+      [{ character_name: 'Bob', character_class: 'Warrior', items: ['item-a'] }],
+      items
+    )
+    expect(result[0].note).toBe('')
+    expect(result[0].plusOnes).toBe(0)
+  })
+})
+
+describe('buildGargulHardReserves', () => {
+  it('skips entries whose item is missing or has a falsy wowhead_id', () => {
+    const items = itemsMap([
+      { id: 'item-a', wowhead_id: 2002 },
+      { id: 'item-zero', wowhead_id: 0 },
+      { id: 'item-null', wowhead_id: null },
+    ])
+    const result = buildGargulHardReserves(
+      [
+        { loot_item_id: 'item-a', reserved_for: 'Officers' },
+        { loot_item_id: 'item-unknown' },
+        { loot_item_id: 'item-zero' },
+        { loot_item_id: 'item-null' },
+      ],
+      items
+    )
+    expect(result).toEqual([{ id: 2002, for: 'Officers', note: '' }])
+  })
+
+  it('maps a missing reserved_for to an empty string', () => {
+    const items = itemsMap([{ id: 'item-a', wowhead_id: 2002 }])
+    const result = buildGargulHardReserves([{ loot_item_id: 'item-a' }], items)
+    expect(result).toEqual([{ id: 2002, for: '', note: '' }])
+  })
+})
+
+describe('buildGargulSoftReserves / buildGargulHardReserves do not mirror faction-variant items (GH #290, PD-04)', () => {
+  it('a submission reserving the Alliance-head uuid gives items [{ id: alliance }] only, for every alias pair', () => {
+    for (const allianceId of Object.values(FACTION_ITEM_ALIASES)) {
+      const items = itemsMap([{ id: 'alliance-item', wowhead_id: allianceId }])
+      const result = buildGargulSoftReserves(
+        [{ character_name: 'Thrall', character_class: 'Shaman', items: ['alliance-item'] }],
+        items
+      )
+      expect(result).toHaveLength(1)
+      expect(result[0].items).toEqual([{ id: allianceId }])
+    }
+  })
+
+  it('a hard reserve on the Alliance-head uuid gives exactly one entry with id alliance, for every alias pair', () => {
+    for (const allianceId of Object.values(FACTION_ITEM_ALIASES)) {
+      const items = itemsMap([{ id: 'alliance-item', wowhead_id: allianceId }])
+      const result = buildGargulHardReserves(
+        [{ loot_item_id: 'alliance-item', reserved_for: 'Officers' }],
+        items
+      )
+      expect(result).toEqual([{ id: allianceId, for: 'Officers', note: '' }])
+    }
+  })
+
+  it('round trip: a payload built from the builders, encoded then decoded, still has exactly one item id per reservation', async () => {
+    for (const allianceId of Object.values(FACTION_ITEM_ALIASES)) {
+      const items = itemsMap([{ id: 'alliance-item', wowhead_id: allianceId }])
+      const softreserves = buildGargulSoftReserves(
+        [{ character_name: 'Thrall', character_class: 'Shaman', items: ['alliance-item'] }],
+        items
+      )
+      const hardreserves = buildGargulHardReserves(
+        [{ loot_item_id: 'alliance-item', reserved_for: 'Officers' }],
+        items
+      )
+      const payload = makePayload({ softreserves, hardreserves })
+      const decoded = await decodeGargulExport(await encodeGargulExport(payload))
+      expect(decoded.softreserves[0].items).toEqual([{ id: allianceId }])
+      expect(decoded.hardreserves).toEqual([{ id: allianceId, for: 'Officers', note: '' }])
     }
   })
 })

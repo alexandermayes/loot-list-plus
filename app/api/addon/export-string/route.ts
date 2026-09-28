@@ -7,6 +7,7 @@ import { trackApiError } from '@/utils/analytics/server'
 import { getAttendanceWindowEnd, resolveOwnedEvents, resolveActiveRaiderModifiers } from '@/domain/scoring'
 import { toDateString } from '@/utils/date'
 import { deflateRawSync } from 'zlib'
+import { withFactionVariants } from '@/domain/loot/faction-item-aliases'
 
 /**
  * GET /api/addon/export-string
@@ -367,8 +368,13 @@ function buildExportPayload(args: BuildPayloadArgs) {
   const { guild, settings, expansion, lootItems, raidNameMap, memberships,
           submissions, priorities, blpData, attendanceByCharacter } = args
 
-  // Build items array
-  const items = lootItems.map(item => ({
+  // Build items array. Mirrored under the other faction's id (GH #290): the
+  // addon keys items and member ranks by exact wowhead_id (see
+  // withFactionVariants' doc comment in faction-item-aliases.ts), so a
+  // Horde-looted quest head needs its own entry alongside the catalog's
+  // Alliance row. stats.items (below) still reports lootItems.length, the
+  // catalog row count, not this mirrored count.
+  const items = withFactionVariants(lootItems.map(item => ({
     id: item.id,
     name: item.name,
     wowhead_id: item.wowhead_id,
@@ -377,7 +383,7 @@ function buildExportPayload(args: BuildPayloadArgs) {
     classification: item.classification,
     slot: item.item_slot,
     item_type: item.item_type,
-  }))
+  })))
 
   // Build submission lookup: characterId -> [{ wowhead_id, rank }]
   const submissionsByCharacter: Record<string, Array<{ wowhead_id: number; rank: number }>> = {}
@@ -390,7 +396,7 @@ function buildExportPayload(args: BuildPayloadArgs) {
         charItems.push({ wowhead_id: lootItem.wowhead_id, rank: item.rank })
       }
     }
-    submissionsByCharacter[sub.character_id] = charItems
+    submissionsByCharacter[sub.character_id] = withFactionVariants(charItems)
   }
 
   // Build members array

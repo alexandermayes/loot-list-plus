@@ -5,6 +5,7 @@ import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
 import { getAttendanceWindowEnd, resolveOwnedEvents, resolveActiveRaiderModifiers } from '@/domain/scoring'
 import { toDateString } from '@/utils/date'
+import { withFactionVariants } from '@/domain/loot/faction-item-aliases'
 
 /**
  * GET /api/addon/guild-data
@@ -68,7 +69,11 @@ export async function GET(request: NextRequest) {
 
     // Fetch items, submissions, BLP, and events in parallel
     const [lootItemsResult, submissionsResult, blpResult, raidEventsResult] = await Promise.all([
-      supabase.from('loot_items').select('id, name, wowhead_id, boss_name, slot, item_type, classification, raid_tier_id')
+      // OD-01 (GH #290): loot_items has no `slot` column (it's `item_slot`,
+      // matching export-string's route). Selecting `slot` made PostgREST
+      // reject this whole query, so `items` was always []. The output key
+      // stays `slot` — the companion's GuildData type reads that name.
+      supabase.from('loot_items').select('id, name, wowhead_id, boss_name, item_slot, item_type, classification, raid_tier_id')
         .in('raid_tier_id', raidTierIds).order('name'),
       supabase.from('loot_submissions').select(`
         id, character_id, phase, status,
@@ -111,17 +116,20 @@ export async function GET(request: NextRequest) {
       raidNameMap[rt.id] = rt.name
     }
 
-    // Build items
-    const items = (lootItemsResult.data || []).map(item => ({
+    // Build items. Mirrored under the other faction's id (GH #290): the
+    // companion and addon key items and member ranks by exact wowhead_id
+    // (see withFactionVariants' doc comment), so a Horde-looted quest head
+    // needs its own entry alongside the catalog's Alliance row.
+    const items = withFactionVariants((lootItemsResult.data || []).map(item => ({
       id: item.id,
       name: item.name,
       wowhead_id: item.wowhead_id,
       boss_name: item.boss_name,
       raid_name: raidNameMap[item.raid_tier_id] || 'Unknown',
       classification: item.classification,
-      slot: item.slot,
+      slot: item.item_slot,
       item_type: item.item_type,
-    }))
+    })))
 
     // Build submission lookup
     const submissionsByChar: Record<string, Array<{ wowhead_id: number; rank: number }>> = {}
@@ -134,7 +142,7 @@ export async function GET(request: NextRequest) {
           charItems.push({ wowhead_id: lootItem.wowhead_id, rank: item.rank })
         }
       }
-      submissionsByChar[sub.character_id] = charItems
+      submissionsByChar[sub.character_id] = withFactionVariants(charItems)
     }
 
     // Build members

@@ -16,10 +16,9 @@ import { Heading, Text, LabelText } from '@/components/ui/typography'
 import ItemLink from '@/app/components/ItemLink'
 import {
   encodeGargulExport,
-  normalizeClassForGargul,
+  buildGargulSoftReserves,
+  buildGargulHardReserves,
   type GargulPayload,
-  type GargulSoftReserve,
-  type GargulHardReserve,
 } from '@/domain/reserve/gargul-export'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
@@ -551,32 +550,8 @@ export default function ReserveRunPage() {
     const toUnixSeconds = (iso?: string | null) =>
       iso ? Math.floor(new Date(iso).getTime() / 1000) : 0
 
-    const softreserves: GargulSoftReserve[] = run.submissions.flatMap((sub) => {
-      const items = sub.items
-        .map((id) => itemMap.get(id)?.wowhead_id)
-        .filter((n): n is number => typeof n === 'number' && n > 0)
-        .map((id) => ({ id }))
-      if (items.length === 0) return []
-      return [{
-        name: sub.character_name,
-        class: normalizeClassForGargul(sub.character_class),
-        note: '',
-        plusOnes: 0,
-        items,
-      }]
-    })
-
-    const hardreserves: GargulHardReserve[] = run.hard_reserves
-      .map((hr) => {
-        const item = itemMap.get(hr.loot_item_id)
-        if (!item?.wowhead_id) return null
-        return {
-          id: item.wowhead_id,
-          for: hr.reserved_for || '',
-          note: '',
-        }
-      })
-      .filter((x): x is GargulHardReserve => x !== null)
+    const softreserves = buildGargulSoftReserves(run.submissions, itemMap)
+    const hardreserves = buildGargulHardReserves(run.hard_reserves, itemMap)
 
     const payload: GargulPayload = {
       metadata: {

@@ -87,3 +87,70 @@ export async function decodeGargulExport(base64: string): Promise<GargulPayload>
   const json = await new Response(stream).text()
   return JSON.parse(json) as GargulPayload
 }
+
+// ─── Payload builders (GH #290) ────────────────────────────────
+//
+// Faction-variant items (Head of Nefarian 19002/19003, Head of Onyxia
+// 18422/18423, see domain/loot/faction-item-aliases.ts) are NEVER mirrored
+// here, unlike the LootList+ addon exports (guild-data, export-string).
+// Gargul's SoftRes:byItemID and SoftRes:playerReservesOnItem both iterate
+// GL:getLinkedItemsForID(itemID, true), which walks Data/ItemLinks.lua and
+// sums or lists the reserves of every linked id together (18422 links
+// 18423, 19002 links 19003). A mirrored reservation would double: the same
+// player's reserve would show as "(2x)" in Gargul's UI and count twice
+// against roll standing. Hard reserves already match through the same
+// linked-id lookup (IDIsHardReserved), so nothing needs mirroring there
+// either. Each builder below emits only the id the guild's data holds.
+//
+// https://github.com/papa-smurf/Gargul/blob/master/Data/ItemLinks.lua
+// https://github.com/papa-smurf/Gargul/blob/master/Utils/Items.lua
+// https://github.com/papa-smurf/Gargul/blob/master/Classes/SoftRes.lua
+
+/**
+ * Builds the Gargul soft-reserve payload from raw submissions. A submission
+ * item id ("id" is the loot_items uuid) resolves through `itemsById` to its
+ * wowhead_id; unresolvable ids and non-positive wowhead ids are dropped. A
+ * submission left with no resolvable items is omitted entirely.
+ */
+export function buildGargulSoftReserves(
+  submissions: ReadonlyArray<{ character_name: string; character_class: string; items: readonly string[] }>,
+  itemsById: ReadonlyMap<string, { wowhead_id: number | null }>
+): GargulSoftReserve[] {
+  const result: GargulSoftReserve[] = []
+  for (const sub of submissions) {
+    const items = sub.items
+      .map(id => itemsById.get(id)?.wowhead_id)
+      .filter((n): n is number => typeof n === 'number' && n > 0)
+      .map(id => ({ id }))
+    if (items.length === 0) continue
+    result.push({
+      name: sub.character_name,
+      class: normalizeClassForGargul(sub.character_class),
+      note: '',
+      plusOnes: 0,
+      items,
+    })
+  }
+  return result
+}
+
+/**
+ * Builds the Gargul hard-reserve payload. Entries whose item is missing or
+ * has a falsy wowhead_id are skipped; a missing `reserved_for` maps to ''.
+ */
+export function buildGargulHardReserves(
+  hardReserves: ReadonlyArray<{ loot_item_id: string; reserved_for?: string | null }>,
+  itemsById: ReadonlyMap<string, { wowhead_id: number | null }>
+): GargulHardReserve[] {
+  const result: GargulHardReserve[] = []
+  for (const hr of hardReserves) {
+    const item = itemsById.get(hr.loot_item_id)
+    if (!item?.wowhead_id) continue
+    result.push({
+      id: item.wowhead_id,
+      for: hr.reserved_for || '',
+      note: '',
+    })
+  }
+  return result
+}
