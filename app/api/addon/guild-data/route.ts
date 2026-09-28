@@ -69,7 +69,11 @@ export async function GET(request: NextRequest) {
 
     // Fetch items, submissions, BLP, and events in parallel
     const [lootItemsResult, submissionsResult, blpResult, raidEventsResult] = await Promise.all([
-      supabase.from('loot_items').select('id, name, wowhead_id, boss_name, slot, item_type, classification, raid_tier_id')
+      // OD-01 (GH #290): loot_items has no `slot` column (it's `item_slot`,
+      // matching export-string's route). Selecting `slot` made PostgREST
+      // reject this whole query, so `items` was always []. The output key
+      // stays `slot` — the companion's GuildData type reads that name.
+      supabase.from('loot_items').select('id, name, wowhead_id, boss_name, item_slot, item_type, classification, raid_tier_id')
         .in('raid_tier_id', raidTierIds).order('name'),
       supabase.from('loot_submissions').select(`
         id, character_id, phase, status,
@@ -123,7 +127,7 @@ export async function GET(request: NextRequest) {
       boss_name: item.boss_name,
       raid_name: raidNameMap[item.raid_tier_id] || 'Unknown',
       classification: item.classification,
-      slot: item.slot,
+      slot: item.item_slot,
       item_type: item.item_type,
     })))
 

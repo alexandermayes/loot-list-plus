@@ -291,9 +291,7 @@ describe('GET /api/addon/guild-data (GH #290, faction-variant mirroring)', () =>
     expect(nefItems.find((i: { id: string }) => i.id === 'li-nef-horde')).toBeDefined()
   })
 
-  // OD-01 fix lands in its own commit — skipped here so commit 1 (the
-  // mirror) is green on its own; flipped to `it` in the OD-01 commit.
-  it.skip('OD-01: selects loot_items.item_slot (not a nonexistent slot column) and maps it to the output slot field', async () => {
+  it('OD-01: selects loot_items.item_slot (not a nonexistent slot column) and maps it to the output slot field', async () => {
     const fixture = baseFixture()
     const { client, calls } = makeClient(fixture)
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
