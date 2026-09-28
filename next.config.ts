@@ -41,8 +41,10 @@ const cspDirectives = [
   // Restrict <base> tag to same origin
   "base-uri 'self'",
 
-  // Restrict form submissions to same origin
-  "form-action 'self'",
+  // The companion guild picker's form POST ends in a 303 to
+  // lootlistplus://auth/callback (GH #300); Chromium applies form-action to
+  // that redirect, so the custom scheme is allowed alongside same-origin.
+  "form-action 'self' lootlistplus:",
 
   // Disallow plugins (Flash, Java applets, etc.)
   "object-src 'none'",

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthenticatedUser } from '@/utils/supabase/server'
+import { authenticateAddonRequest, authorizeAddonGuild } from '@/lib/addon/sync-tokens'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
 import { getAttendanceWindowEnd, resolveOwnedEvents, resolveActiveRaiderModifiers } from '@/domain/scoring'
 import { toDateString } from '@/utils/date'
@@ -16,14 +15,12 @@ import { withFactionVariants } from '@/domain/loot/faction-item-aliases'
  * Query params:
  * - guild_id: Required
  *
- * Auth: Session cookie or sync token (future)
+ * Auth: Session cookie or Bearer sync token scoped to guild_id (GH #300)
  */
 export async function GET(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const auth = await authenticateAddonRequest(request)
+    if (!auth.ok) return auth.response
 
     const guildId = request.nextUrl.searchParams.get('guild_id')
     if (!guildId) {
@@ -32,11 +29,9 @@ export async function GET(request: NextRequest) {
 
     const supabase = createServiceRoleClient()
 
-    // Verify officer permissions
-    const verification = await verifyOfficerPermissions(supabase, user.id, guildId)
-    if (!verification.hasPermission) {
-      return NextResponse.json({ error: 'Officer permissions required' }, { status: 403 })
-    }
+    // Officer check plus sync-token guild scope (GH #300 D-02)
+    const access = await authorizeAddonGuild(supabase, auth.principal, guildId)
+    if (!access.ok) return access.response
 
     // Fetch guild info
     const { data: guild } = await supabase

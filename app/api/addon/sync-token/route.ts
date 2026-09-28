@@ -3,7 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
-import { randomBytes, createHash } from 'crypto'
+import { issueSyncToken } from '@/lib/addon/sync-tokens'
 
 /**
  * POST /api/addon/sync-token
@@ -34,34 +34,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Officer permissions required' }, { status: 403 })
     }
 
-    // Generate token
-    const rawToken = randomBytes(32).toString('hex')
-    const tokenHash = createHash('sha256').update(rawToken).digest('hex')
+    // Generate token (one per guild per user; issueSyncToken's upsert replaces any earlier one)
+    const result = await issueSyncToken(supabase, {
+      userId: user.id,
+      guildId: guild_id,
+      expiresDays: expires_days,
+    })
 
-    const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + (expires_days || 30))
-
-    // Upsert (one token per guild per user)
-    const { error: upsertError } = await supabase
-      .from('addon_sync_tokens')
-      .upsert({
-        guild_id,
-        user_id: user.id,
-        token_hash: tokenHash,
-        expires_at: expiresAt.toISOString(),
-      }, {
-        onConflict: 'guild_id,user_id',
-      })
-
-    if (upsertError) {
-      console.error('Failed to create sync token:', upsertError)
+    if (!result.ok) {
+      console.error('Failed to create sync token:', result.error)
       return NextResponse.json({ error: 'Failed to create token' }, { status: 500 })
     }
 
     return NextResponse.json({
       data: {
-        token: rawToken,
-        expires_at: expiresAt.toISOString(),
+        token: result.token,
+        expires_at: result.expiresAt,
         guild_id,
       }
     })

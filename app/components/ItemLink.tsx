@@ -1,5 +1,13 @@
+'use client'
+
 /**
  * ItemLink Component
+ *
+ * Client component: uses useState/useEffect and consumes ExpansionDataContext,
+ * none of which exist in React's `react-server` build. Every importer today is
+ * already a client component, so the directive changes no behaviour -- it makes
+ * the requirement explicit so a future Server Component importer fails in review
+ * rather than at "Collecting page data" during `next build`.
  *
  * Renders an item name as a Wowhead tooltip link with:
  * - Lazy-loaded icons (190KB icon map loaded on demand)

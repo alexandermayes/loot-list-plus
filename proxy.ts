@@ -126,6 +126,10 @@ function getRateLimitType(pathname: string): 'admin' | 'auth' | 'feedback' | 'ap
   if (pathname.startsWith('/auth') || pathname.includes('/verify-discord')) {
     return 'auth'
   }
+  // GH #300: the companion's PKCE authorize, consent and token endpoints.
+  if (pathname === '/api/addon/auth' || pathname.startsWith('/api/addon/auth/')) {
+    return 'auth'
+  }
   if (pathname.startsWith('/api/feedback')) {
     return 'feedback'
   }
