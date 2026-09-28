@@ -74,11 +74,62 @@ export const TOKEN_CLASS_MAPPING: Record<string, WowClassName[]> = {
   'Desecrated Sandals': ['Priest', 'Mage', 'Warlock'],
 
   // ============================================================================
-  // CLASSIC AQ40 TOKENS (Temple of Ahn'Qiraj)
+  // CLASSIC AQ40 TOKENS (Temple of Ahn'Qiraj) - GH-273
+  // Class lists come from the "Classes:" line each token carries in the
+  // wow-classic-items package, cross-checked against AtlasLootClassic's
+  // per-class reward table. data/__tests__/classic-catalog-completeness.test.ts
+  // re-derives them from the package.
   // ============================================================================
-  // Imperial Qiraji items - various class restrictions
-  'Imperial Qiraji Armaments': ['Warrior', 'Paladin', 'Hunter', 'Rogue'],
-  'Imperial Qiraji Regalia': ['Priest', 'Mage', 'Warlock', 'Druid', 'Shaman'],
+  // Tier 2.5 helm tokens (Twin Emperors)
+  'Vek\'lor\'s Diadem': ['Paladin', 'Hunter', 'Rogue', 'Shaman', 'Druid'],
+  'Vek\'nilash\'s Circlet': ['Warrior', 'Priest', 'Mage', 'Warlock'],
+  // Tier 2.5 leg tokens (Ouro)
+  'Ouro\'s Intact Hide': ['Warrior', 'Rogue', 'Priest', 'Mage'],
+  'Skin of the Great Sandworm': ['Paladin', 'Hunter', 'Shaman', 'Warlock', 'Druid'],
+  // Tier 2.5 chest tokens (C'Thun)
+  'Carapace of the Old God': ['Warrior', 'Paladin', 'Hunter', 'Rogue', 'Shaman'],
+  'Husk of the Old God': ['Priest', 'Mage', 'Warlock', 'Druid'],
+  // Tier 2.5 shoulder and boot tokens (Viscidus, Princess Huhuran)
+  'Qiraji Bindings of Command': ['Warrior', 'Hunter', 'Rogue', 'Priest'],
+  'Qiraji Bindings of Dominance': ['Paladin', 'Shaman', 'Mage', 'Warlock', 'Druid'],
+
+  // Imperial Qiraji Armaments and Regalia carry no class restriction. Each is
+  // turned in at a quest of the same name for one weapon, so eligibility is
+  // every class proficient with at least one reward (per class-proficiencies.ts):
+  // - Armaments: Blessed Qiraji War Axe (1H axe), Pugio (dagger), Bulwark
+  //   (shield), Musket (gun). The dagger alone covers all but Paladin, who
+  //   takes the axe or the shield.
+  // - Regalia: Blessed Qiraji War Hammer (1H mace), Acolyte Staff and Augur
+  //   Staff (staves). The mace covers Paladin and Rogue, the staves the rest.
+  // Both therefore list every Classic class. The earlier lists (Armaments
+  // W/Pa/H/R, Regalia Pr/Ma/Wl/Dr/Sh) hid the Pugio from five classes and the
+  // War Hammer from Paladins and Rogues.
+  'Imperial Qiraji Armaments': ['Warrior', 'Paladin', 'Hunter', 'Rogue', 'Priest', 'Shaman', 'Mage', 'Warlock', 'Druid'],
+  'Imperial Qiraji Regalia': ['Warrior', 'Paladin', 'Hunter', 'Rogue', 'Priest', 'Shaman', 'Mage', 'Warlock', 'Druid'],
+
+  // ============================================================================
+  // CLASSIC ZUL'GURUB TOKENS (Primal Hakkari) - GH-273
+  // Each is a Paragon of Power turned in for a class set piece. Class lists
+  // from the package "Classes:" line, matching AtlasLootClassic.
+  // ============================================================================
+  'Primal Hakkari Bindings': ['Paladin', 'Hunter', 'Mage'],
+  'Primal Hakkari Armsplint': ['Warrior', 'Rogue', 'Shaman'],
+  'Primal Hakkari Stanchion': ['Priest', 'Warlock', 'Druid'],
+  'Primal Hakkari Girdle': ['Warrior', 'Rogue', 'Shaman'],
+  'Primal Hakkari Sash': ['Priest', 'Warlock', 'Druid'],
+  'Primal Hakkari Shawl': ['Paladin', 'Hunter', 'Mage'],
+  'Primal Hakkari Tabard': ['Paladin', 'Shaman', 'Druid'],
+  'Primal Hakkari Kossack': ['Warrior', 'Mage', 'Warlock'],
+  'Primal Hakkari Aegis': ['Hunter', 'Rogue', 'Priest'],
+
+  // ============================================================================
+  // CLASSIC ONYXIA'S LAIR - GH-273
+  // Not a tier token, but a Hunter-only quest item (Rhok'delar). Its catalog
+  // slot is 'Token' so this entry hides it from other classes in the picker
+  // and the seeder gives it a Hunter class row. Class from the package
+  // "Classes: Hunter" tooltip line.
+  // ============================================================================
+  'Mature Black Dragon Sinew': ['Hunter'],
 
   // ============================================================================
   // WOTLK TIER 7 TOKENS (Naxxramas, Obsidian Sanctum, Eye of Eternity)

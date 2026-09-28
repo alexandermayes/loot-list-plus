@@ -1,16 +1,32 @@
 /**
- * COMPLETE Classic WoW Raid Loot Tables
- * Data sourced from Wowhead Classic Database (wowhead.com/classic)
- * Generated: 2026-01-09
+ * Classic WoW Raid Loot Tables
+ * Data sourced from Wowhead Classic Database (wowhead.com/classic), the
+ * wow-classic-items package and AtlasLootClassic.
  *
- * This file contains ALL epic quality items that drop from ALL bosses in Classic WoW raids:
- * - Molten Core (10 bosses) - COMPLETE
- * - Blackwing Lair (8 bosses) - COMPLETE
- * - Onyxia's Lair (1 boss) - COMPLETE
- * - Zul'Gurub (10 bosses) - From existing data
- * - Ruins of Ahn'Qiraj (6 bosses) - From existing data
- * - Temple of Ahn'Qiraj (9 bosses) - From existing data
- * - Naxxramas (15 bosses) - From existing data
+ * app/services/expansionSeeder.ts copies this file into every guild's own
+ * raid_tiers and loot_items when the guild adds Classic, so an item missing
+ * here is missing for every guild seeded afterwards. Adding an item later also
+ * needs a backfill migration for guilds that already exist. Ship it in its own
+ * PR, merged after the app deploy that carries the data change: migrations
+ * apply seconds after merge, the app deploy minutes later, and a guild seeded
+ * in between would miss both. The GH-273 backfill,
+ * supabase/migrations/20260926233000_add_classic_missing_loot.sql, is the model.
+ *
+ * Covers the Epic drops of the seven Classic raids (Molten Core, Blackwing
+ * Lair, Onyxia's Lair, Zul'Gurub, Ruins of Ahn'Qiraj, Temple of Ahn'Qiraj,
+ * Naxxramas), including tier tokens and trash drops, plus the Rare boss drops
+ * of Zul'Gurub and Ruins of Ahn'Qiraj. Besides real encounters, a raid can
+ * have these groups:
+ * - 'Shared Boss Loot': items that drop from several bosses. Each id is listed
+ *   once per raid so backfill migrations can guard on (raid_tier_id, wowhead_id).
+ * - 'Trash': drops from non-boss mobs.
+ * - 'Tier 3 Tokens': the Naxxramas Desecrated tokens.
+ *
+ * Token-slot items need a TOKEN_CLASS_MAPPING entry (data/token-class-mapping.ts)
+ * or they are offered to every class. data/__tests__/classic-catalog-completeness.test.ts
+ * fails if an Epic drop the wow-classic-items package attributes to one of
+ * these raids is missing here without a recorded reason (GH-273), and checks
+ * token class lists against the package.
  */
 
 export interface LootItem {
@@ -182,6 +198,9 @@ export const moltenCore: Raid = {
         { name: 'Lawbringer Spaulders', slot: 'Shoulder', wowhead_id: 16856 },
         // Non-Tier Epic Drops
         { name: 'Seal of the Archmagus', slot: 'Finger', wowhead_id: 17110 },
+        // GH-273: left half of Thunderaan's prison (Thunderfury quest). The
+        // right half, same name, is 18564 under Garr; the two differ by boss.
+        { name: 'Bindings of the Windseeker', slot: 'Quest', wowhead_id: 18563 },
         { name: 'Talisman of Ephemeral Power', slot: 'Trinket', wowhead_id: 18820 },
         { name: 'Quick Strike Ring', slot: 'Finger', wowhead_id: 18821 },
         { name: 'Obsidian Edged Blade', slot: 'Two-Hand', wowhead_id: 18822 },
@@ -261,6 +280,10 @@ export const moltenCore: Raid = {
         { name: 'Wild Growth Spaulders', slot: 'Shoulder', wowhead_id: 18810 },
         { name: 'Fireproof Cloak', slot: 'Back', wowhead_id: 18811 },
         { name: 'Wristguards of True Flight', slot: 'Wrist', wowhead_id: 18812 },
+        // GH-273: also in the Cache of the Firelord
+        { name: 'Fireguard Shoulders', slot: 'Shoulder', wowhead_id: 19139 },
+        { name: 'Gloves of the Hypnotic Flame', slot: 'Hands', wowhead_id: 18808 },
+        { name: 'Cauterizing Band', slot: 'Finger', wowhead_id: 19140 },
       ],
     },
     {
@@ -293,6 +316,30 @@ export const moltenCore: Raid = {
         // Legendary Quest Items
         { name: 'Eye of Sulfuras', slot: 'Quest', wowhead_id: 17204 },
         { name: 'Essence of the Firelord', slot: 'Quest', wowhead_id: 19017 },
+      ],
+    },
+    {
+      name: 'Trash',
+      items: [
+        // GH-273: Tier 1 belts and bracers drop from Molten Core trash, not bosses
+        { name: 'Arcanist Bindings', slot: 'Wrist', wowhead_id: 16799 },
+        { name: 'Arcanist Belt', slot: 'Waist', wowhead_id: 16802 },
+        { name: 'Felheart Bracers', slot: 'Wrist', wowhead_id: 16804 },
+        { name: 'Felheart Belt', slot: 'Waist', wowhead_id: 16806 },
+        { name: 'Girdle of Prophecy', slot: 'Waist', wowhead_id: 16817 },
+        { name: 'Vambraces of Prophecy', slot: 'Wrist', wowhead_id: 16819 },
+        { name: 'Nightslayer Bracelets', slot: 'Wrist', wowhead_id: 16825 },
+        { name: 'Nightslayer Belt', slot: 'Waist', wowhead_id: 16827 },
+        { name: 'Cenarion Belt', slot: 'Waist', wowhead_id: 16828 },
+        { name: 'Cenarion Bracers', slot: 'Wrist', wowhead_id: 16830 },
+        { name: 'Earthfury Belt', slot: 'Waist', wowhead_id: 16838 },
+        { name: 'Earthfury Bracers', slot: 'Wrist', wowhead_id: 16840 },
+        { name: "Giantstalker's Bracers", slot: 'Wrist', wowhead_id: 16850 },
+        { name: "Giantstalker's Belt", slot: 'Waist', wowhead_id: 16851 },
+        { name: 'Lawbringer Bracers', slot: 'Wrist', wowhead_id: 16857 },
+        { name: 'Lawbringer Belt', slot: 'Waist', wowhead_id: 16858 },
+        { name: 'Bracers of Might', slot: 'Wrist', wowhead_id: 16861 },
+        { name: 'Belt of Might', slot: 'Waist', wowhead_id: 16864 },
       ],
     },
   ],
@@ -519,6 +566,21 @@ export const blackwingLair: Raid = {
         { name: 'Head of Nefarian', slot: 'Quest', wowhead_id: 19003 },
       ],
     },
+    {
+      name: 'Trash',
+      items: [
+        // GH-273: Blackwing Lair trash epics
+        { name: 'Boots of Pure Thought', slot: 'Feet', wowhead_id: 19437 },
+        { name: 'Cloak of Draconic Might', slot: 'Back', wowhead_id: 19436 },
+        { name: 'Band of Dark Dominion', slot: 'Finger', wowhead_id: 19434 },
+        { name: 'Essence Gatherer', slot: 'Wand', wowhead_id: 19435 },
+        { name: "Doom's Edge", slot: 'Weapon', wowhead_id: 19362 },
+        { name: 'Draconic Maul', slot: 'Two-Hand', wowhead_id: 19358 },
+        { name: 'Draconic Avenger', slot: 'Two-Hand', wowhead_id: 19354 },
+        { name: "Ringo's Blizzard Boots", slot: 'Feet', wowhead_id: 19438 },
+        { name: 'Interlaced Shadow Jerkin', slot: 'Chest', wowhead_id: 19439 },
+      ],
+    },
   ],
 }
 
@@ -552,8 +614,12 @@ export const onyxiasLair: Raid = {
         { name: 'Sapphiron Drape', slot: 'Back', wowhead_id: 17078 },
         { name: "Eskhandar's Collar", slot: 'Neck', wowhead_id: 18205 },
         { name: 'Ring of Binding', slot: 'Finger', wowhead_id: 18813 },
-        // Quest Item
+        // Quest Items
         { name: 'Head of Onyxia', slot: 'Quest', wowhead_id: 18423 },
+        // GH-273: Hunter-only quest item for Rhok'delar. Slot 'Token' so the
+        // TOKEN_CLASS_MAPPING entry limits it to Hunters in the picker and
+        // the seeder gives it a Hunter class row.
+        { name: 'Mature Black Dragon Sinew', slot: 'Token', wowhead_id: 18705 },
       ],
     },
   ],
@@ -708,6 +774,25 @@ export const zulGurub: Raid = {
         { name: 'Heart of Hakkar', slot: 'Quest', wowhead_id: 19802 },
       ],
     },
+    {
+      name: 'Shared Boss Loot',
+      items: [
+        // GH-273: Primal Hakkari tokens drop from the five High Priests,
+        // Bloodlord Mandokir and Jin'do. Class restrictions live in
+        // data/token-class-mapping.ts.
+        { name: 'Primal Hakkari Bindings', slot: 'Token', wowhead_id: 19716 },
+        { name: 'Primal Hakkari Armsplint', slot: 'Token', wowhead_id: 19717 },
+        { name: 'Primal Hakkari Stanchion', slot: 'Token', wowhead_id: 19718 },
+        { name: 'Primal Hakkari Girdle', slot: 'Token', wowhead_id: 19719 },
+        { name: 'Primal Hakkari Sash', slot: 'Token', wowhead_id: 19720 },
+        { name: 'Primal Hakkari Shawl', slot: 'Token', wowhead_id: 19721 },
+        { name: 'Primal Hakkari Tabard', slot: 'Token', wowhead_id: 19722 },
+        { name: 'Primal Hakkari Kossack', slot: 'Token', wowhead_id: 19723 },
+        { name: 'Primal Hakkari Aegis', slot: 'Token', wowhead_id: 19724 },
+        // Drops from the five High Priests
+        { name: 'Seal of the Gurubashi Berserker', slot: 'Finger', wowhead_id: 22722 },
+      ],
+    },
   ],
 }
 
@@ -800,6 +885,15 @@ export const ruinsOfAhnQiraj: Raid = {
         { name: 'Head of Ossirian the Unscarred', slot: 'Quest', wowhead_id: 21220 },
       ],
     },
+    {
+      name: 'Shared Boss Loot',
+      items: [
+        // GH-273: drop from Buru, Ayamiss, Moam and Ossirian; turned in for
+        // weapon quest rewards
+        { name: 'Qiraji Spiked Hilt', slot: 'Quest', wowhead_id: 20886 },
+        { name: 'Qiraji Ornate Hilt', slot: 'Quest', wowhead_id: 20890 },
+      ],
+    },
   ],
 }
 
@@ -822,6 +916,7 @@ export const templeOfAhnQiraj: Raid = {
         { name: 'Barrage Shoulders', slot: 'Shoulder', wowhead_id: 21699 },
         { name: 'Boots of the Redeemed Prophecy', slot: 'Feet', wowhead_id: 21704 },
         { name: 'Boots of the Unwavering Will', slot: 'Feet', wowhead_id: 21706 },
+        { name: 'Boots of the Fallen Prophet', slot: 'Feet', wowhead_id: 21705 },
       ],
     },
     {
@@ -843,6 +938,9 @@ export const templeOfAhnQiraj: Raid = {
         { name: "Angelista's Charm", slot: 'Neck', wowhead_id: 21690 },
         { name: 'Ooze-Ridden Gauntlets', slot: 'Hands', wowhead_id: 21691 },
         { name: 'Boots of the Fallen Hero', slot: 'Feet', wowhead_id: 21688 },
+        { name: 'Guise of the Devourer', slot: 'Head', wowhead_id: 21693 },
+        { name: 'Bile-Covered Gauntlets', slot: 'Hands', wowhead_id: 21682 },
+        { name: "Mantle of the Desert's Fury", slot: 'Shoulder', wowhead_id: 21684 },
       ],
     },
     {
@@ -860,6 +958,7 @@ export const templeOfAhnQiraj: Raid = {
         { name: 'Necklace of Purity', slot: 'Neck', wowhead_id: 21678 },
         { name: 'Gauntlets of Steadfast Determination', slot: 'Hands', wowhead_id: 21674 },
         { name: 'Legplates of Blazing Light', slot: 'Legs', wowhead_id: 21667 },
+        { name: 'Thick Qirajihide Belt', slot: 'Waist', wowhead_id: 21675 },
       ],
     },
     {
@@ -900,6 +999,7 @@ export const templeOfAhnQiraj: Raid = {
         { name: 'Wasphide Gauntlets', slot: 'Hands', wowhead_id: 21617 },
         { name: 'Hive Defiler Wristguards', slot: 'Wrist', wowhead_id: 21618 },
         { name: 'Cloak of the Golden Hive', slot: 'Back', wowhead_id: 21621 },
+        { name: 'Ring of the Martyr', slot: 'Finger', wowhead_id: 21620 },
       ],
     },
     {
@@ -918,6 +1018,9 @@ export const templeOfAhnQiraj: Raid = {
         { name: 'Grasp of the Fallen Emperor', slot: 'Waist', wowhead_id: 21607 },
         { name: "Amulet of Vek'nilash", slot: 'Neck', wowhead_id: 21608 },
         { name: "Regenerating Belt of Vek'nilash", slot: 'Waist', wowhead_id: 21609 },
+        // Tier 2.5 helm tokens
+        { name: "Vek'lor's Diadem", slot: 'Token', wowhead_id: 20930 },
+        { name: "Vek'nilash's Circlet", slot: 'Token', wowhead_id: 20926 },
       ],
     },
     {
@@ -929,6 +1032,9 @@ export const templeOfAhnQiraj: Raid = {
         { name: "Don Rigoberto's Lost Hat", slot: 'Head', wowhead_id: 21615 },
         { name: "The Burrower's Shell", slot: 'Trinket', wowhead_id: 23558 },
         { name: 'Jom Gabbar', slot: 'Trinket', wowhead_id: 23570 },
+        // Tier 2.5 leg tokens
+        { name: "Ouro's Intact Hide", slot: 'Token', wowhead_id: 20927 },
+        { name: 'Skin of the Great Sandworm', slot: 'Token', wowhead_id: 20931 },
       ],
     },
     {
@@ -948,6 +1054,34 @@ export const templeOfAhnQiraj: Raid = {
         { name: "Mark of C'Thun", slot: 'Neck', wowhead_id: 22732 },
         { name: "Vanquished Tentacle of C'Thun", slot: 'Trinket', wowhead_id: 21579 },
         { name: "Eye of C'Thun", slot: 'Quest', wowhead_id: 21221 },
+        // Tier 2.5 chest tokens
+        { name: 'Carapace of the Old God', slot: 'Token', wowhead_id: 20929 },
+        { name: 'Husk of the Old God', slot: 'Token', wowhead_id: 20933 },
+      ],
+    },
+    {
+      name: 'Shared Boss Loot',
+      items: [
+        // GH-273: Tier 2.5 shoulder and boot tokens drop from Viscidus and
+        // Princess Huhuran
+        { name: 'Qiraji Bindings of Command', slot: 'Token', wowhead_id: 20928 },
+        { name: 'Qiraji Bindings of Dominance', slot: 'Token', wowhead_id: 20932 },
+        // Drop from every boss except C'Thun; turned in for a weapon or shield
+        { name: 'Imperial Qiraji Armaments', slot: 'Token', wowhead_id: 21232 },
+        { name: 'Imperial Qiraji Regalia', slot: 'Token', wowhead_id: 21237 },
+      ],
+    },
+    {
+      name: 'Trash',
+      items: [
+        // GH-273: Temple of Ahn'Qiraj trash epics
+        { name: 'Garb of Royal Ascension', slot: 'Chest', wowhead_id: 21838 },
+        { name: 'Gloves of the Immortal', slot: 'Hands', wowhead_id: 21888 },
+        { name: 'Gloves of the Redeemed Prophecy', slot: 'Hands', wowhead_id: 21889 },
+        { name: 'Neretzek, The Blood Drinker', slot: 'Two-Hand', wowhead_id: 21856 },
+        { name: 'Anubisath Warhammer', slot: 'Weapon', wowhead_id: 21837 },
+        { name: "Ritssyn's Ring of Chaos", slot: 'Finger', wowhead_id: 21836 },
+        { name: 'Shard of the Fallen Star', slot: 'Trinket', wowhead_id: 21891 },
       ],
     },
   ],
