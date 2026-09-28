@@ -17,6 +17,7 @@ import ReserveItemPicker from '@/app/components/ReserveItemPicker'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { getExpansionVisuals } from '@/utils/expansionVisuals'
 import { getRaidIcon } from '@/utils/raidIcons'
+import { getGuildGame, FOREVER_EXPANSION_NAME } from '@/domain/expansion/game'
 
 const EXPANSIONS_WITH_DATA = [
   'Classic',
@@ -100,6 +101,8 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
   const [lockTimeManual, setLockTimeManual] = useState(false)
 
   const isGuildMode = !!activeGuild
+  const isForeverGuild = getGuildGame(activeGuild) === 'forever'
+  const effectiveExpansion = isForeverGuild ? FOREVER_EXPANSION_NAME : selectedExpansion
 
   // Reset form whenever the modal closes
   useEffect(() => {
@@ -125,9 +128,10 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
     }
   }, [open])
 
-  // Load raid tiers when expansion changes
+  // Load raid tiers when the effective expansion changes (or the modal opens,
+  // for a Forever guild whose effective expansion never changes across opens)
   useEffect(() => {
-    if (!selectedExpansion) {
+    if (!open || !effectiveExpansion) {
       setRaidTiers([])
       setSelectedTierId('')
       return
@@ -154,7 +158,7 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
         return
       }
 
-      const res = await fetch(`/api/reserve-runs/raid-tiers?expansion=${encodeURIComponent(selectedExpansion)}`)
+      const res = await fetch(`/api/reserve-runs/raid-tiers?expansion=${encodeURIComponent(effectiveExpansion)}`)
       const data = await res.json()
       if (data.success) {
         setRaidTiers(data.tiers || [])
@@ -164,7 +168,7 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
       setLoadingTiers(false)
     }
     load()
-  }, [selectedExpansion])
+  }, [effectiveExpansion, open])
 
   // Load items when tier changes
   useEffect(() => {
@@ -273,7 +277,7 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
         <ModalTitle>Create reserve run</ModalTitle>
         <ModalDescription>
           {step === 1
-            ? 'Pick an expansion and raid to get started'
+            ? (isForeverGuild ? 'Pick a raid to get started' : 'Pick an expansion and raid to get started')
             : 'Review the defaults and tweak anything you need'}
         </ModalDescription>
       </ModalHeader>
@@ -303,41 +307,43 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
         {step === 1 && (
           <div className="space-y-6">
             {/* Expansion selector */}
-            <div className="space-y-3">
-              <Label>Expansion</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {EXPANSIONS_WITH_DATA.map(exp => {
-                  const visuals = getExpansionVisuals(exp)
-                  const isSelected = selectedExpansion === exp
-                  return (
-                    <button
-                      key={exp}
-                      type="button"
-                      onClick={() => setSelectedExpansion(exp)}
-                      className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                        isSelected
-                          ? 'border-accent bg-accent/10'
-                          : 'border-border bg-background-elevated hover:border-border-strong hover:bg-muted'
-                      }`}
-                    >
-                      {visuals && (
-                        <img
-                          src={visuals.logoUrl}
-                          alt=""
-                          className="w-8 h-8 rounded-lg border border-border/50 flex-shrink-0"
-                        />
-                      )}
-                      <span className={`text-[13px] font-medium leading-tight ${isSelected ? 'text-accent' : 'text-foreground'}`}>
-                        {visuals?.shortName || exp}
-                      </span>
-                    </button>
-                  )
-                })}
+            {!isForeverGuild && (
+              <div className="space-y-3">
+                <Label>Expansion</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {EXPANSIONS_WITH_DATA.map(exp => {
+                    const visuals = getExpansionVisuals(exp)
+                    const isSelected = selectedExpansion === exp
+                    return (
+                      <button
+                        key={exp}
+                        type="button"
+                        onClick={() => setSelectedExpansion(exp)}
+                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                          isSelected
+                            ? 'border-accent bg-accent/10'
+                            : 'border-border bg-background-elevated hover:border-border-strong hover:bg-muted'
+                        }`}
+                      >
+                        {visuals && (
+                          <img
+                            src={visuals.logoUrl}
+                            alt=""
+                            className="w-8 h-8 rounded-lg border border-border/50 flex-shrink-0"
+                          />
+                        )}
+                        <span className={`text-[13px] font-medium leading-tight ${isSelected ? 'text-accent' : 'text-foreground'}`}>
+                          {visuals?.shortName || exp}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Raid tier selector */}
-            {selectedExpansion && (
+            {effectiveExpansion && (
               <div className="space-y-2">
                 <Label>Raid</Label>
                 {loadingTiers ? (
@@ -347,7 +353,7 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
                     ))}
                   </div>
                 ) : raidTiers.length === 0 ? (
-                  <Text color="muted" size="sm">No raid data available for this expansion yet.</Text>
+                  <Text color="muted" size="sm">{isForeverGuild ? 'WoW Forever has no raids open yet.' : 'No raid data available for this expansion yet.'}</Text>
                 ) : (
                   <div className="space-y-1.5">
                     {raidTiers.map(tier => {

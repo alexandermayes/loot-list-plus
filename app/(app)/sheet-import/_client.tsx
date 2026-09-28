@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeletons'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { getGuildGame, getExpansionGame, GAME_VERSION_LABELS } from '@/domain/expansion/game'
 
 type Step = 'upload' | 'preview' | 'result'
 
@@ -44,6 +45,10 @@ export default function SheetImportPage() {
   const router = useRouter()
   const { activeGuild, guildExpansions, currentExpansion, loading: guildLoading, hasPermission } = useGuildContext()
   const { showNotification } = useNotification()
+  const isForeverGuild = getGuildGame(activeGuild) === 'forever'
+  const expansionOptions = isForeverGuild
+    ? guildExpansions.filter(exp => getExpansionGame(exp.expansion_name) === 'forever')
+    : guildExpansions
 
   const [step, setStep] = useState<Step>('upload')
   const [loading, setLoading] = useState(false)
@@ -254,16 +259,16 @@ export default function SheetImportPage() {
 
               {importItems && (
                 <div>
-                  <Label className="mb-2">Expansion</Label>
+                  <Label className="mb-2">{isForeverGuild ? 'Game version' : 'Expansion'}</Label>
                   <Select
                     variant="rounded"
                     size="sm"
                     value={selectedExpansionId}
                     onChange={(e) => setSelectedExpansionId(e.target.value)}
                   >
-                    {guildExpansions.map(exp => (
+                    {expansionOptions.map(exp => (
                       <option key={exp.expansion_id} value={exp.expansion_id}>
-                        {exp.expansion_name}
+                        {isForeverGuild ? GAME_VERSION_LABELS.forever : exp.expansion_name}
                       </option>
                     ))}
                   </Select>
