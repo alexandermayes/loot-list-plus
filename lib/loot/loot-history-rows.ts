@@ -104,3 +104,38 @@ export function buildBulkAwardRow(input: BuildBulkAwardRowInput): LootHistoryIns
   if (characterName) row.character_name = characterName
   return row
 }
+
+export interface BuildImportStringAwardRowInput {
+  guildId: string
+  item: LootItemScope
+  characterId: string | null
+  characterName: string
+  awardedAt?: string | null
+  manual?: boolean
+  awardedBy: string
+  today: string
+}
+
+/**
+ * Builds the loot_history insert payload for POST /api/addon/import-string
+ * (GH #294 D-01/D-02). `item` is whichever guild-owned scope the route
+ * resolved the award to — the supplied lootItemId when the guild owns it
+ * directly, the wowheadId-resolved item when it falls back (OD-2), or the
+ * wowheadId-only resolution when no lootItemId was supplied at all. A
+ * lootItemId the guild does not own is never passed in here.
+ */
+export function buildImportStringAwardRow(input: BuildImportStringAwardRowInput): LootHistoryInsert {
+  const { guildId, item, characterId, characterName, awardedAt, manual, awardedBy, today } = input
+  return {
+    guild_id: guildId,
+    character_id: characterId,
+    character_name: characterName,
+    loot_item_id: item.id,
+    raid_tier_id: item.raid_tier_id,
+    expansion_id: item.expansion_id,
+    awarded_date: awardedAt ? awardedAt.split('T')[0] : today,
+    awarded_by: awardedBy,
+    source: 'addon',
+    notes: manual ? 'Manual award from addon' : null,
+  }
+}

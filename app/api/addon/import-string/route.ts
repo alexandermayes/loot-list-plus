@@ -6,7 +6,8 @@ import { trackApiError, trackEvent } from '@/utils/analytics/server'
 import { notifyLootAward, type LootAward } from '@/lib/discord-loot-announcements'
 import { recomputeBlpForEvents } from '@/utils/blp/recompute'
 import { importAttendanceByTeam } from '@/utils/raid-events/team-routing'
-import { resolveGuildLootItem } from '@/lib/loot/guild-scoped-lookup'
+import { resolveGuildLootItem, resolveGuildLootItemIds, formatInvalidLootItemIdsError } from '@/lib/loot/guild-scoped-lookup'
+import { buildImportStringAwardRow, type LootItemScope } from '@/lib/loot/loot-history-rows'
 import { inflateRawSync } from 'zlib'
 
 interface AddonAward {
@@ -45,6 +46,16 @@ interface ImportPayload {
  *
  * Processes an export string from the WoW addon.
  * Decodes awards and attendance records, validates, and stores them.
+ *
+ * Every award's supplied lootItemId is checked against the calling guild
+ * before anything is processed (GH #294 D-02). When a supplied lootItemId
+ * does not resolve within the guild, the award falls back to its wowheadId
+ * through the same alias-aware guild-scoped lookup addon awards already use
+ * (GH #277) — a foreign id is never written, but it does not have to sink
+ * the whole import if the addon's own wowheadId still resolves (OD-2). Only
+ * when both fail is the import rejected with 400, before any award or
+ * attendance record is processed. Rows carry raid_tier_id and expansion_id
+ * from whichever guild-owned scope the award resolved to.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -98,6 +109,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Officer permissions required' }, { status: 403 })
     }
 
+    // Pre-check every supplied lootItemId against the guild before anything
+    // is processed (GH #294 D-02/D-03, OD-2). A lootItemId the guild does
+    // not own falls back to the award's wowheadId through the same
+    // alias-aware guild-scoped lookup the wowheadId-only path already uses;
+    // only ids that fail BOTH are rejected, and any such id sinks the whole
+    // import (nothing processed) rather than a partial write.
+    const awards = payload.awards || []
+    const awardScopes = await resolveImportAwardScopes(supabase, payload.guildId, awards)
+    if (awardScopes.invalidLootItemIds.length > 0) {
+      return NextResponse.json(
+        {
+          error: formatInvalidLootItemIdsError(awardScopes.invalidLootItemIds),
+          invalid_loot_item_ids: awardScopes.invalidLootItemIds,
+        },
+        { status: 400 }
+      )
+    }
+
     const results = {
       awards: { processed: 0, errors: 0 },
       attendance: { processed: 0, errors: 0 },
@@ -105,9 +134,10 @@ export async function POST(request: NextRequest) {
     const announceQueue: LootAward[] = []
 
     // Process awards
-    for (const award of payload.awards || []) {
+    for (let i = 0; i < awards.length; i++) {
+      const award = awards[i]
       try {
-        const announceEntry = await processAward(supabase, payload.guildId, user.id, award)
+        const announceEntry = await processAward(supabase, payload.guildId, user.id, award, awardScopes.scopeByIndex.get(i) ?? null)
         results.awards.processed++
         if (announceEntry) announceQueue.push(announceEntry)
       } catch (err) {
@@ -156,21 +186,94 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/** Result of the guild-scope pre-check across every award in an import (GH #294 D-02). */
+interface ImportAwardScopes {
+  /** award index (in payload.awards) -> guild-owned scope, for every award
+   * that supplied a lootItemId (whether the guild owned it directly, or it
+   * needed the wowheadId fallback per OD-2). Awards with no lootItemId at
+   * all have no entry here and are resolved in processAward as before. */
+  scopeByIndex: Map<number, LootItemScope>
+  /** Every supplied lootItemId (well-formed or not) that could not be
+   * resolved directly OR via its award's wowheadId fallback. Non-empty
+   * means the whole import is rejected with 400 before anything is
+   * processed. */
+  invalidLootItemIds: string[]
+}
+
+/**
+ * Pre-checks every award's supplied lootItemId against the guild in one
+ * batched pass (GH #294 D-02). A lootItemId the guild does not own directly
+ * falls back to the award's own wowheadId through the same alias-aware
+ * guild-scoped lookup the wowheadId-only path uses (OD-2) — a foreign id is
+ * never written, but a working wowheadId still lets the award through.
+ * Awards with no lootItemId at all are left for processAward's existing
+ * wowheadId resolution and never appear in either map here.
+ */
+async function resolveImportAwardScopes(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  guildId: string,
+  awards: AddonAward[]
+): Promise<ImportAwardScopes> {
+  const invalidLootItemIds: string[] = []
+  const scopeByIndex = new Map<number, LootItemScope>()
+
+  const suppliedIdAwards: Array<{ index: number; lootItemId: string; wowheadId: number }> = []
+  awards.forEach((award, index) => {
+    if (award.lootItemId === undefined || award.lootItemId === null) return
+    if (typeof award.lootItemId !== 'string' || award.lootItemId.length === 0) {
+      invalidLootItemIds.push(String(award.lootItemId))
+      return
+    }
+    suppliedIdAwards.push({ index, lootItemId: award.lootItemId, wowheadId: award.wowheadId })
+  })
+
+  if (suppliedIdAwards.length === 0) {
+    return { scopeByIndex, invalidLootItemIds }
+  }
+
+  const idResolution = await resolveGuildLootItemIds(supabase, guildId, suppliedIdAwards.map(a => a.lootItemId))
+
+  for (const { index, lootItemId, wowheadId } of suppliedIdAwards) {
+    const owned = idResolution.resolved.get(lootItemId)
+    if (owned) {
+      scopeByIndex.set(index, owned)
+      continue
+    }
+
+    // Not owned directly — fall back to the wowheadId, alias-aware (OD-2).
+    const fallback = wowheadId ? await resolveGuildLootItem(supabase, guildId, wowheadId) : null
+    if (fallback) {
+      scopeByIndex.set(index, fallback)
+    } else {
+      invalidLootItemIds.push(lootItemId)
+    }
+  }
+
+  return { scopeByIndex, invalidLootItemIds }
+}
+
 async function processAward(
   supabase: ReturnType<typeof createServiceRoleClient>,
   guildId: string,
   userId: string,
-  award: AddonAward
+  award: AddonAward,
+  preResolvedScope: LootItemScope | null
 ): Promise<LootAward | null> {
-  // Resolve wowhead_id to a loot_item_id owned by this guild, trying the
-  // exact id first and its faction alias second (GH #277 D-03, SCOPE-01).
-  let lootItemId = award.lootItemId
-  if (!lootItemId && award.wowheadId) {
-    const item = await resolveGuildLootItem(supabase, guildId, award.wowheadId)
-    lootItemId = item?.id
+  // Resolution order (GH #294 D-01/D-02, OD-2):
+  //  1. preResolvedScope — set by resolveImportAwardScopes whenever the
+  //     award supplied a lootItemId, whether the guild owned it directly or
+  //     it needed the wowheadId fallback. A foreign lootItemId can never
+  //     reach here unmapped: resolveImportAwardScopes already rejected the
+  //     whole import with 400 if it could not resolve one.
+  //  2. resolveGuildLootItem by wowheadId, trying the exact id first and
+  //     its faction alias second (GH #277 D-03, SCOPE-01) — the path used
+  //     when no lootItemId was supplied at all.
+  let item: LootItemScope | null = preResolvedScope
+  if (!item && award.wowheadId) {
+    item = await resolveGuildLootItem(supabase, guildId, award.wowheadId)
   }
 
-  if (!lootItemId) {
+  if (!item) {
     throw new Error(`Could not resolve item for wowhead_id ${award.wowheadId}`)
   }
 
@@ -194,21 +297,22 @@ async function processAward(
     }
   }
 
-  // Insert into loot_history
-  const { error } = await supabase.from('loot_history').insert({
-    guild_id: guildId,
-    character_id: characterId,
-    character_name: award.characterName,
-    loot_item_id: lootItemId,
-    awarded_date: award.awardedAt ? award.awardedAt.split('T')[0] : new Date().toISOString().split('T')[0],
-    awarded_by: userId,
-    source: 'addon',
-    notes: award.manual ? 'Manual award from addon' : null,
-  })
+  const today = new Date().toISOString().split('T')[0]
+  const { error } = await supabase.from('loot_history').insert(
+    buildImportStringAwardRow({
+      guildId,
+      item,
+      characterId,
+      characterName: award.characterName,
+      awardedAt: award.awardedAt,
+      manual: award.manual,
+      awardedBy: userId,
+      today,
+    })
+  )
 
   if (error) throw error
-  if (!lootItemId) return null // TS narrowing — should be unreachable since insert succeeded
-  return { itemId: lootItemId, characterName: award.characterName }
+  return { itemId: item.id, characterName: award.characterName }
 }
 
 async function processAttendance(

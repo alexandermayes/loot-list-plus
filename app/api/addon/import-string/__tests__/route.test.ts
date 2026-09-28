@@ -22,6 +22,10 @@ vi.mock('next/server', async (importOriginal) => ({
 
 const GUILD_ID = 'g1'
 const OTHER_GUILD_ID = 'g2'
+// UUID-shaped ids for the OD-2 loot_item_id guild-scope checks below —
+// resolveGuildLootItemIds only queries loot_items for well-formed UUIDs.
+const ITEM_ID = 'aaaaaaaa-0000-0000-0000-000000000001'
+const FOREIGN_ITEM_ID = 'bbbbbbbb-0000-0000-0000-000000000002'
 
 type ExpansionRow = { id: string; guild_id: string }
 type TierRow = { id: string; expansion_id: string }
@@ -77,8 +81,20 @@ function makeClient(fixture: Fixture) {
               return Promise.resolve({ data: null, error: { message: 'loot_items boom' } }).then(resolve)
             }
             const tierIdsFilter = (call.filters.find(([col]) => col === 'raid_tier_id')?.[1] ?? []) as string[]
-            const wowheadFilter = call.filters.find(([col]) => col === 'wowhead_id')?.[1]
-            const rows = fixture.items.filter(item => tierIdsFilter.includes(item.raid_tier_id) && item.wowhead_id === wowheadFilter)
+            const wowheadFilter = call.filters.find(([col]) => col === 'wowhead_id')
+            const idFilter = call.filters.find(([col]) => col === 'id')
+            const rows = fixture.items.filter(item => {
+              if (!tierIdsFilter.includes(item.raid_tier_id)) return false
+              if (wowheadFilter) {
+                const [, val] = wowheadFilter
+                if (item.wowhead_id !== val) return false
+              }
+              if (idFilter) {
+                const [, val] = idFilter as [string, string[]]
+                if (!val.includes(item.id)) return false
+              }
+              return true
+            })
             return Promise.resolve({ data: rows.map(r => ({ ...r, name: 'item' })), error: null }).then(resolve)
           }
           if (table === 'loot_history') {
@@ -127,7 +143,7 @@ describe('POST /api/addon/import-string', () => {
     vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
   })
 
-  it('resolves a Horde-id award to the guild catalog Alliance row', async () => {
+  it('GH #294: the wowheadId-only path (missing lootItemId) carries raid_tier_id and expansion_id, resolving the Horde id to the guild catalog Alliance row', async () => {
     const { client, calls } = makeClient(singleItemFixture({ id: 'item-19003', wowhead_id: 19003 }))
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
 
@@ -139,25 +155,107 @@ describe('POST /api/addon/import-string', () => {
     expect(body.data.awards).toEqual({ processed: 1, errors: 0 })
 
     const insert = lootHistoryInserts(calls)[0]
-    expect((insert?.insertPayload as { loot_item_id: string }).loot_item_id).toBe('item-19003')
+    const insertPayload = insert?.insertPayload as { loot_item_id: string; raid_tier_id: string; expansion_id: string }
+    expect(insertPayload.loot_item_id).toBe('item-19003')
+    expect(insertPayload.raid_tier_id).toBe('tier-1')
+    expect(insertPayload.expansion_id).toBe('exp-1')
 
     const wowheadFilters = lootItemsLookups(calls).map(c => c.filters.find(([col]) => col === 'wowhead_id')?.[1])
     expect(wowheadFilters).toEqual([19002, 19003])
   })
 
-  it('makes no loot_items lookup when the award already carries lootItemId', async () => {
-    const { client, calls } = makeClient({ expansions: [], tiers: [], items: [] })
+  it('OD-2: a supplied lootItemId the guild owns directly is checked (loot_items filtered by id and the guild tier ids) and its payload carries the server tier and expansion', async () => {
+    const { client, calls } = makeClient(singleItemFixture({ id: ITEM_ID, wowhead_id: 19003 }))
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
 
-    const payload = { guildId: GUILD_ID, exportedAt: '2026-09-20T00:00:00Z', awards: [{ wowheadId: 19002, lootItemId: 'item-manual', characterName: 'Thrall', awardedAt: '2026-09-20T20:00:00Z' }], attendance: [] }
+    const payload = { guildId: GUILD_ID, exportedAt: '2026-09-20T00:00:00Z', awards: [{ wowheadId: 19003, lootItemId: ITEM_ID, characterName: 'Thrall', awardedAt: '2026-09-20T20:00:00Z' }], attendance: [] }
     const res = await POST(request({ importString: importString(payload) }))
     const body = await res.json()
 
     expect(res.status).toBe(200)
     expect(body.data.awards).toEqual({ processed: 1, errors: 0 })
-    expect(lootItemsLookups(calls)).toHaveLength(0)
+
+    const idLookup = lootItemsLookups(calls).find(c => c.filters.some(([col]) => col === 'id'))
+    expect(idLookup?.filters.find(([col]) => col === 'id')?.[1]).toEqual([ITEM_ID])
+    expect(idLookup?.filters.find(([col]) => col === 'raid_tier_id')?.[1]).toEqual(['tier-1'])
+
     const insert = lootHistoryInserts(calls)[0]
-    expect((insert?.insertPayload as { loot_item_id: string }).loot_item_id).toBe('item-manual')
+    const insertPayload = insert?.insertPayload as { loot_item_id: string; raid_tier_id: string; expansion_id: string }
+    expect(insertPayload.loot_item_id).toBe(ITEM_ID)
+    expect(insertPayload.raid_tier_id).toBe('tier-1')
+    expect(insertPayload.expansion_id).toBe('exp-1')
+  })
+
+  it('OD-2: a lootItemId not owned by the guild falls back to the wowheadId and the resolved item (not the foreign id) is written', async () => {
+    const { client, calls } = makeClient(singleItemFixture({ id: ITEM_ID, wowhead_id: 19003 }))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    // FOREIGN_ITEM_ID is well-formed but not owned by GUILD_ID — the guild
+    // has no loot_items row with that id — so it falls back to wowheadId 19003.
+    const payload = {
+      guildId: GUILD_ID,
+      exportedAt: '2026-09-20T00:00:00Z',
+      awards: [{ wowheadId: 19003, lootItemId: FOREIGN_ITEM_ID, characterName: 'Thrall', awardedAt: '2026-09-20T20:00:00Z' }],
+      attendance: [],
+    }
+    const res = await POST(request({ importString: importString(payload) }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.data.awards).toEqual({ processed: 1, errors: 0 })
+
+    const insert = lootHistoryInserts(calls)[0]
+    const insertPayload = insert?.insertPayload as { loot_item_id: string; raid_tier_id: string; expansion_id: string }
+    // The foreign id is never written — the wowheadId-resolved guild item is.
+    expect(insertPayload.loot_item_id).toBe(ITEM_ID)
+    expect(insertPayload.raid_tier_id).toBe('tier-1')
+    expect(insertPayload.expansion_id).toBe('exp-1')
+  })
+
+  it('OD-2: a lootItemId not owned by the guild whose wowheadId also does not resolve rejects the whole import with 400, nothing processed', async () => {
+    const { client, calls } = makeClient({
+      expansions: [{ id: 'exp-1', guild_id: GUILD_ID }],
+      tiers: [{ id: 'tier-1', expansion_id: 'exp-1' }],
+      items: [],
+    })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const payload = {
+      guildId: GUILD_ID,
+      exportedAt: '2026-09-20T00:00:00Z',
+      awards: [{ wowheadId: 99999, lootItemId: FOREIGN_ITEM_ID, characterName: 'Thrall', awardedAt: '2026-09-20T20:00:00Z' }],
+      attendance: [{ raidDate: '2026-09-20', raidName: 'BWL', startTime: '20:00', endTime: '23:00', bossKills: [], attended: [] }],
+    }
+    const res = await POST(request({ importString: importString(payload) }))
+    const body = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(body.invalid_loot_item_ids).toEqual([FOREIGN_ITEM_ID])
+    expect(body.error).toBe("Some loot items aren't in this guild's loot tables. Refresh the page and try again.")
+    expect(lootHistoryInserts(calls)).toHaveLength(0)
+    const { importAttendanceByTeam } = await import('@/utils/raid-events/team-routing')
+    expect(importAttendanceByTeam).not.toHaveBeenCalled()
+  })
+
+  it('OD-2: a mix of a guild-owned id and a fully-unresolvable foreign id rejects the whole import with 400 and zero inserts', async () => {
+    const { client, calls } = makeClient(singleItemFixture({ id: ITEM_ID, wowhead_id: 19003 }))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const payload = {
+      guildId: GUILD_ID,
+      exportedAt: '2026-09-20T00:00:00Z',
+      awards: [
+        { wowheadId: 19003, lootItemId: ITEM_ID, characterName: 'Thrall', awardedAt: '2026-09-20T20:00:00Z' },
+        { wowheadId: 88888, lootItemId: FOREIGN_ITEM_ID, characterName: 'Jaina', awardedAt: '2026-09-20T20:00:00Z' },
+      ],
+      attendance: [],
+    }
+    const res = await POST(request({ importString: importString(payload) }))
+    const body = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(body.invalid_loot_item_ids).toEqual([FOREIGN_ITEM_ID])
+    expect(lootHistoryInserts(calls)).toHaveLength(0)
   })
 
   it('counts an unresolvable wowheadId as an error with no loot_history insert', async () => {
