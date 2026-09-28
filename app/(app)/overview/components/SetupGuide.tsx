@@ -1,16 +1,17 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useId } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/utils/supabase/client'
 import { useGuildContext } from '@/app/contexts/GuildContext'
-import { getGuildGame } from '@/domain/expansion/game'
+import { getGuildGame, type RaidTierStatus } from '@/domain/expansion/game'
 import { Button } from '@/components/ui/button'
 import { HugeiconsIcon } from '@hugeicons/react'
 import type { IconSvgElement } from '@hugeicons/react'
 import {
-  CheckmarkCircle01Icon,
+  Tick02Icon,
+  Clock01Icon,
   UserGroupIcon,
   Calendar03Icon,
   Task01Icon,
@@ -22,25 +23,32 @@ import {
   SparklesIcon,
 } from '@hugeicons/core-free-icons'
 
+// D-04: the only new visible string this plan adds. A Forever guild's
+// "submissions" and "raid" steps show this instead of becoming clickable
+// until a raid tier exists for the active expansion.
+const FOREVER_WAITING_NOTE = 'Not available for WoW Forever yet'
+
 interface SetupStep {
   id: string
   title: string
   description: string
-  completedDescription: string
   icon: IconSvgElement
   complete: boolean
   href: string
   cta: string
 }
 
+type StepStatus = 'done' | 'waiting' | 'current' | 'upcoming'
+
 interface SetupGuideProps {
   guildId: string
   guildName: string
   guildIconUrl?: string | null
   hasExpansion: boolean
+  raidTierStatus?: RaidTierStatus
 }
 
-export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion }: SetupGuideProps) {
+export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion, raidTierStatus = 'available' }: SetupGuideProps) {
   const router = useRouter()
   const supabase = createClient()
   const { activeCharacter, activeGuild } = useGuildContext()
@@ -49,7 +57,17 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion }: S
   const [steps, setSteps] = useState<SetupStep[]>([])
   const [loading, setLoading] = useState(true)
   const [celebrating, setCelebrating] = useState(false)
-  const [expandedStep, setExpandedStep] = useState<string | null>(null)
+  // undefined means "follow the current step"; a string or null means the
+  // user explicitly expanded or collapsed a row.
+  const [expandedStep, setExpandedStep] = useState<string | null | undefined>(undefined)
+  const headingId = useId()
+
+  // D-03: while a Forever guild's raid tiers are still loading, the early
+  // return below renders nothing, so steps 4 and 5 never flip from numbered
+  // to waiting after first paint. Once tiers are known empty, those two
+  // steps become non-interactive waiting rows instead of normal steps.
+  const foreverRaidsLoading = isForeverGuild && raidTierStatus === 'loading'
+  const foreverAwaitingRaids = isForeverGuild && raidTierStatus === 'none'
 
   const checkSetupProgress = useCallback(async () => {
     try {
@@ -90,7 +108,6 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion }: S
           id: 'character',
           title: 'Create your character',
           description: 'Add your main so your guild knows who you are.',
-          completedDescription: `${activeCharacter?.name || 'Character'} is ready to go.`,
           icon: UserIcon,
           complete: hasCharacter,
           href: '/characters/manage',
@@ -100,7 +117,6 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion }: S
           id: 'expansion',
           title: 'Choose your expansion',
           description: 'Pick which expansion your guild is raiding so loot tables load.',
-          completedDescription: 'Expansion configured with loot data.',
           icon: Globe02Icon,
           complete: hasExpansion,
           href: '/guild-settings',
@@ -112,7 +128,6 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion }: S
           description: hasInviteCode && !hasMembers
             ? 'Invite code created. Share it to get your guildies in.'
             : 'Create an invite link so your raiders can join.',
-          completedDescription: `${memberCount} member${memberCount !== 1 ? 's' : ''} in the guild.`,
           icon: UserGroupIcon,
           complete: hasMembers,
           href: '/guild-settings',
@@ -122,7 +137,6 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion }: S
           id: 'schedule',
           title: 'Set your raid schedule',
           description: 'Tell us which days you raid so attendance tracks automatically.',
-          completedDescription: 'Raid days configured. Attendance is tracking.',
           icon: Calendar03Icon,
           complete: hasRaidSchedule,
           href: '/guild-settings',
@@ -132,7 +146,6 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion }: S
           id: 'submissions',
           title: 'Get your first loot lists',
           description: 'Once raiders join, they rank items and submit for your review.',
-          completedDescription: 'Loot lists approved. The master sheet is live.',
           icon: Task01Icon,
           complete: hasSubmissions,
           href: '/loot-submissions',
@@ -142,7 +155,6 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion }: S
           id: 'raid',
           title: 'Log your first raid',
           description: 'After raid night, log attendance to start building scores.',
-          completedDescription: 'Raids logged. Scores are building.',
           icon: Award01Icon,
           complete: hasRaids,
           href: '/raid-tracking',
@@ -157,11 +169,6 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion }: S
         : newSteps
 
       setSteps(visibleSteps)
-
-      const firstIncomplete = visibleSteps.find(s => !s.complete)
-      if (firstIncomplete) {
-        setExpandedStep(firstIncomplete.id)
-      }
     } catch (error) {
       console.error('Error checking setup progress:', error)
     } finally {
@@ -200,11 +207,27 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion }: S
     handleDismiss()
   }
 
-  if (dismissed || loading) return null
+  if (dismissed || loading || foreverRaidsLoading) return null
 
   const completedCount = steps.filter(s => s.complete).length
   const allComplete = completedCount === steps.length
   const progress = steps.length > 0 ? (completedCount / steps.length) * 100 : 0
+
+  // Waiting steps still count toward the total (D-03); a completed step is
+  // always "done" even if it would otherwise be waiting.
+  const isWaitingStep = (step: SetupStep) =>
+    foreverAwaitingRaids && !step.complete && (step.id === 'submissions' || step.id === 'raid')
+
+  const currentStep = steps.find(s => !s.complete && !isWaitingStep(s))
+  const currentStepId = currentStep?.id ?? null
+  const expandedId = expandedStep === undefined ? currentStepId : expandedStep
+
+  const getStepStatus = (step: SetupStep): StepStatus => {
+    if (step.complete) return 'done'
+    if (isWaitingStep(step)) return 'waiting'
+    if (step.id === currentStepId) return 'current'
+    return 'upcoming'
+  }
 
   // Guild icon or fallback
   const guildAvatar = guildIconUrl ? (
@@ -267,7 +290,7 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion }: S
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {guildAvatar}
             <div className="min-w-0">
-              <h2 className="text-[16px] font-bold text-foreground truncate">
+              <h2 id={headingId} className="text-[16px] font-bold text-foreground truncate">
                 Set up {guildName}
               </h2>
               <p className="text-muted-foreground text-[12px] mt-0.5">
@@ -284,105 +307,120 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion }: S
           </button>
         </div>
 
-        {/* Progress bar with step dots */}
-        <div className="mt-4 flex items-center gap-1.5">
-          {steps.map((step, i) => (
-            <div
-              key={step.id}
-              className="flex-1 h-1.5 rounded-full overflow-hidden"
-            >
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  step.complete
-                    ? 'bg-accent'
-                    : i === steps.findIndex(s => !s.complete)
-                      ? 'bg-accent/30'
-                      : 'bg-muted'
-                }`}
-                style={{ width: '100%' }}
-              />
-            </div>
-          ))}
+        {/* Progress: one continuous track, one accent fill by count (D-01) */}
+        <div
+          className="mt-4 h-1.5 rounded-full bg-muted overflow-hidden"
+          role="progressbar"
+          aria-labelledby={headingId}
+          aria-valuemin={0}
+          aria-valuemax={steps.length}
+          aria-valuenow={completedCount}
+          aria-valuetext={`${completedCount} of ${steps.length} steps done`}
+        >
+          <div
+            className="h-full rounded-full bg-accent transition-[width] duration-500"
+            style={{ width: `${progress}%` }}
+          />
         </div>
       </div>
 
-      {/* Steps */}
-      <div className="px-2.5 pb-2.5">
-        {steps.map((step) => {
-          const isExpanded = expandedStep === step.id && !step.complete
-          const firstIncompleteIdx = steps.findIndex(s => !s.complete)
-          const isNextStep = steps.indexOf(step) === firstIncompleteIdx
+      {/* Steps: one row anatomy for every state (D-01) */}
+      <ol aria-labelledby={headingId} className="px-2 pb-3">
+        {steps.map((step, index) => {
+          const status = getStepStatus(step)
+          const position = index + 1
+          const isExpandable = status === 'current' || status === 'upcoming'
+          const expanded = isExpandable && expandedId === step.id
+          const rowClasses = 'flex items-center gap-3 min-h-11 pl-3 pr-2 py-2 w-full text-left'
+
+          const statusSlot = status === 'done' ? (
+            <div
+              className="w-6 h-6 shrink-0 flex items-center justify-center rounded-full bg-success text-success-foreground"
+              aria-hidden="true"
+            >
+              <HugeiconsIcon icon={Tick02Icon} size={14} strokeWidth={2.5} />
+            </div>
+          ) : status === 'waiting' ? (
+            <div className="w-6 h-6 shrink-0 flex items-center justify-center" aria-hidden="true">
+              <HugeiconsIcon icon={Clock01Icon} size={16} className="text-muted-foreground" />
+            </div>
+          ) : status === 'current' ? (
+            <div
+              className="w-6 h-6 shrink-0 flex items-center justify-center rounded-full bg-accent text-success-foreground text-[11px] font-semibold tabular-nums"
+              aria-hidden="true"
+            >
+              {position}
+            </div>
+          ) : (
+            <div
+              className="w-6 h-6 shrink-0 flex items-center justify-center rounded-full bg-muted text-muted-foreground text-[11px] font-semibold tabular-nums"
+              aria-hidden="true"
+            >
+              {position}
+            </div>
+          )
 
           return (
-            <div
-              key={step.id}
-              className={`rounded-lg transition-colors ${
-                step.complete
-                  ? ''
-                  : isExpanded
-                    ? 'bg-accent/[0.05]'
-                    : 'hover:bg-muted/50 cursor-pointer'
-              }`}
-            >
-              <div
-                className={`flex items-center gap-3 px-3 py-2.5 ${step.complete ? 'opacity-40' : ''}`}
-                role={step.complete ? undefined : 'button'}
-                tabIndex={step.complete ? undefined : 0}
-                onClick={step.complete ? undefined : () => setExpandedStep(
-                  expandedStep === step.id ? null : step.id
-                )}
-                onKeyDown={step.complete ? undefined : (e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    setExpandedStep(expandedStep === step.id ? null : step.id)
-                  }
-                }}
-              >
-                {/* Step number or check */}
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-semibold transition-colors ${
-                  step.complete
-                    ? 'bg-success/15'
-                    : isNextStep
-                      ? 'bg-accent text-accent-foreground'
-                      : 'bg-muted text-muted-foreground'
-                }`}>
-                  {step.complete ? (
-                    <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} className="text-success" />
-                  ) : (
-                    <span className="tabular-nums">{steps.indexOf(step) + 1}</span>
-                  )}
-                </div>
+            <li key={step.id} className="relative">
+              {status === 'current' && (
+                <span
+                  aria-hidden="true"
+                  className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-accent"
+                />
+              )}
 
-                {/* Step title */}
-                <div className="flex-1 min-w-0">
-                  <p className={`text-[13px] font-medium ${
-                    step.complete
-                      ? 'text-muted-foreground line-through decoration-1'
-                      : isNextStep
-                        ? 'text-foreground'
-                        : 'text-foreground-secondary'
-                  }`}>
-                    {step.title}
-                  </p>
-                  {step.complete && (
-                    <p className="text-[11px] text-muted-foreground mt-0.5">{step.completedDescription}</p>
-                  )}
+              {status === 'done' && (
+                <div className={rowClasses}>
+                  {statusSlot}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium leading-5 text-foreground-secondary">
+                      {step.title}
+                      <span className="sr-only">, done</span>
+                    </p>
+                  </div>
                 </div>
+              )}
 
-                {/* Chevron for expandable */}
-                {!step.complete && (
+              {status === 'waiting' && (
+                <div className={rowClasses}>
+                  {statusSlot}
+                  <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                    <p className="text-[13px] font-medium leading-5 text-muted-foreground">
+                      {step.title}
+                    </p>
+                    <span className="text-[11px] text-muted-foreground">{FOREVER_WAITING_NOTE}</span>
+                  </div>
+                </div>
+              )}
+
+              {isExpandable && (
+                <button
+                  type="button"
+                  onClick={() => setExpandedStep(expandedId === step.id ? null : step.id)}
+                  aria-expanded={expanded}
+                  aria-current={status === 'current' ? 'step' : undefined}
+                  className={`${rowClasses} rounded-lg hover:bg-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`}
+                >
+                  {statusSlot}
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[13px] font-medium leading-5 ${
+                      status === 'current' ? 'text-foreground' : 'text-foreground-secondary'
+                    }`}>
+                      {step.title}
+                    </p>
+                  </div>
                   <svg
-                    className={`w-4 h-4 text-muted-foreground transition-transform shrink-0 ${isExpanded ? 'rotate-90' : ''}`}
+                    aria-hidden="true"
+                    className={`w-4 h-4 text-muted-foreground transition-transform shrink-0 ${expanded ? 'rotate-90' : ''}`}
                     fill="none" stroke="currentColor" viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                )}
-              </div>
+                </button>
+              )}
 
-              {/* Expanded action */}
-              {isExpanded && (
-                <div className="px-3 pb-3 pl-[46px]">
+              {expanded && (
+                <div className="pl-12 pr-2 pb-3">
                   <p className="text-[12px] text-muted-foreground mb-3">
                     {step.description}
                   </p>
@@ -396,10 +434,10 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion }: S
                   </Button>
                 </div>
               )}
-            </div>
+            </li>
           )
         })}
-      </div>
+      </ol>
     </div>
   )
 }

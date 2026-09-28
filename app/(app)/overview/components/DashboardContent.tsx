@@ -8,7 +8,7 @@ import WelcomeScreen from '@/app/components/WelcomeScreen'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserIcon, CheckmarkCircle01Icon, AlertCircleIcon, Award01Icon, Cancel01Icon, Add01Icon, Calendar03Icon, Shield01Icon, AnalyticsUpIcon } from '@hugeicons/core-free-icons'
 import { NoRaidsEmptyState } from '@/app/components/NoRaidsEmptyState'
-import { getGuildGame } from '@/domain/expansion/game'
+import { getGuildGame, type RaidTierStatus } from '@/domain/expansion/game'
 
 // Lazy load modals to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -1840,6 +1840,9 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
   // Hero section (greeting + character card) can render as soon as guild context is ready.
   // Dashboard data sections below the hero wait for the full data load.
   const heroReady = !guildLoading && !!activeGuild
+  // loading only clears once the raid_tiers query for the active expansion
+  // has resolved (see loadData), so this never flips before tiers are known.
+  const raidTierStatus: RaidTierStatus = loading ? 'loading' : noRaidTiers ? 'none' : 'available'
   const dataLoading = loading || guildLoading
 
   return (
@@ -1978,6 +1981,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
           guildName={activeGuild.name}
           guildIconUrl={activeGuild.icon_url}
           hasExpansion={!!activeGuild.active_expansion_id}
+          raidTierStatus={raidTierStatus}
         />
       )}
 
