@@ -16,8 +16,29 @@ import { Select } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import RealmSelector from '@/app/components/RealmSelector'
 import ForeverRulesetSelector from '@/app/components/ForeverRulesetSelector'
-import { GAME_VERSION_LABELS, resolveSignupExpansion } from '@/domain/expansion/game'
+import {
+  GAME_VERSION_LABELS,
+  resolveSignupExpansion,
+  DEFAULT_SIGNUP_GAME,
+  parseGameParam,
+} from '@/domain/expansion/game'
 import type { GameVersion } from '@/domain/expansion/game'
+import { buildSignInPath } from '@/lib/post-auth-redirect'
+
+/**
+ * Lazy initializer for the game version state (D-03, D-07). Reads the
+ * `?game=` query param on the client only; on the server (window undefined,
+ * covered by the loading skeleton until checkUser finishes -- the game
+ * tiles are never in the server HTML) it falls back to the signup default.
+ * This runs once during the first render, not inside an effect, so it never
+ * trips react-hooks/set-state-in-effect.
+ */
+function initialGameFromQuery(): GameVersion {
+  if (typeof window === 'undefined') {
+    return DEFAULT_SIGNUP_GAME
+  }
+  return parseGameParam(new URLSearchParams(window.location.search).get('game'))
+}
 
 interface DiscordGuild {
   id: string
@@ -44,7 +65,7 @@ export default function CreateGuildPage() {
   const [realmRegion, setRealmRegion] = useState('All')
   const [realm, setRealm] = useState('')
   const [faction, setFaction] = useState<'Alliance' | 'Horde'>('Alliance')
-  const [game, setGame] = useState<GameVersion>('classic')
+  const [game, setGame] = useState<GameVersion>(initialGameFromQuery)
   const [classicExpansion, setClassicExpansion] = useState('Classic')
   const expansion = resolveSignupExpansion(game, classicExpansion)
   const isForeverExpansion = game === 'forever'
@@ -65,7 +86,7 @@ export default function CreateGuildPage() {
     const checkUser = async () => {
       const { data: { user: currentUser } } = await supabase.auth.getUser()
       if (!currentUser) {
-        router.push('/')
+        router.replace(buildSignInPath(window.location.pathname + window.location.search))
         return
       }
       setUser(currentUser)
@@ -690,24 +711,6 @@ export default function CreateGuildPage() {
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => setGame('classic')}
-                disabled={creating}
-                aria-pressed={game === 'classic'}
-                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
-                  game === 'classic'
-                    ? 'border-primary ring-2 ring-primary/50'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <img
-                  src="/images/expansions/WoWlogo.webp"
-                  alt={GAME_VERSION_LABELS.classic}
-                  className="w-full h-full object-contain p-2"
-                />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
                 onClick={() => setGame('forever')}
                 disabled={creating}
                 aria-pressed={game === 'forever'}
@@ -720,6 +723,24 @@ export default function CreateGuildPage() {
                 <img
                   src="/images/expansions/ForeverLogo.webp"
                   alt={GAME_VERSION_LABELS.forever}
+                  className="w-full h-full object-contain p-2"
+                />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setGame('classic')}
+                disabled={creating}
+                aria-pressed={game === 'classic'}
+                className={`relative aspect-video h-auto p-0 rounded-lg border-2 transition-colors overflow-hidden ${
+                  game === 'classic'
+                    ? 'border-primary ring-2 ring-primary/50'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <img
+                  src="/images/expansions/WoWlogo.webp"
+                  alt={GAME_VERSION_LABELS.classic}
                   className="w-full h-full object-contain p-2"
                 />
               </Button>

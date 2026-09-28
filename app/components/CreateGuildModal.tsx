@@ -24,7 +24,7 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { getExpansionDisplayName } from '@/utils/expansionVisuals'
-import { GAME_VERSION_LABELS, resolveSignupExpansion } from '@/domain/expansion/game'
+import { GAME_VERSION_LABELS, resolveSignupExpansion, DEFAULT_SIGNUP_GAME } from '@/domain/expansion/game'
 import type { GameVersion } from '@/domain/expansion/game'
 
 interface DiscordGuild {
@@ -58,10 +58,11 @@ const EXPANSIONS = [
   { id: 'Mists of Pandaria', name: 'MoP', image: '/images/expansions/MoPlogo.webp', available: true },
 ]
 
-// The two game version tiles shown first at signup (D-04).
+// The two game version tiles shown first at signup (D-04). WoW Forever is
+// listed first and is the signup default (D-07).
 const GAME_VERSION_TILES: Array<{ id: GameVersion; name: string; image: string }> = [
-  { id: 'classic', name: GAME_VERSION_LABELS.classic, image: '/images/expansions/WoWlogo.webp' },
   { id: 'forever', name: GAME_VERSION_LABELS.forever, image: '/images/expansions/ForeverLogo.webp' },
+  { id: 'classic', name: GAME_VERSION_LABELS.classic, image: '/images/expansions/WoWlogo.webp' },
 ]
 
 export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServerId, suggestedName }: CreateGuildModalProps) {
@@ -92,7 +93,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
   const [realmRegion, setRealmRegion] = useState('All')
   const [realm, setRealm] = useState('')
   const [faction, setFaction] = useState<'Alliance' | 'Horde'>('Alliance')
-  const [game, setGame] = useState<GameVersion>('classic')
+  const [game, setGame] = useState<GameVersion>(DEFAULT_SIGNUP_GAME)
   const [classicExpansion, setClassicExpansion] = useState('Classic')
   const expansion = resolveSignupExpansion(game, classicExpansion)
   const isForeverExpansion = game === 'forever'
