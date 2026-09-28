@@ -15,6 +15,7 @@ import { AccentColorProvider } from '@/app/contexts/AccentColorContext'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { DeploymentCheck } from '@/app/components/DeploymentCheck'
 import { KonamiEasterEgg } from '@/app/components/KonamiEasterEgg'
+import ForeverAnnouncementModal from '@/app/components/ForeverAnnouncementModal'
 
 function AppLayoutContent({
   children,
@@ -266,6 +267,7 @@ export default function AppLayout({
       <SidebarProvider>
         <DeploymentCheck />
         <KonamiEasterEgg />
+        <ForeverAnnouncementModal />
         <AppLayoutContent>{children}</AppLayoutContent>
       </SidebarProvider>
     </AccentColorProvider>
