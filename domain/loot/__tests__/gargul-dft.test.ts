@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { formatRankingsForGargul, type GargulDftItemRankings } from '../gargul-dft'
+import { FACTION_ITEM_ALIASES } from '../faction-item-aliases'
 
 function r(character_id: string, player_name: string, loot_score: number, class_color = '#ff0000') {
   return { character_id, player_name, loot_score, class_color }
@@ -92,5 +93,26 @@ describe('formatRankingsForGargul', () => {
     )
     expect(out).toContain('|cffabcdef ')
     expect(out).not.toContain('|cff#')
+  })
+})
+
+describe('formatRankingsForGargul does not mirror faction-variant items (GH #290)', () => {
+  it('emits exactly one block per alias pair, under the id the guild data holds, for both directions', () => {
+    for (const [hordeStr, allianceId] of Object.entries(FACTION_ITEM_ALIASES)) {
+      const hordeId = Number(hordeStr)
+
+      const allianceOut = formatRankingsForGargul([item(allianceId, [r('cThrall', 'Thrall', 50)])], 2)
+      expect(allianceOut).toContain(`"${allianceId}^DFTFC`)
+      expect(allianceOut).not.toContain(`"${hordeId}^`)
+      expect(allianceOut.match(/Thrall/g)?.length).toBe(1)
+      // Exactly one block (only one double-quote-delimited entry).
+      expect(allianceOut.split('\n"').length).toBe(1)
+
+      const hordeOut = formatRankingsForGargul([item(hordeId, [r('cThrall', 'Thrall', 50)])], 2)
+      expect(hordeOut).toContain(`"${hordeId}^DFTFC`)
+      expect(hordeOut).not.toContain(`"${allianceId}^`)
+      expect(hordeOut.match(/Thrall/g)?.length).toBe(1)
+      expect(hordeOut.split('\n"').length).toBe(1)
+    }
   })
 })

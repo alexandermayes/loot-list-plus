@@ -21,6 +21,21 @@
  * copies (e.g. one slot for the weapon recipe, one for the belt recipe), they
  * appear twice in the Gargul prio so the officer can award them each drop.
  * This treats two distinct rankings as the explicit signal it is.
+ *
+ * Faction-variant items (GH #290). Head of Nefarian (Horde 19002, Alliance
+ * 19003) and Head of Onyxia (Horde 18422, Alliance 18423) — see
+ * domain/loot/faction-item-aliases.ts — are emitted only under the id the
+ * guild's data holds, and NEVER mirrored to the other faction's id (unlike
+ * the LootList+ addon exports, which do mirror). Gargul already links these
+ * pairs in Data/ItemLinks.lua, and TMB:byItemID(itemID) calls
+ * GL:getLinkedItemsForID to collect the entries of every linked id together,
+ * with a checksum of "id|character|prio|type" that includes the id. A
+ * mirrored 19002 block alongside the real 19003 block would therefore list
+ * every raider twice in the tooltip and award window.
+ *
+ * https://github.com/papa-smurf/Gargul/blob/master/Data/ItemLinks.lua
+ * https://github.com/papa-smurf/Gargul/blob/master/Utils/Items.lua
+ * https://github.com/papa-smurf/Gargul/blob/master/Classes/TMB.lua
  */
 
 export interface GargulDftRankingEntry {
