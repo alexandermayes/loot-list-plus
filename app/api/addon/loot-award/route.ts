@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server'
-import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { authenticateAddonRequest, authorizeAddonGuild } from '@/lib/addon/sync-tokens'
 import { trackApiError, trackEvent } from '@/utils/analytics/server'
 import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { notifyLootAward } from '@/lib/discord-loot-announcements'
@@ -29,10 +28,8 @@ interface LootAwardRequest {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { user, error: authError } = await getAuthenticatedUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const auth = await authenticateAddonRequest(request)
+    if (!auth.ok) return auth.response
 
     const body: LootAwardRequest = await request.json()
     const { guild_id, wowhead_id, character_name, boss_name, awarded_date, notes } = body
@@ -45,11 +42,9 @@ export async function POST(request: NextRequest) {
 
     const supabase = createServiceRoleClient()
 
-    // Verify officer permissions
-    const verification = await verifyOfficerPermissions(supabase, user.id, guild_id)
-    if (!verification.hasPermission) {
-      return NextResponse.json({ error: 'Officer permissions required' }, { status: 403 })
-    }
+    // Officer check plus sync-token guild scope (GH #300 D-02)
+    const access = await authorizeAddonGuild(supabase, auth.principal, guild_id)
+    if (!access.ok) return access.response
 
     // Resolve wowhead_id to a loot_item_id owned by this guild (GH #277 SCOPE-01).
     // A query failure here must NOT be treated as "not found" (404) — that
@@ -97,7 +92,7 @@ export async function POST(request: NextRequest) {
           characterId,
           characterName: character_name,
           awardedDate: awarded_date,
-          awardedBy: user.id,
+          awardedBy: access.userId,
           notes,
           bossName: boss_name,
           today,
@@ -113,7 +108,7 @@ export async function POST(request: NextRequest) {
 
     trackEvent({
       event: 'loot_item_imported',
-      userId: user.id,
+      userId: access.userId,
       guildId: guild_id,
       properties: { source: 'addon', count: 1 },
     })
