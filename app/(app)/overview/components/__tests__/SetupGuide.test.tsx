@@ -184,6 +184,23 @@ describe('SetupGuide', () => {
     expect(currentEls[0]).toHaveAccessibleName('Invite your raiders')
   })
 
+  // Orchestrator override (2026-09-27): the current-step number disc sits on
+  // the mid-tone accent background, which fails WCAG AA at 11px with a white
+  // foreground (~2.5-3:1). It must use the dark foreground already proven on
+  // the success disc's check (text-success-foreground, ~5-6:1 on accent in
+  // both themes), not text-accent-foreground.
+  it('Contrast override: current-step disc uses the dark AA foreground, not white', async () => {
+    renderLiveForever()
+    await screen.findByText('2 of 5 steps done')
+
+    const currentButton = screen.getByRole('button', { name: 'Invite your raiders' })
+    const disc = currentButton.querySelector('[aria-hidden="true"]')
+    expect(disc).not.toBeNull()
+    expect(disc).toHaveClass('bg-accent')
+    expect(disc).toHaveClass('text-success-foreground')
+    expect(disc).not.toHaveClass('text-accent-foreground')
+  })
+
   it('Test 5: all non-waiting steps done shows no current row and no celebration', async () => {
     renderGuide({
       game: 'forever',
