@@ -6,11 +6,22 @@
  * Tables: addon_auth_codes, addon_sync_tokens, guilds, characters,
  * character_guild_memberships. Any other table resolves { data: [], error:
  * null } so a downstream route query never throws just because this fake
- * doesn't model it.
+ * doesn't model it. Every `.from(table)` call is recorded in `calls` so a
+ * test can inspect exactly what was inserted/filtered (e.g. an
+ * `awarded_by` column), matching the recording-fake pattern used by
+ * app/api/addon/import-string/__tests__/route.test.ts.
  */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Row = Record<string, any>
+type FilterOp = 'eq' | 'in' | 'lt'
+
+export interface RecordedCall {
+  table: string
+  filters: Array<{ col: string; op: FilterOp; val: unknown }>
+  insertPayload?: Row | Row[]
+  upsertPayload?: Row
+}
 
 export interface FakeAddonDbFixture {
   addon_auth_codes?: Row[]
@@ -32,10 +43,11 @@ export interface FakeAddonDb {
     characters: Row[]
     character_guild_memberships: Row[]
   }
+  calls: RecordedCall[]
   setErrorOn: (table: string | undefined) => void
 }
 
-function matchesFilters(row: Row, filters: Array<{ col: string; op: 'eq' | 'in' | 'lt'; val: unknown }>): boolean {
+function matchesFilters(row: Row, filters: RecordedCall['filters']): boolean {
   for (const f of filters) {
     if (f.op === 'eq' && row[f.col] !== f.val) return false
     if (f.op === 'in' && !(f.val as unknown[]).includes(row[f.col])) return false
@@ -53,6 +65,7 @@ export function makeFakeAddonDb(fixture: FakeAddonDbFixture = {}): FakeAddonDb {
     character_guild_memberships: fixture.character_guild_memberships ? [...fixture.character_guild_memberships] : [],
   }
 
+  const calls: RecordedCall[] = []
   let errorOn = fixture.errorOn
 
   function tableRows(name: string): Row[] {
@@ -60,10 +73,9 @@ export function makeFakeAddonDb(fixture: FakeAddonDbFixture = {}): FakeAddonDb {
   }
 
   function client_from(table: string) {
-    const filters: Array<{ col: string; op: 'eq' | 'in' | 'lt'; val: unknown }> = []
+    const call: RecordedCall = { table, filters: [] }
+    calls.push(call)
     let pendingDelete = false
-    let insertPayload: Row | Row[] | null = null
-    let upsertPayload: Row | null = null
     let upsertOnConflict: string | null = null
 
     function errorResult() {
@@ -71,20 +83,24 @@ export function makeFakeAddonDb(fixture: FakeAddonDbFixture = {}): FakeAddonDb {
     }
 
     function currentMatches(): Row[] {
-      return tableRows(table).filter((row) => matchesFilters(row, filters))
+      return tableRows(table).filter((row) => matchesFilters(row, call.filters))
     }
 
     function applyDelete(): Row[] {
       const rows = tableRows(table)
-      const toDelete = rows.filter((row) => matchesFilters(row, filters))
-      const remaining = rows.filter((row) => !matchesFilters(row, filters))
+      const toDelete = rows.filter((row) => matchesFilters(row, call.filters))
+      const remaining = rows.filter((row) => !matchesFilters(row, call.filters))
       ;(tables as Record<string, Row[]>)[table] = remaining
       return toDelete
     }
 
     function applyInsert() {
       const rows = tableRows(table)
-      const payload = Array.isArray(insertPayload) ? insertPayload : insertPayload ? [insertPayload] : []
+      const payload = Array.isArray(call.insertPayload)
+        ? call.insertPayload
+        : call.insertPayload
+          ? [call.insertPayload]
+          : []
       // Enforce a primary-key-ish uniqueness for addon_auth_codes.code_hash so
       // the S5-style duplicate-code behaviour is observable in tests that want it.
       if (table === 'addon_auth_codes') {
@@ -101,7 +117,7 @@ export function makeFakeAddonDb(fixture: FakeAddonDbFixture = {}): FakeAddonDb {
     function applyUpsert() {
       const rows = tableRows(table)
       const conflictCols = (upsertOnConflict ?? '').split(',').map((c) => c.trim()).filter(Boolean)
-      const payload = upsertPayload as Row
+      const payload = call.upsertPayload as Row
       if (conflictCols.length > 0) {
         const idx = rows.findIndex((row) => conflictCols.every((c) => row[c] === payload[c]))
         if (idx >= 0) {
@@ -113,21 +129,41 @@ export function makeFakeAddonDb(fixture: FakeAddonDbFixture = {}): FakeAddonDb {
       return { data: [payload], error: null }
     }
 
+    /** Shared resolution used by single()/maybeSingle()/then() so an insert or upsert chained straight into a single-row read (`.insert(x).select().single()`) returns the row just written, like real PostgREST does. */
+    function resolveOne(): { data: Row | null; error: unknown } {
+      if (pendingDelete) {
+        const deleted = applyDelete()
+        return { data: deleted[0] ?? null, error: null }
+      }
+      if (call.insertPayload !== undefined) {
+        const result = applyInsert()
+        const row = Array.isArray(result.data) ? result.data[0] : result.data
+        return { data: row ?? null, error: result.error }
+      }
+      if (call.upsertPayload !== undefined) {
+        const result = applyUpsert()
+        const row = Array.isArray(result.data) ? result.data[0] : result.data
+        return { data: row ?? null, error: result.error }
+      }
+      const matches = currentMatches()
+      return { data: matches[0] ?? null, error: null }
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const builder: any = {
       select() {
         return builder
       },
       eq(col: string, val: unknown) {
-        filters.push({ col, op: 'eq', val })
+        call.filters.push({ col, op: 'eq', val })
         return builder
       },
       in(col: string, val: unknown) {
-        filters.push({ col, op: 'in', val })
+        call.filters.push({ col, op: 'in', val })
         return builder
       },
       lt(col: string, val: unknown) {
-        filters.push({ col, op: 'lt', val })
+        call.filters.push({ col, op: 'lt', val })
         return builder
       },
       delete() {
@@ -135,11 +171,11 @@ export function makeFakeAddonDb(fixture: FakeAddonDbFixture = {}): FakeAddonDb {
         return builder
       },
       insert(payload: Row | Row[]) {
-        insertPayload = payload
+        call.insertPayload = payload
         return builder
       },
       upsert(payload: Row, opts?: { onConflict?: string }) {
-        upsertPayload = payload
+        call.upsertPayload = payload
         upsertOnConflict = opts?.onConflict ?? null
         return builder
       },
@@ -151,21 +187,11 @@ export function makeFakeAddonDb(fixture: FakeAddonDbFixture = {}): FakeAddonDb {
       },
       single() {
         if (errorOn === table) return Promise.resolve(errorResult())
-        if (pendingDelete) {
-          const deleted = applyDelete()
-          return Promise.resolve({ data: deleted[0] ?? null, error: null })
-        }
-        const matches = currentMatches()
-        return Promise.resolve({ data: matches[0] ?? null, error: null })
+        return Promise.resolve(resolveOne())
       },
       maybeSingle() {
         if (errorOn === table) return Promise.resolve(errorResult())
-        if (pendingDelete) {
-          const deleted = applyDelete()
-          return Promise.resolve({ data: deleted[0] ?? null, error: null })
-        }
-        const matches = currentMatches()
-        return Promise.resolve({ data: matches[0] ?? null, error: null })
+        return Promise.resolve(resolveOne())
       },
       then(resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) {
         try {
@@ -174,10 +200,10 @@ export function makeFakeAddonDb(fixture: FakeAddonDbFixture = {}): FakeAddonDb {
             const deleted = applyDelete()
             return Promise.resolve({ data: deleted, error: null }).then(resolve, reject)
           }
-          if (insertPayload !== null) {
+          if (call.insertPayload !== undefined) {
             return Promise.resolve(applyInsert()).then(resolve, reject)
           }
-          if (upsertPayload !== null) {
+          if (call.upsertPayload !== undefined) {
             return Promise.resolve(applyUpsert()).then(resolve, reject)
           }
           const matches = currentMatches()
@@ -200,6 +226,7 @@ export function makeFakeAddonDb(fixture: FakeAddonDbFixture = {}): FakeAddonDb {
   return {
     client,
     tables,
+    calls,
     setErrorOn: (table: string | undefined) => {
       errorOn = table
     },
