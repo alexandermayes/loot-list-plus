@@ -23,8 +23,16 @@
 --   * raid_event_id, when not NULL, must be a raid_events row of this guild.
 --   * character_id, when not NULL, must have an active (is_active = true)
 --     character_guild_memberships row in this guild. A NULL character_id with
---     a character_name (a pug or an unmatched addon name) is allowed.
---   * (added in the next step of this change: the loot item group)
+--     a character_name (a pug or an unmatched addon name) is allowed. This
+--     matches the API rule from #296 (findInvalidCharacterIds).
+--   * loot_item_id must resolve through loot_items.raid_tier_id,
+--     raid_tiers.expansion_id and expansions.guild_id to this guild.
+--   * raid_tier_id must equal the item's own loot_items.raid_tier_id (not
+--     just any tier of the guild). Every server builder already writes
+--     item.raid_tier_id (lib/loot/loot-history-rows.ts, since #294).
+--   * expansion_id, when not NULL, must equal the expansion of the item's
+--     tier. A NULL expansion_id is allowed: the column is nullable, legacy
+--     rows have NULLs, and NULL points at no other guild.
 --
 -- Why a trigger and not tighter RLS policies:
 --
@@ -42,9 +50,10 @@
 -- may write, and the trigger gates what the row may point at.
 --
 -- Changed columns only on UPDATE: INSERT checks every reference. UPDATE checks
--- a reference only when the write changes it (the raid event when
--- raid_event_id changes, the raider when character_id changes). If guild_id
--- changes, every reference is checked. The trigger is declared UPDATE OF the
+-- a reference group only when the write changes it: the raid event when
+-- raid_event_id changes, the raider when character_id changes, and the item
+-- group when loot_item_id, raid_tier_id or expansion_id changes. If guild_id
+-- changes, all three groups are checked. The trigger is declared UPDATE OF the
 -- six reference columns, so a notes-only or awarded_date-only UPDATE does not
 -- call the function at all, and the NEW vs OLD comparison inside covers a
 -- PATCH that re-sends unchanged values. The rule's job is to stop a write from
@@ -60,8 +69,11 @@
 -- lockdown pattern). Triggers still fire for those roles, but the function
 -- cannot be called directly. The body is read-only.
 --
--- NULL handling: if guild_id is NULL the function returns at once and the
--- column's NOT NULL constraint rejects the row with its usual 23502.
+-- NULL handling: if guild_id is NULL the function returns at once. If
+-- loot_item_id is NULL the item group is skipped, and if raid_tier_id is NULL
+-- the tier comparison is skipped. In each case the column's NOT NULL
+-- constraint then rejects the row with its usual 23502, so the missing-column
+-- errors from the #294 schema contract are unchanged.
 --
 -- Error contract: a violation raises SQLSTATE 23514 (check_violation), which
 -- PostgREST returns as 400. Each message is a fixed string with no ids. The
@@ -116,9 +128,45 @@ BEGIN
             DETAIL = format('raid_event_id %s, guild_id %s', NEW.raid_event_id, NEW.guild_id);
   END IF;
 
-  -- insertion point: raider rule (GH #313 step 2)
+  IF v_check_character AND NEW.character_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM public.character_guild_memberships cgm
+    WHERE cgm.character_id = NEW.character_id
+      AND cgm.guild_id = NEW.guild_id
+      AND cgm.is_active = true
+  ) THEN
+    RAISE EXCEPTION 'loot_history.character_id is not an active member of this guild'
+      USING ERRCODE = 'check_violation',
+            DETAIL = format('character_id %s, guild_id %s', NEW.character_id, NEW.guild_id);
+  END IF;
 
-  -- insertion point: loot item group rule (GH #313 step 2)
+  -- The item, its tier and the tier's expansion are resolved in one lookup.
+  -- A NULL loot_item_id or raid_tier_id is left to the NOT NULL constraint.
+  IF v_check_item AND NEW.loot_item_id IS NOT NULL THEN
+    SELECT li.raid_tier_id, rt.expansion_id, e.guild_id
+      INTO v_item_tier, v_tier_expansion, v_item_guild
+      FROM public.loot_items li
+      JOIN public.raid_tiers rt ON rt.id = li.raid_tier_id
+      JOIN public.expansions e ON e.id = rt.expansion_id
+     WHERE li.id = NEW.loot_item_id;
+
+    IF NOT FOUND OR v_item_guild IS DISTINCT FROM NEW.guild_id THEN
+      RAISE EXCEPTION 'loot_history.loot_item_id is not a loot item of this guild'
+        USING ERRCODE = 'check_violation',
+              DETAIL = format('loot_item_id %s, guild_id %s', NEW.loot_item_id, NEW.guild_id);
+    END IF;
+
+    IF NEW.raid_tier_id IS NOT NULL AND NEW.raid_tier_id IS DISTINCT FROM v_item_tier THEN
+      RAISE EXCEPTION 'loot_history.raid_tier_id is not the raid tier of its loot item'
+        USING ERRCODE = 'check_violation',
+              DETAIL = format('raid_tier_id %s, guild_id %s', NEW.raid_tier_id, NEW.guild_id);
+    END IF;
+
+    IF NEW.expansion_id IS NOT NULL AND NEW.expansion_id IS DISTINCT FROM v_tier_expansion THEN
+      RAISE EXCEPTION 'loot_history.expansion_id is not the expansion of its loot item'
+        USING ERRCODE = 'check_violation',
+              DETAIL = format('expansion_id %s, guild_id %s', NEW.expansion_id, NEW.guild_id);
+    END IF;
+  END IF;
 
   RETURN NEW;
 END;

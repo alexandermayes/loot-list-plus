@@ -187,10 +187,58 @@ describe('loot_history guild references migration shape (GH-313)', () => {
     const raises = [...body.matchAll(/RAISE EXCEPTION\s+'((?:[^']|'')*)'([^;]*);/gi)]
     const raiseCount = (body.match(/\bRAISE EXCEPTION\b/gi) ?? []).length
     expect(raises.length).toBe(raiseCount)
-    expect(raiseCount).toBeGreaterThan(0)
+    // raid event, raider, item, tier, expansion
+    expect(raiseCount).toBe(5)
     for (const [, message, rest] of raises) {
       expect(message, 'RAISE message must not be a format string').not.toContain('%')
       expect(rest).toMatch(/\bUSING\s+ERRCODE\s*=\s*'check_violation'/i)
+    }
+  })
+
+  it('the body checks active membership and the item, tier and expansion chain', () => {
+    const { body } = functionParts()
+
+    expect(body).toMatch(
+      /FROM\s+public\.character_guild_memberships\s+(\w+)\s+WHERE\s+\1\.character_id\s*=\s*NEW\.character_id\s+AND\s+\1\.guild_id\s*=\s*NEW\.guild_id\s+AND\s+\1\.is_active\s*=\s*true/i,
+    )
+    expect(body).toMatch(
+      /FROM\s+public\.loot_items\s+(\w+)\s+JOIN\s+public\.raid_tiers\s+(\w+)\s+ON\s+\2\.id\s*=\s*\1\.raid_tier_id\s+JOIN\s+public\.expansions\s+(\w+)\s+ON\s+\3\.id\s*=\s*\2\.expansion_id\s+WHERE\s+\1\.id\s*=\s*NEW\.loot_item_id/i,
+    )
+    expect(body).toMatch(/\bNEW\.raid_tier_id\s+IS DISTINCT FROM\s+v_item_tier\b/i)
+    expect(body).toMatch(/\bNEW\.expansion_id\s+IS DISTINCT FROM\s+v_tier_expansion\b/i)
+    expect(body).toMatch(/\bv_item_guild\s+IS DISTINCT FROM\s+NEW\.guild_id\b/i)
+  })
+
+  it('UPDATE compares every reference column with OLD, and OLD is read only after the TG_OP test', () => {
+    const { body } = functionParts()
+
+    for (const col of REFERENCE_COLUMNS) {
+      expect(body, `missing IS DISTINCT FROM OLD.${col}`).toMatch(
+        new RegExp(`\\bIS (NOT )?DISTINCT FROM OLD\\.${col}\\b`, 'i'),
+      )
+    }
+
+    const firstOld = body.search(/\bOLD\./)
+    const tgOp = body.search(/\bTG_OP\s*=\s*'UPDATE'/i)
+    expect(tgOp).toBeGreaterThanOrEqual(0)
+    expect(firstOld).toBeGreaterThan(tgOp)
+  })
+
+  it('the body is read-only', () => {
+    const body = blankStrings(functionParts().body)
+    const forbidden = [
+      /\bINSERT\s+INTO\b/i,
+      /\bDELETE\s+FROM\b/i,
+      /\bTRUNCATE\b/i,
+      /\bEXECUTE\b/i,
+      /\bset_config\b/i,
+      /\bALTER\b/i,
+      /\bDROP\b/i,
+      /\bGRANT\b/i,
+      /\bUPDATE\s+[\w."]+\s+SET\b/i,
+    ]
+    for (const re of forbidden) {
+      expect(body, `function body unexpectedly matches ${re}`).not.toMatch(re)
     }
   })
 })
