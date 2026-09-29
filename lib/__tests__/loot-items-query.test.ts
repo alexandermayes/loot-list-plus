@@ -5,6 +5,7 @@ import {
   resolveTierIdsForPhases,
   type LootItemCharacter,
 } from '../loot-items-query'
+import { classicRaids } from '@/data/classic-wow-raids'
 
 /**
  * Minimal in-memory Supabase client stand-in. Only implements the query
@@ -472,6 +473,68 @@ describe('fetchFilteredLootItems', () => {
       raid_tier_name: string | null
     }>
     expect(result[0].raid_tier_name).toBe('Black Temple')
+  })
+})
+
+// ─── GH-284: Classic raid recipes visible to every class ───────
+
+// Built from the real catalog, not hard-coded, so a future recipe added to
+// or removed from data/classic-wow-raids.ts is reflected here automatically.
+// A unique id per raid (raid name plus wowhead id) is required because 7
+// formulas are listed under both Ruins of Ahn'Qiraj and Temple of Ahn'Qiraj.
+const gh284RecipeRows = classicRaids.flatMap((raid) =>
+  raid.bosses.flatMap((boss) =>
+    boss.items
+      .filter((raidItem) => raidItem.slot === 'Recipe')
+      .map((raidItem) =>
+        item(`${raid.name}-${raidItem.wowhead_id}`, {
+          name: raidItem.name,
+          item_slot: 'Recipe',
+          wowhead_id: raidItem.wowhead_id,
+          armor_type: null,
+          weapon_type: null,
+          classification: 'Unlimited',
+          allocation_cost: 0,
+        })
+      )
+  )
+)
+
+const CLASSIC_CLASSES = [
+  'Warrior', 'Paladin', 'Hunter', 'Rogue', 'Priest', 'Shaman', 'Mage', 'Warlock', 'Druid',
+] as const
+
+describe('GH-284: Classic raid recipes visible to every class', () => {
+  it('the catalog has exactly 28 Classic raid recipe rows', () => {
+    // Guards against an empty or partial catalog passing the class checks
+    // below silently (an empty list would "match" for every class).
+    expect(gh284RecipeRows).toHaveLength(28)
+  })
+
+  it.each(CLASSIC_CLASSES)('lists every Classic raid recipe for %s', async (className) => {
+    // The Mage run also carries a Plate control row: if the picker ever
+    // stopped filtering by armor proficiency, this row would leak through
+    // and the test would catch it, proving the assertion below can fail.
+    const controlRow = item('plate-control', {
+      name: 'Plate Control Chestpiece',
+      item_slot: 'Chest',
+      armor_type: 'Plate',
+    })
+    const rows = className === 'Mage' ? [...gh284RecipeRows, controlRow] : gh284RecipeRows
+
+    const supabase = makeMockSupabase({
+      loot_items: rows,
+      wow_classes: allClasses,
+      class_specs: allSpecs,
+    })
+    const character = warrior({ class_name: className, class_id: `class-${className.toLowerCase()}` })
+    const result = (await fetchFilteredLootItems(supabase, character, ['tier-1'])) as Array<{ id: string }>
+    const ids = result.map((r) => r.id).sort()
+
+    expect(ids).toEqual(gh284RecipeRows.map((r) => r.id).sort())
+    if (className === 'Mage') {
+      expect(ids).not.toContain('plate-control')
+    }
   })
 })
 

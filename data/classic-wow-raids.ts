@@ -22,11 +22,21 @@
  * - 'Trash': drops from non-boss mobs.
  * - 'Tier 3 Tokens': the Naxxramas Desecrated tokens.
  *
+ * Also covers the raid-specific profession recipes of Molten Core and both
+ * Ahn'Qiraj raids, as slot 'Recipe' (Unlimited, cost 0, every class; GH-284).
+ * The 69 generic world-drop recipes are left out on purpose. Each id is
+ * listed once per raid, but the same id may appear in two raids: 7 AQ
+ * enchanting formulas drop in both Ruins of Ahn'Qiraj and Temple of Ahn'Qiraj,
+ * so they are listed once under each raid's 'Shared Boss Loot' group.
+ *
  * Token-slot items need a TOKEN_CLASS_MAPPING entry (data/token-class-mapping.ts)
  * or they are offered to every class. data/__tests__/classic-catalog-completeness.test.ts
  * fails if an Epic drop the wow-classic-items package attributes to one of
- * these raids is missing here without a recorded reason (GH-273), and checks
- * token class lists against the package.
+ * these raids is missing here without a recorded reason (GH-273), checks
+ * token class lists against the package, and (in the 'Classic raid
+ * profession recipes (#284)' describe, driven by
+ * data/__tests__/fixtures/classic-gh284-recipes.ts) fails if a Molten Core or
+ * Ahn'Qiraj profession recipe is missing, moved or extra.
  */
 
 export interface LootItem {
@@ -316,6 +326,25 @@ export const moltenCore: Raid = {
         // Legendary Quest Items
         { name: 'Eye of Sulfuras', slot: 'Quest', wowhead_id: 17204 },
         { name: 'Essence of the Firelord', slot: 'Quest', wowhead_id: 19017 },
+      ],
+    },
+    {
+      name: 'Shared Boss Loot',
+      items: [
+        // GH-284: these 10 profession recipes share one loot table across
+        // the seven bosses from Lucifron to Golemagg the Incinerator, per
+        // Wowhead and AtlasLoot. Not recorded from Sulfuron Harbinger,
+        // Majordomo Executus or Ragnaros.
+        { name: 'Pattern: Core Armor Kit', slot: 'Recipe', wowhead_id: 18252 },
+        { name: 'Recipe: Major Rejuvenation Potion', slot: 'Recipe', wowhead_id: 18257 },
+        { name: 'Formula: Enchant Weapon - Spell Power', slot: 'Recipe', wowhead_id: 18259 },
+        { name: 'Formula: Enchant Weapon - Healing Power', slot: 'Recipe', wowhead_id: 18260 },
+        { name: 'Plans: Elemental Sharpening Stone', slot: 'Recipe', wowhead_id: 18264 },
+        { name: 'Pattern: Flarecore Wraps', slot: 'Recipe', wowhead_id: 18265 },
+        { name: 'Schematic: Biznicks 247x128 Accurascope', slot: 'Recipe', wowhead_id: 18290 },
+        { name: 'Schematic: Force Reactive Disk', slot: 'Recipe', wowhead_id: 18291 },
+        { name: 'Schematic: Core Marksman Rifle', slot: 'Recipe', wowhead_id: 18292 },
+        { name: 'Pattern: Core Felcloth Bag', slot: 'Recipe', wowhead_id: 21371 },
       ],
     },
     {
@@ -864,6 +893,8 @@ export const ruinsOfAhnQiraj: Raid = {
         { name: 'Legplates of the Destroyer', slot: 'Legs', wowhead_id: 21475 },
         { name: 'Cloak of the Savior', slot: 'Back', wowhead_id: 21470 },
         { name: 'Ring of Fury', slot: 'Finger', wowhead_id: 21477 },
+        // GH-284
+        { name: 'Plans: Black Grasp of the Destroyer', slot: 'Recipe', wowhead_id: 22220 },
       ],
     },
     {
@@ -892,6 +923,15 @@ export const ruinsOfAhnQiraj: Raid = {
         // weapon quest rewards
         { name: 'Qiraji Spiked Hilt', slot: 'Quest', wowhead_id: 20886 },
         { name: 'Qiraji Ornate Hilt', slot: 'Quest', wowhead_id: 20890 },
+        // GH-284: drop from all six bosses; also drop in Temple of Ahn'Qiraj,
+        // so they are listed in both raids.
+        { name: 'Formula: Enchant Gloves - Shadow Power', slot: 'Recipe', wowhead_id: 20727 },
+        { name: 'Formula: Enchant Gloves - Frost Power', slot: 'Recipe', wowhead_id: 20728 },
+        { name: 'Formula: Enchant Gloves - Fire Power', slot: 'Recipe', wowhead_id: 20729 },
+        { name: 'Formula: Enchant Gloves - Healing Power', slot: 'Recipe', wowhead_id: 20730 },
+        { name: 'Formula: Enchant Gloves - Superior Agility', slot: 'Recipe', wowhead_id: 20731 },
+        { name: 'Formula: Enchant Cloak - Stealth', slot: 'Recipe', wowhead_id: 20734 },
+        { name: 'Formula: Enchant Cloak - Dodge', slot: 'Recipe', wowhead_id: 20736 },
       ],
     },
   ],
@@ -917,6 +957,8 @@ export const templeOfAhnQiraj: Raid = {
         { name: 'Boots of the Redeemed Prophecy', slot: 'Feet', wowhead_id: 21704 },
         { name: 'Boots of the Unwavering Will', slot: 'Feet', wowhead_id: 21706 },
         { name: 'Boots of the Fallen Prophet', slot: 'Feet', wowhead_id: 21705 },
+        // GH-284
+        { name: 'Plans: Thick Obsidian Breastplate', slot: 'Recipe', wowhead_id: 22222 },
       ],
     },
     {
@@ -1021,6 +1063,9 @@ export const templeOfAhnQiraj: Raid = {
         // Tier 2.5 helm tokens
         { name: "Vek'lor's Diadem", slot: 'Token', wowhead_id: 20930 },
         { name: "Vek'nilash's Circlet", slot: 'Token', wowhead_id: 20926 },
+        // GH-284: Emperor Vek'nilash and Emperor Vek'lor respectively
+        { name: 'Formula: Enchant Gloves - Threat', slot: 'Recipe', wowhead_id: 20726 },
+        { name: 'Formula: Enchant Cloak - Subtlety', slot: 'Recipe', wowhead_id: 20735 },
       ],
     },
     {
@@ -1069,6 +1114,15 @@ export const templeOfAhnQiraj: Raid = {
         // Drop from every boss except C'Thun; turned in for a weapon or shield
         { name: 'Imperial Qiraji Armaments', slot: 'Token', wowhead_id: 21232 },
         { name: 'Imperial Qiraji Regalia', slot: 'Token', wowhead_id: 21237 },
+        // GH-284: drop from every boss except the Twin Emperors and C'Thun;
+        // the same ids are in Ruins of Ahn'Qiraj.
+        { name: 'Formula: Enchant Gloves - Shadow Power', slot: 'Recipe', wowhead_id: 20727 },
+        { name: 'Formula: Enchant Gloves - Frost Power', slot: 'Recipe', wowhead_id: 20728 },
+        { name: 'Formula: Enchant Gloves - Fire Power', slot: 'Recipe', wowhead_id: 20729 },
+        { name: 'Formula: Enchant Gloves - Healing Power', slot: 'Recipe', wowhead_id: 20730 },
+        { name: 'Formula: Enchant Gloves - Superior Agility', slot: 'Recipe', wowhead_id: 20731 },
+        { name: 'Formula: Enchant Cloak - Stealth', slot: 'Recipe', wowhead_id: 20734 },
+        { name: 'Formula: Enchant Cloak - Dodge', slot: 'Recipe', wowhead_id: 20736 },
       ],
     },
     {

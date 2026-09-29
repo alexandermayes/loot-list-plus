@@ -17,6 +17,16 @@ export interface ItemTypeInfo {
  *
  * armor_type: Cloth | Leather | Mail | Plate (for armor slots)
  * weapon_type: Dagger | One-Handed Sword | Two-Handed Axe | Staff | etc (for weapon slots)
+ *
+ * Items with no armor or weapon type (tokens, quest items, and recipes such
+ * as the GH-284 Classic raid recipes) intentionally have no entry here. For
+ * a slot 'Recipe' row the picker (lib/loot-items-query.ts) infers no type
+ * and treats the slot as class-agnostic, so every class sees it. A
+ * weapon_type entry on a recipe would hide it from classes without that
+ * proficiency, because the picker's weapon check runs before the
+ * class-agnostic check. Any entry here also fails the package-agreement
+ * check in data/__tests__/classic-catalog-completeness.test.ts, since the
+ * package attributes no armor or weapon type to a Recipe-class item.
  */
 export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   // ============================================================================
