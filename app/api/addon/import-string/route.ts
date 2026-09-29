@@ -4,10 +4,17 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError, trackEvent } from '@/utils/analytics/server'
 import { notifyLootAward, type LootAward } from '@/lib/discord-loot-announcements'
-import { recomputeBlpForEvents } from '@/utils/blp/recompute'
-import { importAttendanceByTeam } from '@/utils/raid-events/team-routing'
-import { resolveGuildLootItem, resolveGuildLootItemIds, formatInvalidLootItemIdsError } from '@/lib/loot/guild-scoped-lookup'
+import { recomputeBlpForEvents, recomputeBlpForItems } from '@/utils/blp/recompute'
+import { importAttendanceByTeam, findAwardRaidEvent } from '@/utils/raid-events/team-routing'
+import {
+  resolveGuildLootItem,
+  resolveGuildLootItemIds,
+  formatInvalidLootItemIdsError,
+  type LootItemHints,
+} from '@/lib/loot/guild-scoped-lookup'
 import { buildImportStringAwardRow, type LootItemScope } from '@/lib/loot/loot-history-rows'
+import { insertAddonAward } from '@/lib/loot/addon-award-insert'
+import { matchAwardSession } from '@/lib/addon/award-session'
 import { inflateRawSync } from 'zlib'
 
 interface AddonAward {
@@ -56,6 +63,17 @@ interface ImportPayload {
  * when both fail is the import rejected with 400, before any award or
  * attendance record is processed. Rows carry raid_tier_id and expansion_id
  * from whichever guild-owned scope the award resolved to.
+ *
+ * GH #295/#307: attendance is written before awards, so the raid nights the
+ * export's sessions create already exist when the awards link to them. Each
+ * award is matched to the attendance session that contains its awardedAt
+ * (matchAwardSession); that session's raidDate picks the raid night
+ * (findAwardRaidEvent, find-only, guild-scoped, team-aware), and its live
+ * boss kill and instance name pick the tier when the item sits in more than
+ * one (resolveGuildLootItem hints). The addon's cached lootItemId is
+ * replaced only when those live hints decided between tiers (OD-6). A
+ * re-imported award already on its night counts as processed and in
+ * awards.already_recorded, not as an error, and is not announced again.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -128,27 +146,17 @@ export async function POST(request: NextRequest) {
     }
 
     const results = {
-      awards: { processed: 0, errors: 0 },
+      awards: { processed: 0, errors: 0, already_recorded: 0 },
       attendance: { processed: 0, errors: 0 },
     }
     const announceQueue: LootAward[] = []
+    const attendance = payload.attendance || []
 
-    // Process awards
-    for (let i = 0; i < awards.length; i++) {
-      const award = awards[i]
-      try {
-        const announceEntry = await processAward(supabase, payload.guildId, user.id, award, awardScopes.scopeByIndex.get(i) ?? null)
-        results.awards.processed++
-        if (announceEntry) announceQueue.push(announceEntry)
-      } catch (err) {
-        console.error('Failed to process award:', err)
-        results.awards.errors++
-      }
-    }
-
-    // Process attendance
+    // Process attendance FIRST (GH #295 PD-07): importAttendanceByTeam
+    // creates the payload's raid nights, so the awards below can link to
+    // them. Awards never create a night themselves.
     const attendanceEventIds = new Set<string>()
-    for (const record of payload.attendance || []) {
+    for (const record of attendance) {
       try {
         const raidEventIds = await processAttendance(supabase, payload.guildId, record)
         for (const id of raidEventIds) attendanceEventIds.add(id)
@@ -159,10 +167,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Awards above are processed before attendance, so credit BLP now that
-    // attendance exists. Recompute is idempotent (GH #98 race).
+    // Process awards, each linked to its session's raid night when one matches.
+    const linkedItemIds = new Set<string>()
+    for (let i = 0; i < awards.length; i++) {
+      const award = awards[i]
+      try {
+        const outcome = await processAward(
+          supabase,
+          payload.guildId,
+          user.id,
+          award,
+          awardScopes.scopeByIndex.get(i) ?? null,
+          attendance
+        )
+        results.awards.processed++
+        if (outcome.status === 'already_recorded') {
+          results.awards.already_recorded++
+          continue
+        }
+        announceQueue.push(outcome.announce)
+        if (outcome.raidEventId) linkedItemIds.add(outcome.announce.itemId)
+      } catch (err) {
+        console.error('Failed to process award:', err)
+        results.awards.errors++
+      }
+    }
+
+    // BLP is derived and idempotent (GH #98). Recompute for the nights the
+    // attendance touched (credits for drops already on them), and for every
+    // item newly linked to a night here (PD-09).
     if (attendanceEventIds.size > 0) {
       after(() => recomputeBlpForEvents(supabase, payload.guildId, [...attendanceEventIds]))
+    }
+    if (linkedItemIds.size > 0) {
+      after(() => recomputeBlpForItems(supabase, payload.guildId, [...linkedItemIds]))
     }
 
     if (results.awards.processed > 0) {
@@ -252,25 +290,45 @@ async function resolveImportAwardScopes(
   return { scopeByIndex, invalidLootItemIds }
 }
 
+type ProcessAwardOutcome =
+  | { status: 'inserted'; announce: LootAward; raidEventId: string | null }
+  | { status: 'already_recorded' }
+
 async function processAward(
   supabase: ReturnType<typeof createServiceRoleClient>,
   guildId: string,
   userId: string,
   award: AddonAward,
-  preResolvedScope: LootItemScope | null
-): Promise<LootAward | null> {
+  preResolvedScope: LootItemScope | null,
+  attendance: unknown
+): Promise<ProcessAwardOutcome> {
+  // The export's own attendance session for this award, if any (PD-07).
+  // Its boss kill and instance name are live; the award's bossName and
+  // raidName echo the cached catalog row, so award.raidName is never used.
+  const session = matchAwardSession(award.awardedAt, attendance)
+  const hints: LootItemHints = session
+    ? { bossName: session.bossName, raidName: session.raidName }
+    : { bossName: award.bossName ?? null }
+
   // Resolution order (GH #294 D-01/D-02, OD-2):
   //  1. preResolvedScope — set by resolveImportAwardScopes whenever the
   //     award supplied a lootItemId, whether the guild owned it directly or
   //     it needed the wowheadId fallback. A foreign lootItemId can never
   //     reach here unmapped: resolveImportAwardScopes already rejected the
-  //     whole import with 400 if it could not resolve one.
+  //     whole import with 400 if it could not resolve one. GH #307 OD-6:
+  //     the addon's lootItemId is its cached catalog row, so when the live
+  //     session hints decide between the guild's tiers, that row wins.
   //  2. resolveGuildLootItem by wowheadId, trying the exact id first and
   //     its faction alias second (GH #277 D-03, SCOPE-01) — the path used
   //     when no lootItemId was supplied at all.
   let item: LootItemScope | null = preResolvedScope
-  if (!item && award.wowheadId) {
-    item = await resolveGuildLootItem(supabase, guildId, award.wowheadId)
+  if (item && session && award.wowheadId) {
+    const live = await resolveGuildLootItem(supabase, guildId, award.wowheadId, hints)
+    if (live && (live.matched_by === 'boss' || live.matched_by === 'boss_tier' || live.matched_by === 'raid')) {
+      item = live
+    }
+  } else if (!item && award.wowheadId) {
+    item = await resolveGuildLootItem(supabase, guildId, award.wowheadId, hints)
   }
 
   if (!item) {
@@ -297,8 +355,21 @@ async function processAward(
     }
   }
 
+  // The guild's raid night for the session's raidDate (exact, even for a
+  // session that crosses 00:00 UTC), or else the awardedAt date (GH #295).
+  // A lookup failure saves the award unlinked instead of failing it.
+  let raidEventId: string | null = null
+  try {
+    const night = await findAwardRaidEvent(supabase, guildId, session?.raidDate ?? award.awardedAt, characterId)
+    raidEventId = night.raidEventId
+  } catch (nightError) {
+    console.error('Failed to look up the raid night for an imported award:', nightError)
+    trackApiError('unknown', 'POST /api/addon/import-string', nightError instanceof Error ? nightError : new Error(String(nightError)))
+  }
+
   const today = new Date().toISOString().split('T')[0]
-  const { error } = await supabase.from('loot_history').insert(
+  const result = await insertAddonAward(
+    supabase,
     buildImportStringAwardRow({
       guildId,
       item,
@@ -307,12 +378,17 @@ async function processAward(
       awardedAt: award.awardedAt,
       manual: award.manual,
       awardedBy: userId,
+      raidEventId,
       today,
     })
   )
 
-  if (error) throw error
-  return { itemId: item.id, characterName: award.characterName }
+  if (result.status === 'already_recorded') return { status: 'already_recorded' }
+  return {
+    status: 'inserted',
+    announce: { itemId: item.id, characterName: award.characterName, raidEventId },
+    raidEventId,
+  }
 }
 
 async function processAttendance(
