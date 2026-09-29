@@ -25,6 +25,12 @@ interface LootAwardRequest {
  * D-03, SCOPE-01) — see lib/loot/guild-scoped-lookup.ts. The inserted row
  * carries raid_tier_id and expansion_id from that same guild-scoped lookup
  * (GH #294 D-01) via buildAddonAwardRow.
+ *
+ * GH #307: when the item sits in more than one of the guild's tiers, the
+ * award's boss_name picks the tier (the tier whose row has that boss, or
+ * whose 'Shared Boss Loot' / 'Trash' row sits with that boss). No raid name
+ * is passed: the companion sends none, and the addon's award raidName is
+ * the cached catalog row's raid, not the live instance.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -51,7 +57,7 @@ export async function POST(request: NextRequest) {
     // would silently hide a real error behind an ordinary-looking response.
     let lootItem
     try {
-      lootItem = await resolveGuildLootItem(supabase, guild_id, wowhead_id)
+      lootItem = await resolveGuildLootItem(supabase, guild_id, wowhead_id, { bossName: boss_name ?? null })
     } catch (lookupError) {
       console.error('Failed to resolve guild-scoped loot item:', lookupError)
       trackApiError('unknown', 'POST /api/addon/loot-award', lookupError instanceof Error ? lookupError : new Error(String(lookupError)))

@@ -23,8 +23,8 @@ const GUILD_ID = 'guild-1'
 const OTHER_GUILD_ID = 'guild-2'
 
 type ExpansionRow = { id: string; guild_id: string }
-type TierRow = { id: string; expansion_id: string }
-type ItemRow = { id: string; name: string; raid_tier_id: string; wowhead_id: number }
+type TierRow = { id: string; expansion_id: string; name?: string }
+type ItemRow = { id: string; name: string; raid_tier_id: string; wowhead_id: number; boss_name?: string }
 type Call = { table: string; filters: Array<[string, unknown]> }
 
 interface Fixture {
@@ -88,8 +88,11 @@ function makeClient(fixture: Fixture) {
               return Promise.resolve({ data: null, error: { message: 'loot_items boom' } }).then(resolve)
             }
             const tierIdsFilter = (call.filters.find(([col]) => col === 'raid_tier_id')?.[1] ?? []) as string[]
-            const wowheadFilter = call.filters.find(([col]) => col === 'wowhead_id')?.[1]
-            const rows = fixture.items.filter(item => tierIdsFilter.includes(item.raid_tier_id) && item.wowhead_id === wowheadFilter)
+            const wowheadEntry = call.filters.find(([col]) => col === 'wowhead_id')
+            // No wowhead_id filter: the GH #307 boss-roster query for the candidate tiers.
+            const rows = fixture.items.filter(item =>
+              tierIdsFilter.includes(item.raid_tier_id) && (!wowheadEntry || item.wowhead_id === wowheadEntry[1])
+            )
             return Promise.resolve({ data: rows, error: null }).then(resolve)
           }
           if (table === 'character_guild_memberships') {
@@ -333,5 +336,50 @@ describe('POST /api/addon/loot-award', () => {
 
     expect(res.status).toBe(500)
     expect(body.error).not.toContain('No loot item found')
+  })
+
+  describe('GH #307: multi-tier items follow the award boss', () => {
+    function aqFixture(): Fixture {
+      return {
+        activeExpansionId: 'exp-classic',
+        expansions: [{ id: 'exp-classic', guild_id: GUILD_ID }],
+        tiers: [
+          { id: 'tier-a-aq20', expansion_id: 'exp-classic', name: "Ruins of Ahn'Qiraj" },
+          { id: 'tier-b-aq40', expansion_id: 'exp-classic', name: "Temple of Ahn'Qiraj" },
+        ],
+        items: [
+          { id: 'aq40-20727', name: 'Formula', raid_tier_id: 'tier-b-aq40', wowhead_id: 20727, boss_name: 'Shared Boss Loot' },
+          { id: 'aq20-20727', name: 'Formula', raid_tier_id: 'tier-a-aq20', wowhead_id: 20727, boss_name: 'Shared Boss Loot' },
+          { id: 'aq40-cthun', name: "C'Thun drop", raid_tier_id: 'tier-b-aq40', wowhead_id: 21221, boss_name: "C'Thun" },
+          { id: 'aq20-ossirian', name: 'Ossirian drop', raid_tier_id: 'tier-a-aq20', wowhead_id: 21220, boss_name: 'Ossirian the Unscarred' },
+        ],
+      }
+    }
+
+    const insertPayload = (calls: Call[]) =>
+      lootHistoryInsert(calls)?.filters.find(([col]) => col === '__insert_payload__')?.[1] as {
+        loot_item_id: string
+        raid_tier_id: string
+      }
+
+    it("files 20727 with boss C'Thun under Temple of Ahn'Qiraj", async () => {
+      const { client, calls } = makeClient(aqFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 20727, character_name: 'Thrall', boss_name: "C'Thun" }))
+      expect(res.status).toBe(200)
+      expect(insertPayload(calls).loot_item_id).toBe('aq40-20727')
+      expect(insertPayload(calls).raid_tier_id).toBe('tier-b-aq40')
+    })
+
+    it("files 20727 with boss 'Shared Boss Loot' under the fallback tier (AQ20)", async () => {
+      const { client, calls } = makeClient(aqFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 20727, character_name: 'Thrall', boss_name: 'Shared Boss Loot' }))
+      expect(res.status).toBe(200)
+      expect(insertPayload(calls).loot_item_id).toBe('aq20-20727')
+      expect(insertPayload(calls).raid_tier_id).toBe('tier-a-aq20')
+    })
   })
 })
