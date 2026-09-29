@@ -39,6 +39,9 @@ export interface BuildAddonAwardRowInput {
   awardedBy: string
   notes?: string | null
   bossName?: string | null
+  /** The guild's raid night for this award (GH #295), or null/absent when
+   * no single night matched. */
+  raidEventId?: string | null
   today: string
 }
 
@@ -48,9 +51,13 @@ export interface BuildAddonAwardRowInput {
  * guild-scoped lookup result, which the route previously omitted entirely —
  * raid_tier_id is NOT NULL with no default, so every addon award failed
  * with a 500 before this fix.
+ *
+ * GH #295: raid_event_id is the raid night the route found with
+ * findAwardRaidEvent (always the guild's own), or null when none matched,
+ * so the award counts for BLP and the per-night duplicate index applies.
  */
 export function buildAddonAwardRow(input: BuildAddonAwardRowInput): LootHistoryInsert {
-  const { guildId, item, characterId, characterName, awardedDate, awardedBy, notes, bossName, today } = input
+  const { guildId, item, characterId, characterName, awardedDate, awardedBy, notes, bossName, raidEventId, today } = input
   return {
     guild_id: guildId,
     character_id: characterId,
@@ -62,6 +69,7 @@ export function buildAddonAwardRow(input: BuildAddonAwardRowInput): LootHistoryI
     awarded_by: awardedBy,
     source: 'addon',
     notes: notes || (bossName ? `Dropped from ${bossName}` : null),
+    raid_event_id: raidEventId ?? null,
   }
 }
 
@@ -114,6 +122,8 @@ export interface BuildImportStringAwardRowInput {
   awardedAt?: string | null
   manual?: boolean
   awardedBy: string
+  /** The guild's raid night for this award (GH #295), or null/absent. */
+  raidEventId?: string | null
   today: string
 }
 
@@ -124,9 +134,12 @@ export interface BuildImportStringAwardRowInput {
  * directly, the wowheadId-resolved item when it falls back (OD-2), or the
  * wowheadId-only resolution when no lootItemId was supplied at all. A
  * lootItemId the guild does not own is never passed in here.
+ *
+ * GH #295: raid_event_id is the raid night the route found for the award's
+ * attendance session (or its awardedAt date), or null when none matched.
  */
 export function buildImportStringAwardRow(input: BuildImportStringAwardRowInput): LootHistoryInsert {
-  const { guildId, item, characterId, characterName, awardedAt, manual, awardedBy, today } = input
+  const { guildId, item, characterId, characterName, awardedAt, manual, awardedBy, raidEventId, today } = input
   return {
     guild_id: guildId,
     character_id: characterId,
@@ -138,6 +151,7 @@ export function buildImportStringAwardRow(input: BuildImportStringAwardRowInput)
     awarded_by: awardedBy,
     source: 'addon',
     notes: manual ? 'Manual award from addon' : null,
+    raid_event_id: raidEventId ?? null,
   }
 }
 

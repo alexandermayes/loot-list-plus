@@ -251,3 +251,27 @@ describe('buildRemoveItemHistoryRow', () => {
     expect('raid_event_id' in row).toBe(false)
   })
 })
+
+describe('GH #295: raid_event_id on the addon builders', () => {
+  it('buildAddonAwardRow sets raid_event_id to null when absent, or to the given night', () => {
+    const base = {
+      guildId: 'guild-1', item: ITEM, characterId: null, characterName: 'Thrall',
+      awardedBy: 'user-1', today: '2026-09-21',
+    }
+    expect(buildAddonAwardRow(base).raid_event_id).toBeNull()
+    expect(buildAddonAwardRow({ ...base, raidEventId: null }).raid_event_id).toBeNull()
+    expect(buildAddonAwardRow({ ...base, raidEventId: 'ev-1' }).raid_event_id).toBe('ev-1')
+  })
+
+  it('buildImportStringAwardRow sets raid_event_id to null when absent, or to the given night', () => {
+    const base = {
+      guildId: 'guild-1', item: ITEM, characterId: null, characterName: 'Thrall',
+      awardedBy: 'user-1', today: '2026-09-21', awardedAt: '2026-09-21T01:00:00Z',
+    }
+    expect(buildImportStringAwardRow(base).raid_event_id).toBeNull()
+    const linked = buildImportStringAwardRow({ ...base, raidEventId: 'ev-1' })
+    expect(linked.raid_event_id).toBe('ev-1')
+    // awarded_date rules are unchanged by the link.
+    expect(linked.awarded_date).toBe('2026-09-21')
+  })
+})
