@@ -7,6 +7,10 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { buildAddonAwardRow } from '@/lib/loot/loot-history-rows'
+import { trackEvent, trackApiError } from '@/utils/analytics/server'
+import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
+import { notifyLootAward } from '@/lib/discord-loot-announcements'
+import { recomputeBlpForItems } from '@/utils/blp/recompute'
 
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
@@ -14,6 +18,7 @@ vi.mock('@/utils/server-roles', () => ({ verifyOfficerPermissions: vi.fn() }))
 vi.mock('@/utils/analytics/server', () => ({ trackEvent: vi.fn(), trackApiError: vi.fn() }))
 vi.mock('@/utils/analytics/funnel', () => ({ evaluateGuildFunnel: vi.fn() }))
 vi.mock('@/lib/discord-loot-announcements', () => ({ notifyLootAward: vi.fn() }))
+vi.mock('@/utils/blp/recompute', () => ({ recomputeBlpForItems: vi.fn(), recomputeBlpForEvents: vi.fn() }))
 vi.mock('next/server', async (importOriginal) => ({
   ...(await importOriginal<typeof import('next/server')>()),
   after: (fn: () => unknown) => fn(),
@@ -23,8 +28,8 @@ const GUILD_ID = 'guild-1'
 const OTHER_GUILD_ID = 'guild-2'
 
 type ExpansionRow = { id: string; guild_id: string }
-type TierRow = { id: string; expansion_id: string }
-type ItemRow = { id: string; name: string; raid_tier_id: string; wowhead_id: number }
+type TierRow = { id: string; expansion_id: string; name?: string }
+type ItemRow = { id: string; name: string; raid_tier_id: string; wowhead_id: number; boss_name?: string }
 type Call = { table: string; filters: Array<[string, unknown]> }
 
 interface Fixture {
@@ -33,7 +38,16 @@ interface Fixture {
   items: ItemRow[]
   activeExpansionId?: string
   characters?: Array<{ character_id: string; characters: { id: string; name: string } }>
-  errorOn?: 'expansions' | 'raid_tiers' | 'guilds' | 'loot_items'
+  errorOn?: 'expansions' | 'raid_tiers' | 'guilds' | 'loot_items' | 'raid_events'
+  /** GH #295 raid nights and team assignments (team-routing stays real). */
+  raidEvents?: Array<{ id: string; guild_id: string; raid_date: string; raid_team_id: string | null }>
+  teamMembers?: Array<{ guild_id: string; character_id: string; raid_team_id: string }>
+  /** loot_history insert error (e.g. a 23505 on a re-send). */
+  insertError?: { code?: string; message: string }
+  /** Row returned by the post-23505 existing-row lookup. */
+  lookupRow?: { id: string } | null
+  /** Rows returned by the unmatched-name same-night pre-check. */
+  existingUnmatched?: Array<{ id: string; character_name: string | null }>
 }
 
 /**
@@ -55,6 +69,7 @@ function makeClient(fixture: Fixture) {
         insert: (payload: unknown) => { call.filters.push(['__insert_payload__', payload]); return builder },
         eq: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         in: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
+        is: (col: string, val: unknown) => { call.filters.push([`is:${col}`, val]); return builder },
         limit: () => builder,
         single: () => {
           if (table === 'guilds') {
@@ -62,11 +77,33 @@ function makeClient(fixture: Fixture) {
             return Promise.resolve({ data: { active_expansion_id: fixture.activeExpansionId ?? null }, error: null })
           }
           if (table === 'loot_history') {
+            if (fixture.insertError) return Promise.resolve({ data: null, error: fixture.insertError })
             return Promise.resolve({ data: { id: 'hist-1' }, error: null })
           }
           return Promise.resolve({ data: null, error: null })
         },
+        maybeSingle: () => {
+          if (table === 'loot_history') return Promise.resolve({ data: fixture.lookupRow ?? null, error: null })
+          return Promise.resolve({ data: null, error: null })
+        },
         then: (resolve: (v: unknown) => unknown) => {
+          const filterValue = (col: string) => call.filters.find(([c]) => c === col)?.[1]
+          if (table === 'raid_events') {
+            if (fixture.errorOn === 'raid_events') {
+              return Promise.resolve({ data: null, error: { message: 'raid_events boom' } }).then(resolve)
+            }
+            const rows = (fixture.raidEvents ?? [])
+              .filter(e => e.guild_id === filterValue('guild_id') && e.raid_date === filterValue('raid_date'))
+              .map(e => ({ id: e.id, raid_team_id: e.raid_team_id }))
+            return Promise.resolve({ data: rows, error: null }).then(resolve)
+          }
+          if (table === 'raid_team_members') {
+            const rows = (fixture.teamMembers ?? []).filter(m => m.guild_id === filterValue('guild_id'))
+            return Promise.resolve({ data: rows, error: null }).then(resolve)
+          }
+          if (table === 'loot_history') {
+            return Promise.resolve({ data: fixture.existingUnmatched ?? [], error: null }).then(resolve)
+          }
           if (table === 'expansions') {
             if (fixture.errorOn === 'expansions') {
               return Promise.resolve({ data: null, error: { message: 'expansions boom' } }).then(resolve)
@@ -88,8 +125,11 @@ function makeClient(fixture: Fixture) {
               return Promise.resolve({ data: null, error: { message: 'loot_items boom' } }).then(resolve)
             }
             const tierIdsFilter = (call.filters.find(([col]) => col === 'raid_tier_id')?.[1] ?? []) as string[]
-            const wowheadFilter = call.filters.find(([col]) => col === 'wowhead_id')?.[1]
-            const rows = fixture.items.filter(item => tierIdsFilter.includes(item.raid_tier_id) && item.wowhead_id === wowheadFilter)
+            const wowheadEntry = call.filters.find(([col]) => col === 'wowhead_id')
+            // No wowhead_id filter: the GH #307 boss-roster query for the candidate tiers.
+            const rows = fixture.items.filter(item =>
+              tierIdsFilter.includes(item.raid_tier_id) && (!wowheadEntry || item.wowhead_id === wowheadEntry[1])
+            )
             return Promise.resolve({ data: rows, error: null }).then(resolve)
           }
           if (table === 'character_guild_memberships') {
@@ -126,6 +166,7 @@ const lootHistoryInsert = (calls: Call[]) =>
 
 describe('POST /api/addon/loot-award', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'user-1' }, error: null } as never)
     vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
   })
@@ -333,5 +374,202 @@ describe('POST /api/addon/loot-award', () => {
 
     expect(res.status).toBe(500)
     expect(body.error).not.toContain('No loot item found')
+  })
+
+  describe('GH #307: multi-tier items follow the award boss', () => {
+    function aqFixture(): Fixture {
+      return {
+        activeExpansionId: 'exp-classic',
+        expansions: [{ id: 'exp-classic', guild_id: GUILD_ID }],
+        tiers: [
+          { id: 'tier-a-aq20', expansion_id: 'exp-classic', name: "Ruins of Ahn'Qiraj" },
+          { id: 'tier-b-aq40', expansion_id: 'exp-classic', name: "Temple of Ahn'Qiraj" },
+        ],
+        items: [
+          { id: 'aq40-20727', name: 'Formula', raid_tier_id: 'tier-b-aq40', wowhead_id: 20727, boss_name: 'Shared Boss Loot' },
+          { id: 'aq20-20727', name: 'Formula', raid_tier_id: 'tier-a-aq20', wowhead_id: 20727, boss_name: 'Shared Boss Loot' },
+          { id: 'aq40-cthun', name: "C'Thun drop", raid_tier_id: 'tier-b-aq40', wowhead_id: 21221, boss_name: "C'Thun" },
+          { id: 'aq20-ossirian', name: 'Ossirian drop', raid_tier_id: 'tier-a-aq20', wowhead_id: 21220, boss_name: 'Ossirian the Unscarred' },
+        ],
+      }
+    }
+
+    const insertPayload = (calls: Call[]) =>
+      lootHistoryInsert(calls)?.filters.find(([col]) => col === '__insert_payload__')?.[1] as {
+        loot_item_id: string
+        raid_tier_id: string
+      }
+
+    it("files 20727 with boss C'Thun under Temple of Ahn'Qiraj", async () => {
+      const { client, calls } = makeClient(aqFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 20727, character_name: 'Thrall', boss_name: "C'Thun" }))
+      expect(res.status).toBe(200)
+      expect(insertPayload(calls).loot_item_id).toBe('aq40-20727')
+      expect(insertPayload(calls).raid_tier_id).toBe('tier-b-aq40')
+    })
+
+    it("files 20727 with boss 'Shared Boss Loot' under the fallback tier (AQ20)", async () => {
+      const { client, calls } = makeClient(aqFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 20727, character_name: 'Thrall', boss_name: 'Shared Boss Loot' }))
+      expect(res.status).toBe(200)
+      expect(insertPayload(calls).loot_item_id).toBe('aq20-20727')
+      expect(insertPayload(calls).raid_tier_id).toBe('tier-a-aq20')
+    })
+  })
+
+  describe('GH #295: raid night linking and re-sends', () => {
+    const DATE = '2026-09-20'
+    const thrall = [{ character_id: 'char-1', characters: { id: 'char-1', name: 'Thrall' } }]
+
+    function nightFixture(extra: Partial<Fixture> = {}): Fixture {
+      return {
+        ...singleItemFixture({ id: 'item-19003', name: 'Head of Nefarian', wowhead_id: 19003 }),
+        characters: thrall,
+        raidEvents: [
+          // Another guild's night on the same date comes first: it must never be picked.
+          { id: 'ev-other-guild', guild_id: OTHER_GUILD_ID, raid_date: DATE, raid_team_id: null },
+          { id: 'ev-mine', guild_id: GUILD_ID, raid_date: DATE, raid_team_id: null },
+        ],
+        ...extra,
+      }
+    }
+
+    const insertPayload = (calls: Call[]) =>
+      lootHistoryInsert(calls)?.filters.find(([col]) => col === '__insert_payload__')?.[1] as { raid_event_id: string | null }
+
+    it("links to the guild's own night for awarded_date, never another guild's night on the same date", async () => {
+      const { client, calls } = makeClient(nightFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 19003, character_name: 'Thrall', awarded_date: DATE }))
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(insertPayload(calls).raid_event_id).toBe('ev-mine')
+      expect(body.data).toMatchObject({ id: 'hist-1', raid_event_id: 'ev-mine', raid_night: 'linked', already_recorded: false })
+      const nightQuery = calls.find(c => c.table === 'raid_events')
+      expect(nightQuery?.filters).toEqual([['guild_id', GUILD_ID], ['raid_date', DATE]])
+      expect(calls.some(c => c.table === 'raid_events' && c.filters.some(([col]) => col === '__insert_payload__'))).toBe(false)
+    })
+
+    it('recomputes BLP for the item and announces with the night when linked and inserted', async () => {
+      const { client } = makeClient(nightFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      await POST(request({ guild_id: GUILD_ID, wowhead_id: 19003, character_name: 'Thrall', awarded_date: DATE }))
+
+      expect(recomputeBlpForItems).toHaveBeenCalledWith(client, GUILD_ID, ['item-19003'])
+      expect(notifyLootAward).toHaveBeenCalledWith(client, GUILD_ID, [
+        { itemId: 'item-19003', characterName: 'Thrall', raidEventId: 'ev-mine' },
+      ])
+      expect(trackEvent).toHaveBeenCalledTimes(1)
+      expect(evaluateGuildFunnel).toHaveBeenCalledTimes(1)
+    })
+
+    it('saves unlinked with 200 and no BLP recompute when the guild has no night that date', async () => {
+      const { client, calls } = makeClient(nightFixture({ raidEvents: [] }))
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 19003, character_name: 'Thrall', awarded_date: DATE }))
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(insertPayload(calls).raid_event_id).toBeNull()
+      expect(body.data).toMatchObject({ raid_event_id: null, raid_night: 'no_raid_night', already_recorded: false })
+      expect(recomputeBlpForItems).not.toHaveBeenCalled()
+      expect(notifyLootAward).toHaveBeenCalledWith(client, GUILD_ID, [
+        { itemId: 'item-19003', characterName: 'Thrall', raidEventId: null },
+      ])
+    })
+
+    it("saves unlinked with no raid_events query when awarded_date is absent (never matches the server's today)", async () => {
+      const { client, calls } = makeClient(nightFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 19003, character_name: 'Thrall' }))
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(insertPayload(calls).raid_event_id).toBeNull()
+      expect(body.data.raid_night).toBe('no_date')
+      expect(calls.some(c => c.table === 'raid_events')).toBe(false)
+    })
+
+    it("uses the raider's team night in a team guild", async () => {
+      const { client, calls } = makeClient(nightFixture({
+        raidEvents: [
+          { id: 'ev-team-a', guild_id: GUILD_ID, raid_date: DATE, raid_team_id: 'team-a' },
+          { id: 'ev-team-b', guild_id: GUILD_ID, raid_date: DATE, raid_team_id: 'team-b' },
+        ],
+        teamMembers: [
+          { guild_id: GUILD_ID, character_id: 'char-1', raid_team_id: 'team-b' },
+          { guild_id: GUILD_ID, character_id: 'char-2', raid_team_id: 'team-a' },
+        ],
+      }))
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 19003, character_name: 'thrall', awarded_date: DATE }))
+      expect(res.status).toBe(200)
+      expect(insertPayload(calls).raid_event_id).toBe('ev-team-b')
+    })
+
+    it('saves unlinked with 200 and reports the error when the night lookup throws', async () => {
+      const { client, calls } = makeClient(nightFixture({ errorOn: 'raid_events' }))
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 19003, character_name: 'Thrall', awarded_date: DATE }))
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(insertPayload(calls).raid_event_id).toBeNull()
+      expect(body.data.raid_night).toBe('lookup_failed')
+      expect(trackApiError).toHaveBeenCalledWith('unknown', 'POST /api/addon/loot-award', expect.any(Error))
+    })
+
+    it('a re-send on the same night returns 200 already_recorded with the existing id and no side effects', async () => {
+      const { client } = makeClient(nightFixture({ insertError: { code: '23505', message: 'duplicate key' }, lookupRow: { id: 'hist-old' } }))
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 19003, character_name: 'Thrall', awarded_date: DATE }))
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(body.data).toMatchObject({ id: 'hist-old', raid_event_id: 'ev-mine', already_recorded: true })
+      expect(notifyLootAward).not.toHaveBeenCalled()
+      expect(trackEvent).not.toHaveBeenCalled()
+      expect(evaluateGuildFunnel).not.toHaveBeenCalled()
+      expect(recomputeBlpForItems).not.toHaveBeenCalled()
+    })
+
+    it('an unmatched name already on the night is already_recorded with no insert', async () => {
+      const { client, calls } = makeClient(nightFixture({
+        characters: [],
+        existingUnmatched: [{ id: 'hist-name', character_name: 'Pugrogue' }],
+      }))
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 19003, character_name: 'pugrogue', awarded_date: DATE }))
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(body.data).toMatchObject({ id: 'hist-name', already_recorded: true })
+      expect(lootHistoryInsert(calls)).toBeUndefined()
+    })
+
+    it('a non-duplicate insert error still returns 500 Failed to record award', async () => {
+      const { client } = makeClient(nightFixture({ insertError: { code: '23514', message: 'trigger' } }))
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 19003, character_name: 'Thrall', awarded_date: DATE }))
+      const body = await res.json()
+
+      expect(res.status).toBe(500)
+      expect(body.error).toBe('Failed to record award')
+      expect(notifyLootAward).not.toHaveBeenCalled()
+    })
   })
 })

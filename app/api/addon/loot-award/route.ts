@@ -6,6 +6,9 @@ import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { notifyLootAward } from '@/lib/discord-loot-announcements'
 import { resolveGuildLootItem } from '@/lib/loot/guild-scoped-lookup'
 import { buildAddonAwardRow } from '@/lib/loot/loot-history-rows'
+import { insertAddonAward, type AddonAwardInsertResult } from '@/lib/loot/addon-award-insert'
+import { findAwardRaidEvent } from '@/utils/raid-events/team-routing'
+import { recomputeBlpForItems } from '@/utils/blp/recompute'
 
 interface LootAwardRequest {
   guild_id: string
@@ -25,6 +28,20 @@ interface LootAwardRequest {
  * D-03, SCOPE-01) — see lib/loot/guild-scoped-lookup.ts. The inserted row
  * carries raid_tier_id and expansion_id from that same guild-scoped lookup
  * (GH #294 D-01) via buildAddonAwardRow.
+ *
+ * GH #307: when the item sits in more than one of the guild's tiers, the
+ * award's boss_name picks the tier (the tier whose row has that boss, or
+ * whose 'Shared Boss Loot' / 'Trash' row sits with that boss). No raid name
+ * is passed: the companion sends none, and the addon's award raidName is
+ * the cached catalog row's raid, not the live instance.
+ *
+ * GH #295: the award is linked to the guild's raid night for its
+ * awarded_date and the raider's team (findAwardRaidEvent, the raid-tracking
+ * import's team rules). The night is only ever found, never created; with
+ * no single night, no awarded_date, or a failed lookup the award is saved
+ * unlinked, exactly as before, and never rejected. A re-sent award on the
+ * same night returns 200 with already_recorded true and no side effects
+ * (insertAddonAward). A newly linked award recomputes BLP for its item.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -51,7 +68,7 @@ export async function POST(request: NextRequest) {
     // would silently hide a real error behind an ordinary-looking response.
     let lootItem
     try {
-      lootItem = await resolveGuildLootItem(supabase, guild_id, wowhead_id)
+      lootItem = await resolveGuildLootItem(supabase, guild_id, wowhead_id, { bossName: boss_name ?? null })
     } catch (lookupError) {
       console.error('Failed to resolve guild-scoped loot item:', lookupError)
       trackApiError('unknown', 'POST /api/addon/loot-award', lookupError instanceof Error ? lookupError : new Error(String(lookupError)))
@@ -80,12 +97,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Find the guild's raid night for this award (GH #295). Only the
+    // explicit awarded_date is matched, never the server's today. A lookup
+    // failure saves the award unlinked: the companion never retries a
+    // failed award, so a 500 here would lose it (PD-05).
+    let raidEventId: string | null = null
+    let raidNight: string
+    try {
+      const night = await findAwardRaidEvent(supabase, guild_id, awarded_date, characterId)
+      raidEventId = night.raidEventId
+      raidNight = night.outcome
+    } catch (nightError) {
+      console.error('Failed to look up the raid night for an addon award:', nightError)
+      trackApiError('unknown', 'POST /api/addon/loot-award', nightError instanceof Error ? nightError : new Error(String(nightError)))
+      raidNight = 'lookup_failed'
+    }
+
     // Insert loot history entry. raid_tier_id and expansion_id come from the
     // guild-scoped lookup above (GH #294 D-01) — not from the request.
     const today = new Date().toISOString().split('T')[0]
-    const { data: historyEntry, error: insertError } = await supabase
-      .from('loot_history')
-      .insert(
+    let result: AddonAwardInsertResult
+    try {
+      result = await insertAddonAward(
+        supabase,
         buildAddonAwardRow({
           guildId: guild_id,
           item: lootItem,
@@ -95,15 +129,28 @@ export async function POST(request: NextRequest) {
           awardedBy: access.userId,
           notes,
           bossName: boss_name,
+          raidEventId,
           today,
         })
       )
-      .select('id')
-      .single()
-
-    if (insertError) {
+    } catch (insertError) {
       console.error('Failed to insert loot history:', insertError)
       return NextResponse.json({ error: 'Failed to record award' }, { status: 500 })
+    }
+
+    const responseData = {
+      id: result.id,
+      item_name: lootItem.name,
+      character_name,
+      character_id: characterId,
+      raid_event_id: raidEventId,
+      raid_night: raidNight,
+    }
+
+    // A re-send of an award already on this night: nothing new happened,
+    // so no analytics, funnel check, Discord announcement or BLP recompute.
+    if (result.status === 'already_recorded') {
+      return NextResponse.json({ data: { ...responseData, already_recorded: true } })
     }
 
     trackEvent({
@@ -116,18 +163,17 @@ export async function POST(request: NextRequest) {
 
     after(() =>
       notifyLootAward(supabase, guild_id, [
-        { itemId: lootItem.id, characterName: character_name },
+        { itemId: lootItem.id, characterName: character_name, raidEventId },
       ])
     )
 
-    return NextResponse.json({
-      data: {
-        id: historyEntry?.id,
-        item_name: lootItem.name,
-        character_name,
-        character_id: characterId,
-      }
-    })
+    // A linked award is a drop at that night for BLP (PD-09). The SQL
+    // returns early when the guild has BLP off.
+    if (raidEventId) {
+      after(() => recomputeBlpForItems(supabase, guild_id, [lootItem.id]))
+    }
+
+    return NextResponse.json({ data: { ...responseData, already_recorded: false } })
   } catch (error) {
     console.error('Error in POST /api/addon/loot-award:', error)
     trackApiError('unknown', 'POST /api/addon/loot-award', error instanceof Error ? error : new Error(String(error)))

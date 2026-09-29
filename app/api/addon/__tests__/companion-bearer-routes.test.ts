@@ -21,9 +21,10 @@ vi.mock('@/utils/analytics/server', () => ({ trackEvent: vi.fn(), trackApiError:
 vi.mock('@/utils/analytics/funnel', () => ({ evaluateGuildFunnel: vi.fn() }))
 vi.mock('@/lib/discord-loot-announcements', () => ({ notifyLootAward: vi.fn() }))
 vi.mock('@/lib/loot/guild-scoped-lookup', () => ({ resolveGuildLootItem: vi.fn() }))
-vi.mock('@/utils/blp/recompute', () => ({ recomputeBlpForEvents: vi.fn() }))
+vi.mock('@/utils/blp/recompute', () => ({ recomputeBlpForEvents: vi.fn(), recomputeBlpForItems: vi.fn() }))
 vi.mock('@/utils/raid-events/team-routing', () => ({
   importAttendanceByTeam: vi.fn(async () => ({ eventIds: ['evt-1'], attendedCount: 0, absentCount: 0 })),
+  findAwardRaidEvent: vi.fn(async () => ({ raidEventId: null, outcome: 'no_raid_night' })),
 }))
 vi.mock('next/server', async (importOriginal) => ({
   ...(await importOriginal<typeof import('next/server')>()),

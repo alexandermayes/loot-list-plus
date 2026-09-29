@@ -36,6 +36,19 @@
  * GH #294: the lookup now also supplies the expansion so award rows carry
  * both required scope columns (raid_tier_id, expansion_id) a service-role
  * loot_history insert needs.
+ *
+ * GH #307: some items sit in more than one of a guild's raid tiers (the AQ
+ * formulas are 'Shared Boss Loot' in both Ruins and Temple of Ahn'Qiraj; the
+ * TBC T6 recipes are 'Trash' in both Black Temple and Hyjal Summit).
+ * resolveGuildLootItem now takes optional hints (the award's boss, the live
+ * instance name) and uses them to pick between those tiers, in this order:
+ * the tier whose row has that boss, then the one tier whose 'Shared Boss
+ * Loot' / 'Trash' row sits in a tier that has that boss, then the tier named
+ * by the raid hint, then the deterministic fallback. Group labels ('Shared
+ * Boss Loot', 'Trash', 'Unknown') are never a boss signal: the addon's
+ * award bossName is the cached catalog row's label (item.itemData.bossName
+ * in LootDistribution.lua), not the live encounter. Hints only ever choose
+ * among rows already scoped to the guild's own tiers.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -58,11 +71,52 @@ export interface GuildLootItemRow {
  */
 export interface ResolvedGuildLootItem extends GuildLootItemRow {
   expansion_id: string
+  /** Which rule picked the row (GH #307). 'single_tier' when every match
+   * sat in one tier, so no hint was needed. */
+  matched_by: LootItemMatch
 }
+
+/** Optional signals used to choose between a guild's tiers when an item
+ * sits in more than one of them (GH #307). */
+export interface LootItemHints {
+  /** The boss the item dropped from. Group labels are ignored. */
+  bossName?: string | null
+  /** The live raid instance name (raid_tiers.name). Never the addon
+   * award's own raidName, which echoes the cached catalog row. */
+  raidName?: string | null
+}
+
+export type LootItemMatch = 'single_tier' | 'boss' | 'boss_tier' | 'raid' | 'fallback'
 
 interface GuildRaidTier {
   id: string
   expansion_id: string
+  name: string | null
+}
+
+type CandidateRow = GuildLootItemRow & { expansion_id: string; boss_name: string | null }
+
+/** Catalog boss_name labels that group items rather than name a boss. */
+const GROUP_BOSS_LABELS = new Set(['shared boss loot', 'trash'])
+const UNKNOWN_LABEL = 'unknown'
+
+/**
+ * Normalises a boss or raid name for comparison: trims, turns curly
+ * apostrophes (U+2018, U+2019) into a plain one, collapses whitespace and
+ * lowercases. Returns null for a non-string or an empty result.
+ */
+export function normalizeCatalogName(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const normalized = value
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+  return normalized === '' ? null : normalized
+}
+
+function distinctTierIds(rows: Array<{ raid_tier_id: string }>): string[] {
+  return [...new Set(rows.map(row => row.raid_tier_id))]
 }
 
 /**
@@ -89,7 +143,7 @@ async function getGuildRaidTiers(supabase: QueryClient, guildId: string): Promis
 
   const { data: tiers, error: tiersError } = await supabase
     .from('raid_tiers')
-    .select('id, expansion_id')
+    .select('id, expansion_id, name')
     .in('expansion_id', expansionIds)
 
   if (tiersError) {
@@ -99,17 +153,97 @@ async function getGuildRaidTiers(supabase: QueryClient, guildId: string): Promis
   return (tiers ?? []) as GuildRaidTier[]
 }
 
-/** Deterministic tie-break when a guild has the same item under more than
- * one of its own expansions: the guild's active expansion wins; otherwise
- * the lowest raid_tier_id is picked, so the result never depends on
- * database return order. */
+/** Deterministic tie-break among candidate rows: the pool is the rows in
+ * the guild's active expansion when there are any, otherwise every row, and
+ * the pool row with the lowest raid_tier_id (then lowest id) wins. The
+ * result never depends on database return order, including when two
+ * candidate tiers are both in the active expansion (AQ20 and AQ40, or Black
+ * Temple and Hyjal Summit; GH #307 PD-03). */
 function pickDeterministic(
-  rows: Array<GuildLootItemRow & { expansion_id: string }>,
-  activeExpansionId: string | null
+  rows: CandidateRow[],
+  activeExpansionId: string | null,
+  matchedBy: LootItemMatch
 ): ResolvedGuildLootItem {
-  const active = activeExpansionId ? rows.find(row => row.expansion_id === activeExpansionId) : undefined
-  const chosen = active ?? [...rows].sort((a, b) => a.raid_tier_id.localeCompare(b.raid_tier_id))[0]
-  return { id: chosen.id, name: chosen.name, raid_tier_id: chosen.raid_tier_id, expansion_id: chosen.expansion_id }
+  const active = activeExpansionId ? rows.filter(row => row.expansion_id === activeExpansionId) : []
+  const pool = active.length > 0 ? active : rows
+  const chosen = [...pool].sort(
+    (a, b) => a.raid_tier_id.localeCompare(b.raid_tier_id) || a.id.localeCompare(b.id)
+  )[0]
+  return {
+    id: chosen.id,
+    name: chosen.name,
+    raid_tier_id: chosen.raid_tier_id,
+    expansion_id: chosen.expansion_id,
+    matched_by: matchedBy,
+  }
+}
+
+/**
+ * Picks among matches that sit in more than one tier (GH #307). Returns
+ * the chosen row with the rule that decided it. Only the 'boss_tier' step
+ * queries, and only against the guild's own candidate tier ids.
+ */
+async function pickAcrossTiers(
+  supabase: QueryClient,
+  guildId: string,
+  matches: CandidateRow[],
+  hints: LootItemHints,
+  tierNameById: Map<string, string | null>,
+  activeExpansionId: string | null
+): Promise<ResolvedGuildLootItem> {
+  const rawBoss = normalizeCatalogName(hints.bossName)
+  const bossHint = rawBoss && !GROUP_BOSS_LABELS.has(rawBoss) && rawBoss !== UNKNOWN_LABEL ? rawBoss : null
+
+  if (bossHint) {
+    // (a) the tier whose own row names this boss.
+    const byBoss = matches.filter(row => normalizeCatalogName(row.boss_name) === bossHint)
+    if (byBoss.length > 0) {
+      if (distinctTierIds(byBoss).length === 1) {
+        return pickDeterministic(byBoss, activeExpansionId, 'boss')
+      }
+    } else {
+      // (b) a 'Shared Boss Loot' / 'Trash' row in the one tier that has
+      // this boss. The roster query is limited to the group rows' tiers,
+      // which are always the guild's own candidate tiers (T-307-01), and
+      // the comparison is done here in JS, never with like or ilike.
+      const groupRows = matches.filter(row => {
+        const label = normalizeCatalogName(row.boss_name)
+        return label !== null && GROUP_BOSS_LABELS.has(label)
+      })
+      if (groupRows.length > 0) {
+        const { data: roster, error } = await supabase
+          .from('loot_items')
+          .select('raid_tier_id, boss_name')
+          .in('raid_tier_id', distinctTierIds(groupRows))
+
+        if (error) {
+          throw new Error(`Failed to load loot_items boss roster (guild ${guildId}): ${error.message}`)
+        }
+
+        const tiersWithBoss = new Set(
+          ((roster ?? []) as Array<{ raid_tier_id: string; boss_name: string | null }>)
+            .filter(row => normalizeCatalogName(row.boss_name) === bossHint)
+            .map(row => row.raid_tier_id)
+        )
+        const inBossTier = groupRows.filter(row => tiersWithBoss.has(row.raid_tier_id))
+        if (inBossTier.length > 0 && distinctTierIds(inBossTier).length === 1) {
+          return pickDeterministic(inBossTier, activeExpansionId, 'boss_tier')
+        }
+      }
+    }
+  }
+
+  // (c) the tier named by the live raid hint.
+  const raidHint = normalizeCatalogName(hints.raidName)
+  if (raidHint && raidHint !== UNKNOWN_LABEL) {
+    const byRaid = matches.filter(row => normalizeCatalogName(tierNameById.get(row.raid_tier_id)) === raidHint)
+    if (byRaid.length > 0 && distinctTierIds(byRaid).length === 1) {
+      return pickDeterministic(byRaid, activeExpansionId, 'raid')
+    }
+  }
+
+  // (d) nothing decided: the deterministic fallback.
+  return pickDeterministic(matches, activeExpansionId, 'fallback')
 }
 
 /**
@@ -122,6 +256,18 @@ function pickDeterministic(
  * alias) under any of its own raid tiers — including when another guild
  * happens to have one, which is exactly the leak this function closes.
  *
+ * When every match sits in one tier, that row is returned ('single_tier')
+ * with no extra query, exactly as before GH #307. When the matches span
+ * more than one of the guild's tiers, the hints choose between them in
+ * this order (GH #307 D-01): the tier whose row has hints.bossName
+ * ('boss'); else the one tier whose 'Shared Boss Loot' or 'Trash' row sits
+ * in a tier that has that boss ('boss_tier'); else the tier whose name is
+ * hints.raidName ('raid'); else the active expansion, then the lowest
+ * raid_tier_id ('fallback'). Group labels and 'Unknown' are not a boss
+ * signal, because the addon sends the cached catalog row's boss label
+ * (LootDistribution.lua), not the live encounter. Hints never widen the
+ * scope: they only choose among the guild's own rows.
+ *
  * Throws if any underlying query errors, so a rejected filter or a
  * transient DB error surfaces as a real failure instead of a false "not
  * found".
@@ -129,13 +275,15 @@ function pickDeterministic(
 export async function resolveGuildLootItem(
   supabase: QueryClient,
   guildId: string,
-  wowheadId: number
+  wowheadId: number,
+  hints: LootItemHints = {}
 ): Promise<ResolvedGuildLootItem | null> {
   const tiers = await getGuildRaidTiers(supabase, guildId)
   if (tiers.length === 0) return null
 
   const tierIds = tiers.map(t => t.id)
   const expansionByTier = new Map(tiers.map(t => [t.id, t.expansion_id]))
+  const tierNameById = new Map(tiers.map(t => [t.id, t.name ?? null]))
 
   const { data: guild, error: guildError } = await supabase
     .from('guilds')
@@ -151,7 +299,7 @@ export async function resolveGuildLootItem(
   for (const candidate of wowheadIdCandidates(wowheadId)) {
     const { data: rows, error } = await supabase
       .from('loot_items')
-      .select('id, name, raid_tier_id')
+      .select('id, name, raid_tier_id, boss_name')
       .eq('wowhead_id', candidate)
       .in('raid_tier_id', tierIds)
 
@@ -159,9 +307,9 @@ export async function resolveGuildLootItem(
       throw new Error(`Failed to look up loot_items for wowhead_id ${candidate} (guild ${guildId}): ${error.message}`)
     }
 
-    const matches = (rows ?? []) as GuildLootItemRow[]
+    const matches = (rows ?? []) as Array<GuildLootItemRow & { boss_name?: string | null }>
     if (matches.length > 0) {
-      const withExpansion = matches.map(row => {
+      const withExpansion: CandidateRow[] = matches.map(row => {
         const expansionId = expansionByTier.get(row.raid_tier_id)
         if (expansionId === undefined) {
           // Every match came from a tier id in tierIds, which is built from
@@ -170,9 +318,18 @@ export async function resolveGuildLootItem(
           // bug, not a valid "no expansion" result.
           throw new Error(`No expansion mapping for raid_tier_id ${row.raid_tier_id} (guild ${guildId})`)
         }
-        return { ...row, expansion_id: expansionId }
+        return {
+          id: row.id,
+          name: row.name,
+          raid_tier_id: row.raid_tier_id,
+          expansion_id: expansionId,
+          boss_name: row.boss_name ?? null,
+        }
       })
-      return pickDeterministic(withExpansion, activeExpansionId)
+      if (distinctTierIds(withExpansion).length === 1) {
+        return pickDeterministic(withExpansion, activeExpansionId, 'single_tier')
+      }
+      return pickAcrossTiers(supabase, guildId, withExpansion, hints, tierNameById, activeExpansionId)
     }
   }
 
