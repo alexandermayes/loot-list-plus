@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label";
 import { LoadingSpinner, Spinner } from "@/components/ui/loading-spinner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Heading, Text, LabelText } from "@/components/ui/typography";
+import { BRAND_COLORS, QUALITY_COLORS } from '@/lib/design-system/quality-colors';
+import { Heading, Text } from "@/components/ui/typography";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { InfoTooltip } from "@/components/ui/info-tooltip";
@@ -170,9 +171,9 @@ function SubsectionHeader({ title, description }: { title: string; description?:
 // Preview card for component examples
 function PreviewCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`bg-background-elevated border border-border rounded-xl p-6 ${className}`}>
+    <Card className={`p-6 ${className}`}>
       {children}
-    </div>
+    </Card>
   );
 }
 
@@ -280,6 +281,10 @@ export default function DesignSystemPage() {
         {/* Main Content */}
         <main className="flex-1 px-4 sm:px-6 lg:px-8 py-8 space-y-16 min-w-0">
 
+          <p className="text-sm text-muted-foreground">
+            Token values are normative in <code className="text-accent">DESIGN.md</code> at the repo root. This page shows how they render. It does not restate their exact numbers.
+          </p>
+
           {/* ============================================== */}
           {/* FOUNDATIONS */}
           {/* ============================================== */}
@@ -309,9 +314,9 @@ export default function DesignSystemPage() {
                     <p className="text-xs text-muted-foreground">Sidebar, secondary areas</p>
                   </div>
                   <div className="space-y-2">
-                    <div className="h-20 rounded-xl bg-background-elevated border border-border flex items-center justify-center">
+                    <Card className="h-20 flex items-center justify-center">
                       <span className="text-xs text-foreground-secondary">background-elevated</span>
-                    </div>
+                    </Card>
                     <p className="text-xs text-muted-foreground">Cards, modals, dropdowns</p>
                   </div>
                 </div>
@@ -320,13 +325,14 @@ export default function DesignSystemPage() {
               {/* Accent & Status */}
               <div>
                 <SubsectionHeader title="Accent & Status" />
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                   {[
-                    { name: 'accent', bg: 'bg-accent', fg: 'text-accent-foreground', desc: 'Primary brand', hex: '#ff8000' },
-                    { name: 'success', bg: 'bg-success', fg: 'text-success-foreground', desc: 'Positive actions', hex: 'green' },
-                    { name: 'warning', bg: 'bg-warning', fg: 'text-warning-foreground', desc: 'Caution states', hex: 'yellow' },
-                    { name: 'error', bg: 'bg-error', fg: 'text-error-foreground', desc: 'Destructive actions', hex: 'red' },
-                    { name: 'discord', bg: 'bg-discord', fg: 'text-discord-foreground', desc: 'Discord integration', hex: '#5865F2' },
+                    { name: 'accent', bg: 'bg-accent', fg: 'text-accent-foreground', desc: 'Primary brand' },
+                    { name: 'success', bg: 'bg-success', fg: 'text-success-foreground', desc: 'Positive actions' },
+                    { name: 'warning', bg: 'bg-warning', fg: 'text-warning-foreground', desc: 'Caution states' },
+                    { name: 'error', bg: 'bg-error', fg: 'text-error-foreground', desc: 'Destructive actions' },
+                    { name: 'discord', bg: 'bg-discord', fg: 'text-discord-foreground', desc: 'Discord integration' },
+                    { name: 'standby', bg: 'bg-standby', fg: 'text-standby-foreground', desc: 'Benched, needs revision' },
                   ].map((color) => (
                     <div key={color.name} className="space-y-2">
                       <div className={`h-16 rounded-xl ${color.bg} flex items-center justify-center`}>
@@ -336,6 +342,44 @@ export default function DesignSystemPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* Faction Colours */}
+              <div>
+                <SubsectionHeader title="Faction Colours" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <div className="h-16 rounded-xl bg-alliance" />
+                    <p className="text-xs text-muted-foreground">alliance: Alliance faction</p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-16 rounded-xl bg-horde" />
+                    <p className="text-xs text-muted-foreground">horde: Horde faction</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Item Quality & Brand */}
+              <div>
+                <SubsectionHeader title="Item Quality & Brand" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+                  {[
+                    { name: 'quality-epic', bg: 'bg-quality-epic', desc: 'Epic item quality', value: QUALITY_COLORS.epic },
+                    { name: 'quality-uncommon', bg: 'bg-quality-uncommon', desc: 'Uncommon item quality', value: QUALITY_COLORS.uncommon },
+                    { name: 'brand-battlenet', bg: 'bg-brand-battlenet', desc: 'Battle.net', value: BRAND_COLORS.battlenet },
+                    { name: 'brand-discord', bg: 'bg-brand-discord', desc: 'Discord brand', value: BRAND_COLORS.discord },
+                    { name: 'brand-wcl', bg: 'bg-brand-wcl', desc: 'Warcraft Logs', value: BRAND_COLORS.wcl },
+                  ].map((color) => (
+                    <div key={color.name} className="space-y-2">
+                      <div className={`h-16 rounded-xl ${color.bg}`} />
+                      <p className="text-xs text-muted-foreground">{color.name}</p>
+                      <p className="text-xs text-muted-foreground">{color.desc} ({color.value})</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  <code className="text-accent">brand-discord</code> is Discord&apos;s exact brand hex; the <code className="text-accent">discord</code> token above is a separate, theme-tuned Discord blue. Both exist on purpose.
+                </p>
               </div>
 
               {/* Text Colors */}
@@ -379,24 +423,43 @@ export default function DesignSystemPage() {
                 <PreviewCard>
                   <div className="space-y-4">
                     {[
-                      { text: 'Page Title', class: 'text-5xl font-bold', size: '42px' },
-                      { text: 'Large Heading', class: 'text-4xl font-bold', size: '32px' },
-                      { text: 'Section Heading', class: 'text-3xl font-bold', size: '24px' },
-                      { text: 'Subsection', class: 'text-2xl font-semibold', size: '20px' },
-                      { text: 'Card Title', class: 'text-xl font-semibold', size: '18px' },
-                      { text: 'Emphasized Text', class: 'text-lg font-medium', size: '16px' },
-                      { text: 'Larger Body', class: 'text-md', size: '14px' },
-                      { text: 'Default Body Text', class: 'text-base', size: '13px' },
-                      { text: 'Small Text / Labels', class: 'text-sm', size: '12px' },
-                      { text: 'Tiny Text / Badges', class: 'text-xs', size: '10px' },
+                      { text: 'Page Title', class: 'text-5xl font-bold' },
+                      { text: 'Large Heading', class: 'text-4xl font-bold' },
+                      { text: 'Section Heading', class: 'text-3xl font-bold' },
+                      { text: 'Subsection', class: 'text-2xl font-semibold' },
+                      { text: 'Card Title', class: 'text-xl font-semibold' },
+                      { text: 'Emphasized Text', class: 'text-lg font-medium' },
+                      { text: 'Emphasized Body', class: 'text-15' },
+                      { text: 'Larger Body', class: 'text-md' },
+                      { text: 'Default Body Text', class: 'text-base' },
+                      { text: 'Small Text / Labels', class: 'text-sm' },
+                      { text: 'Tiny Text / Badges', class: 'text-xs' },
                     ].map((item, i) => (
                       <div key={i} className="flex items-baseline justify-between border-b border-border pb-3 last:border-0 last:pb-0">
                         <span className={item.class}>{item.text}</span>
-                        <span className="text-xs text-muted-foreground">{item.class} ({item.size})</span>
+                        <span className="text-xs text-muted-foreground">{item.class}</span>
                       </div>
                     ))}
                   </div>
                 </PreviewCard>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Exact pixel values for every step, including the pixel-named and display aliases, are in <code className="text-accent">DESIGN.md</code> § Typography.
+                </p>
+              </div>
+
+              {/* Reading Measure */}
+              <div>
+                <SubsectionHeader title="Reading Measure" />
+                <PreviewCard>
+                  <div className="prose-measure">
+                    <p className="text-foreground-secondary">
+                      Long lines of text are harder to track from the end of one line to the start of the next, especially in body copy meant to be read start to finish rather than scanned. Capping the measure, the number of characters per line, at roughly seventy characters keeps the eye&apos;s return sweep short and steady, which is why editorial typography has settled on somewhere between forty five and seventy five characters as the practical range for comfortable reading. This paragraph exists only to demonstrate that constraint: at a wide viewport its line should visibly wrap well before reaching the edge of the surrounding content area, proving the seventy character cap is doing real work rather than being declared and never exercised.
+                    </p>
+                  </div>
+                </PreviewCard>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Long-form public pages (blog, research, compare, pricing FAQ) cap their reading line at <code className="text-accent">.prose-measure</code> (<code className="text-accent">max-width: 70ch</code>). Not used inside the authenticated app; shown here for completeness.
+                </p>
               </div>
 
               {/* Heading Component */}
@@ -425,17 +488,17 @@ export default function DesignSystemPage() {
                 />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   <PreviewCard>
-                    <LabelText className="mb-3">Sizes</LabelText>
+                    <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">Sizes</Text>
                     <div className="space-y-2">
-                      <Text size="lg">Large (16px)</Text>
-                      <Text size="md">Medium (14px)</Text>
-                      <Text size="base">Base (13px)</Text>
-                      <Text size="sm">Small (12px)</Text>
-                      <Text size="xs">Tiny (10px)</Text>
+                      <Text size="lg">Large</Text>
+                      <Text size="md">Medium</Text>
+                      <Text size="base">Base</Text>
+                      <Text size="sm">Small</Text>
+                      <Text size="xs">Tiny</Text>
                     </div>
                   </PreviewCard>
                   <PreviewCard>
-                    <LabelText className="mb-3">Colors</LabelText>
+                    <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">Colors</Text>
                     <div className="space-y-2">
                       <Text color="default">Default</Text>
                       <Text color="secondary">Secondary</Text>
@@ -446,7 +509,7 @@ export default function DesignSystemPage() {
                     </div>
                   </PreviewCard>
                   <PreviewCard>
-                    <LabelText className="mb-3">Weights</LabelText>
+                    <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">Weights</Text>
                     <div className="space-y-2">
                       <Text weight="normal">Normal</Text>
                       <Text weight="medium">Medium</Text>
@@ -459,18 +522,21 @@ export default function DesignSystemPage() {
 
               {/* Label Text */}
               <div>
-                <SubsectionHeader title="Label Text" description="Uppercase labels for sections and forms" />
+                <SubsectionHeader title="Label Text" description="Consolidated into Text, no longer a separate uppercase treatment" />
                 <PreviewCard>
                   <div className="flex gap-8">
                     <div>
-                      <LabelText size="xs">Extra Small</LabelText>
-                      <p className="text-xs text-muted-foreground mt-1">10px uppercase</p>
+                      <Text size="sm" weight="semibold" color="secondary" as="span">Extra Small</Text>
+                      <p className="text-xs text-muted-foreground mt-1">12px, not uppercase (was 10px uppercase pre-migration)</p>
                     </div>
                     <div>
-                      <LabelText size="sm">Small</LabelText>
-                      <p className="text-xs text-muted-foreground mt-1">12px uppercase</p>
+                      <Text size="sm" weight="semibold" color="secondary" as="span">Small</Text>
+                      <p className="text-xs text-muted-foreground mt-1">12px, not uppercase</p>
                     </div>
                   </div>
+                  <p className="text-xs text-muted-foreground mt-4">
+                    This is the app&apos;s only label convention: <code className="text-accent">Label</code> for form fields, <code className="text-accent">Text</code> for section headings. The former uppercase label treatment and its dedicated class were removed in Phase 08.
+                  </p>
                 </PreviewCard>
               </div>
             </div>
@@ -514,7 +580,7 @@ export default function DesignSystemPage() {
                 <SubsectionHeader title="Common Patterns" />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <PreviewCard>
-                    <LabelText className="mb-3">Page Layout</LabelText>
+                    <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">Page Layout</Text>
                     <div className="border border-dashed border-accent/50 rounded-lg">
                       <div className="bg-accent/10 p-8">
                         <div className="bg-background rounded text-center py-4 text-sm text-muted-foreground">
@@ -525,7 +591,7 @@ export default function DesignSystemPage() {
                     <p className="text-xs text-muted-foreground mt-2">Page content: <code className="text-accent">p-8</code> (32px)</p>
                   </PreviewCard>
                   <PreviewCard>
-                    <LabelText className="mb-3">Card Padding</LabelText>
+                    <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">Card Padding</Text>
                     <div className="border border-dashed border-accent/50 rounded-lg">
                       <div className="bg-accent/10 p-6">
                         <div className="bg-background rounded text-center py-4 text-sm text-muted-foreground">
@@ -540,7 +606,7 @@ export default function DesignSystemPage() {
 
               {/* Guidelines */}
               <PreviewCard className="bg-background">
-                <LabelText className="mb-4">Quick Reference</LabelText>
+                <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-4">Quick Reference</Text>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="space-y-2">
                     <p><strong>Page padding:</strong> <code className="text-accent">p-8</code></p>
@@ -579,10 +645,10 @@ export default function DesignSystemPage() {
                     { icon: CheckListIcon, label: 'Raid Tracking' },
                     { icon: HelpCircleIcon, label: 'Help' },
                   ].map(({ icon: Icon, label }) => (
-                    <div key={label} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-background-elevated border border-border min-w-[90px]">
+                    <Card key={label} className="flex flex-col items-center gap-2 p-3 min-w-[90px]">
                       <HugeiconsIcon icon={Icon} size={20} className="text-foreground" />
                       <span className="text-xs text-muted-foreground">{label}</span>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               </div>
@@ -604,9 +670,9 @@ export default function DesignSystemPage() {
                     { icon: Link01Icon, label: 'Link' },
                     { icon: RefreshIcon, label: 'Refresh' },
                   ].map(({ icon: Icon, label }) => (
-                    <div key={label} className="flex flex-col items-center gap-2 p-3 rounded-xl bg-background-elevated border border-border w-16">
+                    <Card key={label} className="flex flex-col items-center gap-2 p-3 w-16">
                       <HugeiconsIcon icon={Icon} size={20} className="text-foreground" />
-                    </div>
+                    </Card>
                   ))}
                 </div>
               </div>
@@ -615,26 +681,26 @@ export default function DesignSystemPage() {
               <div>
                 <SubsectionHeader title="Status & Feedback" />
                 <div className="flex flex-wrap gap-3">
-                  <div className="flex flex-col items-center gap-2 p-3 rounded-xl bg-background-elevated border border-border">
+                  <Card className="flex flex-col items-center gap-2 p-3">
                     <HugeiconsIcon icon={CheckmarkCircle01Icon} size={20} className="text-success" />
                     <span className="text-xs text-muted-foreground">Success</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-2 p-3 rounded-xl bg-background-elevated border border-border">
+                  </Card>
+                  <Card className="flex flex-col items-center gap-2 p-3">
                     <HugeiconsIcon icon={AlertCircleIcon} size={20} className="text-warning" />
                     <span className="text-xs text-muted-foreground">Warning</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-2 p-3 rounded-xl bg-background-elevated border border-border">
+                  </Card>
+                  <Card className="flex flex-col items-center gap-2 p-3">
                     <HugeiconsIcon icon={Cancel01Icon} size={20} className="text-error" />
                     <span className="text-xs text-muted-foreground">Error</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-2 p-3 rounded-xl bg-background-elevated border border-border">
+                  </Card>
+                  <Card className="flex flex-col items-center gap-2 p-3">
                     <HugeiconsIcon icon={InformationCircleIcon} size={20} className="text-info" />
                     <span className="text-xs text-muted-foreground">Info</span>
-                  </div>
-                  <div className="flex flex-col items-center gap-2 p-3 rounded-xl bg-background-elevated border border-border">
+                  </Card>
+                  <Card className="flex flex-col items-center gap-2 p-3">
                     <Spinner size="lg" className="text-foreground-secondary" />
                     <span className="text-xs text-muted-foreground">Loading</span>
-                  </div>
+                  </Card>
                 </div>
               </div>
 
@@ -794,6 +860,16 @@ export default function DesignSystemPage() {
             />
 
             <div className="space-y-8">
+              {/* Focus Ring */}
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Every focusable primitive draws a visible ring from <code className="text-accent">--ring</code> (<code className="text-accent">focus-visible:ring-2 ring-ring ring-offset-2 ring-offset-background</code>). Tab through the controls on this page to see it.
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  In light mode the ring clears 3:1 contrast against the card surface but falls short against the page and modal surfaces (2.913 and 2.726 respectively); dark mode clears 3:1 against all three. Tracked for a future <code className="text-accent">--ring</code> value fix, not yet applied.
+                </p>
+              </div>
+
               {/* Input Variants */}
               <div>
                 <SubsectionHeader title="Input" />
@@ -1277,7 +1353,22 @@ export default function DesignSystemPage() {
                   <p className="text-foreground-secondary">Special card with accent border.</p>
                 </CardContent>
               </Card>
+
+              <Card>
+                <Card variant="nested" className="p-4">
+                  <CardContent className="p-0">Guild</CardContent>
+                </Card>
+                <Card variant="nested" className="p-4">
+                  <CardContent className="p-0">Raid schedule</CardContent>
+                </Card>
+                <Card variant="nested" className="p-4">
+                  <CardContent className="p-0">Loot rules</CardContent>
+                </Card>
+              </Card>
             </div>
+            <p className="text-xs text-muted-foreground mt-4">
+              The <code className="text-accent">nested</code> variant renders a divider instead of a second border and background when a card sits inside another card. Used in Settings and other stacked-content contexts.
+            </p>
           </Section>
 
           {/* Modals */}
@@ -1320,6 +1411,23 @@ export default function DesignSystemPage() {
                     <p><code className="text-accent">ModalBody</code> - Scrollable content area</p>
                     <p><code className="text-accent">ModalFooter</code> - Action buttons</p>
                   </div>
+                </PreviewCard>
+              </div>
+
+              {/* Modal Behaviour */}
+              <div>
+                <SubsectionHeader title="Modal Behaviour" description="What the demo above already proves" />
+                <PreviewCard className="bg-background">
+                  <div className="space-y-2 text-sm">
+                    <p><code className="text-accent">role=&quot;dialog&quot;</code> and <code className="text-accent">aria-modal=&quot;true&quot;</code> are set on the modal root.</p>
+                    <p>Its accessible name comes from <code className="text-accent">ModalTitle</code>, wired through context.</p>
+                    <p>Focus trap: Tab cannot leave the modal while it is open.</p>
+                    <p>Focus returns to the triggering button on close.</p>
+                    <p>Escape closes the topmost modal when several are stacked (the same-zIndex tie-break fixed in commit <code className="text-accent">027129cd</code>).</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-4">
+                    Try it: open a modal, press Tab repeatedly (focus stays inside), then Escape (focus returns to the button you clicked).
+                  </p>
                 </PreviewCard>
               </div>
             </div>
@@ -1493,7 +1601,7 @@ export default function DesignSystemPage() {
                 <SubsectionHeader title="Skeleton Loaders" description="Placeholder shapes for content loading" />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <PreviewCard>
-                    <LabelText className="mb-3">Text Placeholders</LabelText>
+                    <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">Text Placeholders</Text>
                     <div className="space-y-2">
                       <Skeleton className="h-4 w-3/4" />
                       <Skeleton className="h-4 w-full" />
@@ -1501,7 +1609,7 @@ export default function DesignSystemPage() {
                     </div>
                   </PreviewCard>
                   <PreviewCard>
-                    <LabelText className="mb-3">Card Placeholder</LabelText>
+                    <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">Card Placeholder</Text>
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
                         <Skeleton className="h-10 w-10 rounded-full" />
@@ -1630,7 +1738,7 @@ export default function DesignSystemPage() {
 
               {/* Usage */}
               <PreviewCard className="bg-background">
-                <LabelText className="mb-4">Usage</LabelText>
+                <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-4">Usage</Text>
                 <div className="space-y-3 text-sm">
                   <div>
                     <p className="font-medium mb-1">Toast (temporary):</p>
@@ -1676,7 +1784,7 @@ export default function DesignSystemPage() {
                 <PreviewCard>
                   <div className="flex items-end gap-6">
                     <div className="inline-flex items-center gap-1">
-                      <span className="text-[12px] text-foreground-muted">Table header</span>
+                      <span className="text-12 text-foreground-muted">Table header</span>
                       <InfoTooltip content="Used inline with 11-12px label text." iconSize={11} />
                     </div>
                     <div className="inline-flex items-center gap-1">
@@ -1692,7 +1800,7 @@ export default function DesignSystemPage() {
               </div>
 
               <PreviewCard className="bg-background">
-                <LabelText className="mb-4">Usage</LabelText>
+                <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-4">Usage</Text>
                 <div className="space-y-3 text-sm">
                   <div>
                     <p className="font-medium mb-1">Inline with a label:</p>
@@ -1727,13 +1835,13 @@ export default function DesignSystemPage() {
                 <SubsectionHeader title="text-balance on Headings" description="Built into the Heading component. Distributes text evenly across lines." />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <PreviewCard>
-                    <LabelText className="mb-3">With text-balance</LabelText>
+                    <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">With text-balance</Text>
                     <h3 className="text-2xl font-semibold text-foreground text-balance max-w-[280px]">
                       A longer heading that wraps across multiple lines evenly
                     </h3>
                   </PreviewCard>
                   <PreviewCard>
-                    <LabelText className="mb-3">Without text-balance</LabelText>
+                    <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">Without text-balance</Text>
                     <h3 className="text-2xl font-semibold text-foreground max-w-[280px]" style={{ textWrap: 'wrap' } as React.CSSProperties}>
                       A longer heading that wraps across multiple lines evenly
                     </h3>
@@ -1751,7 +1859,7 @@ export default function DesignSystemPage() {
               </div>
 
               <PreviewCard className="bg-background">
-                <LabelText className="mb-4">Rules</LabelText>
+                <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-4">Rules</Text>
                 <div className="space-y-2 text-sm">
                   <p><code className="text-accent">text-balance</code> on headings (h1-h6). Auto-applied by <code className="text-accent">{"<Heading>"}</code>.</p>
                   <p><code className="text-accent">text-pretty</code> on body text. Auto-applied by <code className="text-accent">{"<Text>"}</code>.</p>
@@ -1773,7 +1881,7 @@ export default function DesignSystemPage() {
                 <SubsectionHeader title="Comparison" />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <PreviewCard>
-                    <LabelText className="mb-3">With tabular-nums</LabelText>
+                    <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">With tabular-nums</Text>
                     <div className="space-y-1 tabular-nums text-lg font-semibold text-foreground">
                       <p>1,111.10</p>
                       <p>8,888.80</p>
@@ -1782,7 +1890,7 @@ export default function DesignSystemPage() {
                     <p className="text-xs text-muted-foreground mt-2">Digits align vertically</p>
                   </PreviewCard>
                   <PreviewCard>
-                    <LabelText className="mb-3">Without tabular-nums</LabelText>
+                    <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">Without tabular-nums</Text>
                     <div className="space-y-1 text-lg font-semibold text-foreground" style={{ fontVariantNumeric: 'proportional-nums' }}>
                       <p>1,111.10</p>
                       <p>8,888.80</p>
@@ -1794,11 +1902,12 @@ export default function DesignSystemPage() {
               </div>
 
               <PreviewCard className="bg-background">
-                <LabelText className="mb-4">When to use</LabelText>
+                <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-4">When to use</Text>
                 <div className="space-y-2 text-sm">
                   <p>Scores, attendance points, rankings, loot scores, BLP values, percentages.</p>
-                  <p>Applied globally to <code className="text-accent">td</code>, <code className="text-accent">th</code>, and <code className="text-accent">[data-score]</code>.</p>
+                  <p>Applied globally to <code className="text-accent">td</code>, <code className="text-accent">th</code>, and <code className="text-accent">.tabular-nums</code>.</p>
                   <p>Add <code className="text-accent">tabular-nums</code> class to other numeric displays.</p>
+                  <p>Elements carrying <code className="text-accent">.tabular-nums</code> also render digits in Figtree (<code className="text-accent">--font-tabular</code>), a screened tabular-capable face chosen for zero glyph-advance jitter across weights. <code className="text-accent">td</code>/<code className="text-accent">th</code> alignment alone does not pick up Figtree; only sites with the explicit <code className="text-accent">.tabular-nums</code> class do.</p>
                 </div>
               </PreviewCard>
             </div>
@@ -1814,7 +1923,7 @@ export default function DesignSystemPage() {
             <PreviewCard>
               <div className="space-y-6">
                 <div>
-                  <LabelText className="mb-3">Correct</LabelText>
+                  <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">Correct</Text>
                   <div className="space-y-2 text-sm">
                     <p><code className="text-success">transition-colors</code> for background, text, border color changes</p>
                     <p><code className="text-success">transition-opacity</code> for opacity changes</p>
@@ -1823,7 +1932,7 @@ export default function DesignSystemPage() {
                   </div>
                 </div>
                 <div>
-                  <LabelText className="mb-3">Never use</LabelText>
+                  <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">Never use</Text>
                   <div className="space-y-2 text-sm">
                     <p><code className="text-destructive">transition</code> (bare) maps to <code className="text-muted-foreground">transition-property: all</code></p>
                     <p><code className="text-destructive">transition-all</code> forces the browser to watch every property</p>
@@ -1845,7 +1954,7 @@ export default function DesignSystemPage() {
                 <SubsectionHeader title="Comparison" />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <PreviewCard>
-                    <LabelText className="mb-3">With outline</LabelText>
+                    <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">With outline</Text>
                     <div className="flex gap-4">
                       <img
                         src="https://wow.zamimg.com/images/wow/icons/large/inv_helmet_53.jpg"
@@ -1864,7 +1973,7 @@ export default function DesignSystemPage() {
                     </div>
                   </PreviewCard>
                   <PreviewCard>
-                    <LabelText className="mb-3">Without outline</LabelText>
+                    <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">Without outline</Text>
                     <div className="flex gap-4">
                       <img
                         src="https://wow.zamimg.com/images/wow/icons/large/inv_helmet_53.jpg"
@@ -1886,7 +1995,7 @@ export default function DesignSystemPage() {
               </div>
 
               <PreviewCard className="bg-background">
-                <LabelText className="mb-4">Usage</LabelText>
+                <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-4">Usage</Text>
                 <div className="space-y-2 text-sm">
                   <p>Apply to all rendered images (item icons, avatars, guild crests).</p>
                   <code className="text-accent block text-xs">outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10</code>
@@ -1908,7 +2017,7 @@ export default function DesignSystemPage() {
                 <SubsectionHeader title="Comparison" />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <PreviewCard>
-                    <LabelText className="mb-3">Correct: concentric</LabelText>
+                    <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">Correct: concentric</Text>
                     <div className="bg-accent/20 rounded-2xl p-2">
                       <div className="bg-accent/20 rounded-lg p-4 text-center">
                         <span className="text-sm text-foreground-secondary">outer 16px, padding 8px, inner 8px</span>
@@ -1917,7 +2026,7 @@ export default function DesignSystemPage() {
                     <p className="text-xs text-success mt-2">16 = 8 + 8</p>
                   </PreviewCard>
                   <PreviewCard>
-                    <LabelText className="mb-3">Wrong: same radius</LabelText>
+                    <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">Wrong: same radius</Text>
                     <div className="bg-destructive/20 rounded-xl p-2">
                       <div className="bg-destructive/20 rounded-xl p-4 text-center">
                         <span className="text-sm text-foreground-secondary">outer 16px, padding 8px, inner 16px</span>
@@ -1929,7 +2038,7 @@ export default function DesignSystemPage() {
               </div>
 
               <PreviewCard className="bg-background">
-                <LabelText className="mb-4">Formula</LabelText>
+                <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-4">Formula</Text>
                 <div className="space-y-2 text-sm">
                   <p className="font-medium">outerRadius = innerRadius + padding</p>
                   <div className="space-y-1 text-muted-foreground">
@@ -1981,7 +2090,7 @@ export default function DesignSystemPage() {
             <PreviewCard className="max-w-xs">
               <div className="bg-background-subtle p-4 rounded-lg space-y-3">
                 <div>
-                  <p className="section-label px-3 mb-1">Current Guild</p>
+                  <Text size="sm" weight="semibold" color="secondary" className="px-3 mb-1">Current Guild</Text>
                   <div className="card-gradient flex items-center gap-3 px-3.5 py-2 cursor-pointer hover:border-border-strong transition-colors">
                     <div className="w-5 h-5 rounded bg-foreground-muted" />
                     <div className="flex-1 min-w-0">
@@ -1993,7 +2102,7 @@ export default function DesignSystemPage() {
                 </div>
 
                 <div>
-                  <p className="section-label px-3 mb-1">Character</p>
+                  <Text size="sm" weight="semibold" color="secondary" className="px-3 mb-1">Character</Text>
                   <div className="card-gradient flex items-center gap-3 px-3.5 py-2 cursor-pointer hover:border-border-strong transition-colors">
                     <div className="w-5 h-5 rounded-full bg-class-warrior" />
                     <div className="flex-1 min-w-0">

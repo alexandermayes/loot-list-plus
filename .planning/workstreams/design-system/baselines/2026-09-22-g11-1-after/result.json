@@ -1,0 +1,114 @@
+{
+  "label": "g11-1-after",
+  "mode": "acceptance",
+  "timestamp": "2026-09-22T05:58:49.336Z",
+  "controls": {
+    "poppins": {
+      "advanceSpreadPx": 14.344,
+      "uniform": false,
+      "decimalJitterPx": 10.125
+    },
+    "systemUi": {
+      "advanceSpreadPx": 0,
+      "uniform": true,
+      "decimalJitterPx": 0
+    }
+  },
+  "surfaces": [
+    {
+      "url": "http://localhost:3100/pricing",
+      "fontSizeUsed": "12px",
+      "declaredFamily": "Figtree",
+      "rasterisedFamily": "Figtree",
+      "weights": [
+        {
+          "weight": 400,
+          "advanceSpreadPx": 0,
+          "uniform": true,
+          "decimalJitterPx": 0,
+          "declaredFamily": "Figtree",
+          "rasterisedFamily": "Figtree",
+          "rasterisedFamilyRaw": "Figtree Light"
+        },
+        {
+          "weight": 500,
+          "advanceSpreadPx": 0,
+          "uniform": true,
+          "decimalJitterPx": 0,
+          "declaredFamily": "Figtree",
+          "rasterisedFamily": "Figtree",
+          "rasterisedFamilyRaw": "Figtree Light"
+        },
+        {
+          "weight": 600,
+          "advanceSpreadPx": 0,
+          "uniform": true,
+          "decimalJitterPx": 0,
+          "declaredFamily": "Figtree",
+          "rasterisedFamily": "Figtree",
+          "rasterisedFamilyRaw": "Figtree Light"
+        },
+        {
+          "weight": 700,
+          "advanceSpreadPx": 0,
+          "uniform": true,
+          "decimalJitterPx": 0,
+          "declaredFamily": "Figtree",
+          "rasterisedFamily": "Figtree",
+          "rasterisedFamilyRaw": "Figtree Light"
+        }
+      ],
+      "nativeElementCount": 0,
+      "nativeElements": []
+    },
+    {
+      "url": "http://localhost:3100/research/wow-classic-loot-systems-2026",
+      "fontSizeUsed": "12px",
+      "declaredFamily": "Figtree",
+      "rasterisedFamily": "Figtree",
+      "weights": [
+        {
+          "weight": 400,
+          "advanceSpreadPx": 0,
+          "uniform": true,
+          "decimalJitterPx": 0,
+          "declaredFamily": "Figtree",
+          "rasterisedFamily": "Figtree",
+          "rasterisedFamilyRaw": "Figtree Light"
+        },
+        {
+          "weight": 500,
+          "advanceSpreadPx": 0,
+          "uniform": true,
+          "decimalJitterPx": 0,
+          "declaredFamily": "Figtree",
+          "rasterisedFamily": "Figtree",
+          "rasterisedFamilyRaw": "Figtree Light"
+        },
+        {
+          "weight": 600,
+          "advanceSpreadPx": 0,
+          "uniform": true,
+          "decimalJitterPx": 0,
+          "declaredFamily": "Figtree",
+          "rasterisedFamily": "Figtree",
+          "rasterisedFamilyRaw": "Figtree Light"
+        },
+        {
+          "weight": 700,
+          "advanceSpreadPx": 0,
+          "uniform": true,
+          "decimalJitterPx": 0,
+          "declaredFamily": "Figtree",
+          "rasterisedFamily": "Figtree",
+          "rasterisedFamilyRaw": "Figtree Light"
+        }
+      ],
+      "nativeElementCount": 0,
+      "nativeElements": []
+    }
+  ],
+  "consoleErrors": [],
+  "failedRequests": [],
+  "exitCode": 0
+}

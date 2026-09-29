@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
+import { Card } from '@/components/ui/card'
 
 interface InfoTooltipProps {
   content: string
@@ -68,13 +69,13 @@ export function InfoTooltip({ content, className, iconSize = 14 }: InfoTooltipPr
             transform: 'translate(-50%, -100%)',
           }}
         >
-          <span
+          <Card
             role="tooltip"
-            className="block w-[240px] px-3 py-2.5 rounded-lg bg-background-elevated border border-border shadow-lg text-[12px] leading-relaxed text-foreground-secondary animate-tooltip-fade-in"
+            className="block w-[240px] px-3 py-2.5 shadow-lg text-12 leading-relaxed text-foreground-secondary animate-tooltip-fade-in"
           >
             {content}
             <span className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-border" />
-          </span>
+          </Card>
         </span>,
         document.body
       )}

@@ -104,6 +104,7 @@
 - `next.config.ts` - Next.js configuration with CSP headers, image remapping, security headers
 - `tsconfig.json` - TypeScript: ES2017 target, strict mode, path aliases (`@/*`)
 - `tailwind.config.js` - Dark mode, custom typography (Poppins, WoW fonts), design tokens
+- `app/layout.tsx` - Three self-hosted fonts via `next/font` (Poppins, Friz Quadrata, and Figtree scoped to `.tabular-nums` numerals for tnum support Poppins lacks -- G-11-1), all served same-origin under `font-src 'self' data:`
 - `postcss.config.js` - PostCSS with Tailwind
 - `vitest.config.ts` - jsdom environment, globals enabled, path aliases
 - `vitest.setup.ts` - Test cleanup registration

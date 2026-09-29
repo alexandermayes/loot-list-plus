@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
-import { Heading, Text, LabelText } from '@/components/ui/typography'
+import { Heading, Text } from '@/components/ui/typography'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
@@ -212,11 +212,11 @@ export default function SheetImportPage() {
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-5 w-96 mt-1" />
         </div>
-        <div className="bg-background-elevated border border-border rounded-xl p-6 space-y-4">
+        <Card className="p-6 space-y-4">
           <Skeleton className="h-6 w-40" />
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-32 w-full rounded-lg" />
-        </div>
+        </Card>
       </div>
     )
   }
@@ -437,7 +437,7 @@ export default function SheetImportPage() {
                 {/* Items with changes */}
                 {itemsWithChanges.length > 0 && (
                   <div>
-                    <LabelText size="xs" className="mb-2">Items to update</LabelText>
+                    <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-2">Items to update</Text>
                     <div className="max-h-64 overflow-y-auto border border-border rounded-lg divide-y divide-border">
                       {itemsWithChanges.map((item, idx) => (
                         <div key={idx} className="px-3 py-2 flex items-center justify-between gap-2">
@@ -467,7 +467,7 @@ export default function SheetImportPage() {
                 {/* Unmatched items */}
                 {unmatchedItems.length > 0 && (
                   <div>
-                    <LabelText size="xs" className="mb-2">Unmatched items (will be skipped)</LabelText>
+                    <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-2">Unmatched items (will be skipped)</Text>
                     <div className="max-h-48 overflow-y-auto border border-border rounded-lg divide-y divide-border">
                       {unmatchedItems.map((item, idx) => (
                         <div key={idx} className="px-3 py-2 flex items-center justify-between">

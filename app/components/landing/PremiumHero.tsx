@@ -52,21 +52,21 @@ export default function PremiumHero() {
         <div className="max-w-[900px] w-full flex flex-col items-center gap-6 md:gap-9">
           {/* Badge */}
           <div className="flex items-center gap-2 bg-[#17151b] rounded-[60px] pl-1 pr-3 py-1 max-w-full">
-            <span className="flex items-center justify-center px-2 py-1 bg-[#ff8000] rounded-[60px] font-poppins font-semibold text-[10px] text-black shrink-0">
+            <span className="flex items-center justify-center px-2 py-1 bg-[#ff8000] rounded-[60px] font-poppins font-semibold text-11 text-black shrink-0">
               PREMIUM
             </span>
-            <span className="font-poppins text-[14px] text-white whitespace-nowrap truncate min-w-0">
+            <span className="font-poppins text-14 text-white whitespace-nowrap truncate min-w-0">
               One subscription covers your whole guild
             </span>
           </div>
 
           {/* Headline */}
           <div className="text-center w-full max-w-[760px]">
-            <h1 className="font-poppins font-bold text-[40px] md:text-[56px] lg:text-[72px] leading-[0.92] text-white mb-6">
-              <span className="font-wow text-shimmer-gold text-[48px] md:text-[64px] lg:text-[80px] leading-[0.82]">Legendary</span>
+            <h1 className="font-poppins font-bold text-40 md:text-56 lg:text-72 leading-[0.92] text-white mb-6">
+              <span className="font-wow text-shimmer-gold text-48 md:text-64 lg:text-80 leading-[0.82]">Legendary</span>
               {' '}tools for serious guilds.
             </h1>
-            <p className="font-poppins font-medium text-[16px] text-[#bababa] leading-normal max-w-[620px] mx-auto">
+            <p className="font-poppins font-medium text-16 text-[#bababa] leading-normal max-w-[620px] mx-auto">
               Everything your guild already uses stays free. Premium adds the tools
               multi-team guilds ask for, at less than one raider&apos;s consumables budget.
             </p>

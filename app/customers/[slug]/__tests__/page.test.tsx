@@ -658,7 +658,7 @@ describe('app/customers/[slug]/page.tsx', () => {
     it('every approved value (literal segments around any token) appears verbatim in the page source', () => {
       const draftPath = join(
         process.cwd(),
-        '.planning/phases/04-verified-guild-case-study/04-COPY-DRAFT.md'
+        '.planning/workstreams/default/phases/04-verified-guild-case-study/04-COPY-DRAFT.md'
       )
       const draft = readFileSync(draftPath, 'utf8')
       const pageSourcePath = join(process.cwd(), 'app/customers/[slug]/page.tsx')

@@ -249,7 +249,7 @@ export function BisImportModal({
 
                   {!gearSuccess && (
                     <>
-                      <div className="space-y-3 text-foreground-secondary text-[13px]">
+                      <div className="space-y-3 text-foreground-secondary text-13">
                         {/* Option A: Website Export */}
                         <div className="space-y-2">
                           <Text size="xs" className="font-semibold text-foreground uppercase tracking-wide">Option A: WoWSims Website</Text>
@@ -272,7 +272,7 @@ export function BisImportModal({
                           </div>
                           <div className="flex gap-2">
                             <span className="text-accent font-medium">2.</span>
-                            <span>Type <code className="px-1.5 py-0.5 bg-background rounded text-[12px]">/wowsims</code> in-game and copy the export</span>
+                            <span>Type <code className="px-1.5 py-0.5 bg-background rounded text-12">/wowsims</code> in-game and copy the export</span>
                           </div>
                         </div>
                       </div>
@@ -282,7 +282,7 @@ export function BisImportModal({
                         onChange={(e) => setJsonInput(e.target.value)}
                         placeholder='Paste WowSims JSON here...'
                         rows={4}
-                        className="font-mono text-[12px]"
+                        className="font-mono text-12"
                       />
 
                       <Button

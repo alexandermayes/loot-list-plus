@@ -60,7 +60,7 @@ export function ForeverAnnouncementBar({ onDismiss }: ForeverAnnouncementBarProp
   return (
     <div
       data-announcement="wow-forever"
-      className="relative flex h-9 items-center justify-center overflow-hidden bg-[#121218] border-b border-[#383838]/60 px-10 font-poppins text-[13px] text-white"
+      className="relative flex h-9 items-center justify-center overflow-hidden bg-[#121218] border-b border-[#383838]/60 px-10 font-poppins text-13 text-white"
     >
       {/* Single-line clamp via inline style, not the `truncate` utility
           class: a site-wide truncate/line-clamp ban on other pages' full

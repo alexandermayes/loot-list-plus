@@ -1,0 +1,1 @@
+text-accent bg-accent border-accent text-accent-foreground

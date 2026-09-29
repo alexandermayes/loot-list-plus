@@ -271,7 +271,7 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
                       />
                       {/* Permission toggles */}
                       <div className="space-y-1.5">
-                        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Permissions</p>
+                        <p className="text-11 font-semibold text-muted-foreground uppercase tracking-wider">Permissions</p>
                         <div className="grid grid-cols-2 gap-1">
                           {ALL_PERMISSION_CODES.map(perm => {
                             const isOfficerRole = role.position >= 50
@@ -287,13 +287,13 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
                                   onCheckedChange={() => !isOfficerRole && togglePermission(perm)}
                                   disabled={isOfficerRole}
                                 />
-                                <span className="text-[12px] text-foreground">{PERMISSIONS[perm].label}</span>
+                                <span className="text-12 text-foreground">{PERMISSIONS[perm].label}</span>
                               </label>
                             )
                           })}
                         </div>
                         {role.position >= 50 && (
-                          <p className="text-[10px] text-muted-foreground italic">
+                          <p className="text-11 text-muted-foreground italic">
                             Officers and Guild Master have all permissions by default.
                           </p>
                         )}
@@ -331,9 +331,9 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
                           </span>
                         </div>
                         <div>
-                          <p className="text-foreground font-medium text-[14px]">{role.name}</p>
+                          <p className="text-foreground font-medium text-14">{role.name}</p>
                           {role.position < 50 && role.permissions && role.permissions.length > 0 && (
-                            <p className="text-[11px] text-muted-foreground">
+                            <p className="text-11 text-muted-foreground">
                               {role.permissions.map(p => PERMISSIONS[p as PermissionCode]?.label || p).join(', ')}
                             </p>
                           )}
@@ -428,7 +428,7 @@ export default function RoleManager({ onRolesChanged }: RoleManagerProps) {
           )}
 
           <div className="pt-4 border-t border-border">
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-11 text-muted-foreground">
               Total Roles: {roles.length} / 10
             </p>
           </div>

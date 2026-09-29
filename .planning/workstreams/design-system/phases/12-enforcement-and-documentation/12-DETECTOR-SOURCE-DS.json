@@ -1,0 +1,547 @@
+{
+  "notice": "Source-side static scan of app/, components/ and lib/ with DESIGN.md active (design-system-* rules only). Plan-time synthetic estimate: ~79 findings in 31 files (68 colour, 3 radius, 8 font-size).",
+  "command": "node .claude/skills/impeccable/scripts/detect.mjs detect app components lib --json",
+  "measuredTotal": 73,
+  "measuredFileCount": 31,
+  "totalsByRule": {
+    "design-system-color": 67,
+    "design-system-radius": 3,
+    "design-system-font-size": 3
+  },
+  "findingsByRuleThenValue": {
+    "design-system-color": {
+      "#ef4444": [
+        {
+          "file": "app/(app)/loot-management/components/ItemRow.tsx",
+          "line": 110,
+          "snippet": "Undocumented color #ef4444 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/(app)/loot-management/components/LootSettingsContent.tsx",
+          "line": 1492,
+          "snippet": "Undocumented color #ef4444 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#eab308": [
+        {
+          "file": "app/(app)/loot-management/components/ItemRow.tsx",
+          "line": 113,
+          "snippet": "Undocumented color #eab308 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/(app)/loot-management/components/LootSettingsContent.tsx",
+          "line": 1493,
+          "snippet": "Undocumented color #eab308 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#22c55e": [
+        {
+          "file": "app/(app)/loot-management/components/ItemRow.tsx",
+          "line": 116,
+          "snippet": "Undocumented color #22c55e is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/(app)/loot-management/components/LootSettingsContent.tsx",
+          "line": 1494,
+          "snippet": "Undocumented color #22c55e is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#888888": [
+        {
+          "file": "app/(app)/loot-management/components/PriorityListTab.tsx",
+          "line": 803,
+          "snippet": "Undocumented color #888888 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#808080": [
+        {
+          "file": "app/api/guild-members/route.ts",
+          "line": 229,
+          "snippet": "Undocumented color #808080 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/components/BattlenetCharacterPickerModal.tsx",
+          "line": 381,
+          "snippet": "Undocumented color #808080 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#0f0e12": [
+        {
+          "file": "app/blog/dkp-is-dead-what-classic-guilds-use-in-2026/page.tsx",
+          "line": 108,
+          "snippet": "Undocumented color #0f0e12 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/blog/guild-recruitment-guide-find-raiders-who-stay/page.tsx",
+          "line": 111,
+          "snippet": "Undocumented color #0f0e12 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/blog/how-to-handle-loot-drama-without-losing-raiders/page.tsx",
+          "line": 108,
+          "snippet": "Undocumented color #0f0e12 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/blog/how-to-onboard-new-raiders-without-killing-morale/page.tsx",
+          "line": 108,
+          "snippet": "Undocumented color #0f0e12 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/blog/how-to-run-loot-without-a-spreadsheet/page.tsx",
+          "line": 108,
+          "snippet": "Undocumented color #0f0e12 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/blog/how-to-set-up-a-fair-loot-system-for-your-wow-guild/page.tsx",
+          "line": 104,
+          "snippet": "Undocumented color #0f0e12 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/blog/loot-priority-lists-vs-loot-council/page.tsx",
+          "line": 108,
+          "snippet": "Undocumented color #0f0e12 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/blog/page.tsx",
+          "line": 128,
+          "snippet": "Undocumented color #0f0e12 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/blog/the-officer-burnout-problem-and-how-to-fix-it/page.tsx",
+          "line": 108,
+          "snippet": "Undocumented color #0f0e12 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/blog/why-attendance-tracking-matters-more-than-loot-rules/page.tsx",
+          "line": 106,
+          "snippet": "Undocumented color #0f0e12 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/compare/page.tsx",
+          "line": 115,
+          "snippet": "Undocumented color #0f0e12 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/customers/[slug]/page.tsx",
+          "line": 232,
+          "snippet": "Undocumented color #0f0e12 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/research/wow-classic-loot-systems-2026/page.tsx",
+          "line": 397,
+          "snippet": "Undocumented color #0f0e12 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "rgb(59, 130, 246)": [
+        {
+          "file": "app/components/CreateGuildModal.tsx",
+          "line": 802,
+          "snippet": "Undocumented color rgb(59, 130, 246) is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "rgba(59, 130, 246, 0.5)": [
+        {
+          "file": "app/components/CreateGuildModal.tsx",
+          "line": 803,
+          "snippet": "Undocumented color rgba(59, 130, 246, 0.5) is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "rgba(59, 130, 246, 0.2)": [
+        {
+          "file": "app/components/CreateGuildModal.tsx",
+          "line": 803,
+          "snippet": "Undocumented color rgba(59, 130, 246, 0.2) is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "rgba(59, 130, 246, 0.15)": [
+        {
+          "file": "app/components/CreateGuildModal.tsx",
+          "line": 804,
+          "snippet": "Undocumented color rgba(59, 130, 246, 0.15) is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "rgb(239, 68, 68)": [
+        {
+          "file": "app/components/CreateGuildModal.tsx",
+          "line": 807,
+          "snippet": "Undocumented color rgb(239, 68, 68) is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "rgba(239, 68, 68, 0.5)": [
+        {
+          "file": "app/components/CreateGuildModal.tsx",
+          "line": 808,
+          "snippet": "Undocumented color rgba(239, 68, 68, 0.5) is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "rgba(239, 68, 68, 0.2)": [
+        {
+          "file": "app/components/CreateGuildModal.tsx",
+          "line": 808,
+          "snippet": "Undocumented color rgba(239, 68, 68, 0.2) is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "rgba(239, 68, 68, 0.15)": [
+        {
+          "file": "app/components/CreateGuildModal.tsx",
+          "line": 809,
+          "snippet": "Undocumented color rgba(239, 68, 68, 0.15) is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#ff8000": [
+        {
+          "file": "app/components/KonamiEasterEgg.tsx",
+          "line": 17,
+          "snippet": "Undocumented color #ff8000 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/components/KonamiEasterEgg.tsx",
+          "line": 20,
+          "snippet": "Undocumented color #ff8000 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/components/KonamiEasterEgg.tsx",
+          "line": 130,
+          "snippet": "Undocumented color #ff8000 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/globals.css",
+          "line": 80,
+          "snippet": "Undocumented color #ff8000 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/reserve/join/[token]/opengraph-image.tsx",
+          "line": 146,
+          "snippet": "Undocumented color #ff8000 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#0070dd": [
+        {
+          "file": "app/components/KonamiEasterEgg.tsx",
+          "line": 18,
+          "snippet": "Undocumented color #0070dd is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#888": [
+        {
+          "file": "app/components/Navigation.tsx",
+          "line": 183,
+          "snippet": "Undocumented color #888 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "rgb(255, 128, 0)": [
+        {
+          "file": "app/components/Sidebar.tsx",
+          "line": 368,
+          "snippet": "Undocumented color rgb(255, 128, 0) is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "rgb(153, 77, 0)": [
+        {
+          "file": "app/components/Sidebar.tsx",
+          "line": 368,
+          "snippet": "Undocumented color rgb(153, 77, 0) is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "rgba(255,128,0,0.18)": [
+        {
+          "file": "app/components/UpgradeModal.tsx",
+          "line": 64,
+          "snippet": "Undocumented color rgba(255,128,0,0.18) is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#ffdd00": [
+        {
+          "file": "app/components/landing/ClickEffects.tsx",
+          "line": 131,
+          "snippet": "Undocumented color #ffdd00 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#ff6a00": [
+        {
+          "file": "app/components/landing/ClickEffects.tsx",
+          "line": 131,
+          "snippet": "Undocumented color #ff6a00 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#ff8c00": [
+        {
+          "file": "app/components/landing/ClickEffects.tsx",
+          "line": 147,
+          "snippet": "Undocumented color #ff8c00 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#ffcc00": [
+        {
+          "file": "app/components/landing/ClickEffects.tsx",
+          "line": 147,
+          "snippet": "Undocumented color #ffcc00 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#fffbe6": [
+        {
+          "file": "app/components/landing/ClickEffects.tsx",
+          "line": 348,
+          "snippet": "Undocumented color #fffbe6 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#ddf4ff": [
+        {
+          "file": "app/components/landing/ClickEffects.tsx",
+          "line": 435,
+          "snippet": "Undocumented color #ddf4ff is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#17151B": [
+        {
+          "file": "app/components/landing/LandingHowItWorks.tsx",
+          "line": 40,
+          "snippet": "Undocumented color #17151B is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "rgb(46, 42, 53)": [
+        {
+          "file": "app/components/landing/LandingValueProps.tsx",
+          "line": 10,
+          "snippet": "Undocumented color rgb(46, 42, 53) is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/components/landing/PremiumFeatures.tsx",
+          "line": 11,
+          "snippet": "Undocumented color rgb(46, 42, 53) is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/pricing/page.tsx",
+          "line": 55,
+          "snippet": "Undocumented color rgb(46, 42, 53) is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#9940ec": [
+        {
+          "file": "app/globals.css",
+          "line": 52,
+          "snippet": "Undocumented color #9940ec is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#a1a1aa": [
+        {
+          "file": "app/reserve/join/[token]/opengraph-image.tsx",
+          "line": 107,
+          "snippet": "Undocumented color #a1a1aa is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/reserve/join/[token]/opengraph-image.tsx",
+          "line": 164,
+          "snippet": "Undocumented color #a1a1aa is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/reserve/join/[token]/opengraph-image.tsx",
+          "line": 168,
+          "snippet": "Undocumented color #a1a1aa is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#52525b": [
+        {
+          "file": "app/reserve/join/[token]/opengraph-image.tsx",
+          "line": 167,
+          "snippet": "Undocumented color #52525b is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        },
+        {
+          "file": "app/reserve/join/[token]/opengraph-image.tsx",
+          "line": 202,
+          "snippet": "Undocumented color #52525b is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#71717a": [
+        {
+          "file": "app/reserve/join/[token]/opengraph-image.tsx",
+          "line": 172,
+          "snippet": "Undocumented color #71717a is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#C79C6E": [
+        {
+          "file": "app/reserve/join/[token]/page.tsx",
+          "line": 30,
+          "snippet": "Undocumented color #C79C6E is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#F58CBA": [
+        {
+          "file": "app/reserve/join/[token]/page.tsx",
+          "line": 31,
+          "snippet": "Undocumented color #F58CBA is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#ABD473": [
+        {
+          "file": "app/reserve/join/[token]/page.tsx",
+          "line": 32,
+          "snippet": "Undocumented color #ABD473 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#FFF569": [
+        {
+          "file": "app/reserve/join/[token]/page.tsx",
+          "line": 33,
+          "snippet": "Undocumented color #FFF569 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#C41E3A": [
+        {
+          "file": "app/reserve/join/[token]/page.tsx",
+          "line": 35,
+          "snippet": "Undocumented color #C41E3A is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#0070DE": [
+        {
+          "file": "app/reserve/join/[token]/page.tsx",
+          "line": 36,
+          "snippet": "Undocumented color #0070DE is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#69CCF0": [
+        {
+          "file": "app/reserve/join/[token]/page.tsx",
+          "line": 37,
+          "snippet": "Undocumented color #69CCF0 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#9482C9": [
+        {
+          "file": "app/reserve/join/[token]/page.tsx",
+          "line": 38,
+          "snippet": "Undocumented color #9482C9 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#00FF96": [
+        {
+          "file": "app/reserve/join/[token]/page.tsx",
+          "line": 39,
+          "snippet": "Undocumented color #00FF96 is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ],
+      "#FF7D0A": [
+        {
+          "file": "app/reserve/join/[token]/page.tsx",
+          "line": 40,
+          "snippet": "Undocumented color #FF7D0A is outside DESIGN.md colors",
+          "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift."
+        }
+      ]
+    },
+    "design-system-radius": {
+      "3px": [
+        {
+          "file": "app/globals.css",
+          "line": 339,
+          "snippet": "border-radius: 3px is outside the DESIGN.md rounded scale",
+          "description": "A border-radius value is outside the DESIGN.md rounded scale. Use a documented radius token or update the design system if the new shape is intentional."
+        }
+      ],
+      "24px": [
+        {
+          "file": "app/reserve/join/[token]/opengraph-image.tsx",
+          "line": 117,
+          "snippet": "borderRadius: 24px is outside the DESIGN.md rounded scale",
+          "description": "A border-radius value is outside the DESIGN.md rounded scale. Use a documented radius token or update the design system if the new shape is intentional."
+        },
+        {
+          "file": "app/reserve/join/[token]/opengraph-image.tsx",
+          "line": 184,
+          "snippet": "borderRadius: 24px is outside the DESIGN.md rounded scale",
+          "description": "A border-radius value is outside the DESIGN.md rounded scale. Use a documented radius token or update the design system if the new shape is intentional."
+        }
+      ]
+    },
+    "design-system-font-size": {
+      "22px": [
+        {
+          "file": "app/reserve/join/[token]/opengraph-image.tsx",
+          "line": 107,
+          "snippet": "fontSize: 22px is off the DESIGN.md type ramp",
+          "description": "A literal font-size is off the type ramp documented in DESIGN.md typography. Use a documented size step or update the design system if the new step is intentional."
+        },
+        {
+          "file": "app/reserve/join/[token]/opengraph-image.tsx",
+          "line": 164,
+          "snippet": "fontSize: 22px is off the DESIGN.md type ramp",
+          "description": "A literal font-size is off the type ramp documented in DESIGN.md typography. Use a documented size step or update the design system if the new step is intentional."
+        },
+        {
+          "file": "app/reserve/join/[token]/opengraph-image.tsx",
+          "line": 167,
+          "snippet": "fontSize: 22px is off the DESIGN.md type ramp",
+          "description": "A literal font-size is off the type ramp documented in DESIGN.md typography. Use a documented size step or update the design system if the new step is intentional."
+        }
+      ]
+    }
+  }
+}

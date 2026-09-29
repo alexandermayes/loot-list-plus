@@ -16,7 +16,7 @@ Output ONLY the reference content of the chosen tier. Do NOT add:
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/help.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/help.md
 </execution_context>
 
 <context>
@@ -24,5 +24,5 @@ Arguments: $ARGUMENTS
 </context>
 
 <process>
-Follow /Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/help.md with $ARGUMENTS.
+Follow /Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/help.md with $ARGUMENTS.
 </process>

@@ -16,7 +16,7 @@ doesn't belong to any specific phase.
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/thread.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/thread.md
 </execution_context>
 
 <process>

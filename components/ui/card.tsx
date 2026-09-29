@@ -22,9 +22,17 @@ import { cn } from "@/lib/utils"
  * Variants:
  * - "default": Padding on CardHeader and CardContent separately (original behavior)
  * - "unified": Padding on Card itself, with 12px gap between header and content
+ * - "nested": No fill, no border, no radius -- a transparent region inside
+ *   its parent Card, separated by the app's existing top-divider idiom
+ *   (border-t border-border). Padding passes through via className exactly
+ *   like every other variant; the variant imposes none of its own. The
+ *   divider is suppressed when the nested card is the first child of its
+ *   parent (first:border-t-0), so no call site has to remember to turn it
+ *   off when it would otherwise double up against the parent's own top
+ *   edge or header rule.
  */
 
-type CardVariant = "default" | "unified"
+type CardVariant = "default" | "unified" | "nested"
 
 const CardContext = React.createContext<CardVariant>("default")
 
@@ -38,7 +46,9 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          "rounded-lg border border-border bg-card text-card-foreground",
+          variant === "nested"
+            ? "border-t border-border first:border-t-0"
+            : "rounded-xl border border-border bg-card text-card-foreground",
           variant === "unified" && "p-4 sm:p-6",
           className
         )}

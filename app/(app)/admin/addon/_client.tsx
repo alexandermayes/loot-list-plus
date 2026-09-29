@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { Heading, Text, LabelText } from '@/components/ui/typography'
+import { Heading, Text } from '@/components/ui/typography'
 import { AddonExportDialog } from '@/components/addon/AddonExportDialog'
 import { AddonImportDialog } from '@/components/addon/AddonImportDialog'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -63,7 +63,7 @@ export default function AddonPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <LabelText>How it works</LabelText>
+              <Text size="sm" weight="semibold" color="secondary" as="span">How it works</Text>
               <ol className="text-xs text-foreground-secondary space-y-1 list-decimal list-inside">
                 <li>Click &ldquo;Generate export string&rdquo; below</li>
                 <li>Copy the generated string</li>
@@ -91,7 +91,7 @@ export default function AddonPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <LabelText>How it works</LabelText>
+              <Text size="sm" weight="semibold" color="secondary" as="span">How it works</Text>
               <ol className="text-xs text-foreground-secondary space-y-1 list-decimal list-inside">
                 <li>In WoW after a raid, type <code className="px-1 py-0.5 bg-background-subtle rounded text-accent">/llp export</code></li>
                 <li>Copy the generated string</li>

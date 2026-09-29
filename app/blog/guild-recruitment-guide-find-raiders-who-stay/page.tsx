@@ -125,7 +125,7 @@ export default function BlogPost() {
           slug="guild-recruitment-guide-find-raiders-who-stay"
           title="Guild Recruitment Guide: How to Find Raiders Who Actually Stay"
         />
-        <div className="max-w-3xl mx-auto">
+        <div className="prose-measure mx-auto">
           <nav className="mb-8 text-sm text-foreground-secondary">
             <a
               href="/blog"

@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button'
 import type { CaseStudyProofStrip } from '@/data/case-studies/types'
+import { Card } from '@/components/ui/card'
 
 // ---------------------------------------------------------------------------
 // Pure presentational Server Components for the case-study template.
@@ -207,10 +208,10 @@ export function buildBylineMeta(entry: {
  */
 export function LimitationSection({ heading, body }: { heading: string; body: string }) {
   return (
-    <div className="my-12 p-8 rounded-xl border border-border bg-background-elevated">
+    <Card className="my-12 p-8">
       <div className="text-2xl font-bold text-foreground mb-4">{heading}</div>
       <p className="text-lg text-foreground-secondary leading-relaxed">{body}</p>
-    </div>
+    </Card>
   )
 }
 
@@ -235,12 +236,12 @@ export function ContextualCta({
   href: string
 }) {
   return (
-    <div className="my-12 p-8 rounded-xl border border-border bg-background-elevated flex flex-col items-start gap-4">
+    <Card className="my-12 p-8 flex flex-col items-start gap-4">
       <div className="text-2xl font-bold text-foreground">{heading}</div>
       <p className="text-lg text-foreground-secondary">{body}</p>
       <Button asChild variant="accent" size="lg" className="font-bold">
         <a href={href}>{buttonLabel}</a>
       </Button>
-    </div>
+    </Card>
   )
 }

@@ -61,16 +61,16 @@ export default function LandingCTA() {
           {/* Headline */}
           <motion.h2
             variants={fadeInUp}
-            className="font-poppins font-bold text-[40px] md:text-[72px] leading-[1.05] text-white max-w-[696px]"
+            className="font-poppins font-bold text-40 md:text-72 leading-[1.05] text-white max-w-[696px]"
           >
             A better way to run{' '}
-            <span className="font-wow text-shimmer-purple text-[48px] md:text-[80px]">loot</span>.
+            <span className="font-wow text-shimmer-purple text-48 md:text-80">loot</span>.
           </motion.h2>
 
           {/* Subheadline */}
           <motion.p
             variants={fadeInUp}
-            className="font-poppins font-medium text-[16px] text-[#bababa] max-w-[696px]"
+            className="font-poppins font-medium text-16 text-[#bababa] max-w-[696px]"
           >
             Bring loot lists, attendance, and fair distribution into one system your whole guild can trust.
           </motion.p>
@@ -81,7 +81,7 @@ export default function LandingCTA() {
               as="a"
               href={APP_URL}
               onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'bottom_get_started' })}
-              className="inline-flex items-center justify-center px-4 py-3 rounded-[60px] bg-white font-poppins font-semibold text-[16px] text-black no-underline hover:bg-white/90 transition-colors"
+              className="inline-flex items-center justify-center px-4 py-3 rounded-[60px] bg-white font-poppins font-semibold text-16 text-black no-underline hover:bg-white/90 transition-colors"
             >
               Get started for free
             </MagneticButton>

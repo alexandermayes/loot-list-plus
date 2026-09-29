@@ -51,7 +51,7 @@ export function WeekGroup({
             className="text-foreground group-hover:text-accent transition-colors flex-shrink-0"
           />
         )}
-        <h2 className="text-[24px] font-bold text-foreground group-hover:text-accent transition-colors">
+        <h2 className="text-24 font-bold text-foreground group-hover:text-accent transition-colors">
           {label}
         </h2>
         {relativeTag && (
@@ -60,9 +60,9 @@ export function WeekGroup({
           </Badge>
         )}
         {!isExpanded && hasSummary && (
-          <span className="text-[13px] text-foreground-muted tabular-nums flex-shrink-0">
+          <span className="text-13 text-foreground-muted tabular-nums flex-shrink-0">
             {raidCount} {raidCount === 1 ? 'raid' : 'raids'} • {attendedCount} attended
-            {lootCount > 0 && <span className="text-[#a335ee]"> • {lootCount} loot</span>}
+            {lootCount > 0 && <span className="text-quality-epic"> • {lootCount} loot</span>}
           </span>
         )}
         <div className="flex-1 h-[1px] bg-foreground/10" />

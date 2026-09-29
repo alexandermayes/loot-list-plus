@@ -65,7 +65,7 @@ export function HorizontalScroll({
 
   const arrowButtonClass = cn(
     'flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full transition-all duration-200',
-    'bg-background-elevated border border-border hover:bg-background-inset hover:border-border-strong text-foreground cursor-pointer shadow-sm'
+    'bg-background-elevated border border-border hover:bg-muted hover:border-border-strong text-foreground cursor-pointer shadow-sm'
   )
 
   return (

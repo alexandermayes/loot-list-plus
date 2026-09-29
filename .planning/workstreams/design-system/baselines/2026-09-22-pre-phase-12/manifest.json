@@ -1,0 +1,194 @@
+{
+  "label": "pre-phase-12",
+  "captured_at": "2026-09-22T21:42:33.948Z",
+  "git_sha": "02880b2e",
+  "origin_hostname": "localhost",
+  "images": [
+    {
+      "file": "home-light-1440.png",
+      "page": "home",
+      "path": "/",
+      "theme": "light",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "home-light-390.png",
+      "page": "home",
+      "path": "/",
+      "theme": "light",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "home-dark-1440.png",
+      "page": "home",
+      "path": "/",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "home-dark-390.png",
+      "page": "home",
+      "path": "/",
+      "theme": "dark",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "blog-post-light-1440.png",
+      "page": "blog-post",
+      "path": "/blog/dkp-is-dead-what-classic-guilds-use-in-2026",
+      "theme": "light",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "blog-post-light-390.png",
+      "page": "blog-post",
+      "path": "/blog/dkp-is-dead-what-classic-guilds-use-in-2026",
+      "theme": "light",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "blog-post-dark-1440.png",
+      "page": "blog-post",
+      "path": "/blog/dkp-is-dead-what-classic-guilds-use-in-2026",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "blog-post-dark-390.png",
+      "page": "blog-post",
+      "path": "/blog/dkp-is-dead-what-classic-guilds-use-in-2026",
+      "theme": "dark",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "research-light-1440.png",
+      "page": "research",
+      "path": "/research/wow-classic-loot-systems-2026",
+      "theme": "light",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "research-light-390.png",
+      "page": "research",
+      "path": "/research/wow-classic-loot-systems-2026",
+      "theme": "light",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "research-dark-1440.png",
+      "page": "research",
+      "path": "/research/wow-classic-loot-systems-2026",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "research-dark-390.png",
+      "page": "research",
+      "path": "/research/wow-classic-loot-systems-2026",
+      "theme": "dark",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "compare-light-1440.png",
+      "page": "compare",
+      "path": "/compare",
+      "theme": "light",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "compare-light-390.png",
+      "page": "compare",
+      "path": "/compare",
+      "theme": "light",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "compare-dark-1440.png",
+      "page": "compare",
+      "path": "/compare",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "compare-dark-390.png",
+      "page": "compare",
+      "path": "/compare",
+      "theme": "dark",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "pricing-light-1440.png",
+      "page": "pricing",
+      "path": "/pricing",
+      "theme": "light",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "pricing-light-390.png",
+      "page": "pricing",
+      "path": "/pricing",
+      "theme": "light",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "pricing-dark-1440.png",
+      "page": "pricing",
+      "path": "/pricing",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "pricing-dark-390.png",
+      "page": "pricing",
+      "path": "/pricing",
+      "theme": "dark",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "skipped": [
+    {
+      "page": "overview",
+      "reason": "GET /api/dev/test-users returned 404"
+    },
+    {
+      "page": "guild-settings",
+      "reason": "GET /api/dev/test-users returned 404"
+    },
+    {
+      "page": "loot-management",
+      "reason": "GET /api/dev/test-users returned 404"
+    },
+    {
+      "page": "master-sheet",
+      "reason": "GET /api/dev/test-users returned 404"
+    },
+    {
+      "page": "raid-tracking",
+      "reason": "GET /api/dev/test-users returned 404"
+    },
+    {
+      "page": "profile",
+      "reason": "GET /api/dev/test-users returned 404"
+    }
+  ]
+}

@@ -4,14 +4,15 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { createClient } from '@/utils/supabase/client'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { useNotification } from '@/app/contexts/NotificationContext'
+import { QUALITY_COLORS } from '@/lib/design-system/quality-colors'
 
 // WoW item quality colors as accent options
 // Adjusted from official WoW values for readable white text on solid backgrounds
 export const ACCENT_COLORS = [
   { name: 'Legendary', value: '#ff8000' },   // Default - WoW Legendary orange
-  { name: 'Epic', value: '#a335ee' },        // WoW Epic purple
+  { name: 'Epic', value: QUALITY_COLORS.epic },        // WoW Epic purple
   { name: 'Rare', value: '#0070dd' },        // WoW Rare blue
-  { name: 'Uncommon', value: '#15b300' },    // WoW Uncommon green (darkened from #1eff00)
+  { name: 'Uncommon', value: '#15b300' },    // WoW Uncommon green (darkened from the standard Uncommon green)
   { name: 'Artifact', value: '#c5a840' },    // WoW Artifact gold (darkened from #e6cc80)
   { name: 'Heirloom', value: '#0099cc' },    // WoW Heirloom blue (darkened from #00ccff)
 ] as const
@@ -22,7 +23,7 @@ export const DEFAULT_ACCENT_COLOR = '#ff8000'
 // These filters are calculated to transform white (#ffffff) to the target color
 const ACCENT_FILTERS: Record<string, string> = {
   '#ff8000': 'invert(55%) sepia(89%) saturate(2274%) hue-rotate(1deg) brightness(101%) contrast(105%)',
-  '#a335ee': 'invert(29%) sepia(98%) saturate(2472%) hue-rotate(262deg) brightness(87%) contrast(98%)',
+  [QUALITY_COLORS.epic]: 'invert(29%) sepia(98%) saturate(2472%) hue-rotate(262deg) brightness(87%) contrast(98%)',
   '#0070dd': 'invert(31%) sepia(93%) saturate(1565%) hue-rotate(196deg) brightness(96%) contrast(101%)',
   '#15b300': 'invert(50%) sepia(95%) saturate(1200%) hue-rotate(80deg) brightness(92%) contrast(105%)',
   '#c5a840': 'invert(70%) sepia(50%) saturate(600%) hue-rotate(10deg) brightness(90%) contrast(95%)',

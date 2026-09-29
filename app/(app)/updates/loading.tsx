@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeletons'
+import { Card } from '@/components/ui/card'
 
 export default function UpdatesLoading() {
   return (
@@ -21,7 +22,7 @@ export default function UpdatesLoading() {
             {/* Timeline dot */}
             <Skeleton className="absolute left-0 top-1.5 w-[15px] h-[15px] rounded-full" />
 
-            <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+            <Card className="overflow-hidden">
               {/* Header */}
               <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-background-subtle">
                 <Skeleton className="h-4 w-28" />
@@ -40,7 +41,7 @@ export default function UpdatesLoading() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
           </div>
         ))}
       </div>

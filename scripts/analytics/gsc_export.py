@@ -11,6 +11,7 @@ import os
 
 CSV_HEADER_QUERY = ["query", "clicks", "impressions", "ctr", "position", "cluster"]
 CSV_HEADER_PAGE = ["page", "clicks", "impressions", "ctr", "position"]
+CSV_HEADER_PAGE_QUERY = ["page", "query", "clicks", "impressions", "ctr", "position", "cluster"]
 EXPORTS_DIR = "scripts/analytics/exports"
 
 
@@ -43,16 +44,35 @@ def partial_suffix_path(path, requested_end, actual_end):
 
 
 def export_csv(rows, path, dimension, cluster_fn=None):
-    header = CSV_HEADER_QUERY if dimension == "query" else CSV_HEADER_PAGE
+    headers = {
+        "query": CSV_HEADER_QUERY,
+        "page": CSV_HEADER_PAGE,
+        "page-query": CSV_HEADER_PAGE_QUERY,
+    }
+    if dimension not in headers:
+        raise ValueError(f"unknown export dimension: {dimension}")
+    header = headers[dimension]
     count = 0
     with open(path, "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(header)
         for row in rows:
-            key = row["keys"][0]
-            values = [key, row["clicks"], row["impressions"], row["ctr"], row["position"]]
-            if dimension == "query":
-                values.append(cluster_fn(key) if cluster_fn else "unclustered")
+            if dimension == "page-query":
+                page, q = row["keys"][0], row["keys"][1]
+                values = [
+                    page,
+                    q,
+                    row["clicks"],
+                    row["impressions"],
+                    row["ctr"],
+                    row["position"],
+                    cluster_fn(q) if cluster_fn else "unclustered",
+                ]
+            else:
+                key = row["keys"][0]
+                values = [key, row["clicks"], row["impressions"], row["ctr"], row["position"]]
+                if dimension == "query":
+                    values.append(cluster_fn(key) if cluster_fn else "unclustered")
             w.writerow(values)
             count += 1
     return count

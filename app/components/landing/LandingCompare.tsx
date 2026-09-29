@@ -27,7 +27,7 @@ function Cross() {
 function Cell({ value }: { value: CellValue }) {
   if (value === true) return <Check />
   if (value === false) return <Cross />
-  return <span className="text-yellow-400 text-[11px] font-medium">{value}</span>
+  return <span className="text-yellow-400 text-11 font-medium">{value}</span>
 }
 
 function FeatureTip({ name, tip }: { name: string; tip: string }) {
@@ -54,7 +54,7 @@ function FeatureTip({ name, tip }: { name: string; tip: string }) {
       </span>
       {pos && createPortal(
         <span
-          className="fixed w-[260px] px-3 py-2 rounded-lg bg-[#1a1a2e]/95 border border-[#4a4a6a] text-[12px] text-[#bababa] leading-relaxed pointer-events-none z-[9999] backdrop-blur-sm shadow-xl font-poppins"
+          className="fixed w-[260px] px-3 py-2 rounded-lg bg-[#1a1a2e]/95 border border-[#4a4a6a] text-12 text-[#bababa] leading-relaxed pointer-events-none z-[9999] backdrop-blur-sm shadow-xl font-poppins"
           style={{ left: pos.x, top: pos.y }}
         >
           {tip}
@@ -80,13 +80,13 @@ export default function LandingCompare() {
         >
           <motion.h2
             variants={fadeInUp}
-            className="font-poppins font-bold text-[28px] md:text-[40px] text-white leading-tight mb-4"
+            className="font-poppins font-bold text-28 md:text-40 text-white leading-tight mb-4"
           >
-            Already using <span className="font-wow text-shimmer-purple text-[32px] md:text-[44px]">TMB, DKP, or EPGP</span>?
+            Already using <span className="font-wow text-shimmer-purple text-32 md:text-44">TMB, DKP, or EPGP</span>?
           </motion.h2>
           <motion.p
             variants={fadeInUp}
-            className="font-poppins text-[16px] text-[#bababa] leading-relaxed max-w-[600px] mx-auto mb-10"
+            className="font-poppins text-16 text-[#bababa] leading-relaxed max-w-[600px] mx-auto mb-10"
           >
             LootList+ combines ranked loot lists, attendance-weighted scoring, and transparent priority into one system. No spreadsheets, no guesswork.
           </motion.p>
@@ -132,7 +132,7 @@ export default function LandingCompare() {
             variants={fadeInUp}
             href="/compare"
             onClick={() => trackClientEvent('landing_nav_clicked', { target: 'compare', source: 'compare_section' })}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#121218] border border-[#383838] font-poppins font-semibold text-[14px] text-white no-underline hover:bg-[#1a1a22] transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#121218] border border-[#383838] font-poppins font-semibold text-14 text-white no-underline hover:bg-[#1a1a22] transition-colors"
           >
             See the full comparison
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>

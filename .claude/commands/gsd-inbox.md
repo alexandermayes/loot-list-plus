@@ -21,7 +21,7 @@ and optionally applies labels or closes non-compliant submissions.
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/inbox.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/inbox.md
 </execution_context>
 
 <context>

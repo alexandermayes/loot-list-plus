@@ -27,6 +27,7 @@ HEADER = log_ai_answer.HEADER
 SURFACES = log_ai_answer.SURFACES
 PROMPT_IDS = log_ai_answer.PROMPT_IDS
 PROMPTS = log_ai_answer.PROMPTS
+ERROR_TYPES = log_ai_answer.ERROR_TYPES
 validate_row = log_ai_answer.validate_row
 append_row = log_ai_answer.append_row
 read_rows = log_ai_answer.read_rows
@@ -45,6 +46,7 @@ def base_row(**overrides):
         "cited_url": "https://getlootlist.com",
         "competing_sources": "",
         "notes": "",
+        "error_type": "",
     }
     row.update(overrides)
     return row
@@ -65,6 +67,7 @@ class TestAiAnswerLog(unittest.TestCase):
                 "cited_url",
                 "competing_sources",
                 "notes",
+                "error_type",
             ],
         )
 
@@ -181,6 +184,107 @@ class TestAiAnswerLog(unittest.TestCase):
                 )
             )
         )
+
+    # --- error_type (D-08) ---
+
+    def test_error_types_is_exact(self):
+        self.assertEqual(
+            ERROR_TYPES,
+            [
+                "not_mentioned",
+                "wrong_price_or_plan",
+                "outdated_feature_claim",
+                "wrong_category",
+                "other",
+            ],
+        )
+
+    def test_validate_row_accepts_empty_error_type_by_default(self):
+        # The 18 Aug 28 rows have no error_type at all; require_error_type
+        # defaults to False so they still validate.
+        self.assertEqual(validate_row(base_row(error_type="")), [])
+
+    def test_validate_row_rejects_unknown_error_type(self):
+        problems = validate_row(base_row(error_type="totally_made_up"))
+        self.assertTrue(problems)
+        self.assertTrue(any("error_type" in p for p in problems))
+
+    def test_validate_row_rejects_not_mentioned_when_appeared_yes(self):
+        problems = validate_row(base_row(lootlist_appeared="yes", error_type="not_mentioned"))
+        self.assertTrue(problems)
+
+    def test_validate_row_rejects_non_not_mentioned_error_type_when_not_appeared(self):
+        problems = validate_row(
+            base_row(
+                lootlist_appeared="no",
+                factually_correct="n/a",
+                cited_url="",
+                error_type="wrong_price_or_plan",
+            )
+        )
+        self.assertTrue(problems)
+
+    def test_validate_row_accepts_not_mentioned_when_not_appeared(self):
+        self.assertEqual(
+            validate_row(
+                base_row(
+                    lootlist_appeared="no",
+                    factually_correct="n/a",
+                    cited_url="",
+                    error_type="not_mentioned",
+                )
+            ),
+            [],
+        )
+
+    def test_validate_row_rejects_non_empty_error_type_on_clean_cell(self):
+        problems = validate_row(
+            base_row(lootlist_appeared="yes", factually_correct="yes", error_type="other")
+        )
+        self.assertTrue(problems)
+
+    def test_validate_row_require_error_type_rejects_missing_on_miss_or_error(self):
+        cases = [
+            dict(lootlist_appeared="no", factually_correct="n/a", cited_url=""),
+            dict(lootlist_appeared="yes", factually_correct="no"),
+            dict(lootlist_appeared="yes", factually_correct="partial"),
+        ]
+        for kwargs in cases:
+            row = base_row(error_type="", **kwargs)
+            problems = validate_row(row, require_error_type=True)
+            self.assertTrue(problems, f"expected error_type required for {kwargs}")
+
+    def test_validate_row_require_error_type_accepts_present_on_miss_or_error(self):
+        row = base_row(
+            lootlist_appeared="no",
+            factually_correct="n/a",
+            cited_url="",
+            error_type="not_mentioned",
+        )
+        self.assertEqual(validate_row(row, require_error_type=True), [])
+
+    def test_validate_row_require_error_type_does_not_require_on_clean_cell(self):
+        row = base_row(lootlist_appeared="yes", factually_correct="yes", error_type="")
+        self.assertEqual(validate_row(row, require_error_type=True), [])
+
+    def test_append_row_writes_error_type_as_ninth_field(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "log.csv")
+            append_row(
+                path,
+                base_row(factually_correct="partial", error_type="other"),
+            )
+            rows = read_rows(path)
+            self.assertEqual(rows[0]["error_type"], "other")
+
+    def test_append_row_without_error_type_key_writes_empty_field(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "log.csv")
+            row = base_row()
+            del row["error_type"]
+            append_row(path, row)
+            rows = read_rows(path)
+            self.assertEqual(rows[0]["error_type"], "")
 
     # --- committed log state ---
 

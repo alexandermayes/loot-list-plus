@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
 import ItemLink from '@/app/components/ItemLink'
 import type { ItemRankings, PlayerRanking, LootItem } from './BossSection'
+import { Card } from '@/components/ui/card'
 
 interface RaidTier {
   id: string
@@ -64,7 +65,7 @@ export function RaidModeView({ sortedRaidTiers, onItemClick, decimalPlaces = 2 }
           className="max-w-md"
           autoFocus
         />
-        <p className="text-[11px] text-muted-foreground mt-1">
+        <p className="text-11 text-muted-foreground mt-1">
           {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}
           {search && ` matching "${search}"`}
           {' '}&middot; Click any item to see all candidates
@@ -102,58 +103,58 @@ function RaidModeItem({ ir, decimalPlaces, onClick }: RaidModeItemProps) {
   const top3 = ir.rankings.slice(0, 3)
 
   return (
-    <div
+    <Card
       role="button"
       tabIndex={0}
       onClick={() => onClick(ir)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick(ir) }}
-      className="flex items-center gap-4 px-4 py-2.5 bg-background-elevated border border-border rounded-lg cursor-pointer hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="flex items-center gap-4 px-4 py-2.5 cursor-pointer hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {/* Item info */}
       <div className="min-w-0 w-[260px] shrink-0">
         <ItemLink
           name={ir.item.name}
           wowheadId={ir.item.wowhead_id}
-          className="text-[13px] font-medium"
+          className="text-13 font-medium"
           clickable={false}
         />
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-[11px] text-muted-foreground">{ir.item.boss_name}</span>
-          <span className="text-[11px] text-muted-foreground">&middot;</span>
-          <span className="text-[11px] text-muted-foreground">{ir.item.item_slot}</span>
+          <span className="text-11 text-muted-foreground">{ir.item.boss_name}</span>
+          <span className="text-11 text-muted-foreground">&middot;</span>
+          <span className="text-11 text-muted-foreground">{ir.item.item_slot}</span>
         </div>
       </div>
 
       {/* Top 3 candidates */}
       <div className="flex items-center gap-4 flex-1 min-w-0">
         {ir.item.is_loot_council ? (
-          <span className="text-[12px] font-medium px-2.5 py-0.5 rounded bg-accent/20 text-accent">Loot Council</span>
+          <span className="text-12 font-medium px-2.5 py-0.5 rounded bg-accent/20 text-accent">Loot Council</span>
         ) : top3.length === 0 ? (
-          <span className="text-[12px] text-muted-foreground">No candidates</span>
+          <span className="text-12 text-muted-foreground">No candidates</span>
         ) : (
           top3.map((r, i) => (
             <div key={r.character_id} className="flex items-baseline gap-1.5 min-w-0">
-              <span className="text-[11px] text-muted-foreground font-medium">#{i + 1}</span>
+              <span className="text-11 text-muted-foreground font-medium">#{i + 1}</span>
               <span
-                className="text-[13px] font-medium truncate"
+                className="text-13 font-medium truncate"
                 style={{ color: r.class_color }}
               >
                 {r.player_name}
               </span>
-              <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+              <span className="text-11 text-muted-foreground tabular-nums shrink-0">
                 {r.loot_score.toFixed(decimalPlaces)}
               </span>
-              {r.is_trial && <span className="text-[9px] text-warning">(T)</span>}
-              {!r.is_eligible && <span className="text-[9px] text-destructive">⊘</span>}
+              {r.is_trial && <span className="text-11 text-warning">(T)</span>}
+              {!r.is_eligible && <span className="text-11 text-destructive">⊘</span>}
             </div>
           ))
         )}
       </div>
 
       {/* Total candidates count */}
-      <div className="text-[11px] text-muted-foreground shrink-0 tabular-nums w-[60px] text-right">
+      <div className="text-11 text-muted-foreground shrink-0 tabular-nums w-[60px] text-right">
         {ir.rankings.length > 0 && `${ir.rankings.length} total`}
       </div>
-    </div>
+    </Card>
   )
 }

@@ -1,0 +1,338 @@
+{
+  "label": "g11-1-screen",
+  "mode": "screen",
+  "timestamp": "2026-09-22T05:45:27.283Z",
+  "url": "http://localhost:3100/pricing",
+  "fontSizeUsed": "12px",
+  "poppinsMetrics": {
+    "xHeight": 54.79999923706055,
+    "capHeight": 69.70000457763672
+  },
+  "candidates": [
+    {
+      "family": "Inter",
+      "missingWeights": [],
+      "perWeight": [
+        {
+          "weight": 400,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 11.484,
+            "uniform": false,
+            "decimalJitterPx": 8.141
+          }
+        },
+        {
+          "weight": 500,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 11.578,
+            "uniform": false,
+            "decimalJitterPx": 8.219
+          }
+        },
+        {
+          "weight": 600,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 11.672,
+            "uniform": false,
+            "decimalJitterPx": 8.313
+          }
+        },
+        {
+          "weight": 700,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 11.766,
+            "uniform": false,
+            "decimalJitterPx": 8.406
+          }
+        }
+      ],
+      "glyphMetrics": {
+        "xHeight": 54.58984375,
+        "capHeight": 72.75390625
+      },
+      "xHeightRatio": 0.996,
+      "capHeightRatio": 1.044,
+      "uniformAtAllWeightsWithFeature": true
+    },
+    {
+      "family": "IBM Plex Sans",
+      "missingWeights": [],
+      "perWeight": [
+        {
+          "weight": 400,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          }
+        },
+        {
+          "weight": 500,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          }
+        },
+        {
+          "weight": 600,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          }
+        },
+        {
+          "weight": 700,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          }
+        }
+      ],
+      "glyphMetrics": {
+        "xHeight": 51.599998474121094,
+        "capHeight": 69.80000305175781
+      },
+      "xHeightRatio": 0.942,
+      "capHeightRatio": 1.001,
+      "uniformAtAllWeightsWithFeature": true
+    },
+    {
+      "family": "IBM Plex Mono",
+      "missingWeights": [],
+      "perWeight": [
+        {
+          "weight": 400,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          }
+        },
+        {
+          "weight": 500,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          }
+        },
+        {
+          "weight": 600,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          }
+        },
+        {
+          "weight": 700,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          }
+        }
+      ],
+      "glyphMetrics": {
+        "xHeight": 51.599998474121094,
+        "capHeight": 69.80000305175781
+      },
+      "xHeightRatio": 0.942,
+      "capHeightRatio": 1.001,
+      "uniformAtAllWeightsWithFeature": true
+    },
+    {
+      "family": "Figtree",
+      "missingWeights": [],
+      "perWeight": [
+        {
+          "weight": 400,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 10.922,
+            "uniform": false,
+            "decimalJitterPx": 7.234
+          }
+        },
+        {
+          "weight": 500,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 10.891,
+            "uniform": false,
+            "decimalJitterPx": 7.109
+          }
+        },
+        {
+          "weight": 600,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 10.891,
+            "uniform": false,
+            "decimalJitterPx": 7
+          }
+        },
+        {
+          "weight": 700,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 10.859,
+            "uniform": false,
+            "decimalJitterPx": 6.828
+          }
+        }
+      ],
+      "glyphMetrics": {
+        "xHeight": 50,
+        "capHeight": 70.0171890258789
+      },
+      "xHeightRatio": 0.912,
+      "capHeightRatio": 1.005,
+      "uniformAtAllWeightsWithFeature": true
+    },
+    {
+      "family": "Source Sans 3",
+      "missingWeights": [],
+      "perWeight": [
+        {
+          "weight": 400,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          }
+        },
+        {
+          "weight": 500,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          }
+        },
+        {
+          "weight": 600,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          }
+        },
+        {
+          "weight": 700,
+          "featureOn": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          },
+          "featureOff": {
+            "advanceSpreadPx": 0,
+            "uniform": true,
+            "decimalJitterPx": 0
+          }
+        }
+      ],
+      "glyphMetrics": {
+        "xHeight": 48.609375,
+        "capHeight": 65.63125610351562
+      },
+      "xHeightRatio": 0.887,
+      "capHeightRatio": 0.942,
+      "uniformAtAllWeightsWithFeature": true
+    }
+  ]
+}

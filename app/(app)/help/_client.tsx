@@ -16,6 +16,7 @@ import { helpCategories, getAllArticles, glossaryTerms, type HelpCategory, type 
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Heading, Text } from '@/components/ui/typography'
+import { Card } from '@/components/ui/card'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { getGuildGame } from '@/domain/expansion/game'
 
@@ -33,9 +34,9 @@ function CategoryCard({ category }: { category: HelpCategory }) {
   const Icon = iconMap[category.icon] || Rocket01Icon
 
   return (
-    <div
+    <Card
       onClick={() => router.push(`/help/${category.articles[0]?.slug || ''}`)}
-      className="bg-background-elevated border border-border rounded-xl p-6 hover:border-accent/50 transition-colors cursor-pointer group"
+      className="p-6 hover:border-accent/50 transition-colors cursor-pointer group"
     >
       <div className="flex items-start gap-4">
         <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-accent/20 transition-colors">
@@ -56,7 +57,7 @@ function CategoryCard({ category }: { category: HelpCategory }) {
           className="text-muted-foreground group-hover:text-accent group-hover:translate-x-1 transition-all flex-shrink-0"
         />
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -70,16 +71,16 @@ function SearchResult({
   const router = useRouter()
 
   return (
-    <div
+    <Card
       onClick={() => router.push(`/help/${article.slug}`)}
-      className="bg-background-elevated border border-border rounded-lg p-4 hover:border-accent/50 transition-colors cursor-pointer"
+      className="p-4 hover:border-accent/50 transition-colors cursor-pointer"
     >
       <div className="flex items-center gap-2 mb-1">
         <span className="text-xs text-accent font-medium">{categoryTitle}</span>
       </div>
       <Heading level={4} className="text-base">{article.title}</Heading>
       <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{article.description}</p>
-    </div>
+    </Card>
   )
 }
 
@@ -197,7 +198,7 @@ export default function HelpPage() {
 
       {/* Loading screen tip */}
       {!searchQuery.trim() && (
-        <p className="text-center text-[12px] text-muted-foreground/60 italic -mt-6 mb-10">
+        <p className="text-center text-12 text-muted-foreground/60 italic -mt-6 mb-10">
           Tip: {displayedTip}
         </p>
       )}
@@ -269,9 +270,9 @@ export default function HelpPage() {
           </Text>
           <div className="grid gap-3">
             {glossaryTerms.map((entry) => (
-              <div
+              <Card
                 key={entry.term}
-                className="bg-background-elevated border border-border rounded-lg p-4"
+                className="p-4"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -289,7 +290,7 @@ export default function HelpPage() {
                     </Button>
                   )}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>

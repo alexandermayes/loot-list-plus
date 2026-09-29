@@ -75,18 +75,18 @@ function ItemRowInner({
           aria-label={`Toggle Loot Council for ${item.name}`}
         />
       </td>
-      <td className="px-4 py-2.5 text-[13px] text-foreground">
+      <td className="px-4 py-2.5 text-13 text-foreground">
         <div className="truncate overflow-hidden">
           <ItemLink name={item.name} wowheadId={item.wowhead_id} />
         </div>
       </td>
-      <td className="px-4 py-2.5 text-[12px] text-foreground-muted">
+      <td className="px-4 py-2.5 text-12 text-foreground-muted">
         <div className="truncate">{item.boss_name}</div>
       </td>
-      <td className="px-4 py-2.5 text-[12px] text-foreground-muted">
+      <td className="px-4 py-2.5 text-12 text-foreground-muted">
         <div className="truncate">{item.item_slot}</div>
       </td>
-      <td className="px-4 py-2.5 text-[12px] text-foreground-muted">
+      <td className="px-4 py-2.5 text-12 text-foreground-muted">
         <div className="truncate">{item.raid_tier?.name}</div>
       </td>
       <td className="px-2 py-2.5">

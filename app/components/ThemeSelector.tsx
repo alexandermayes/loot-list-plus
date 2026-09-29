@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 
 // Inline SVG icons for reliable theming
 const MonitorIcon = ({ className }: { className?: string }) => (
@@ -58,12 +59,12 @@ export function ThemeSelector() {
   if (!mounted) {
     // Return skeleton to prevent hydration mismatch
     return (
-      <div className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] bg-background-elevated border border-border animate-pulse">
+      <Card className="w-full px-3.5 py-2 flex items-center gap-3 animate-pulse">
         <div className="w-5 h-5 rounded bg-border-strong" />
         <div className="flex-1 min-w-0">
           <div className="h-3 bg-border-strong rounded w-16" />
         </div>
-      </div>
+      </Card>
     )
   }
 
@@ -75,7 +76,7 @@ export function ThemeSelector() {
       <Button
         variant="ghost"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3.5 py-2 h-auto flex items-center gap-3 rounded-[40px] justify-start font-poppins font-medium text-[13px] text-foreground"
+        className="w-full px-3.5 py-2 h-auto flex items-center gap-3 rounded-[40px] justify-start font-poppins font-medium text-13 text-foreground"
       >
         <CurrentIcon className="w-5 h-5" />
         <span className="whitespace-nowrap flex-1 text-left">{currentTheme.label}</span>
@@ -91,7 +92,7 @@ export function ThemeSelector() {
           />
 
           {/* Dropdown Content */}
-          <div className="absolute bottom-full mb-2 left-0 right-0 bg-background-elevated border border-border rounded-[12px] shadow-lg z-50 py-2 overflow-hidden">
+          <Card className="absolute bottom-full mb-2 left-0 right-0 shadow-lg z-50 py-2 overflow-hidden">
             {THEME_OPTIONS.map((option) => {
               const OptionIcon = option.Icon
               return (
@@ -105,7 +106,7 @@ export function ThemeSelector() {
                   className="w-full flex items-center gap-3 px-3.5 py-2 h-auto rounded-none justify-start"
                 >
                   <OptionIcon className="w-5 h-5" />
-                  <span className="font-poppins font-medium text-[13px] text-foreground flex-1">
+                  <span className="font-poppins font-medium text-13 text-foreground flex-1">
                     {option.label}
                   </span>
                   {theme === option.value && (
@@ -114,7 +115,7 @@ export function ThemeSelector() {
                 </Button>
               )
             })}
-          </div>
+          </Card>
         </>
       )}
     </div>

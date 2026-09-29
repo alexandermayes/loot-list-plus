@@ -19,6 +19,7 @@ import { refreshWowheadTooltips } from '@/lib/wowhead'
 import type { LootHistoryEntry } from '@/app/api/loot-history/route'
 import { useRaidTeam } from '@/app/hooks/useRaidTeam'
 import PlayerLootModal from './PlayerLootModal'
+import { Card } from '@/components/ui/card'
 
 interface RaidTier {
   id: string
@@ -261,14 +262,14 @@ export default function LootHistoryTab() {
         {/* Stats skeleton */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className={`bg-background-elevated border border-border rounded-xl p-4${i === 2 ? ' col-span-2 sm:col-span-1' : ''}`}>
+            <Card key={i} className={`p-4 ${i === 2 ? ' col-span-2 sm:col-span-1' : ''}`}>
               <Skeleton className="h-4 w-20" />
               <Skeleton className="h-7 w-12 mt-1" />
-            </div>
+            </Card>
           ))}
         </div>
         {/* Filters skeleton */}
-        <div className="bg-background-elevated border border-border rounded-xl p-4">
+        <Card className="p-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i}>
@@ -277,7 +278,7 @@ export default function LootHistoryTab() {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
         {/* Table skeleton */}
         <div className="rounded-xl border border-border overflow-hidden">
           <table className="w-full text-sm">
@@ -311,22 +312,22 @@ export default function LootHistoryTab() {
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-        <div className="bg-background-elevated border border-border rounded-xl p-4">
+        <Card className="p-4">
           <Text size="sm" color="muted">Total Awards</Text>
           <p className="text-2xl font-bold text-foreground">{total}</p>
-        </div>
-        <div className="bg-background-elevated border border-border rounded-xl p-4">
+        </Card>
+        <Card className="p-4">
           <Text size="sm" color="muted">This Week</Text>
           <p className="text-2xl font-bold text-accent">{thisWeek}</p>
-        </div>
-        <div className="bg-background-elevated border border-border rounded-xl p-4 col-span-2 sm:col-span-1">
+        </Card>
+        <Card className="p-4 col-span-2 sm:col-span-1">
           <Text size="sm" color="muted">Showing</Text>
           <p className="text-2xl font-bold text-foreground">{entries.length}</p>
-        </div>
+        </Card>
       </div>
 
       {/* Filters */}
-      <div className="bg-background-elevated border border-border rounded-xl p-4">
+      <Card className="p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Character Search */}
           <div>
@@ -421,7 +422,7 @@ export default function LootHistoryTab() {
             </Button>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Table */}
       {entries.length === 0 ? (
@@ -437,16 +438,16 @@ export default function LootHistoryTab() {
           variant="card"
         />
       ) : (
-        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+        <Card className="overflow-hidden">
           {/* Mobile Cards */}
           <div className="sm:hidden divide-y divide-border">
             {entries.map((entry) => (
               <div key={entry.id} className="px-4 py-3 space-y-1">
                 <div className="flex items-start justify-between gap-2">
                   <ItemLink name={entry.item_name} wowheadId={entry.wowhead_id} />
-                  <span className="text-[11px] text-muted-foreground whitespace-nowrap">{formatDate(entry.awarded_date)}</span>
+                  <span className="text-11 text-muted-foreground whitespace-nowrap">{formatDate(entry.awarded_date)}</span>
                 </div>
-                <div className="flex items-center gap-2 text-[12px]">
+                <div className="flex items-center gap-2 text-12">
                   <button
                     type="button"
                     onClick={() => setSelectedPlayer(entry)}
@@ -458,7 +459,7 @@ export default function LootHistoryTab() {
                   <span className="text-muted-foreground">from {entry.boss_name}</span>
                 </div>
                 {entry.notes && (
-                  <p className="text-[11px] text-muted-foreground truncate">{entry.notes}</p>
+                  <p className="text-11 text-muted-foreground truncate">{entry.notes}</p>
                 )}
               </div>
             ))}
@@ -541,7 +542,7 @@ export default function LootHistoryTab() {
               </Button>
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {selectedPlayer && (

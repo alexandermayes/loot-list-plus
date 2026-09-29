@@ -22,6 +22,11 @@ Explicit historical window, clustered CSV export:
     python3 scripts/analytics/pull-gsc.py --start 2026-08-24 --end 2026-08-30 \\
         --dimension query --csv gsc-baseline-cohort.csv
 
+Explicit-date combined page and query export (one row per page/query pair,
+clustered by the query text):
+    python3 scripts/analytics/pull-gsc.py --start 2026-08-24 --end 2026-09-24 \\
+        --dimension page-query --csv gsc-sprint-window-page-query-2026-08-24_2026-09-24.csv
+
 stdlib only — no node, no google client libraries.
 """
 import argparse
@@ -99,7 +104,7 @@ def parse_args():
     parser.add_argument("days", nargs="?", type=int, default=90)
     parser.add_argument("--start", help="ISO date, e.g. 2026-08-24 (requires --end)")
     parser.add_argument("--end", help="ISO date, e.g. 2026-08-30 (requires --start)")
-    parser.add_argument("--dimension", choices=["query", "page"], default="query")
+    parser.add_argument("--dimension", choices=["query", "page", "page-query"], default="query")
     parser.add_argument("--csv", help="output CSV path; bare filename lands under scripts/analytics/exports/")
     args = parser.parse_args()
 
@@ -141,8 +146,10 @@ def write_export(token, site, base, args):
         print(str(e))
         sys.exit(1)
 
+    dimensions = ["page", "query"] if args.dimension == "page-query" else [args.dimension]
+
     try:
-        rows = query(token, site, {**base, "dimensions": [args.dimension]})
+        rows = query(token, site, {**base, "dimensions": dimensions})
         actual_end = coverage_end(token, site, base["startDate"], base["endDate"])
     except urllib.error.HTTPError as e:
         msg = e.read().decode("utf-8", "ignore")
@@ -150,7 +157,9 @@ def write_export(token, site, base, args):
         sys.exit(1)
 
     out_path = gsc_export.partial_suffix_path(out_path, base["endDate"], actual_end)
-    cluster_fn = gsc_clusters.cluster_query if args.dimension == "query" else None
+    cluster_fn = (
+        gsc_clusters.cluster_query if args.dimension in ("query", "page-query") else None
+    )
     gsc_export.export_csv(rows, out_path, args.dimension, cluster_fn=cluster_fn)
 
     print(f"coverage: requested {base['startDate']} to {base['endDate']}, actual final data through {actual_end}")

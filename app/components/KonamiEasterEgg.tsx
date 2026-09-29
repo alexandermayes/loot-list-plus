@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { Card } from '@/components/ui/card'
+import { QUALITY_COLORS } from '@/lib/design-system/quality-colors'
 
 const KONAMI_CODE = [
   'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
@@ -10,13 +12,13 @@ const KONAMI_CODE = [
 
 // Loot icons that "rain" down — WoW item quality colors
 const LOOT_DROPS = [
-  { emoji: '⚔️', color: '#a335ee' },  // epic purple
-  { emoji: '🛡️', color: '#a335ee' },
+  { emoji: '⚔️', color: QUALITY_COLORS.epic },  // epic purple
+  { emoji: '🛡️', color: QUALITY_COLORS.epic },
   { emoji: '🗡️', color: '#ff8000' },  // legendary orange
   { emoji: '🏹', color: '#0070dd' },  // rare blue
-  { emoji: '🔮', color: '#a335ee' },
+  { emoji: '🔮', color: QUALITY_COLORS.epic },
   { emoji: '👑', color: '#ff8000' },
-  { emoji: '💎', color: '#a335ee' },
+  { emoji: '💎', color: QUALITY_COLORS.epic },
   { emoji: '⭐', color: '#ff8000' },
 ]
 
@@ -108,9 +110,9 @@ export function KonamiEasterEgg() {
     {/* /camp message */}
     {campMessage && (
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none animate-fade-in">
-        <p className="text-sm text-warning/80 italic px-4 py-2 bg-background-elevated border border-border rounded-lg shadow-lg">
+        <Card className="text-sm text-warning/80 italic px-4 py-2 shadow-lg">
           You sit down and make camp.
-        </p>
+        </Card>
       </div>
     )}
 

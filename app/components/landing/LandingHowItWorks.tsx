@@ -65,10 +65,10 @@ export default function LandingHowItWorks() {
         >
           <motion.h2
             variants={fadeInUp}
-            className="font-poppins font-bold text-[28px] md:text-[40px] leading-[1.1] text-white mb-4 max-w-[562px] mx-auto"
+            className="font-poppins font-bold text-28 md:text-40 leading-[1.1] text-white mb-4 max-w-[562px] mx-auto"
           >
             Set up your guild and start{' '}
-            <span className="font-wow text-shimmer-purple text-[32px] md:text-[44px]">getting loot</span>
+            <span className="font-wow text-shimmer-purple text-32 md:text-44">getting loot</span>
             {' '}in minutes.
           </motion.h2>
         </motion.div>
@@ -142,7 +142,7 @@ export default function LandingHowItWorks() {
                     animate={isInView ? { scale: 1 } : {}}
                     transition={{ duration: 0.3, delay: 0.7 + index * 0.3, type: 'spring', stiffness: 300 }}
                   >
-                    <span className="font-poppins font-black text-[18px] text-black leading-none">
+                    <span className="font-poppins font-black text-18 text-black leading-none">
                       {step.number}
                     </span>
                   </motion.div>
@@ -150,10 +150,10 @@ export default function LandingHowItWorks() {
 
                 {/* Text */}
                 <div className="text-center max-w-[240px]">
-                  <p className="font-poppins font-semibold text-[18px] leading-[45px] text-white">
+                  <p className="font-poppins font-semibold text-18 leading-[45px] text-white">
                     {step.title}
                   </p>
-                  <p className="font-poppins text-[16px] text-[#bababa] leading-normal">
+                  <p className="font-poppins text-16 text-[#bababa] leading-normal">
                     {step.description}
                   </p>
                 </div>

@@ -128,38 +128,4 @@ function Text({
 }
 Text.displayName = 'Text'
 
-// =============================================================================
-// LABEL TEXT (for form labels and section headers)
-// =============================================================================
-
-const labelTextVariants = cva(
-  'font-medium uppercase tracking-wider text-foreground-secondary',
-  {
-    variants: {
-      size: {
-        xs: 'text-xs',   // 10px
-        sm: 'text-sm',   // 12px
-      },
-    },
-    defaultVariants: {
-      size: 'xs',
-    },
-  }
-)
-
-export interface LabelTextProps
-  extends React.HTMLAttributes<HTMLSpanElement>,
-    VariantProps<typeof labelTextVariants> {}
-
-const LabelText = React.forwardRef<HTMLSpanElement, LabelTextProps>(
-  ({ className, size, ...props }, ref) => (
-    <span
-      ref={ref}
-      className={cn(labelTextVariants({ size }), className)}
-      {...props}
-    />
-  )
-)
-LabelText.displayName = 'LabelText'
-
-export { Heading, headingVariants, Text, textVariants, LabelText, labelTextVariants }
+export { Heading, headingVariants, Text, textVariants }

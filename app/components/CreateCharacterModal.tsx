@@ -23,6 +23,7 @@ import { BattlenetCharacterPickerModal } from '@/app/components/BattlenetCharact
 import Image from 'next/image'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { hasFeature } from '@/domain/guild/feature-flags'
+import { Card } from '@/components/ui/card'
 import { isClassAvailableForExpansion } from '@/domain/expansion/classes'
 
 interface RaidTeamOption {
@@ -321,7 +322,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
         <ModalHeader onClose={required ? undefined : onClose}>
           <ModalTitle>{required ? 'Create your character' : 'Create character'}</ModalTitle>
           {required && (
-            <p className="text-[12px] text-muted-foreground mt-1">You need a character to use LootList+.</p>
+            <p className="text-12 text-muted-foreground mt-1">You need a character to use LootList+.</p>
           )}
         </ModalHeader>
 
@@ -334,14 +335,14 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
           )}
 
           {/* Battle.net Import Option */}
-          <div className="flex items-center justify-between gap-3 p-3 bg-background-elevated border border-border rounded-lg">
+          <Card className="flex items-center justify-between gap-3 p-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-9 h-9 bg-[#0074E0]/10 border border-[#0074E0]/30 rounded-lg flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 bg-brand-battlenet/10 border border-brand-battlenet/30 rounded-lg flex items-center justify-center shrink-0">
                 <Image src="/icons/battlenet.svg" alt="Battle.net" width={20} height={20} className="w-5 h-5" style={{ filter: 'brightness(0) saturate(100%) invert(30%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(97%) contrast(101%)' }} />
               </div>
               <div className="min-w-0">
-                <p className="text-[13px] font-medium text-foreground">Import from Battle.net</p>
-                <p className="text-[12px] text-muted-foreground">
+                <p className="text-13 font-medium text-foreground">Import from Battle.net</p>
+                <p className="text-12 text-muted-foreground">
                   {hasBattlenet ? 'Auto-import with class, spec and gear' : 'Connect your account in profile settings'}
                 </p>
               </div>
@@ -370,7 +371,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
                 Connect
               </Button>
             )}
-          </div>
+          </Card>
 
           {/* Character Name */}
           <div>

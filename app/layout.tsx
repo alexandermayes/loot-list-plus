@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { Poppins, Figtree } from "next/font/google";
 import localFont from "next/font/local";
 import Script from "next/script";
 import { GuildContextProvider } from "./contexts/GuildContext";
@@ -27,6 +27,22 @@ const frizQuadrata = localFont({
   variable: "--font-wow",
   display: "swap",
   weight: "400",
+});
+
+// G-11-1: numeral face for .tabular-nums, shipped through the same
+// next/font/google pipeline as Poppins above so it downloads at build time
+// and serves same-origin under next.config.ts's font-src 'self' policy.
+// Chosen at the Task 2 decision checkpoint (2026-09-21) for texture
+// coherence with Poppins -- Figtree is the same geometric family of shapes,
+// x-height ratio 0.912 and cap-height ratio 1.005 to Poppins, and measured
+// uniform digit advance at all four weights with tabular-nums on. Poppins
+// itself is unchanged; only app/globals.css's .tabular-nums rule resolves
+// to this family.
+const figtree = Figtree({
+  variable: "--font-tabular",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -202,7 +218,11 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${poppins.variable} ${frizQuadrata.variable} antialiased font-sans`}
+        // G-11-1: --font-tabular (figtree.variable) is mounted on this same
+        // element as the other font variables, or it is undefined at
+        // app/globals.css's .tabular-nums rule and the family falls back
+        // silently.
+        className={`${poppins.variable} ${frizQuadrata.variable} ${figtree.variable} antialiased font-sans`}
       >
         <ThemeProvider
           attribute="class"

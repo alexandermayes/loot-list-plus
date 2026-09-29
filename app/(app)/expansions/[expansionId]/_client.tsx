@@ -18,6 +18,7 @@ import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeletons'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { Card } from '@/components/ui/card'
 
 interface RaidTier {
   id: string
@@ -64,7 +65,7 @@ function CompactRaidToggle({
           alt={tier.name}
           className="w-6 h-6 rounded border border-border/50 flex-shrink-0"
         />
-        <span className="font-medium text-[13px] text-foreground truncate">
+        <span className="font-medium text-13 text-foreground truncate">
           {getRaidShorthand(tier.name)}
         </span>
       </div>
@@ -72,7 +73,7 @@ function CompactRaidToggle({
       {/* Toggles */}
       <div className="flex items-center gap-3 flex-shrink-0">
         <label className="flex items-center gap-1.5 cursor-pointer" title="Include in loot lists">
-          <span className="text-[11px] text-muted-foreground">Loot</span>
+          <span className="text-11 text-muted-foreground">Loot</span>
           <Switch
             checked={tier.is_guild_active}
             onCheckedChange={() => onToggleActive(tier.id, tier.is_guild_active)}
@@ -82,7 +83,7 @@ function CompactRaidToggle({
         </label>
 
         <label className="flex items-center gap-1.5 cursor-pointer" title="Show rankings to players">
-          <span className="text-[11px] text-muted-foreground">Ranks</span>
+          <span className="text-11 text-muted-foreground">Ranks</span>
           <Switch
             checked={tier.master_sheet_visible && tier.is_guild_active}
             onCheckedChange={() => onToggleRankings(tier.id, tier.master_sheet_visible)}
@@ -132,19 +133,19 @@ function PhaseCard({
     >
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-border">
-        <h3 className="text-[15px] font-semibold text-foreground">
+        <h3 className="text-15 font-semibold text-foreground">
           Phase {phase}
         </h3>
         {isCurrentPhase ? (
-          <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-accent/20 text-accent border border-accent/40">
+          <span className="px-2 py-0.5 text-11 font-semibold rounded-full bg-accent/20 text-accent border border-accent/40">
             CURRENT
           </span>
         ) : isUnlocked ? (
-          <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-success/20 text-success border border-success/40">
+          <span className="px-2 py-0.5 text-11 font-semibold rounded-full bg-success/20 text-success border border-success/40">
             UNLOCKED
           </span>
         ) : (
-          <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-muted text-muted-foreground border border-border">
+          <span className="px-2 py-0.5 text-11 font-semibold rounded-full bg-muted text-muted-foreground border border-border">
             LOCKED
           </span>
         )}
@@ -155,7 +156,7 @@ function PhaseCard({
         <div className="p-3 space-y-3 flex-1">
           {/* Deadline */}
           <div>
-            <label className="block text-[11px] font-medium text-muted-foreground mb-1.5">
+            <label className="block text-11 font-medium text-muted-foreground mb-1.5">
               Submission deadline
             </label>
             <DateTimePicker
@@ -184,7 +185,7 @@ function PhaseCard({
           </div>
         </div>
       ) : (
-        <div className="p-3 text-muted-foreground text-[12px] flex-1">
+        <div className="p-3 text-muted-foreground text-12 flex-1">
           Set current phase to {phase} or higher to configure.
         </div>
       )}
@@ -583,7 +584,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
         {/* Back button skeleton */}
         <Skeleton className="h-10 w-20 rounded-lg" />
         {/* Expansion header skeleton */}
-        <div className="rounded-xl border border-border p-6 bg-background-elevated">
+        <Card className="p-6">
           <div className="flex items-start gap-4">
             <Skeleton className="w-16 h-16 rounded-lg flex-shrink-0" />
             <div className="flex-1 space-y-2">
@@ -595,10 +596,10 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
               </div>
             </div>
           </div>
-        </div>
+        </Card>
         {/* Phase cards skeleton */}
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="bg-background-elevated border border-border rounded-xl p-6 space-y-4">
+          <Card key={i} className="p-6 space-y-4">
             <div className="flex items-center justify-between">
               <Skeleton className="h-6 w-24" />
               <Skeleton className="h-6 w-16 rounded-full" />
@@ -614,7 +615,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
         ))}
       </div>
     )
@@ -709,7 +710,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       {/* Current Phase + Phase Merging */}
       {uniquePhases.length > 0 && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-background-elevated border border-border rounded-xl p-5">
+        <Card className="p-5">
           <Heading level={4} className="mb-2">Current phase</Heading>
           <p className="text-muted-foreground text-sm mb-4">
             Select the phase your guild is progressing through. All phases up to this point will be visible for loot list submissions.
@@ -741,11 +742,11 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
               )
             })}
           </div>
-        </div>
+        </Card>
 
         {/* Phase Merging */}
         {uniquePhases.length > 1 && (
-        <div className="bg-background-elevated border border-border rounded-xl p-5">
+        <Card className="p-5">
           <Heading level={4} className="mb-2">Phase merging</Heading>
           <p className="text-muted-foreground text-sm mb-4">
             Combine phases so raiders rank items from multiple raids on one list.
@@ -915,7 +916,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
               </div>
             </>
           )}
-        </div>
+        </Card>
         )}
       </div>
       )}
@@ -953,9 +954,9 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
 
       {/* Empty state */}
       {raidTiers.length === 0 && (
-        <div className="p-8 bg-background-elevated border border-border rounded-xl text-center">
+        <Card className="p-8 text-center">
           <p className="text-foreground-muted">{isForeverGuild ? 'WoW Forever has no raids open yet.' : 'No raid tiers found for this expansion'}</p>
-        </div>
+        </Card>
       )}
     </div>
   )

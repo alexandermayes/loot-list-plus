@@ -31,10 +31,10 @@ Mode routing:
 </routing>
 
 <execution_context>
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/add-phase.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/insert-phase.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/remove-phase.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/edit-phase.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/add-phase.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/insert-phase.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/remove-phase.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/edit-phase.md
 </execution_context>
 
 <context>

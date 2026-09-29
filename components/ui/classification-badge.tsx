@@ -51,7 +51,7 @@ export function ClassificationBadge({ classification, className, compact = false
       variant="outline"
       className={cn(
         config.className,
-        compact ? 'px-1.5 text-[10px]' : 'px-2 py-0.5 text-[11px]',
+        compact ? 'px-1.5 text-11' : 'px-2 py-0.5 text-11',
         className
       )}
     >

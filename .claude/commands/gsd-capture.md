@@ -38,13 +38,13 @@ Mode routing:
 </routing>
 
 <execution_context>
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/add-todo.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/note.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/add-backlog.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/plant-seed.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/check-todos.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/list-seeds.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/references/ui-brand.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/add-todo.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/note.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/add-backlog.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/plant-seed.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/check-todos.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/list-seeds.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>

@@ -1,0 +1,68 @@
+{
+  "label": "g11-1-before",
+  "mode": "acceptance",
+  "timestamp": "2026-09-22T05:45:20.107Z",
+  "controls": {
+    "poppins": {
+      "advanceSpreadPx": 14.344,
+      "uniform": false,
+      "decimalJitterPx": 10.125
+    },
+    "systemUi": {
+      "advanceSpreadPx": 0,
+      "uniform": true,
+      "decimalJitterPx": 0
+    }
+  },
+  "surfaces": [
+    {
+      "url": "http://localhost:3100/pricing",
+      "fontSizeUsed": "12px",
+      "declaredFamily": "Poppins",
+      "rasterisedFamily": "Poppins",
+      "weights": [
+        {
+          "weight": 400,
+          "advanceSpreadPx": 15.109,
+          "uniform": false,
+          "decimalJitterPx": 11.203,
+          "declaredFamily": "Poppins",
+          "rasterisedFamily": "Poppins",
+          "rasterisedFamilyRaw": "Poppins"
+        },
+        {
+          "weight": 500,
+          "advanceSpreadPx": 14.25,
+          "uniform": false,
+          "decimalJitterPx": 10.375,
+          "declaredFamily": "Poppins",
+          "rasterisedFamily": "Poppins",
+          "rasterisedFamilyRaw": "Poppins Medium"
+        },
+        {
+          "weight": 600,
+          "advanceSpreadPx": 14.344,
+          "uniform": false,
+          "decimalJitterPx": 10.125,
+          "declaredFamily": "Poppins",
+          "rasterisedFamily": "Poppins",
+          "rasterisedFamilyRaw": "Poppins SemiBold"
+        },
+        {
+          "weight": 700,
+          "advanceSpreadPx": 14.438,
+          "uniform": false,
+          "decimalJitterPx": 9.797,
+          "declaredFamily": "Poppins",
+          "rasterisedFamily": "Poppins",
+          "rasterisedFamilyRaw": "Poppins"
+        }
+      ],
+      "nativeElementCount": 0,
+      "nativeElements": []
+    }
+  ],
+  "consoleErrors": [],
+  "failedRequests": [],
+  "exitCode": 1
+}

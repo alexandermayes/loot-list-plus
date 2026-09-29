@@ -11,6 +11,7 @@ import type {
   RaidLootEntry,
   UnlinkedAttendee,
 } from './types'
+import { Card } from '@/components/ui/card'
 
 interface RaidCardProps {
   raid: RaidEvent
@@ -89,7 +90,7 @@ function RaidCardInner(props: RaidCardProps) {
   } = props
 
   return (
-    <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+    <Card className="overflow-hidden">
       <RaidCardHeader
         raid={raid}
         isExpanded={isExpanded}
@@ -128,7 +129,7 @@ function RaidCardInner(props: RaidCardProps) {
           onDeleteLootEntry={onDeleteLootEntry}
         />
       )}
-    </div>
+    </Card>
   )
 }
 

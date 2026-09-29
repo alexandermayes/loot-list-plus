@@ -68,16 +68,16 @@ export function SettingsModal({
         <ModalHeader onClose={() => onClose()}>
           <div className="flex items-center gap-3">
             <ModalTitle>Loot system settings</ModalTitle>
-            {saveStatus === 'saving' && <span className="text-[12px] text-muted-foreground">Saving...</span>}
-            {saveStatus === 'saved' && <span className="text-[12px] text-success">Saved</span>}
-            {saveStatus === 'error' && <span className="text-[12px] text-destructive">Save failed</span>}
+            {saveStatus === 'saving' && <span className="text-12 text-muted-foreground">Saving...</span>}
+            {saveStatus === 'saved' && <span className="text-12 text-success">Saved</span>}
+            {saveStatus === 'error' && <span className="text-12 text-destructive">Save failed</span>}
           </div>
         </ModalHeader>
         <ModalBody className="space-y-6">
               {/* General Settings */}
               <Card variant="unified">
                 <CardHeader>
-                  <CardTitle className="text-[15px] font-semibold flex items-center gap-2">
+                  <CardTitle className="text-15 font-semibold flex items-center gap-2">
                     <HugeiconsIcon icon={Settings01Icon} size={18} className="text-muted-foreground" />
                     General settings
                   </CardTitle>
@@ -96,7 +96,7 @@ export function SettingsModal({
                       <option value="1">One decimal (e.g., 42.5)</option>
                       <option value="2">Two decimals (e.g., 42.50)</option>
                     </Select>
-                    <p className="text-muted-foreground text-[12px] mt-1">How many decimal places to show</p>
+                    <p className="text-muted-foreground text-12 mt-1">How many decimal places to show</p>
                   </div>
                 </CardContent>
               </Card>
@@ -104,7 +104,7 @@ export function SettingsModal({
               {/* Attendance Settings - Basic */}
               <Card variant="unified">
                 <CardHeader>
-                  <CardTitle className="text-[15px] font-semibold flex items-center gap-2">
+                  <CardTitle className="text-15 font-semibold flex items-center gap-2">
                     <HugeiconsIcon icon={Calendar03Icon} size={18} className="text-muted-foreground" />
                     Attendance
                   </CardTitle>
@@ -124,7 +124,7 @@ export function SettingsModal({
                         <option value="linear">Linear (percentage)</option>
                         <option value="breakpoint">Breakpoint</option>
                       </Select>
-                      <p className="text-muted-foreground text-[12px] mt-1">
+                      <p className="text-muted-foreground text-12 mt-1">
                         {settings.attendance_type === 'points-per-raid'
                           ? 'Flat points per raid: signup + attendance = 1 point/raid'
                           : settings.attendance_type === 'linear'
@@ -144,7 +144,7 @@ export function SettingsModal({
                         onChange={(e) => setSettings({ ...settings, rolling_attendance_weeks: Number(e.target.value) })}
                         className="bg-background-elevated"
                       />
-                      <p className="text-muted-foreground text-[12px] mt-1">How many weeks to track attendance</p>
+                      <p className="text-muted-foreground text-12 mt-1">How many weeks to track attendance</p>
                     </div>
                   </div>
 
@@ -168,7 +168,7 @@ export function SettingsModal({
                         }}
                         className="bg-background-elevated"
                       />
-                      <p className="text-muted-foreground text-[12px] mt-1">
+                      <p className="text-muted-foreground text-12 mt-1">
                         {settings.weekly_attendance_minimum
                           ? `Attending ${settings.weekly_attendance_minimum}+ raids in a week = full weekly credit`
                           : 'Off: every scheduled raid counts toward the week'}
@@ -191,13 +191,13 @@ export function SettingsModal({
                         <option value="5">Friday</option>
                         <option value="6">Saturday</option>
                       </Select>
-                      <p className="text-muted-foreground text-[12px] mt-1">In-progress reset weeks are excluded until the next reset</p>
+                      <p className="text-muted-foreground text-12 mt-1">In-progress reset weeks are excluded until the next reset</p>
                     </div>
                   </div>
 
                   {/* Linear: show max bonus */}
                   {settings.attendance_type === 'linear' && (
-                    <div className="bg-background-elevated border border-border-strong p-4 rounded-xl">
+                    <Card variant="nested" className="p-4">
                       <div className="w-full sm:w-1/3">
                         <Label className="block mb-2">Maximum attendance bonus</Label>
                         <Input
@@ -209,15 +209,15 @@ export function SettingsModal({
                           placeholder="Points"
                           className="bg-background-elevated"
                         />
-                        <p className="text-muted-foreground text-[12px] mt-1">Bonus at 100% attendance</p>
+                        <p className="text-muted-foreground text-12 mt-1">Bonus at 100% attendance</p>
                       </div>
-                    </div>
+                    </Card>
                   )}
 
                   {/* Breakpoint: show all tiers */}
                   {settings.attendance_type === 'breakpoint' && (
-                    <div className="bg-background-elevated border border-border-strong p-4 rounded-xl">
-                      <p className="text-muted-foreground text-[12px] mb-3">Configure bonus points for different attendance thresholds (points | threshold %)</p>
+                    <Card variant="nested" className="p-4">
+                      <p className="text-muted-foreground text-12 mb-3">Configure bonus points for different attendance thresholds (points | threshold %)</p>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                           <Label size="sm" className="block text-muted-foreground mb-1">Max attendance</Label>
@@ -298,12 +298,12 @@ export function SettingsModal({
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </Card>
                   )}
 
                   {/* Points-per-raid: show max cap */}
                   {settings.attendance_type === 'points-per-raid' && (
-                    <div className="bg-background-elevated border border-border-strong p-4 rounded-xl">
+                    <Card variant="nested" className="p-4">
                       <div className="w-full sm:w-1/3">
                         <Label className="block mb-2">Max points cap</Label>
                         <Input
@@ -315,16 +315,16 @@ export function SettingsModal({
                           placeholder="Points"
                           className="bg-background-elevated"
                         />
-                        <p className="text-muted-foreground text-[12px] mt-1">
+                        <p className="text-muted-foreground text-12 mt-1">
                           Max possible: {settings.rolling_attendance_weeks * 2} pts ({settings.rolling_attendance_weeks} weeks × 2 raids)
                         </p>
                       </div>
-                    </div>
+                    </Card>
                   )}
 
                   {/* Raid Signups */}
                   <div className="border-t border-border pt-4">
-                    <p className="text-[13px] font-medium text-foreground mb-3">Raid signups</p>
+                    <p className="text-13 font-medium text-foreground mb-3">Raid signups</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label className="block mb-2">Use raid signups for attendance</Label>
@@ -337,7 +337,7 @@ export function SettingsModal({
                           <option value="no">No</option>
                           <option value="yes">Yes</option>
                         </Select>
-                        <p className="text-muted-foreground text-[12px] mt-1">Give bonus for signing up to raids</p>
+                        <p className="text-muted-foreground text-12 mt-1">Give bonus for signing up to raids</p>
                       </div>
 
                       <div>
@@ -358,7 +358,7 @@ export function SettingsModal({
                           disabled={settings.attendance_type !== 'points-per-raid' && !settings.use_signups}
                           className="bg-background-elevated"
                         />
-                        <p className="text-muted-foreground text-[12px] mt-1">
+                        <p className="text-muted-foreground text-12 mt-1">
                           {settings.attendance_type === 'points-per-raid'
                             ? `Signup: ${settings.signup_weight} pts, Attend: ${(1 - settings.signup_weight).toFixed(2)} pts per raid`
                             : 'Portion of attendance bonus from signups'}
@@ -369,7 +369,7 @@ export function SettingsModal({
 
                   {/* Attendance Penalties */}
                   <div className="border-t border-border pt-4">
-                    <p className="text-[13px] font-medium text-foreground mb-3">Penalties</p>
+                    <p className="text-13 font-medium text-foreground mb-3">Penalties</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <Label className="block mb-2">Late show / leave early penalty</Label>
@@ -382,7 +382,7 @@ export function SettingsModal({
                           <option value="no">No</option>
                           <option value="yes">Yes</option>
                         </Select>
-                        <p className="text-muted-foreground text-[12px] mt-1">Penalize partial attendance</p>
+                        <p className="text-muted-foreground text-12 mt-1">Penalize partial attendance</p>
                       </div>
 
                       <div>
@@ -397,7 +397,7 @@ export function SettingsModal({
                           disabled={!settings.late_early_penalty_enabled}
                           className="bg-background-elevated"
                         />
-                        <p className="text-muted-foreground text-[12px] mt-1">Attendance deduction for late/early</p>
+                        <p className="text-muted-foreground text-12 mt-1">Attendance deduction for late/early</p>
                       </div>
                     </div>
                   </div>
@@ -414,8 +414,8 @@ export function SettingsModal({
                 >
                   <div className="flex items-center gap-2">
                     <HugeiconsIcon icon={Settings02Icon} size={18} className="text-muted-foreground" />
-                    <span className="text-[16px] font-semibold text-foreground">Advanced settings</span>
-                    <span className="text-[12px] text-muted-foreground">(optional)</span>
+                    <span className="text-16 font-semibold text-foreground">Advanced settings</span>
+                    <span className="text-12 text-muted-foreground">(optional)</span>
                   </div>
                   <HugeiconsIcon
                     icon={advancedExpanded ? ArrowUp01Icon : ArrowDown01Icon}
@@ -429,7 +429,7 @@ export function SettingsModal({
                     {/* New Members - Combined Policy and Trial System */}
                     <Card variant="unified">
                       <CardHeader>
-                        <CardTitle className="text-[15px] font-semibold flex items-center gap-2">
+                        <CardTitle className="text-15 font-semibold flex items-center gap-2">
                           <HugeiconsIcon icon={UserAdd01Icon} size={18} className="text-muted-foreground" />
                           New members
                         </CardTitle>
@@ -438,7 +438,7 @@ export function SettingsModal({
                       <CardContent className="space-y-6">
                         {/* Attendance Calculation Mode */}
                         <div className="space-y-3">
-                          <p className="text-[13px] font-medium text-foreground">Attendance calculation</p>
+                          <p className="text-13 font-medium text-foreground">Attendance calculation</p>
                           <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${settings.new_member_mode === 'raw' ? 'border-accent bg-accent/5' : 'border-border hover:border-border-strong'}`}>
                             <input
                               type="radio"
@@ -450,7 +450,7 @@ export function SettingsModal({
                             />
                             <div>
                               <div className="font-medium text-foreground">Raw attendance</div>
-                              <div className="text-muted-foreground text-[13px]">Score calculated against full rolling window. New members naturally have lower priority until they&apos;ve attended enough raids.</div>
+                              <div className="text-muted-foreground text-13">Score calculated against full rolling window. New members naturally have lower priority until they&apos;ve attended enough raids.</div>
                             </div>
                           </label>
 
@@ -465,7 +465,7 @@ export function SettingsModal({
                             />
                             <div>
                               <div className="font-medium text-foreground">Fair attendance</div>
-                              <div className="text-muted-foreground text-[13px]">Score only counts raids since member joined guild. New members can compete equally if they&apos;re consistent.</div>
+                              <div className="text-muted-foreground text-13">Score only counts raids since member joined guild. New members can compete equally if they&apos;re consistent.</div>
                             </div>
                           </label>
 
@@ -480,7 +480,7 @@ export function SettingsModal({
                             />
                             <div>
                               <div className="font-medium text-foreground">Minimum raids required</div>
-                              <div className="text-muted-foreground text-[13px]">Members must attend a minimum number of raids before becoming eligible for loot. Uses fair attendance calculation once eligible.</div>
+                              <div className="text-muted-foreground text-13">Members must attend a minimum number of raids before becoming eligible for loot. Uses fair attendance calculation once eligible.</div>
                             </div>
                           </label>
 
@@ -497,15 +497,15 @@ export function SettingsModal({
                                 onChange={(e) => setSettings({ ...settings, minimum_raid_days: Number(e.target.value) })}
                                 className="bg-background-elevated w-24"
                               />
-                              <p className="text-muted-foreground text-[12px] mt-1">Members must attend this many raids before they can receive loot.</p>
+                              <p className="text-muted-foreground text-12 mt-1">Members must attend this many raids before they can receive loot.</p>
                             </div>
                           )}
                         </div>
 
                         {/* Trial System */}
                         <div className="space-y-4 pt-2 border-t border-border">
-                          <p className="text-[13px] font-medium text-foreground pt-2">Trial system</p>
-                          <p className="text-muted-foreground text-[12px] -mt-2">Apply a score penalty to members on trial status until promoted to full member.</p>
+                          <p className="text-13 font-medium text-foreground pt-2">Trial system</p>
+                          <p className="text-muted-foreground text-12 -mt-2">Apply a score penalty to members on trial status until promoted to full member.</p>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
@@ -533,7 +533,7 @@ export function SettingsModal({
                                 disabled={!settings.trial_penalty_enabled}
                                 className="bg-background-elevated"
                               />
-                              <p className="text-muted-foreground text-[11px] mt-1">Negative value reduces trial member scores</p>
+                              <p className="text-muted-foreground text-11 mt-1">Negative value reduces trial member scores</p>
                             </div>
                           </div>
 
@@ -548,7 +548,7 @@ export function SettingsModal({
                               <option value="no">No</option>
                               <option value="yes">Yes</option>
                             </Select>
-                            <p className="text-muted-foreground text-[11px] mt-1">When enabled, new members joining the guild will automatically be set to trial status</p>
+                            <p className="text-muted-foreground text-11 mt-1">When enabled, new members joining the guild will automatically be set to trial status</p>
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -587,7 +587,7 @@ export function SettingsModal({
                     {/* Bad Luck Prevention (BLP) */}
                     <Card variant="unified">
                       <CardHeader>
-                        <CardTitle className="text-[15px] font-semibold flex items-center gap-2">
+                        <CardTitle className="text-15 font-semibold flex items-center gap-2">
                           <HugeiconsIcon icon={DiceIcon} size={18} className="text-muted-foreground" />
                           Bad luck prevention
                         </CardTitle>
@@ -657,7 +657,7 @@ export function SettingsModal({
                           <div>
                             <Label className="block mb-2 inline-flex items-center gap-1">Hard reset <InfoTooltip content="Hides every raid before this anchor from bad luck protection, so accrued BLP restarts at zero. Loot and attendance history are untouched. Clear the anchor to bring the old values back." iconSize={12} /></Label>
                             {settings.blp_reset_at && (
-                              <p className="text-foreground-secondary text-[12px] mt-1 mb-1">
+                              <p className="text-foreground-secondary text-12 mt-1 mb-1">
                                 Anchor: <span className="tabular-nums">{settings.blp_reset_at}</span>
                               </p>
                             )}
@@ -686,7 +686,7 @@ export function SettingsModal({
                               <Button
                                 variant="link"
                                 size="sm"
-                                className="mt-1 text-[11px] h-auto p-0"
+                                className="mt-1 text-11 h-auto p-0"
                                 onClick={() => {
                                   setSettings({ ...settings, blp_reset_at: null })
                                   showNotification('success', 'BLP anchor cleared. Full history counts again.')
@@ -703,7 +703,7 @@ export function SettingsModal({
                     {/* Loot List Rules */}
                     <Card variant="unified">
                       <CardHeader>
-                        <CardTitle className="text-[15px] font-semibold flex items-center gap-2">
+                        <CardTitle className="text-15 font-semibold flex items-center gap-2">
                           <HugeiconsIcon icon={Layers01Icon} size={18} className="text-muted-foreground" />
                           Loot list rules
                         </CardTitle>
@@ -723,7 +723,7 @@ export function SettingsModal({
                                 <option key={n} value={n}>{n}</option>
                               ))}
                             </Select>
-                            <p className="text-muted-foreground text-[12px] mt-1">Max per bracket</p>
+                            <p className="text-muted-foreground text-12 mt-1">Max per bracket</p>
                           </div>
 
                           <div>
@@ -738,7 +738,7 @@ export function SettingsModal({
                                 <option key={n} value={n}>{n}</option>
                               ))}
                             </Select>
-                            <p className="text-muted-foreground text-[12px] mt-1">Max per bracket</p>
+                            <p className="text-muted-foreground text-12 mt-1">Max per bracket</p>
                           </div>
 
                           <div>
@@ -752,12 +752,12 @@ export function SettingsModal({
                               <option value="no">No</option>
                               <option value="yes">Yes</option>
                             </Select>
-                            <p className="text-muted-foreground text-[12px] mt-1">Restrict tokens per bracket</p>
+                            <p className="text-muted-foreground text-12 mt-1">Restrict tokens per bracket</p>
                           </div>
                         </div>
 
                         {settings.enforce_slot_restrictions && (
-                          <div className="bg-background-elevated border border-border-strong p-4 rounded-xl">
+                          <Card variant="nested" className="p-4">
                             <div className="w-full sm:w-1/3">
                               <Label className="block mb-2 inline-flex items-center gap-1">Max tier tokens <InfoTooltip content="How many tier token items a raider can place in each bracket." iconSize={12} /></Label>
                               <Select
@@ -770,9 +770,9 @@ export function SettingsModal({
                                   <option key={n} value={n}>{n}</option>
                                 ))}
                               </Select>
-                              <p className="text-muted-foreground text-[12px] mt-1">Per bracket</p>
+                              <p className="text-muted-foreground text-12 mt-1">Per bracket</p>
                             </div>
-                          </div>
+                          </Card>
                         )}
                       </CardContent>
                     </Card>
@@ -780,7 +780,7 @@ export function SettingsModal({
                     {/* Rank, Role, Class Bonuses */}
                     <Card variant="unified">
                       <CardHeader>
-                        <CardTitle className="text-[15px] font-semibold flex items-center gap-2">
+                        <CardTitle className="text-15 font-semibold flex items-center gap-2">
                           <HugeiconsIcon icon={Medal01Icon} size={18} className="text-muted-foreground" />
                           Rank, role and class bonuses
                         </CardTitle>
@@ -802,10 +802,10 @@ export function SettingsModal({
                       </div>
 
                       {settings.guild_rank_bonuses_enabled && (
-                        <div className="bg-background-elevated border border-border-strong p-4 rounded-xl space-y-3">
+                        <Card variant="nested" className="p-4 space-y-3">
                           <div className="flex items-center justify-between mb-2">
-                            <p className="text-[13px] font-medium text-foreground">Rank bonuses</p>
-                            <p className="text-[11px] text-muted-foreground">Can be positive or negative. For negative, use - before number (e.g., -1)</p>
+                            <p className="text-13 font-medium text-foreground">Rank bonuses</p>
+                            <p className="text-11 text-muted-foreground">Can be positive or negative. For negative, use - before number (e.g., -1)</p>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             {[...guildRoles].sort((a, b) => b.position - a.position).map((role) => (
@@ -836,10 +836,10 @@ export function SettingsModal({
                               </div>
                             ))}
                           </div>
-                          <p className="text-[11px] text-accent mt-2">
+                          <p className="text-11 text-accent mt-2">
                             Ensure you have assigned roles for each raider in the Master Sheet or calculations will not work.
                           </p>
-                        </div>
+                        </Card>
                       )}
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -854,7 +854,7 @@ export function SettingsModal({
                             <option value="no">No</option>
                             <option value="yes">Yes</option>
                           </Select>
-                          <p className="text-muted-foreground text-[11px] mt-1">Boost priority for the intended role when an item has a role tag (e.g., Tank gear)</p>
+                          <p className="text-muted-foreground text-11 mt-1">Boost priority for the intended role when an item has a role tag (e.g., Tank gear)</p>
                         </div>
 
                         <div>
@@ -868,7 +868,7 @@ export function SettingsModal({
                             <option value="no">No</option>
                             <option value="yes">Yes</option>
                           </Select>
-                          <p className="text-muted-foreground text-[11px] mt-1">Boost priority for specific classes when an item has a class tag</p>
+                          <p className="text-muted-foreground text-11 mt-1">Boost priority for specific classes when an item has a class tag</p>
                         </div>
                       </div>
 
@@ -884,7 +884,7 @@ export function SettingsModal({
                             <option value="no">No</option>
                             <option value="yes">Yes</option>
                           </Select>
-                          <p className="text-muted-foreground text-[11px] mt-1">Give certain raid roles (Tank, Healer, DPS) a global score bonus</p>
+                          <p className="text-muted-foreground text-11 mt-1">Give certain raid roles (Tank, Healer, DPS) a global score bonus</p>
                         </div>
 
                         <div>
@@ -899,15 +899,15 @@ export function SettingsModal({
                             <option value="no">No</option>
                             <option value="yes">Yes</option>
                           </Select>
-                          <p className="text-muted-foreground text-[11px] mt-1">Give individual raiders a custom bonus or penalty, permanent or just for the week. Set amounts on the Priorities tab.</p>
+                          <p className="text-muted-foreground text-11 mt-1">Give individual raiders a custom bonus or penalty, permanent or just for the week. Set amounts on the Priorities tab.</p>
                         </div>
                       </div>
 
                       {settings.raid_roles_overall_bonus_priority && (
-                        <div className="bg-background-elevated border border-border-strong p-4 rounded-xl space-y-3">
+                        <Card variant="nested" className="p-4 space-y-3">
                           <div className="flex items-center justify-between mb-2">
-                            <p className="text-[13px] font-medium text-foreground">Role bonuses</p>
-                            <p className="text-[11px] text-muted-foreground">Can be positive or negative. For negative, use - before number (e.g., -1)</p>
+                            <p className="text-13 font-medium text-foreground">Role bonuses</p>
+                            <p className="text-11 text-muted-foreground">Can be positive or negative. For negative, use - before number (e.g., -1)</p>
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             {allRoles.map((role) => (
@@ -938,18 +938,18 @@ export function SettingsModal({
                               </div>
                             ))}
                           </div>
-                          <p className="text-[11px] text-accent mt-2">
+                          <p className="text-11 text-accent mt-2">
                             Roles are determined by each raider&apos;s spec. Make sure specs are set correctly.
                           </p>
-                        </div>
+                        </Card>
                       )}
 
                       {settings.single_raider_overall_bonus && (
-                        <div className="bg-background-elevated border border-border-strong p-4 rounded-xl">
-                          <p className="text-[12px] text-muted-foreground">
+                        <Card variant="nested" className="p-4">
+                          <p className="text-12 text-muted-foreground">
                             Set each raider&apos;s bonus or penalty on the <span className="text-accent font-medium">Priorities</span> tab, under &quot;Raider bonuses.&quot; You can give a permanent modifier or one that falls off at the next weekly reset.
                           </p>
-                        </div>
+                        </Card>
                       )}
 
                       <div>
@@ -963,7 +963,7 @@ export function SettingsModal({
                           <option value="no">No</option>
                           <option value="yes">Yes</option>
                         </Select>
-                        <p className="text-muted-foreground text-[11px] mt-1">Allow boosting a specific raider&apos;s priority on a specific item</p>
+                        <p className="text-muted-foreground text-11 mt-1">Allow boosting a specific raider&apos;s priority on a specific item</p>
                       </div>
                       </CardContent>
                     </Card>
@@ -971,7 +971,7 @@ export function SettingsModal({
                     {/* Donations */}
                     <Card variant="unified">
                       <CardHeader>
-                        <CardTitle className="text-[15px] font-semibold flex items-center gap-2">
+                        <CardTitle className="text-15 font-semibold flex items-center gap-2">
                           <HugeiconsIcon icon={GiftIcon} size={18} className="text-muted-foreground" />
                           Donations
                         </CardTitle>
@@ -1004,7 +1004,7 @@ export function SettingsModal({
                               <option value="no">No</option>
                               <option value="yes">Yes</option>
                             </Select>
-                            <p className="text-muted-foreground text-[11px] mt-1">Limit max donation bonus to prevent pay-to-win</p>
+                            <p className="text-muted-foreground text-11 mt-1">Limit max donation bonus to prevent pay-to-win</p>
                           </div>
 
                           <div>
@@ -1020,7 +1020,7 @@ export function SettingsModal({
                               <option value="rolling">Rolling</option>
                               <option value="hard-reset">Hard reset</option>
                             </Select>
-                            <p className="text-muted-foreground text-[11px] mt-1">How donation points persist over time</p>
+                            <p className="text-muted-foreground text-11 mt-1">How donation points persist over time</p>
                           </div>
 
                           <div>
@@ -1035,7 +1035,7 @@ export function SettingsModal({
                               onChange={(e) => setSettings({ ...settings, donation_cap_points: Number(e.target.value) || 0 })}
                               disabled={!settings.donation_bonuses_enabled || !settings.donation_cap_enabled}
                             />
-                            <p className="text-muted-foreground text-[11px] mt-1">Max bonus per raider</p>
+                            <p className="text-muted-foreground text-11 mt-1">Max bonus per raider</p>
                           </div>
 
                           <div>
@@ -1055,13 +1055,13 @@ export function SettingsModal({
                               }}
                               disabled={!settings.donation_bonuses_enabled || settings.donation_bonus_type !== 'rolling'}
                             />
-                            <p className="text-muted-foreground text-[11px] mt-1">Only applies in rolling mode</p>
+                            <p className="text-muted-foreground text-11 mt-1">Only applies in rolling mode</p>
                           </div>
 
                           <div>
                             <Label className="block mb-2 inline-flex items-center gap-1">Hard reset <InfoTooltip content="Hides all donations dated before this anchor from scoring. Use when starting a new tier or season. Records are preserved in the audit log." iconSize={12} /></Label>
                             {settings.donation_reset_at && (
-                              <p className="text-foreground-secondary text-[12px] mt-1 mb-1">
+                              <p className="text-foreground-secondary text-12 mt-1 mb-1">
                                 Anchor: <span className="tabular-nums">{settings.donation_reset_at}</span>
                               </p>
                             )}
@@ -1086,7 +1086,7 @@ export function SettingsModal({
                             >
                               {settings.donation_reset_at ? 'Reset again' : 'Reset now'}
                             </Button>
-                            <p className="text-muted-foreground text-[11px] mt-1">Only applies in hard-reset mode</p>
+                            <p className="text-muted-foreground text-11 mt-1">Only applies in hard-reset mode</p>
                           </div>
                         </div>
                       </CardContent>

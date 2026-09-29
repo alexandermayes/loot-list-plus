@@ -32,10 +32,10 @@ Three modes:
 </flags>
 
 <execution_context>
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/progress.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/next.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/do.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/references/ui-brand.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/progress.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/next.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/do.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/ui-brand.md
 </execution_context>
 
 <process>

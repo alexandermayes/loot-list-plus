@@ -35,7 +35,7 @@ function Section({ heading, children }: { heading?: string; children: React.Reac
   return (
     <section className="mb-12">
       {heading && (
-        <h2 className="font-poppins font-bold text-[24px] md:text-[28px] text-white mb-4">{heading}</h2>
+        <h2 className="font-poppins font-bold text-24 md:text-28 text-white mb-4">{heading}</h2>
       )}
       {children}
     </section>
@@ -43,7 +43,7 @@ function Section({ heading, children }: { heading?: string; children: React.Reac
 }
 
 function Body({ children }: { children: React.ReactNode }) {
-  return <p className="font-poppins text-[15px] text-[#bababa] leading-relaxed mb-4">{children}</p>
+  return <p className="font-poppins text-15 text-[#bababa] leading-relaxed mb-4">{children}</p>
 }
 
 export default function AboutPage() {
@@ -57,7 +57,7 @@ export default function AboutPage() {
 
       <article className="max-w-3xl mx-auto px-6 md:px-12 pt-16 md:pt-24 pb-20">
         <header className="mb-12">
-          <h1 className="font-poppins font-bold text-[32px] md:text-[44px] leading-[1.1] text-white">
+          <h1 className="font-poppins font-bold text-32 md:text-44 leading-[1.1] text-white">
             Built by a raid team that was tired of running loot from a spreadsheet.
           </h1>
         </header>
@@ -109,7 +109,7 @@ export default function AboutPage() {
               'A loot system should reduce drama and administration, not create more of both.',
               'Comparisons should be honest. If another system fits a guild better, we will say so.',
             ].map((belief) => (
-              <li key={belief} className="flex items-start gap-3 font-poppins text-[15px] text-[#bababa] leading-relaxed">
+              <li key={belief} className="flex items-start gap-3 font-poppins text-15 text-[#bababa] leading-relaxed">
                 <span className="text-[#9940ec] shrink-0 mt-0.5">✦</span>
                 {belief}
               </li>
@@ -139,16 +139,16 @@ export default function AboutPage() {
         </Section>
 
         <section className="mt-16 text-center bg-[#0c0b0e] border border-[#383838] rounded-[20px] p-10">
-          <h2 className="font-poppins font-bold text-[24px] md:text-[28px] text-white mb-3">
+          <h2 className="font-poppins font-bold text-24 md:text-28 text-white mb-3">
             Try it with your own roster.
           </h2>
-          <p className="font-poppins text-[15px] text-[#bababa] leading-relaxed mb-6 max-w-md mx-auto">
+          <p className="font-poppins text-15 text-[#bababa] leading-relaxed mb-6 max-w-md mx-auto">
             Create a guild, configure the rules, and see what the priority order looks like
             with real data.
           </p>
           <a
             href={APP_URL}
-            className="inline-flex items-center justify-center px-5 py-3 rounded-[60px] bg-white font-poppins font-semibold text-[16px] text-black no-underline hover:bg-white/90 transition-colors"
+            className="inline-flex items-center justify-center px-5 py-3 rounded-[60px] bg-white font-poppins font-semibold text-16 text-black no-underline hover:bg-white/90 transition-colors"
           >
             Create your guild free
           </a>

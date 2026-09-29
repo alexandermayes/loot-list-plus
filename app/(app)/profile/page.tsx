@@ -2,6 +2,7 @@ import Image from 'next/image'
 import ProfileContent from './components/ProfileContent'
 import { Heading } from '@/components/ui/typography'
 import { createClient } from '@/utils/supabase/server'
+import { Card } from '@/components/ui/card'
 
 type ProfileHeader = {
   displayName: string
@@ -55,7 +56,7 @@ export default async function ProfilePage() {
   // for client hydration. Discord-link status stays client-driven (it's an
   // async preferences fetch) and renders as a skeleton until ready.
   const serverHeading = header ? (
-    <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-6">
+    <Card className="p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
         <Image
           src={header.avatarUrl}
@@ -68,13 +69,13 @@ export default async function ProfilePage() {
         <div className="flex-1 min-w-0">
           <Heading level={2} className="text-xl sm:text-3xl">{header.displayName}</Heading>
           {header.memberSince && (
-            <div className="flex items-center gap-1.5 mt-1 text-[13px] text-muted-foreground">
+            <div className="flex items-center gap-1.5 mt-1 text-13 text-muted-foreground">
               <span>Member since {new Date(header.memberSince).toLocaleDateString()}</span>
             </div>
           )}
         </div>
       </div>
-    </div>
+    </Card>
   ) : null
 
   return <ProfileContent serverHeading={serverHeading} />
