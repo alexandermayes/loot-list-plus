@@ -79,9 +79,23 @@
 -- PostgREST returns as 400. Each message is a fixed string with no ids. The
 -- caller-supplied id and the row's own guild_id go in DETAIL only. A
 -- nonexistent id and another guild's id get the same message, and because
--- this is a BEFORE trigger it runs before the raid_event_id foreign key check,
--- so there is no existence oracle and no message names the guild that owns a
--- foreign row.
+-- this is a BEFORE trigger it runs before the foreign key checks, so an
+-- officer cannot tell a nonexistent id from another guild's id, and no
+-- message names the guild that owns a foreign row.
+--
+-- No oracle for callers RLS refuses: PostgreSQL runs BEFORE ROW triggers
+-- before the RLS WITH CHECK. Left alone, an anon caller or a signed-in
+-- non-officer could send a row for any guild and read the reference checks'
+-- 23514 (and which column failed) before RLS refused it with 42501, which
+-- would tell them whether a raid event, raider or item belongs to that guild.
+-- So when the effective role is anon or authenticated and the caller is not
+-- an officer of the row's guild, the function first raises the same 42501
+-- and message RLS would, whatever the row points at. This mirrors the
+-- current INSERT and UPDATE policies (both is_guild_officer(guild_id)). It
+-- fails closed: if those policies are ever loosened, this check must be
+-- loosened with them, or the newly allowed writers stay refused.
+-- service_role, postgres and migrations are not anon or authenticated, so
+-- their rows always get the full reference checks.
 --
 -- Existing rows are not validated or changed by this migration.
 --
@@ -107,6 +121,16 @@ DECLARE
 BEGIN
   IF NEW.guild_id IS NULL THEN
     RETURN NEW;
+  END IF;
+
+  -- A BEFORE trigger runs before the RLS WITH CHECK, so without this a caller
+  -- RLS would refuse could read which reference is wrong from our 23514.
+  -- Refuse them here with the error RLS gives, whatever the row points at.
+  IF current_setting('role', true) IN ('anon', 'authenticated') THEN
+    IF NOT public.is_guild_officer(NEW.guild_id) THEN
+      RAISE EXCEPTION 'new row violates row-level security policy for table "loot_history"'
+        USING ERRCODE = 'insufficient_privilege';
+    END IF;
   END IF;
 
   IF TG_OP = 'UPDATE' THEN
@@ -172,7 +196,7 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION "public"."enforce_loot_history_guild_refs"() IS 'GH #313. Rejects a loot_history row whose raid_event_id, character_id or loot item points outside the row''s own guild_id, for every role including service_role. On UPDATE only references the write changes are checked, so existing rows stay editable. SECURITY DEFINER with EXECUTE revoked from PUBLIC, anon and authenticated.';
+COMMENT ON FUNCTION "public"."enforce_loot_history_guild_refs"() IS 'GH #313. Rejects a loot_history row whose raid_event_id, character_id or loot item points outside the row''s own guild_id, for every role including service_role. On UPDATE only references the write changes are checked, so existing rows stay editable. An anon or authenticated caller who is not an officer of the row''s guild gets the RLS error first, so the checks reveal nothing to them. SECURITY DEFINER with EXECUTE revoked from PUBLIC, anon and authenticated.';
 
 REVOKE ALL ON FUNCTION "public"."enforce_loot_history_guild_refs"() FROM PUBLIC, "anon", "authenticated";
 

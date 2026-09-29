@@ -187,12 +187,32 @@ describe('loot_history guild references migration shape (GH-313)', () => {
     const raises = [...body.matchAll(/RAISE EXCEPTION\s+'((?:[^']|'')*)'([^;]*);/gi)]
     const raiseCount = (body.match(/\bRAISE EXCEPTION\b/gi) ?? []).length
     expect(raises.length).toBe(raiseCount)
-    // raid event, raider, item, tier, expansion
-    expect(raiseCount).toBe(5)
-    for (const [, message, rest] of raises) {
+    // RLS gate, then raid event, raider, item, tier, expansion
+    expect(raiseCount).toBe(6)
+    for (const [, message] of raises) {
       expect(message, 'RAISE message must not be a format string').not.toContain('%')
+    }
+    const [gate, ...checks] = raises
+    expect(gate[2]).toMatch(/\bUSING\s+ERRCODE\s*=\s*'insufficient_privilege'/i)
+    for (const [, , rest] of checks) {
       expect(rest).toMatch(/\bUSING\s+ERRCODE\s*=\s*'check_violation'/i)
     }
+  })
+
+  // PostgreSQL runs BEFORE ROW triggers before the RLS WITH CHECK, so a caller
+  // RLS refuses must get RLS's own error before any reference lookup, or the
+  // 23514 would tell them whether a raid event, raider or item is the guild's.
+  it('anon and authenticated non-officers get the RLS error before any reference lookup', () => {
+    const { body } = functionParts()
+
+    const gate = body.search(
+      /IF\s+current_setting\('role',\s*true\)\s+IN\s+\('anon',\s*'authenticated'\)\s+THEN\s+IF\s+NOT\s+public\.is_guild_officer\(NEW\.guild_id\)\s+THEN\s+RAISE EXCEPTION\s+'new row violates row-level security policy for table "loot_history"'\s+USING\s+ERRCODE\s*=\s*'insufficient_privilege'\s*;/i,
+    )
+    expect(gate).toBeGreaterThanOrEqual(0)
+
+    const firstLookup = body.search(/\bFROM\s+public\.(raid_events|character_guild_memberships|loot_items)\b/i)
+    expect(firstLookup).toBeGreaterThan(gate)
+    expect(body.search(/\bTG_OP\b/)).toBeGreaterThan(gate)
   })
 
   it('the body checks active membership and the item, tier and expansion chain', () => {
