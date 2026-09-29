@@ -15,6 +15,7 @@ import { SegmentedControl } from '@/components/ui/segmented-control'
 import { DatePicker } from '@/components/ui/date-picker'
 import { getExpansionVisuals, getExpansionDisplayName } from '@/utils/expansionVisuals'
 import { getGuildGame, getExpansionGame } from '@/domain/expansion/game'
+import { Card } from '@/components/ui/card'
 
 interface GuildExpansion {
   expansion_id: string
@@ -438,7 +439,7 @@ export default function ExpansionManager() {
       {/* Guild Expansions */}
       {visibleExpansions.length > 0 && (
         <div>
-          <h3 className="text-[16px] font-semibold text-foreground mb-4">
+          <h3 className="text-16 font-semibold text-foreground mb-4">
             {isForeverGuild ? 'Game version' : 'Your Expansions'}
           </h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -557,7 +558,7 @@ export default function ExpansionManager() {
                                   activeDays.map((day, idx) => (
                                     <span
                                       key={idx}
-                                      className="px-2 py-0.5 text-[10px] font-bold rounded"
+                                      className="px-2 py-0.5 text-11 font-bold rounded"
                                       style={{
                                         backgroundColor: `${visuals.accentColor}25`,
                                         color: visuals.accentColor
@@ -568,7 +569,7 @@ export default function ExpansionManager() {
                                   ))
                                 ) : (
                                   <span
-                                    className="text-[11px]"
+                                    className="text-11"
                                     style={{ color: `${visuals.textColor}60` }}
                                   >
                                     Not configured
@@ -584,7 +585,7 @@ export default function ExpansionManager() {
                             {/* Schedule summary */}
                             {exp.raid_start_date && (
                               <p
-                                className="text-[11px] mt-1"
+                                className="text-11 mt-1"
                                 style={{ color: `${visuals.textColor}60` }}
                               >
                                 Started {new Date(exp.raid_start_date).toLocaleDateString()}
@@ -594,7 +595,7 @@ export default function ExpansionManager() {
 
                           {/* Expanded Content */}
                           {isExpanded && schedule && (
-                            <div className="mx-3 mt-3 mb-3 p-4 rounded-lg bg-background-elevated border border-border space-y-5">
+                            <Card className="mx-3 mt-3 mb-3 p-4 space-y-5">
                               {/* Raid Start Date & Timezone - side by side */}
                               <div className="grid grid-cols-2 gap-4">
                                 {/* Raid Start Date */}
@@ -702,7 +703,7 @@ export default function ExpansionManager() {
                                   </span>
                                 )}
                               </div>
-                            </div>
+                            </Card>
                           )}
                         </div>
                       )
@@ -748,7 +749,7 @@ export default function ExpansionManager() {
                               {sortedPhases.map((phase) => (
                                 <span
                                   key={phase}
-                                  className="px-2 py-0.5 text-[10px] font-bold rounded"
+                                  className="px-2 py-0.5 text-11 font-bold rounded"
                                   style={{
                                     backgroundColor: `${visuals.accentColor}25`,
                                     color: visuals.accentColor
@@ -779,7 +780,7 @@ export default function ExpansionManager() {
                                     className="w-4 h-4 rounded"
                                   />
                                   <span
-                                    className="text-[11px] font-medium"
+                                    className="text-11 font-medium"
                                     style={{ color: `${visuals.textColor}90` }}
                                   >
                                     {getRaidShorthand(raid.name)}
@@ -790,7 +791,7 @@ export default function ExpansionManager() {
                           )}
                           {activeRaids.length === 0 && (
                             <p
-                              className="text-[11px]"
+                              className="text-11"
                               style={{ color: `${visuals.textColor}60` }}
                             >
                               Configure phases and active raids
@@ -810,7 +811,7 @@ export default function ExpansionManager() {
       {/* Add New Expansion (Classic guilds only, D-08) */}
       {!isForeverGuild && addableExpansions.length > 0 && (
         <div>
-          <h3 className="text-[16px] font-semibold text-foreground mb-4">Add Expansion</h3>
+          <h3 className="text-16 font-semibold text-foreground mb-4">Add Expansion</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {addableExpansions.map((exp) => {
               const visuals = getExpansionVisuals(exp.name)
@@ -856,13 +857,13 @@ export default function ExpansionManager() {
 
                     <div className="flex-1 min-w-0">
                       <p
-                        className="text-[16px] font-semibold mb-1 truncate"
+                        className="text-16 font-semibold mb-1 truncate"
                         style={{ color: visuals.textColor }}
                       >
                         {getExpansionDisplayName(exp.name)}
                       </p>
                       <p
-                        className="text-[12px]"
+                        className="text-12"
                         style={{ color: `${visuals.textColor}80` }}
                       >
                         Click to add this expansion
@@ -884,17 +885,17 @@ export default function ExpansionManager() {
             })}
           </div>
           {adding && (
-            <div className="mt-4 p-4 bg-background-elevated border border-border rounded-xl text-center">
+            <Card className="mt-4 p-4 text-center">
               <p className="text-muted-foreground">Adding expansion... This may take a moment.</p>
-            </div>
+            </Card>
           )}
         </div>
       )}
 
       {!isForeverGuild && guildExpansions.length === 0 && addableExpansions.length === 0 && (
-        <div className="p-12 bg-background-elevated border border-border rounded-xl text-center">
-          <p className="text-muted-foreground text-[16px]">No expansions available to add</p>
-        </div>
+        <Card className="p-12 text-center">
+          <p className="text-muted-foreground text-16">No expansions available to add</p>
+        </Card>
       )}
     </div>
   )

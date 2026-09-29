@@ -1,0 +1,1039 @@
+{
+  "mode": "verify",
+  "overridePath": null,
+  "startHash": "6738edffd82c16f5ed83ae1faad162b3620a9115a521dc752ab3d3e7746deb77",
+  "endHash": "6738edffd82c16f5ed83ae1faad162b3620a9115a521dc752ab3d3e7746deb77",
+  "runError": null,
+  "controlFailures": [],
+  "verifyFailures": [],
+  "probes": [
+    {
+      "id": "rails",
+      "file": "app/(app)/raid-tracking/_client.tsx",
+      "category": "raid-tracking legend rails",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": [
+        "side-tab"
+      ],
+      "sessionId": "enf02-rails-1790183456112-ff1461cb",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[impeccable@1] Design hook scanned app/(app)/raid-tracking/_client.tsx. No deterministic design-quality issues found. That does not mean the design is good: keep following the project design system and the impeccable skill guidance.\"}}",
+        "stop": ""
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:10:56.168Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-rails-1790183456112-ff1461cb",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/app/(app)/raid-tracking/_client.tsx",
+          "ext": ".tsx",
+          "editCount": 1,
+          "findings": 5,
+          "freshFindings": 0,
+          "emitted": true,
+          "kind": "clean",
+          "chars": 232,
+          "durationMs": 73
+        },
+        "stop": {
+          "ts": "2026-09-23T17:10:56.291Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-rails-1790183456112-ff1461cb",
+          "scannedFiles": 1,
+          "emitted": false,
+          "skipped": "stop-clean",
+          "durationMs": 70
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [],
+        "stop": []
+      },
+      "watchedRulesAreDeferredTier": true,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "quality-module",
+      "file": "lib/design-system/quality-colors.ts",
+      "category": "item-quality / brand hex source module",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": [
+        "design-system-color"
+      ],
+      "sessionId": "enf02-quality-module-1790183456365-9462a617",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "",
+        "stop": ""
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:10:56.408Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-quality-module-1790183456365-9462a617",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/lib/design-system/quality-colors.ts",
+          "ext": ".ts",
+          "editCount": 1,
+          "findings": 0,
+          "freshFindings": 0,
+          "emitted": false,
+          "skipped": "non-ui-ack",
+          "durationMs": 25
+        },
+        "stop": {
+          "ts": "2026-09-23T17:10:56.757Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-quality-module-1790183456365-9462a617",
+          "scannedFiles": 1,
+          "emitted": false,
+          "skipped": "stop-clean",
+          "durationMs": 69
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [],
+        "stop": []
+      },
+      "watchedRulesAreDeferredTier": false,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "quality-config",
+      "file": "tailwind.config.js",
+      "category": "item-quality / brand hex (Tailwind theme extension)",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": [
+        "design-system-color"
+      ],
+      "sessionId": "enf02-quality-config-1790183456837-d582c9ea",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "",
+        "stop": ""
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:10:56.962Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-quality-config-1790183456837-d582c9ea",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/tailwind.config.js",
+          "ext": ".js",
+          "editCount": 1,
+          "findings": 0,
+          "freshFindings": 0,
+          "emitted": false,
+          "skipped": "non-ui-ack",
+          "durationMs": 90
+        },
+        "stop": {
+          "ts": "2026-09-23T17:10:57.159Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-quality-config-1790183456837-d582c9ea",
+          "scannedFiles": 1,
+          "emitted": false,
+          "skipped": "stop-clean",
+          "durationMs": 79
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [],
+        "stop": []
+      },
+      "watchedRulesAreDeferredTier": false,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "quality-brand-1",
+      "file": "app/components/PremiumItemTooltip.tsx",
+      "category": "item-quality / brand class usage (top-3 by grep count, excluding the /design-system docs page)",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": [
+        "design-system-color"
+      ],
+      "sessionId": "enf02-quality-brand-1-1790183457248-6fd377f0",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[impeccable@1] Design hook scanned app/components/PremiumItemTooltip.tsx. No deterministic design-quality issues found. That does not mean the design is good: keep following the project design system and the impeccable skill guidance.\"}}",
+        "stop": ""
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:10:57.382Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-quality-brand-1-1790183457248-6fd377f0",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/app/components/PremiumItemTooltip.tsx",
+          "ext": ".tsx",
+          "editCount": 1,
+          "findings": 0,
+          "freshFindings": 0,
+          "emitted": true,
+          "kind": "clean",
+          "chars": 234,
+          "durationMs": 32
+        },
+        "stop": {
+          "ts": "2026-09-23T17:10:57.470Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-quality-brand-1-1790183457248-6fd377f0",
+          "scannedFiles": 1,
+          "emitted": false,
+          "skipped": "stop-clean",
+          "durationMs": 26
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [],
+        "stop": []
+      },
+      "watchedRulesAreDeferredTier": false,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "quality-brand-2",
+      "file": "app/(app)/raid-tracking/components/RaidCardHeader.tsx",
+      "category": "item-quality / brand class usage (top-3 by grep count, excluding the /design-system docs page)",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": [
+        "design-system-color"
+      ],
+      "sessionId": "enf02-quality-brand-2-1790183457499-6b1ed4ce",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[impeccable@1] Design hook scanned app/(app)/raid-tracking/components/RaidCardHeader.tsx. No deterministic design-quality issues found. That does not mean the design is good: keep following the project design system and the impeccable skill guidance.\"}}",
+        "stop": ""
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:10:57.543Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-quality-brand-2-1790183457499-6b1ed4ce",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/app/(app)/raid-tracking/components/RaidCardHeader.tsx",
+          "ext": ".tsx",
+          "editCount": 1,
+          "findings": 0,
+          "freshFindings": 0,
+          "emitted": true,
+          "kind": "clean",
+          "chars": 250,
+          "durationMs": 28
+        },
+        "stop": {
+          "ts": "2026-09-23T17:10:57.627Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-quality-brand-2-1790183457499-6b1ed4ce",
+          "scannedFiles": 1,
+          "emitted": false,
+          "skipped": "stop-clean",
+          "durationMs": 30
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [],
+        "stop": []
+      },
+      "watchedRulesAreDeferredTier": false,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "quality-brand-3",
+      "file": "app/components/EditCharacterModal.tsx",
+      "category": "item-quality / brand class usage (top-3 by grep count, excluding the /design-system docs page)",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": [
+        "design-system-color"
+      ],
+      "sessionId": "enf02-quality-brand-3-1790183457667-c784f2ee",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[impeccable@1] Design hook scanned app/components/EditCharacterModal.tsx. No deterministic design-quality issues found. That does not mean the design is good: keep following the project design system and the impeccable skill guidance.\"}}",
+        "stop": ""
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:10:57.732Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-quality-brand-3-1790183457667-c784f2ee",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/app/components/EditCharacterModal.tsx",
+          "ext": ".tsx",
+          "editCount": 1,
+          "findings": 0,
+          "freshFindings": 0,
+          "emitted": true,
+          "kind": "clean",
+          "chars": 234,
+          "durationMs": 40
+        },
+        "stop": {
+          "ts": "2026-09-23T17:10:57.845Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-quality-brand-3-1790183457667-c784f2ee",
+          "scannedFiles": 1,
+          "emitted": false,
+          "skipped": "stop-clean",
+          "durationMs": 38
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [],
+        "stop": []
+      },
+      "watchedRulesAreDeferredTier": false,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "class-colours",
+      "file": "app/reserve/join/[token]/page.tsx",
+      "category": "audit DB/WoW class colours (WOW_CLASSES array, lines 30-40), folded into item quality per D-13",
+      "source": "D-13 audit item / audit decision",
+      "role": "exception",
+      "watch": [
+        "design-system-color"
+      ],
+      "sessionId": "enf02-class-colours-1790183457893-cccb7564",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[impeccable@1] Design hook scanned app/reserve/join/[token]/page.tsx. No deterministic design-quality issues found. That does not mean the design is good: keep following the project design system and the impeccable skill guidance.\"}}",
+        "stop": "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"[impeccable@1] Design hook findings requiring review in app/reserve/join/[token]/page.tsx (1 issue(s)):\\n- L866 [ai-color-palette] AI color palette. Purple/violet gradients and cyan-on-dark are the most recognizable tells of AI-generated UIs. Choose a distinctive, intentional palette.\\n\\nTriage each finding, then state in your reply what you fixed, what you suppressed, and what you left standing:\\n- Real design problem: fix it. Keep intentional design as designed.\\n- Confident false positive or sanctioned exception (an intentional demo or fixture, documentation of bad design, literal or domain-appropriate motion, a choice the user confirmed): persist the narrowest ignore yourself and disclose it. Run `node '/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/skills/impeccable/scripts/hook-admin.mjs' ignore-value <rule> \\\"<value>\\\" --reason \\\"<who decided: evidence>\\\"` with the pair shown on the finding line, or value \\\"*\\\" plus `--file <path>` when the line shows none. Write \\\"user confirmed\\\" in a reason only when the user did.\\n- Unsure: leave it as is and ask the user in one line.\\nSelf-serve ends at ignore-value: `ignore-file` and `ignore-rule` need the user's explicit approval, and never add an ignore to push a blocked write through. Full suppression ladder: /impeccable hooks.\"}}"
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:10:58.019Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-class-colours-1790183457893-cccb7564",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/app/reserve/join/[token]/page.tsx",
+          "ext": ".tsx",
+          "editCount": 1,
+          "findings": 11,
+          "freshFindings": 0,
+          "deferred": 1,
+          "emitted": true,
+          "kind": "clean",
+          "chars": 230,
+          "durationMs": 123
+        },
+        "stop": {
+          "ts": "2026-09-23T17:10:58.716Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-class-colours-1790183457893-cccb7564",
+          "scannedFiles": 1,
+          "emitted": true,
+          "freshFiles": 1,
+          "freshFindings": 1,
+          "chars": 1295,
+          "durationMs": 94
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [],
+        "stop": [
+          "ai-color-palette"
+        ]
+      },
+      "watchedRulesAreDeferredTier": false,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "skeletons",
+      "file": "components/ui/skeletons.tsx",
+      "category": "skeleton pulse (animate-pulse)",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": [
+        "pulsing-dot"
+      ],
+      "sessionId": "enf02-skeletons-1790183458817-7e7c31d3",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[impeccable@1] Design hook scanned components/ui/skeletons.tsx. No deterministic design-quality issues found. That does not mean the design is good: keep following the project design system and the impeccable skill guidance.\"}}",
+        "stop": ""
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:10:58.909Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-skeletons-1790183458817-7e7c31d3",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/components/ui/skeletons.tsx",
+          "ext": ".tsx",
+          "editCount": 1,
+          "findings": 0,
+          "freshFindings": 0,
+          "emitted": true,
+          "kind": "clean",
+          "chars": 224,
+          "durationMs": 113
+        },
+        "stop": {
+          "ts": "2026-09-23T17:10:59.151Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-skeletons-1790183458817-7e7c31d3",
+          "scannedFiles": 1,
+          "emitted": false,
+          "skipped": "stop-clean",
+          "durationMs": 84
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [],
+        "stop": []
+      },
+      "watchedRulesAreDeferredTier": true,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "mono-invite",
+      "file": "app/(app)/guild-settings/components/InviteCodeManager.tsx",
+      "category": "monospace on invite-code display (D-14 sanctioned site)",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": [
+        "design-system-font"
+      ],
+      "sessionId": "enf02-mono-invite-1790183459251-753a1c9b",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[impeccable@1] Design hook scanned app/(app)/guild-settings/components/InviteCodeManager.tsx. No deterministic design-quality issues found. That does not mean the design is good: keep following the project design system and the impeccable skill guidance.\"}}",
+        "stop": ""
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:10:59.383Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-mono-invite-1790183459251-753a1c9b",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/app/(app)/guild-settings/components/InviteCodeManager.tsx",
+          "ext": ".tsx",
+          "editCount": 1,
+          "findings": 0,
+          "freshFindings": 0,
+          "emitted": true,
+          "kind": "clean",
+          "chars": 254,
+          "durationMs": 77
+        },
+        "stop": {
+          "ts": "2026-09-23T17:10:59.585Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-mono-invite-1790183459251-753a1c9b",
+          "scannedFiles": 1,
+          "emitted": false,
+          "skipped": "stop-clean",
+          "durationMs": 210
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [],
+        "stop": []
+      },
+      "watchedRulesAreDeferredTier": false,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "mono-guild-confirm",
+      "file": "app/(app)/guild-settings/components/GuildSettingsContent.tsx",
+      "category": "monospace on type-to-confirm target (D-14 sanctioned site)",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": [
+        "design-system-font"
+      ],
+      "sessionId": "enf02-mono-guild-confirm-1790183459901-55be2c58",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[impeccable@1] Design hook scanned app/(app)/guild-settings/components/GuildSettingsContent.tsx. No deterministic design-quality issues found. That does not mean the design is good: keep following the project design system and the impeccable skill guidance.\"}}",
+        "stop": ""
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:11:00.520Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-mono-guild-confirm-1790183459901-55be2c58",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/app/(app)/guild-settings/components/GuildSettingsContent.tsx",
+          "ext": ".tsx",
+          "editCount": 1,
+          "findings": 0,
+          "freshFindings": 0,
+          "emitted": true,
+          "kind": "clean",
+          "chars": 257,
+          "durationMs": 193
+        },
+        "stop": {
+          "ts": "2026-09-23T17:11:00.857Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-mono-guild-confirm-1790183459901-55be2c58",
+          "scannedFiles": 1,
+          "emitted": false,
+          "skipped": "stop-clean",
+          "durationMs": 264
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [],
+        "stop": []
+      },
+      "watchedRulesAreDeferredTier": false,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "mono-profile-confirm",
+      "file": "app/(app)/profile/components/ProfileContent.tsx",
+      "category": "monospace on type-to-confirm target (D-14 sanctioned site)",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": [
+        "design-system-font"
+      ],
+      "sessionId": "enf02-mono-profile-confirm-1790183461132-6e4f44ea",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[impeccable@1] Design hook scanned app/(app)/profile/components/ProfileContent.tsx. No deterministic design-quality issues found. That does not mean the design is good: keep following the project design system and the impeccable skill guidance.\"}}",
+        "stop": ""
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:11:01.759Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-mono-profile-confirm-1790183461132-6e4f44ea",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/app/(app)/profile/components/ProfileContent.tsx",
+          "ext": ".tsx",
+          "editCount": 1,
+          "findings": 0,
+          "freshFindings": 0,
+          "emitted": true,
+          "kind": "clean",
+          "chars": 244,
+          "durationMs": 132
+        },
+        "stop": {
+          "ts": "2026-09-23T17:11:02.022Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-mono-profile-confirm-1790183461132-6e4f44ea",
+          "scannedFiles": 1,
+          "emitted": false,
+          "skipped": "stop-clean",
+          "durationMs": 99
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [],
+        "stop": []
+      },
+      "watchedRulesAreDeferredTier": false,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "score-numbers",
+      "file": "app/components/ScoreComparisonModal.tsx",
+      "category": "ScoreComparisonModal big numbers",
+      "source": "D-13 audit item 1",
+      "role": "exception",
+      "watch": [],
+      "sessionId": "enf02-score-numbers-1790183462138-b1d8d6d5",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[impeccable@1] Design hook scanned app/components/ScoreComparisonModal.tsx. No deterministic design-quality issues found. That does not mean the design is good: keep following the project design system and the impeccable skill guidance.\"}}",
+        "stop": ""
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:11:02.734Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-score-numbers-1790183462138-b1d8d6d5",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/app/components/ScoreComparisonModal.tsx",
+          "ext": ".tsx",
+          "editCount": 1,
+          "findings": 0,
+          "freshFindings": 0,
+          "emitted": true,
+          "kind": "clean",
+          "chars": 236,
+          "durationMs": 110
+        },
+        "stop": {
+          "ts": "2026-09-23T17:11:03.358Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-score-numbers-1790183462138-b1d8d6d5",
+          "scannedFiles": 1,
+          "emitted": false,
+          "skipped": "stop-clean",
+          "durationMs": 2213
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [],
+        "stop": []
+      },
+      "watchedRulesAreDeferredTier": false,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "how-it-works",
+      "file": "app/components/landing/LandingHowItWorks.tsx",
+      "category": "numbered how-it-works steps",
+      "source": "D-13 audit item 2",
+      "role": "exception",
+      "watch": [
+        "numbered-section-labels"
+      ],
+      "sessionId": "enf02-how-it-works-1790183465711-a99eb628",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[impeccable@1] Design hook findings requiring review in app/components/landing/LandingHowItWorks.tsx (1 issue(s)):\\n- L40 [design-system-color] Color outside DESIGN.md. A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift. If intentional: `ignore-value design-system-color '#17151B'`.\\n\\nTriage each finding, then state in your reply what you fixed, what you suppressed, and what you left standing:\\n- Real design problem: fix it. Keep intentional design as designed.\\n- Confident false positive or sanctioned exception (an intentional demo or fixture, documentation of bad design, literal or domain-appropriate motion, a choice the user confirmed): persist the narrowest ignore yourself and disclose it. Run `node '/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/skills/impeccable/scripts/hook-admin.mjs' ignore-value <rule> \\\"<value>\\\" --reason \\\"<who decided: evidence>\\\"` with the pair shown on the finding line, or value \\\"*\\\" plus `--file <path>` when the line shows none. Write \\\"user confirmed\\\" in a reason only when the user did.\\n- Unsure: leave it as is and ask the user in one line.\\nSelf-serve ends at ignore-value: `ignore-file` and `ignore-rule` need the user's explicit approval, and never add an ignore to push a blocked write through. Full suppression ladder: /impeccable hooks.\"}}",
+        "stop": ""
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:11:06.006Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-how-it-works-1790183465711-a99eb628",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/app/components/landing/LandingHowItWorks.tsx",
+          "ext": ".tsx",
+          "editCount": 1,
+          "findings": 1,
+          "freshFindings": 1,
+          "emitted": true,
+          "freshFiles": 1,
+          "chars": 1412,
+          "durationMs": 86
+        },
+        "stop": {
+          "ts": "2026-09-23T17:11:06.254Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-how-it-works-1790183465711-a99eb628",
+          "scannedFiles": 1,
+          "emitted": false,
+          "skipped": "stop-clean",
+          "durationMs": 198
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [
+          "design-system-color"
+        ],
+        "stop": []
+      },
+      "watchedRulesAreDeferredTier": true,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "marketing-purple",
+      "file": "app/globals.css",
+      "category": "marketing purple #9940ec (.text-shimmer-purple, public pages only)",
+      "source": "2026-09-15 UI audit decision",
+      "role": "exception",
+      "watch": [
+        "design-system-color"
+      ],
+      "sessionId": "enf02-marketing-purple-1790183466475-0bed9047",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[impeccable@1] Design hook findings requiring review in app/globals.css (2 issue(s)):\\n- L80 [design-system-color] Color outside DESIGN.md. A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift. If intentional: `ignore-value design-system-color '#ff8000'`.\\n- L339 [design-system-radius] Radius outside DESIGN.md. A border-radius value is outside the DESIGN.md rounded scale. Use a documented radius token or update the design system if the new shape is intentional. If intentional: `ignore-value design-system-radius 3px`.\\n\\nTriage each finding, then state in your reply what you fixed, what you suppressed, and what you left standing:\\n- Real design problem: fix it. Keep intentional design as designed.\\n- Confident false positive or sanctioned exception (an intentional demo or fixture, documentation of bad design, literal or domain-appropriate motion, a choice the user confirmed): persist the narrowest ignore yourself and disclose it. Run `node '/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/skills/impeccable/scripts/hook-admin.mjs' ignore-value <rule> \\\"<value>\\\" --reason \\\"<who decided: evidence>\\\"` with the pair shown on the finding line, or value \\\"*\\\" plus `--file <path>` when the line shows none. Write \\\"user confirmed\\\" in a reason only when the user did.\\n- Unsure: leave it as is and ask the user in one line.\\nSelf-serve ends at ignore-value: `ignore-file` and `ignore-rule` need the user's explicit approval, and never add an ignore to push a blocked write through. Full suppression ladder: /impeccable hooks.\"}}",
+        "stop": ""
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:11:06.849Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-marketing-purple-1790183466475-0bed9047",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/app/globals.css",
+          "ext": ".css",
+          "editCount": 1,
+          "findings": 3,
+          "freshFindings": 2,
+          "emitted": true,
+          "freshFiles": 1,
+          "chars": 1649,
+          "durationMs": 491
+        },
+        "stop": {
+          "ts": "2026-09-23T17:11:08.227Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-marketing-purple-1790183466475-0bed9047",
+          "scannedFiles": 1,
+          "emitted": false,
+          "skipped": "stop-clean",
+          "durationMs": 198
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [
+          "design-system-color",
+          "design-system-radius"
+        ],
+        "stop": []
+      },
+      "watchedRulesAreDeferredTier": false,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "existing-skeletons-test",
+      "file": "components/ui/__tests__/skeletons.test.tsx",
+      "category": "existing config entry: side-tab, stated false-positive (negative assertion, not a usage)",
+      "source": "pre-rewrite .impeccable/config.json entry",
+      "role": "existing-entry",
+      "watch": [
+        "side-tab"
+      ],
+      "sessionId": "enf02-existing-skeletons-test-1790183468495-e8ccca1e",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[impeccable@1] Design hook scanned components/ui/__tests__/skeletons.test.tsx. No deterministic design-quality issues found. That does not mean the design is good: keep following the project design system and the impeccable skill guidance.\"}}",
+        "stop": ""
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:11:08.676Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-existing-skeletons-test-1790183468495-e8ccca1e",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/components/ui/__tests__/skeletons.test.tsx",
+          "ext": ".tsx",
+          "editCount": 1,
+          "findings": 1,
+          "freshFindings": 0,
+          "emitted": true,
+          "kind": "clean",
+          "chars": 239,
+          "durationMs": 86
+        },
+        "stop": {
+          "ts": "2026-09-23T17:11:08.895Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-existing-skeletons-test-1790183468495-e8ccca1e",
+          "scannedFiles": 1,
+          "emitted": false,
+          "skipped": "stop-clean",
+          "durationMs": 51
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [],
+        "stop": []
+      },
+      "watchedRulesAreDeferredTier": true,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "existing-lootlist",
+      "file": "app/(app)/loot-list/components/LootListContent.tsx",
+      "category": "existing config entry: side-tab, rank/quality-tier border colour coding",
+      "source": "pre-rewrite .impeccable/config.json entry",
+      "role": "existing-entry",
+      "watch": [
+        "side-tab"
+      ],
+      "sessionId": "enf02-existing-lootlist-1790183468954-446fc838",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[impeccable@1] Design hook scanned app/(app)/loot-list/components/LootListContent.tsx. No deterministic design-quality issues found. That does not mean the design is good: keep following the project design system and the impeccable skill guidance.\"}}",
+        "stop": "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"[impeccable@1] Design hook findings requiring review in app/(app)/loot-list/components/LootListContent.tsx (1 issue(s)):\\n- L600 [side-tab] Side-tab accent border. Thick colored border on one side of a card — the most recognizable tell of AI-generated UIs. Use a subtler accent or remove it entirely.\\n\\nTriage each finding, then state in your reply what you fixed, what you suppressed, and what you left standing:\\n- Real design problem: fix it. Keep intentional design as designed.\\n- Confident false positive or sanctioned exception (an intentional demo or fixture, documentation of bad design, literal or domain-appropriate motion, a choice the user confirmed): persist the narrowest ignore yourself and disclose it. Run `node '/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/skills/impeccable/scripts/hook-admin.mjs' ignore-value <rule> \\\"<value>\\\" --reason \\\"<who decided: evidence>\\\"` with the pair shown on the finding line, or value \\\"*\\\" plus `--file <path>` when the line shows none. Write \\\"user confirmed\\\" in a reason only when the user did.\\n- Unsure: leave it as is and ask the user in one line.\\nSelf-serve ends at ignore-value: `ignore-file` and `ignore-rule` need the user's explicit approval, and never add an ignore to push a blocked write through. Full suppression ladder: /impeccable hooks.\"}}"
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:11:09.122Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-existing-lootlist-1790183468954-446fc838",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/app/(app)/loot-list/components/LootListContent.tsx",
+          "ext": ".tsx",
+          "editCount": 1,
+          "findings": 1,
+          "freshFindings": 0,
+          "deferred": 1,
+          "emitted": true,
+          "kind": "clean",
+          "chars": 247,
+          "durationMs": 123
+        },
+        "stop": {
+          "ts": "2026-09-23T17:11:09.361Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-existing-lootlist-1790183468954-446fc838",
+          "scannedFiles": 1,
+          "emitted": true,
+          "freshFiles": 1,
+          "freshFindings": 1,
+          "chars": 1310,
+          "durationMs": 222
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [],
+        "stop": [
+          "side-tab"
+        ]
+      },
+      "watchedRulesAreDeferredTier": true,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "existing-onboarding",
+      "file": "app/components/OnboardingModal.tsx",
+      "category": "existing config entry: ai-color-palette, purple/cyan gradient (predicted expired -- Phase 10 migrated it, commit 5967189e)",
+      "source": "pre-rewrite .impeccable/config.json entry",
+      "role": "existing-entry",
+      "watch": [
+        "ai-color-palette"
+      ],
+      "sessionId": "enf02-existing-onboarding-1790183469611-0e88dc06",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[impeccable@1] Design hook scanned app/components/OnboardingModal.tsx. No deterministic design-quality issues found. That does not mean the design is good: keep following the project design system and the impeccable skill guidance.\"}}",
+        "stop": ""
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:11:09.700Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-existing-onboarding-1790183469611-0e88dc06",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/app/components/OnboardingModal.tsx",
+          "ext": ".tsx",
+          "editCount": 1,
+          "findings": 0,
+          "freshFindings": 0,
+          "emitted": true,
+          "kind": "clean",
+          "chars": 231,
+          "durationMs": 138
+        },
+        "stop": {
+          "ts": "2026-09-23T17:11:10.653Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-existing-onboarding-1790183469611-0e88dc06",
+          "scannedFiles": 1,
+          "emitted": false,
+          "skipped": "stop-clean",
+          "durationMs": 61
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [],
+        "stop": []
+      },
+      "watchedRulesAreDeferredTier": true,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "C1",
+      "file": "app/reserve/join/[token]/page.tsx",
+      "category": "control: must flag ai-color-palette (Stop tier) -- same file as class-colours, and the file the pre-rewrite config's fifth entry currently suppresses this exact rule on",
+      "source": "control (D-09)",
+      "role": "control",
+      "watch": [
+        "ai-color-palette"
+      ],
+      "sessionId": "enf02-C1-1790183470732-f15dedb7",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[impeccable@1] Design hook scanned app/reserve/join/[token]/page.tsx. No deterministic design-quality issues found. That does not mean the design is good: keep following the project design system and the impeccable skill guidance.\"}}",
+        "stop": "{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"[impeccable@1] Design hook findings requiring review in app/reserve/join/[token]/page.tsx (1 issue(s)):\\n- L866 [ai-color-palette] AI color palette. Purple/violet gradients and cyan-on-dark are the most recognizable tells of AI-generated UIs. Choose a distinctive, intentional palette.\\n\\nTriage each finding, then state in your reply what you fixed, what you suppressed, and what you left standing:\\n- Real design problem: fix it. Keep intentional design as designed.\\n- Confident false positive or sanctioned exception (an intentional demo or fixture, documentation of bad design, literal or domain-appropriate motion, a choice the user confirmed): persist the narrowest ignore yourself and disclose it. Run `node '/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/skills/impeccable/scripts/hook-admin.mjs' ignore-value <rule> \\\"<value>\\\" --reason \\\"<who decided: evidence>\\\"` with the pair shown on the finding line, or value \\\"*\\\" plus `--file <path>` when the line shows none. Write \\\"user confirmed\\\" in a reason only when the user did.\\n- Unsure: leave it as is and ask the user in one line.\\nSelf-serve ends at ignore-value: `ignore-file` and `ignore-rule` need the user's explicit approval, and never add an ignore to push a blocked write through. Full suppression ladder: /impeccable hooks.\"}}"
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:11:10.845Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-C1-1790183470732-f15dedb7",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/app/reserve/join/[token]/page.tsx",
+          "ext": ".tsx",
+          "editCount": 1,
+          "findings": 11,
+          "freshFindings": 0,
+          "deferred": 1,
+          "emitted": true,
+          "kind": "clean",
+          "chars": 230,
+          "durationMs": 297
+        },
+        "stop": {
+          "ts": "2026-09-23T17:11:11.242Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-C1-1790183470732-f15dedb7",
+          "scannedFiles": 1,
+          "emitted": true,
+          "freshFiles": 1,
+          "freshFindings": 1,
+          "chars": 1295,
+          "durationMs": 105
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [],
+        "stop": [
+          "ai-color-palette"
+        ]
+      },
+      "watchedRulesAreDeferredTier": true,
+      "valid": true,
+      "invalidReasons": []
+    },
+    {
+      "id": "C2",
+      "file": "app/components/KonamiEasterEgg.tsx",
+      "category": "control: must flag design-system-color #ff8000 (PostToolUse immediate tier)",
+      "source": "control (D-09)",
+      "role": "control",
+      "watch": [
+        "design-system-color"
+      ],
+      "sessionId": "enf02-C2-1790183471356-0739becc",
+      "retriedStop": false,
+      "stdout": {
+        "postToolUse": "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"[impeccable@1] Design hook findings requiring review in app/components/KonamiEasterEgg.tsx (4 issue(s)):\\n- L17 [design-system-color] Color outside DESIGN.md. A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift. If intentional: `ignore-value design-system-color '#ff8000'`.\\n- L18 [design-system-color] Color outside DESIGN.md. If intentional: `ignore-value design-system-color '#0070dd'`.\\n- L20 [design-system-color] Color outside DESIGN.md. If intentional: `ignore-value design-system-color '#ff8000'`.\\n- L130 [design-system-color] Color outside DESIGN.md. If intentional: `ignore-value design-system-color '#ff8000'`.\\n\\nTriage each finding, then state in your reply what you fixed, what you suppressed, and what you left standing:\\n- Real design problem: fix it. Keep intentional design as designed.\\n- Confident false positive or sanctioned exception (an intentional demo or fixture, documentation of bad design, literal or domain-appropriate motion, a choice the user confirmed): persist the narrowest ignore yourself and disclose it. Run `node '/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/skills/impeccable/scripts/hook-admin.mjs' ignore-value <rule> \\\"<value>\\\" --reason \\\"<who decided: evidence>\\\"` with the pair shown on the finding line, or value \\\"*\\\" plus `--file <path>` when the line shows none. Write \\\"user confirmed\\\" in a reason only when the user did.\\n- Unsure: leave it as is and ask the user in one line.\\nSelf-serve ends at ignore-value: `ignore-file` and `ignore-rule` need the user's explicit approval, and never add an ignore to push a blocked write through. Full suppression ladder: /impeccable hooks.\"}}",
+        "stop": ""
+      },
+      "audit": {
+        "postToolUse": {
+          "ts": "2026-09-23T17:11:11.482Z",
+          "event": "PostToolUse",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-C2-1790183471356-0739becc",
+          "tool": "Edit",
+          "file": "/Users/alexander.mayes/Code/personal/loot-list-plus/app/components/KonamiEasterEgg.tsx",
+          "ext": ".tsx",
+          "editCount": 1,
+          "findings": 4,
+          "freshFindings": 4,
+          "emitted": true,
+          "freshFiles": 1,
+          "chars": 1748,
+          "durationMs": 105
+        },
+        "stop": {
+          "ts": "2026-09-23T17:11:12.001Z",
+          "event": "Stop",
+          "harness": "claude",
+          "cwd": "/Users/alexander.mayes/Code/personal/loot-list-plus",
+          "session": "enf02-C2-1790183471356-0739becc",
+          "scannedFiles": 1,
+          "emitted": false,
+          "skipped": "stop-clean",
+          "durationMs": 1808
+        }
+      },
+      "rulesObserved": {
+        "postToolUse": [
+          "design-system-color",
+          "design-system-color",
+          "design-system-color",
+          "design-system-color"
+        ],
+        "stop": []
+      },
+      "watchedRulesAreDeferredTier": false,
+      "valid": true,
+      "invalidReasons": []
+    }
+  ]
+}

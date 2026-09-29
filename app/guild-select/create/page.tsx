@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import RealmSelector from '@/app/components/RealmSelector'
+import { Card } from '@/components/ui/card'
 import ForeverRulesetSelector from '@/app/components/ForeverRulesetSelector'
 import {
   GAME_VERSION_LABELS,
@@ -464,7 +465,7 @@ export default function CreateGuildPage() {
         </div>
 
         {/* Instructions */}
-        <div className="bg-card/50 border border-border rounded-lg p-6 space-y-4">
+        <Card className="bg-card/50 p-6 space-y-4">
           <p className="text-foreground">
             LootList+ requires a Discord server connection for automatic guild icon fetching and member management features.
           </p>
@@ -481,7 +482,7 @@ export default function CreateGuildPage() {
           <p className="text-muted-foreground">
             After registration, invite guild members by sharing invite codes or using Discord auto-join.
           </p>
-        </div>
+        </Card>
 
         {/* Discord Verification Warning */}
         {!discordVerified && (

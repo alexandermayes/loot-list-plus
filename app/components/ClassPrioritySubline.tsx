@@ -77,7 +77,7 @@ function ClassPrioritySublineInner({ lootItemClasses }: ClassPrioritySublineProp
   if (primary.length === 0 && secondary.length === 0) return null
 
   return (
-    <span className="block text-[11px] text-muted-foreground leading-tight">
+    <span className="block text-11 text-muted-foreground leading-tight">
       {primary.length > 0 && (
         <span className="block">Primary: {consolidateSpecs(primary)}</span>
       )}

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { createClient } from '@/utils/supabase/client'
 import { hasFeature } from '@/domain/guild/feature-flags'
+import { Card } from '@/components/ui/card'
 
 // Lazy load modal to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('./CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -180,13 +181,13 @@ export function CharacterSelector() {
   // Show loading skeleton while context is loading to prevent flicker
   if (loading) {
     return (
-      <div className="w-full px-[14px] py-2 bg-background-elevated border border-border rounded-[12px] flex items-center gap-3 animate-pulse">
+      <Card className="w-full px-[14px] py-2 flex items-center gap-3 animate-pulse">
         <div className="w-5 h-5 rounded-full bg-border-strong flex-shrink-0 border border-border" />
         <div className="flex-1 min-w-0 space-y-1.5">
           <div className="h-3 bg-border-strong rounded w-24" />
           <div className="h-2 bg-border-strong rounded w-16" />
         </div>
-      </div>
+      </Card>
     )
   }
 
@@ -200,8 +201,8 @@ export function CharacterSelector() {
         >
           <RotatingClassIcon />
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-medium text-foreground truncate">Character creation required</p>
-            <p className="text-[10px] text-primary">Click here to create</p>
+            <p className="text-13 font-medium text-foreground truncate">Character creation required</p>
+            <p className="text-11 text-primary">Click here to create</p>
           </div>
         </Button>
         <CreateCharacterModal
@@ -226,8 +227,8 @@ export function CharacterSelector() {
         >
           <RotatingClassIcon />
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-medium text-foreground truncate">{activeCharacter.name}</p>
-            <p className="text-[10px] text-primary">Click here to create</p>
+            <p className="text-13 font-medium text-foreground truncate">{activeCharacter.name}</p>
+            <p className="text-11 text-primary">Click here to create</p>
           </div>
         </Button>
         <CreateCharacterModal
@@ -255,7 +256,7 @@ export function CharacterSelector() {
           />
         ) : (
           <div
-            className="w-5 h-5 rounded-full flex items-center justify-center text-foreground font-bold text-[10px] flex-shrink-0 border border-border"
+            className="w-5 h-5 rounded-full flex items-center justify-center text-foreground font-bold text-11 flex-shrink-0 border border-border"
             style={{ backgroundColor: classColor }}
           >
             {activeCharacter.name.charAt(0).toUpperCase()}
@@ -265,13 +266,13 @@ export function CharacterSelector() {
         {/* Character Info */}
         <div className="flex flex-col flex-1 min-w-0 leading-[normal] text-left">
           <p
-            className="font-poppins font-medium text-[13px] truncate text-left"
+            className="font-poppins font-medium text-13 truncate text-left"
             style={{ color: classColor }}
           >
             {activeCharacter.name}
           </p>
           {(activeCharacter.spec?.name || activeCharacter.class?.name) && (
-            <p className="font-poppins font-normal text-[10px] text-muted-foreground truncate text-left">
+            <p className="font-poppins font-normal text-11 text-muted-foreground truncate text-left">
               {activeCharacter.spec?.name && activeCharacter.class?.name && activeCharacter.spec.name !== activeCharacter.class.name
                 ? `${activeCharacter.spec.name} ${activeCharacter.class.name}`
                 : activeCharacter.class?.name || activeCharacter.spec?.name}
@@ -301,12 +302,12 @@ export function CharacterSelector() {
           />
 
           {/* Dropdown Content */}
-          <div className="absolute top-full mt-2 left-0 right-0 bg-background-elevated border border-border rounded-[12px] shadow-lg z-50 py-2 overflow-hidden overflow-y-auto max-h-[60vh]">
+          <Card className="absolute top-full mt-2 left-0 right-0 shadow-lg z-50 py-2 overflow-hidden overflow-y-auto max-h-[60vh]">
             {/* Current Guild Characters */}
             {activeGuild && charactersInGuild.length > 0 && (
               <div>
                 <div className="px-3 pt-2 pb-1">
-                  <p className="font-poppins font-medium text-[10px] text-muted-foreground uppercase tracking-wide truncate">
+                  <p className="font-poppins font-medium text-11 text-muted-foreground uppercase tracking-wide truncate">
                     {activeGuild.name}
                   </p>
                 </div>
@@ -330,7 +331,7 @@ export function CharacterSelector() {
                         />
                       ) : (
                         <div
-                          className="w-5 h-5 rounded-full flex items-center justify-center text-foreground font-bold text-[10px] flex-shrink-0 border border-border"
+                          className="w-5 h-5 rounded-full flex items-center justify-center text-foreground font-bold text-11 flex-shrink-0 border border-border"
                           style={{ backgroundColor: charColor }}
                         >
                           {char.name.charAt(0).toUpperCase()}
@@ -339,13 +340,13 @@ export function CharacterSelector() {
 
                       <div className="flex flex-col flex-1 min-w-0 leading-[normal] text-left">
                         <p
-                          className="font-poppins font-medium text-[13px] truncate"
+                          className="font-poppins font-medium text-13 truncate"
                           style={{ color: charColor }}
                         >
                           {char.name}
                         </p>
                         {(char.spec?.name || char.class?.name) && (
-                          <p className="font-poppins font-normal text-[10px] text-muted-foreground truncate">
+                          <p className="font-poppins font-normal text-11 text-muted-foreground truncate">
                             {char.spec?.name && char.class?.name && char.spec.name !== char.class.name
                               ? `${char.spec.name} ${char.class.name}`
                               : char.class?.name || char.spec?.name}
@@ -374,7 +375,7 @@ export function CharacterSelector() {
             {activeGuild && charactersInGuild.length < userCharacters.length && (
               <div>
                 <div className="px-3 pt-2 pb-1">
-                  <p className="font-poppins font-medium text-[10px] text-muted-foreground uppercase tracking-wide truncate">
+                  <p className="font-poppins font-medium text-11 text-muted-foreground uppercase tracking-wide truncate">
                     Not in {activeGuild.name}
                   </p>
                 </div>
@@ -401,7 +402,7 @@ export function CharacterSelector() {
                           />
                         ) : (
                           <div
-                            className="w-5 h-5 rounded-full flex items-center justify-center text-foreground font-bold text-[10px] flex-shrink-0 border border-border"
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-foreground font-bold text-11 flex-shrink-0 border border-border"
                             style={{ backgroundColor: charColor }}
                           >
                             {char.name.charAt(0).toUpperCase()}
@@ -410,12 +411,12 @@ export function CharacterSelector() {
 
                         <div className="flex flex-col flex-1 min-w-0 leading-[normal] text-left">
                           <p
-                            className="font-poppins font-medium text-[13px] truncate"
+                            className="font-poppins font-medium text-13 truncate"
                             style={{ color: charColor }}
                           >
                             {char.name}
                           </p>
-                          <p className="font-poppins font-normal text-[10px] text-muted-foreground truncate">
+                          <p className="font-poppins font-normal text-11 text-muted-foreground truncate">
                             {char.is_main && <span className="text-foreground">Main</span>}
                             {char.is_main && (char.spec?.name || char.class?.name) && ' • '}
                             {char.spec?.name && char.class?.name && char.spec.name !== char.class.name
@@ -466,7 +467,7 @@ export function CharacterSelector() {
                   height={20}
                   className="icon-adaptive w-5 h-5 shrink-0"
                 />
-                <p className="font-poppins font-medium text-[13px] text-foreground">
+                <p className="font-poppins font-medium text-13 text-foreground">
                   Create character
                 </p>
               </Button>
@@ -482,12 +483,12 @@ export function CharacterSelector() {
                   height={20}
                   className="icon-adaptive w-5 h-5 shrink-0"
                 />
-                <p className="font-poppins font-medium text-[13px] text-foreground">
+                <p className="font-poppins font-medium text-13 text-foreground">
                   Manage characters
                 </p>
               </Button>
             </div>
-          </div>
+          </Card>
         </>
       )}
 

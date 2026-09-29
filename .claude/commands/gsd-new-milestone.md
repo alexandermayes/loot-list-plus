@@ -26,11 +26,11 @@ Brownfield equivalent of new-project. Project exists, PROJECT.md has history. Ga
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/new-milestone.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/references/questioning.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/references/ui-brand.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/templates/project.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/templates/requirements.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/new-milestone.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/questioning.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/ui-brand.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/templates/project.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/templates/requirements.md
 </execution_context>
 
 <context>

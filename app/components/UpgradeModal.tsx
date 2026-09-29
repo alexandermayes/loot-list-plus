@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Modal } from '@/components/ui/modal'
+import { Modal, ModalTitle } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -55,6 +55,7 @@ export default function UpgradeModal({ open, onClose, source }: UpgradeModalProp
 
   return (
     <Modal open={open} onClose={onClose} size="full">
+      <ModalTitle className="sr-only">Upgrade to LootList+ Pro</ModalTitle>
       <div className="grid grid-cols-1 md:grid-cols-[2fr_3fr]">
         {/* The drop itself — Val'anyr above its legendary tooltip */}
         <div className="relative flex flex-col items-center justify-center gap-2 p-6 md:p-7 bg-[#0c0b0e] border-b md:border-b-0 md:border-r border-border overflow-hidden">
@@ -95,22 +96,23 @@ export default function UpgradeModal({ open, onClose, source }: UpgradeModalProp
 
           <div>
             <div className="flex items-baseline gap-1.5">
-              <span className="font-bold text-[40px] leading-none text-foreground">{price.amount}</span>
-              <span className="text-[14px] text-muted-foreground">{price.per} per guild</span>
+              <span className="font-bold text-40 leading-none text-foreground">{price.amount}</span>
+              <span className="text-14 text-muted-foreground">{price.per} per guild</span>
             </div>
-            <p className="text-[13px] text-muted-foreground mt-1.5">{price.note}</p>
+            <p className="text-13 text-muted-foreground mt-1.5">{price.note}</p>
             {trialAvailable && (
-              <p className="text-[13px] text-[#ff8000] mt-1.5">
-                Starts with a 14-day free trial. Cancel during the trial and you won&apos;t be charged.
+              <p className="text-13 text-[#ff8000] mt-1.5">
+                Starts with a 14-day free trial, no credit card required. Premium
+                pauses when the trial ends unless you add a payment method.
               </p>
             )}
           </div>
 
           <div>
-            <p className="text-[13px] font-medium text-foreground-secondary mb-2">Unlock for your whole guild:</p>
+            <p className="text-13 font-medium text-foreground-secondary mb-2">Unlock for your whole guild:</p>
             <ul className="space-y-2">
               {FEATURES.map((feature) => (
-                <li key={feature} className="flex items-start gap-2 text-[13px] text-foreground">
+                <li key={feature} className="flex items-start gap-2 text-13 text-foreground">
                   <span className="text-[#ff8000] shrink-0">✦</span>
                   {feature}
                 </li>
@@ -136,7 +138,7 @@ export default function UpgradeModal({ open, onClose, source }: UpgradeModalProp
               </div>
             ) : (
               <div className="flex items-center justify-between gap-3">
-                <p className="text-[13px] text-muted-foreground">
+                <p className="text-13 text-muted-foreground">
                   Only guild officers can upgrade. Send one this way.
                 </p>
                 <Link href="/premium" onClick={onClose}>

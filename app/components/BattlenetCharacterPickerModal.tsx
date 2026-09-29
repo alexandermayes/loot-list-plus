@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserMultiple02Icon, Download04Icon, Link01Icon } from '@hugeicons/core-free-icons'
 import type { GameVersion } from '@/lib/battlenet'
+import { Card } from '@/components/ui/card'
 
 interface BattlenetCharacter {
   name: string
@@ -285,7 +286,7 @@ export function BattlenetCharacterPickerModal({
           {loading ? (
             <div className="space-y-1">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center justify-between px-4 py-3 rounded-lg border border-border bg-background-elevated">
+                <Card key={i} className="flex items-center justify-between px-4 py-3">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Skeleton className="h-4 rounded-md" style={{ width: `${80 + (i % 3) * 24}px` }} />
@@ -294,7 +295,7 @@ export function BattlenetCharacterPickerModal({
                     <Skeleton className="h-3 w-40 rounded-md" />
                   </div>
                   <Skeleton className="h-8 w-[86px] rounded-full" />
-                </div>
+                </Card>
               ))}
             </div>
           ) : error ? (
@@ -357,7 +358,7 @@ export function BattlenetCharacterPickerModal({
                       {showDivider && (
                         <div className="flex items-center gap-3 py-2 px-1">
                           <div className="h-px flex-1 bg-border" />
-                          <span className="text-[11px] text-muted-foreground uppercase tracking-wide shrink-0">
+                          <span className="text-11 text-muted-foreground uppercase tracking-wide shrink-0">
                             Other servers
                           </span>
                           <div className="h-px flex-1 bg-border" />
@@ -376,16 +377,16 @@ export function BattlenetCharacterPickerModal({
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
                               <span
-                                className="font-semibold text-[14px] truncate"
+                                className="font-semibold text-14 truncate"
                                 style={{ color: CLASS_COLORS[char.class_name] || '#808080' }}
                               >
                                 {char.name}
                               </span>
-                              <span className="text-[12px] text-muted-foreground shrink-0">
+                              <span className="text-12 text-muted-foreground shrink-0">
                                 {char.level}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                            <div className="flex items-center gap-1.5 text-12 text-muted-foreground">
                               <span>{char.class_name}</span>
                               <span>·</span>
                               <span>{char.realm}</span>
@@ -396,7 +397,7 @@ export function BattlenetCharacterPickerModal({
                         </div>
 
                         {alreadyImported ? (
-                          <span className="text-[12px] text-muted-foreground shrink-0">
+                          <span className="text-12 text-muted-foreground shrink-0">
                             {isLinkMode ? 'Already linked' : 'Already imported'}
                           </span>
                         ) : isLinkMode ? (

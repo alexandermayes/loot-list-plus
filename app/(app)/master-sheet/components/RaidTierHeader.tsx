@@ -35,10 +35,10 @@ export const RaidTierHeader = memo(function RaidTierHeader({
             height={24}
             className="w-6 h-6 rounded border border-border/50"
           />
-          <span className="text-[15px] font-semibold text-foreground">{tierName}</span>
+          <span className="text-15 font-semibold text-foreground">{tierName}</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-[12px] text-muted-foreground">
+          <span className="text-12 text-muted-foreground">
             {itemCount} item{itemCount !== 1 ? 's' : ''}
           </span>
           <svg

@@ -1,0 +1,345 @@
+-- metric-id: cta-funnel
+-- label: Person-scoped landing-to-onboarding step reach per period
+-- columns: period,step,events,persons
+-- window: 2026-08-24..2026-09-24
+--
+-- D-09: this is step reach within each period, not a strict ordered
+-- per-person funnel -- a person counted at a later step is not
+-- guaranteed to have also been counted at every earlier step. Every
+-- step is present for every period, including a step with zero events,
+-- so a missing row never has to be read as "step did not fire" versus
+-- "step was never queried."
+--
+-- Milestone events are deliberately excluded from this query: they are
+-- stamped in a separate, guild-scoped identity space (a synthetic
+-- distinct id, not the browser's person identity), and mixing the two
+-- spaces in one query would produce a false conversion rate. See the
+-- guild-scoped activation-milestones query for that space.
+--
+-- 06-06 addition (D-09 dashboard cross-check): describe-dashboards
+-- against 2036463 (Acquisition) and 2036464 (Conversion) surfaced four
+-- person-scoped events charted there that this file did not originally
+-- query: marketing_page_viewed, marketing_cta_clicked,
+-- discord_oauth_completed, guild_created. All four are confirmed
+-- person-scoped (utils/analytics/client.ts trackClientEvent /
+-- utils/analytics/server.ts trackEvent with distinctId: userId, no
+-- "guild:" prefix), so they are added here as extra steps rather than
+-- replacing the pre-existing landing_*/sign_in_clicked/guild_creation_*
+-- steps, which remain real, separately-instrumented events. Dashboard
+-- 2036466 (Quality) also charts premium_checkout_started,
+-- premium_subscription_started, pro_modal_viewed and pro_upgrade_clicked;
+-- those measure premium-subscription conversion, not landing-to-onboarding
+-- acquisition or an activation milestone, so they are out of scope for
+-- both this file and the milestones file and are left unqueried -- see
+-- the 06-06 SUMMARY for this determination.
+--
+-- Counts only: no output column carries a raw distinct id or URL; both
+-- appear only inside a count or uniq aggregate. No identifying event
+-- properties are read.
+
+SELECT 'sprint_window' AS period, 'marketing_page_viewed' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'marketing_page_viewed'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'sprint_window' AS period, 'landing_pageview' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = '$pageview' AND properties.$pathname = '/'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'sprint_window' AS period, 'marketing_cta_clicked' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'marketing_cta_clicked'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'sprint_window' AS period, 'landing_cta_clicked' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'landing_cta_clicked'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'sprint_window' AS period, 'sign_in_clicked' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'sign_in_clicked'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'sprint_window' AS period, 'discord_oauth_started' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'discord_oauth_started'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'sprint_window' AS period, 'discord_oauth_completed' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'discord_oauth_completed'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'sprint_window' AS period, 'onboarding_viewed' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'onboarding_viewed'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'sprint_window' AS period, 'guild_creation_started' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'guild_creation_started'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'sprint_window' AS period, 'guild_creation_completed' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'guild_creation_completed'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'sprint_window' AS period, 'guild_created' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'guild_created'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'sprint_window' AS period, 'onboarding_guild_joined' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'onboarding_guild_joined'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'marketing_page_viewed' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'marketing_page_viewed'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'landing_pageview' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = '$pageview' AND properties.$pathname = '/'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'marketing_cta_clicked' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'marketing_cta_clicked'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'landing_cta_clicked' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'landing_cta_clicked'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'sign_in_clicked' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'sign_in_clicked'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'discord_oauth_started' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'discord_oauth_started'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'discord_oauth_completed' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'discord_oauth_completed'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'onboarding_viewed' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'onboarding_viewed'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'guild_creation_started' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'guild_creation_started'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'guild_creation_completed' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'guild_creation_completed'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'guild_created' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'guild_created'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'onboarding_guild_joined' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'onboarding_guild_joined'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'marketing_page_viewed' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'marketing_page_viewed'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'landing_pageview' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = '$pageview' AND properties.$pathname = '/'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'marketing_cta_clicked' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'marketing_cta_clicked'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'landing_cta_clicked' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'landing_cta_clicked'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'sign_in_clicked' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'sign_in_clicked'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'discord_oauth_started' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'discord_oauth_started'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'discord_oauth_completed' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'discord_oauth_completed'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'onboarding_viewed' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'onboarding_viewed'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'guild_creation_started' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'guild_creation_started'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'guild_creation_completed' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'guild_creation_completed'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'guild_created' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'guild_created'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'onboarding_guild_joined' AS step, count() AS events, uniq(person_id) AS persons
+FROM events
+WHERE event = 'onboarding_guild_joined'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+ORDER BY
+    CASE period
+        WHEN 'sprint_window' THEN 0
+        WHEN 'baseline_week' THEN 1
+        WHEN 'week4' THEN 2
+    END,
+    CASE step
+        WHEN 'marketing_page_viewed' THEN 0
+        WHEN 'landing_pageview' THEN 1
+        WHEN 'marketing_cta_clicked' THEN 2
+        WHEN 'landing_cta_clicked' THEN 3
+        WHEN 'sign_in_clicked' THEN 4
+        WHEN 'discord_oauth_started' THEN 5
+        WHEN 'discord_oauth_completed' THEN 6
+        WHEN 'onboarding_viewed' THEN 7
+        WHEN 'guild_creation_started' THEN 8
+        WHEN 'guild_creation_completed' THEN 9
+        WHEN 'guild_created' THEN 10
+        WHEN 'onboarding_guild_joined' THEN 11
+    END

@@ -49,8 +49,8 @@ function StatCard({ value, label, className }: { value: string; label: string; c
       className={`flex flex-col items-center justify-center overflow-hidden rounded-[28px] pb-4 ${className || ''}`}
       style={{ backgroundImage: statGradient }}
     >
-      <p className="font-poppins font-bold text-[48px] md:text-[72px] text-white leading-normal">{value}</p>
-      <p className="font-poppins font-medium text-[16px] text-[#bababa] leading-normal text-center px-4">{label}</p>
+      <p className="font-poppins font-bold text-48 md:text-72 text-white leading-normal">{value}</p>
+      <p className="font-poppins font-medium text-16 text-[#bababa] leading-normal text-center px-4">{label}</p>
     </TiltCard>
   )
 }
@@ -75,7 +75,7 @@ export function VerificationLine({ verification }: { verification: TestimonialVe
       ? `Verified LootList+ customer ∙ Interviewed ${verification.monthYear}`
       : 'Verified LootList+ customer'
   return (
-    <p className="font-poppins text-[12px] text-[#bababa] leading-tight text-center">{text}</p>
+    <p className="font-poppins text-12 text-[#bababa] leading-tight text-center">{text}</p>
   )
 }
 
@@ -85,13 +85,13 @@ export function QuoteCard({ quote, author, className }: { quote: string; author?
       className={`flex flex-col items-center justify-center overflow-hidden rounded-[20px] md:rounded-[28px] p-6 md:p-12 lg:p-20 ${className || ''}`}
       style={{ backgroundImage: quoteGradient }}
     >
-      <p className="font-poppins font-medium text-[16px] text-[#bababa] leading-normal text-center">
+      <p className="font-poppins font-medium text-16 text-[#bababa] leading-normal text-center">
         &ldquo;{quote}&rdquo;
       </p>
       {author && (
         <div className="mt-5">
-          <p className="font-poppins font-semibold text-[13px] text-white leading-tight text-center">{author.name}</p>
-          <p className="font-poppins text-[12px] leading-tight text-center">
+          <p className="font-poppins font-semibold text-13 text-white leading-tight text-center">{author.name}</p>
+          <p className="font-poppins text-12 leading-tight text-center">
             {author.verification?.type === 'wcl_link' ? (
               <a
                 href={author.verification.url}
@@ -108,10 +108,10 @@ export function QuoteCard({ quote, author, className }: { quote: string; author?
           {(author.role || author.expansionTier || author.verification) && (
             <div className="space-y-1">
               {author.role && (
-                <p className="font-poppins text-[12px] text-[#bababa] leading-tight text-center">{author.role}</p>
+                <p className="font-poppins text-12 text-[#bababa] leading-tight text-center">{author.role}</p>
               )}
               {author.expansionTier && (
-                <p className="font-poppins text-[12px] text-[#bababa] leading-tight text-center">{author.expansionTier}</p>
+                <p className="font-poppins text-12 text-[#bababa] leading-tight text-center">{author.expansionTier}</p>
               )}
               {author.verification && <VerificationLine verification={author.verification} />}
             </div>
@@ -159,10 +159,10 @@ export default function LandingValueProps() {
         >
           <motion.h2
             variants={fadeInUp}
-            className="font-poppins font-bold text-[28px] md:text-[40px] leading-[1.1] text-white"
+            className="font-poppins font-bold text-28 md:text-40 leading-[1.1] text-white"
           >
             Built for guilds who take<br />
-            <span className="font-wow text-shimmer-purple text-[32px] md:text-[44px]">loot seriously</span>.
+            <span className="font-wow text-shimmer-purple text-32 md:text-44">loot seriously</span>.
           </motion.h2>
         </motion.div>
 

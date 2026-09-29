@@ -35,6 +35,7 @@ import { SecurityLockIcon, RotateClockwiseIcon } from '@hugeicons/core-free-icon
 import { HugeiconsIcon } from '@hugeicons/react'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { parseWclGuildUrl } from '@/lib/warcraftlogs'
+import { Card } from '@/components/ui/card'
 
 export default function GuildSettingsContent() {
   const [loading, setLoading] = useState(true)
@@ -525,10 +526,10 @@ export default function GuildSettingsContent() {
         {/* Guild Information and Members - Side by Side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* Basic Information */}
-          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden" ref={guildInfoRef}>
+          <Card className="overflow-hidden" ref={guildInfoRef}>
             <div className="p-6 border-b border-border">
               <Heading level={2}>Guild information</Heading>
-              <p className="text-muted-foreground text-[13px] mt-1">
+              <p className="text-muted-foreground text-13 mt-1">
                 {isGuildCreator ? "Update your guild's basic details" : "Only the guild owner can edit these settings"}
               </p>
             </div>
@@ -569,7 +570,7 @@ export default function GuildSettingsContent() {
                   />
                 )}
                 {isForeverGuild && (
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-11 text-muted-foreground">
                     WoW Forever has no realms. Pick the region and ruleset your guild plays on.
                   </p>
                 )}
@@ -585,7 +586,7 @@ export default function GuildSettingsContent() {
                     disabled={!isGuildCreator || saving}
                     className={`alliance-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                       faction === 'Alliance'
-                        ? 'border-blue-500 bg-blue-500/20'
+                        ? 'border-alliance bg-alliance/20'
                         : 'border-border-strong bg-background-elevated hover:bg-muted'
                     } ${!isGuildCreator ? 'opacity-60 cursor-not-allowed' : ''}`}
                   >
@@ -594,7 +595,7 @@ export default function GuildSettingsContent() {
                       alt="Alliance"
                       className="w-6 h-6 rounded border border-border/50 shadow-sm relative z-10"
                     />
-                    <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Alliance' ? 'text-blue-400' : isGuildCreator ? 'text-foreground group-hover:text-blue-400' : 'text-foreground'}`}>
+                    <span className={`font-medium text-13 relative z-10 transition-colors duration-300 ${faction === 'Alliance' ? 'text-alliance' : isGuildCreator ? 'text-foreground group-hover:text-alliance' : 'text-foreground'}`}>
                       Alliance
                     </span>
                   </Button>
@@ -605,7 +606,7 @@ export default function GuildSettingsContent() {
                     disabled={!isGuildCreator || saving}
                     className={`horde-btn group relative px-3 py-2.5 rounded-lg border transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden ${
                       faction === 'Horde'
-                        ? 'border-red-500 bg-red-500/20'
+                        ? 'border-horde bg-horde/20'
                         : 'border-border-strong bg-background-elevated hover:bg-muted'
                     } ${!isGuildCreator ? 'opacity-60 cursor-not-allowed' : ''}`}
                   >
@@ -614,7 +615,7 @@ export default function GuildSettingsContent() {
                       alt="Horde"
                       className="w-6 h-6 rounded border border-border/50 shadow-sm relative z-10"
                     />
-                    <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Horde' ? 'text-red-400' : isGuildCreator ? 'text-foreground group-hover:text-red-400' : 'text-foreground'}`}>
+                    <span className={`font-medium text-13 relative z-10 transition-colors duration-300 ${faction === 'Horde' ? 'text-horde' : isGuildCreator ? 'text-foreground group-hover:text-horde' : 'text-foreground'}`}>
                       Horde
                     </span>
                   </Button>
@@ -622,14 +623,14 @@ export default function GuildSettingsContent() {
                 {isGuildCreator && (
                   <style jsx>{`
                     .alliance-btn:hover:not(:disabled) {
-                      border-color: rgb(59, 130, 246);
-                      box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(59, 130, 246, 0.2);
-                      background: rgba(59, 130, 246, 0.15);
+                      border-color: hsl(var(--alliance));
+                      box-shadow: 0 0 20px hsl(var(--alliance) / 0.5), 0 0 40px hsl(var(--alliance) / 0.2);
+                      background: hsl(var(--alliance) / 0.15);
                     }
                     .horde-btn:hover:not(:disabled) {
-                      border-color: rgb(239, 68, 68);
-                      box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 0 40px rgba(239, 68, 68, 0.2);
-                      background: rgba(239, 68, 68, 0.15);
+                      border-color: hsl(var(--horde));
+                      box-shadow: 0 0 20px hsl(var(--horde) / 0.5), 0 0 40px hsl(var(--horde) / 0.2);
+                      background: hsl(var(--horde) / 0.15);
                     }
                   `}</style>
                 )}
@@ -646,15 +647,15 @@ export default function GuildSettingsContent() {
                 </Button>
               )}
             </div>
-          </div>
+          </Card>
 
           {/* Current Members - with fixed scroll */}
-          <div className="bg-background-elevated border border-border rounded-xl overflow-auto flex flex-col" style={guildInfoHeight ? { maxHeight: guildInfoHeight } : undefined}>
+          <Card className="overflow-auto flex flex-col" style={guildInfoHeight ? { maxHeight: guildInfoHeight } : undefined}>
             <div className="p-6 border-b border-border flex-shrink-0">
               <div className="flex items-start justify-between">
                 <div>
                   <Heading level={2}>Current members</Heading>
-                  <p className="text-muted-foreground text-[13px] mt-1">Manage guild members and roles</p>
+                  <p className="text-muted-foreground text-13 mt-1">Manage guild members and roles</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setShowRolesModal(true)}>
                   Manage roles
@@ -664,7 +665,7 @@ export default function GuildSettingsContent() {
             <div className="overflow-y-auto flex-1">
               <MemberManager key={roleRefreshKey} />
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Expansions */}
@@ -676,24 +677,24 @@ export default function GuildSettingsContent() {
         {/* Discord & Warcraft Logs Integrations */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Discord Integration */}
-          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <Card className="overflow-hidden">
             <div className="p-6 border-b border-border">
               <div className="flex items-center gap-3">
                 <img src="/discord-icon.svg" alt="" className="w-6 h-6" />
                 <div>
                   <Heading level={2}>Discord integration</Heading>
-                  <p className="text-muted-foreground text-[13px] mt-1">Post raid summaries to a Discord channel when you finish logging a raid</p>
+                  <p className="text-muted-foreground text-13 mt-1">Post raid summaries to a Discord channel when you finish logging a raid</p>
                 </div>
               </div>
             </div>
             <div className="p-6 space-y-4">
               {!activeGuild?.discord_server_id ? (
-                <p className="text-muted-foreground text-[13px]">
+                <p className="text-muted-foreground text-13">
                   Link a Discord server in guild information above to enable Discord features.
                 </p>
               ) : discordChannelsError && discordChannels.length === 0 ? (
                 <div className="space-y-3">
-                  <p className="text-muted-foreground text-[13px]">{discordChannelsError}</p>
+                  <p className="text-muted-foreground text-13">{discordChannelsError}</p>
                   <Button variant="outline" size="sm" onClick={loadDiscordChannels} loading={discordChannelsLoading}>
                     Retry
                   </Button>
@@ -728,7 +729,7 @@ export default function GuildSettingsContent() {
                         <HugeiconsIcon icon={RotateClockwiseIcon} size={16} className={discordChannelsLoading ? 'animate-spin' : ''} />
                       </Button>
                     </div>
-                    <p className="text-muted-foreground text-[11px]">
+                    <p className="text-muted-foreground text-11">
                       The LootList+ Bot will post raid attendance and loot to this channel. Make sure the bot has permission to send messages there.
                     </p>
                   </div>
@@ -736,7 +737,7 @@ export default function GuildSettingsContent() {
                   <div className="flex items-center justify-between gap-3 pt-2 border-t border-border">
                     <div className="space-y-1">
                       <Label htmlFor="lootAnnouncements">Announce loot awards</Label>
-                      <p className="text-muted-foreground text-[11px]">
+                      <p className="text-muted-foreground text-11">
                         Post an embed in the channel above each time loot is awarded. Bulk imports collapse into one post.
                       </p>
                     </div>
@@ -750,16 +751,16 @@ export default function GuildSettingsContent() {
                 </div>
               )}
             </div>
-          </div>
+          </Card>
 
           {/* Warcraft Logs Integration */}
-          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <Card className="overflow-hidden">
             <div className="p-6 border-b border-border">
               <div className="flex items-center gap-3">
                 <img src="/wcl-icon.png" alt="" className="w-6 h-6" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                 <div>
                   <Heading level={2}>Warcraft Logs</Heading>
-                  <p className="text-muted-foreground text-[13px] mt-1">Auto-link WCL reports to raids when posting summaries to Discord</p>
+                  <p className="text-muted-foreground text-13 mt-1">Auto-link WCL reports to raids when posting summaries to Discord</p>
                 </div>
               </div>
             </div>
@@ -775,12 +776,12 @@ export default function GuildSettingsContent() {
                   onBlur={(e) => handleSaveWclUrl(e.target.value)}
                   disabled={savingWcl}
                 />
-                <p className="text-muted-foreground text-[11px]">
+                <p className="text-muted-foreground text-11">
                   Paste your guild&apos;s Warcraft Logs URL. Reports matching raid dates will be auto-linked to summaries.
                 </p>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* LootList+ Premium - Officers with manage_settings */}
@@ -791,7 +792,7 @@ export default function GuildSettingsContent() {
           <div className="bg-background-elevated border border-destructive/30 rounded-xl overflow-hidden">
             <div className="p-6 border-b border-destructive/30">
               <Heading level={2} className="text-destructive">Danger Zone</Heading>
-              <p className="text-muted-foreground text-[13px] mt-1">
+              <p className="text-muted-foreground text-13 mt-1">
                 Irreversible and destructive actions
               </p>
             </div>
@@ -800,8 +801,8 @@ export default function GuildSettingsContent() {
               <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex-1">
-                    <h3 className="text-[16px] font-semibold text-warning mb-1">Transfer ownership</h3>
-                    <p className="text-[13px] text-muted-foreground">
+                    <h3 className="text-16 font-semibold text-warning mb-1">Transfer ownership</h3>
+                    <p className="text-13 text-muted-foreground">
                       Transfer guild ownership to another member. You will be demoted to Officer and lose owner privileges.
                     </p>
                   </div>
@@ -819,8 +820,8 @@ export default function GuildSettingsContent() {
               <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex-1">
-                    <h3 className="text-[16px] font-semibold text-warning mb-1">Reset guild data</h3>
-                    <p className="text-[13px] text-muted-foreground">
+                    <h3 className="text-16 font-semibold text-warning mb-1">Reset guild data</h3>
+                    <p className="text-13 text-muted-foreground">
                       Clear raid history, attendance, loot awards and donations so every raider starts from zero. Members, their loot lists, roles and settings are kept. Use this after testing, before going live.
                     </p>
                   </div>
@@ -838,8 +839,8 @@ export default function GuildSettingsContent() {
               <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex-1">
-                    <h3 className="text-[16px] font-semibold text-destructive mb-1">Delete this guild</h3>
-                    <p className="text-[13px] text-muted-foreground">
+                    <h3 className="text-16 font-semibold text-destructive mb-1">Delete this guild</h3>
+                    <p className="text-13 text-muted-foreground">
                       Once you delete a guild, there is no going back. This will permanently delete all guild data including members, loot lists, attendance records and settings.
                     </p>
                   </div>
@@ -880,7 +881,7 @@ export default function GuildSettingsContent() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <Label>Raid events &amp; attendance</Label>
-                      <p className="text-[12px] text-muted-foreground">Zeroes attendance-based Loot Score. Loot awards are kept but lose their raid night.</p>
+                      <p className="text-12 text-muted-foreground">Zeroes attendance-based Loot Score. Loot awards are kept but lose their raid night.</p>
                     </div>
                     <Switch
                       checked={resetScope.raids}
@@ -890,7 +891,7 @@ export default function GuildSettingsContent() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <Label>Loot award history</Label>
-                      <p className="text-[12px] text-muted-foreground">Removes every awarded item and the bad luck protection built from it.</p>
+                      <p className="text-12 text-muted-foreground">Removes every awarded item and the bad luck protection built from it.</p>
                     </div>
                     <Switch
                       checked={resetScope.loot}
@@ -900,7 +901,7 @@ export default function GuildSettingsContent() {
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <Label>Donation records</Label>
-                      <p className="text-[12px] text-muted-foreground">Removes donation points. Only matters if donation bonuses are enabled.</p>
+                      <p className="text-12 text-muted-foreground">Removes donation points. Only matters if donation bonuses are enabled.</p>
                     </div>
                     <Switch
                       checked={resetScope.donations}
@@ -991,8 +992,8 @@ export default function GuildSettingsContent() {
               </ModalHeader>
               <ModalBody className="space-y-4">
                 <div className="rounded-lg border border-warning/30 bg-warning/10 p-4">
-                  <p className="text-[13px] text-warning font-medium mb-2">Warning:</p>
-                  <ul className="text-[13px] text-muted-foreground space-y-1 list-disc list-inside">
+                  <p className="text-13 text-warning font-medium mb-2">Warning:</p>
+                  <ul className="text-13 text-muted-foreground space-y-1 list-disc list-inside">
                     <li>The new owner will have full control over the guild</li>
                     <li>You will be demoted to Officer</li>
                     <li>You will lose the ability to delete the guild or transfer ownership</li>
@@ -1016,7 +1017,7 @@ export default function GuildSettingsContent() {
                       ))}
                     </Select>
                   ) : (
-                    <p className="text-[13px] text-muted-foreground">No other members available to transfer ownership to.</p>
+                    <p className="text-13 text-muted-foreground">No other members available to transfer ownership to.</p>
                   )}
                 </div>
               </ModalBody>

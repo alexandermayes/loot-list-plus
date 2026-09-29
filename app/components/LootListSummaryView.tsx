@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { ScrollIcon } from '@hugeicons/core-free-icons'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 
 interface LootListPlayer {
   character_id: string
@@ -86,7 +87,7 @@ export default function LootListSummaryView({
         {/* Item card skeletons */}
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="bg-background-elevated border border-border rounded-xl overflow-hidden animate-pulse">
+            <Card key={i} className="overflow-hidden animate-pulse">
               <div className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2 flex-1">
@@ -107,7 +108,7 @@ export default function LootListSummaryView({
                   </div>
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       </div>
@@ -161,9 +162,9 @@ export default function LootListSummaryView({
           const hasMore = item.players.length > 3
 
           return (
-            <div
+            <Card
               key={item.item_id}
-              className="bg-background-elevated border border-border rounded-xl overflow-hidden"
+              className="overflow-hidden"
             >
               {/* Item Header */}
               <div className="p-4">
@@ -172,12 +173,12 @@ export default function LootListSummaryView({
                     <ItemLink
                       name={item.item_name}
                       wowheadId={item.wowhead_id}
-                      className="font-semibold text-[14px]"
+                      className="font-semibold text-14"
                     />
                     <div className="flex items-center gap-3 mt-1">
-                      <span className="text-[12px] text-muted-foreground">{item.boss_name}</span>
-                      <span className="text-[12px] text-muted-foreground">·</span>
-                      <span className="text-[12px] text-muted-foreground">{item.item_slot}</span>
+                      <span className="text-12 text-muted-foreground">{item.boss_name}</span>
+                      <span className="text-12 text-muted-foreground">·</span>
+                      <span className="text-12 text-muted-foreground">{item.item_slot}</span>
                     </div>
                   </div>
 
@@ -185,12 +186,12 @@ export default function LootListSummaryView({
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <div className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 border border-accent/20 rounded-full">
                       <HugeiconsIcon icon={UserMultipleIcon} size={14} className="text-accent" />
-                      <span className="text-[13px] font-medium text-accent">{item.total_lists}</span>
+                      <span className="text-13 font-medium text-accent">{item.total_lists}</span>
                     </div>
                     {item.already_awarded > 0 && (
                       <div className="flex items-center gap-1.5 px-3 py-1.5 bg-success/10 border border-success/20 rounded-full">
                         <HugeiconsIcon icon={CheckmarkCircle02Icon} size={14} className="text-success" />
-                        <span className="text-[13px] font-medium text-success">{item.already_awarded}</span>
+                        <span className="text-13 font-medium text-success">{item.already_awarded}</span>
                       </div>
                     )}
                   </div>
@@ -202,15 +203,15 @@ export default function LootListSummaryView({
                     {displayPlayers.map((player) => (
                         <div
                           key={player.character_id}
-                          className="flex items-center gap-1.5 px-2.5 py-1 bg-background-inset border border-border rounded-full"
+                          className="flex items-center gap-1.5 px-2.5 py-1 bg-muted border border-border rounded-full"
                         >
                           <span
-                            className="text-[12px] font-medium"
+                            className="text-12 font-medium"
                             style={{ color: player.class_color }}
                           >
                             {player.character_name}
                           </span>
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className="text-11 text-muted-foreground">
                             #{player.item_rank}
                           </span>
                         </div>
@@ -220,7 +221,7 @@ export default function LootListSummaryView({
                         variant="outline"
                         size="sm"
                         onClick={() => toggleExpand(item.item_id)}
-                        className="flex items-center gap-1 px-2.5 py-1 h-auto bg-background-inset rounded-full text-[12px] text-muted-foreground hover:text-foreground"
+                        className="flex items-center gap-1 px-2.5 py-1 h-auto bg-muted rounded-full text-12 text-muted-foreground hover:text-foreground"
                       >
                         +{item.players.length - 3} more
                         <HugeiconsIcon icon={ArrowDown01Icon} size={12} />
@@ -231,7 +232,7 @@ export default function LootListSummaryView({
                         variant="outline"
                         size="sm"
                         onClick={() => toggleExpand(item.item_id)}
-                        className="flex items-center gap-1 px-2.5 py-1 h-auto bg-background-inset rounded-full text-[12px] text-muted-foreground hover:text-foreground"
+                        className="flex items-center gap-1 px-2.5 py-1 h-auto bg-muted rounded-full text-12 text-muted-foreground hover:text-foreground"
                       >
                         Show less
                         <HugeiconsIcon icon={ArrowUp01Icon} size={12} />
@@ -240,17 +241,17 @@ export default function LootListSummaryView({
                   </div>
                 </div>
               </div>
-            </div>
+            </Card>
           )
         })}
       </div>
 
       {/* Legend */}
-      <div className="bg-background-elevated border border-border rounded-xl p-4">
-        <p className="text-foreground-muted text-[12px]">
+      <Card className="p-4">
+        <p className="text-foreground-muted text-12">
           <span className="text-foreground">#N</span> = loot list rank (50 is highest priority, 1 is lowest). Sorted by priority within each item.
         </p>
-      </div>
+      </Card>
     </div>
   )
 }

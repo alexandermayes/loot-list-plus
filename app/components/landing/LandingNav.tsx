@@ -67,7 +67,7 @@ export default function LandingNav() {
             {/* Nav Links + Buttons */}
             <div className="hidden md:flex items-center gap-6">
               {/* Links */}
-              <div className="flex items-center gap-10 font-poppins font-semibold text-[14px] text-white">
+              <div className="flex items-center gap-10 font-poppins font-semibold text-14 text-white">
                 <button
                   onClick={() => {
                     trackClientEvent('landing_nav_clicked', { target: 'features', source: 'nav' })
@@ -114,7 +114,7 @@ export default function LandingNav() {
                 <a
                   href={APP_URL}
                   onClick={() => trackClientEvent('landing_cta_clicked', { cta: 'nav_login' })}
-                  className="flex items-center justify-center h-9 px-4 py-2 rounded-[60px] bg-[#121218] border border-[#383838] font-poppins font-semibold text-[14px] text-white no-underline hover:bg-[#1a1a22] transition-colors"
+                  className="flex items-center justify-center h-9 px-4 py-2 rounded-[60px] bg-[#121218] border border-[#383838] font-poppins font-semibold text-14 text-white no-underline hover:bg-[#1a1a22] transition-colors"
                 >
                   Log in
                 </a>
@@ -124,7 +124,7 @@ export default function LandingNav() {
                     trackClientEvent('landing_cta_clicked', { cta: 'nav_start_free' })
                     trackMarketingCta({ cta_text: 'Start for free', cta_placement: 'nav', destination: APP_URL })
                   }}
-                  className="flex items-center justify-center h-9 px-4 py-2 rounded-[60px] bg-white font-poppins font-semibold text-[14px] text-black no-underline hover:bg-white/90 transition-colors"
+                  className="flex items-center justify-center h-9 px-4 py-2 rounded-[60px] bg-white font-poppins font-semibold text-14 text-black no-underline hover:bg-white/90 transition-colors"
                 >
                   Start for free
                 </a>
@@ -134,7 +134,7 @@ export default function LandingNav() {
             {/* Mobile CTA */}
             <a
               href={APP_URL}
-              className="md:hidden flex items-center justify-center h-9 px-4 py-2 rounded-[60px] bg-white font-poppins font-semibold text-[14px] text-black no-underline"
+              className="md:hidden flex items-center justify-center h-9 px-4 py-2 rounded-[60px] bg-white font-poppins font-semibold text-14 text-black no-underline"
             >
               Start for free
             </a>

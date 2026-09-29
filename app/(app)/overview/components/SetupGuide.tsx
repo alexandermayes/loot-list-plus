@@ -22,6 +22,7 @@ import {
   Globe02Icon,
   SparklesIcon,
 } from '@hugeicons/core-free-icons'
+import { Card } from '@/components/ui/card'
 
 // D-04: the only new visible string this plan adds. A Forever guild's
 // "submissions" and "raid" steps show this instead of becoming clickable
@@ -240,7 +241,7 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion, rai
     />
   ) : (
     <div className="w-10 h-10 rounded-lg shrink-0 bg-accent/15 flex items-center justify-center outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10">
-      <span className="text-accent font-bold text-[16px]">{guildName.charAt(0).toUpperCase()}</span>
+      <span className="text-accent font-bold text-16">{guildName.charAt(0).toUpperCase()}</span>
     </div>
   )
 
@@ -263,17 +264,17 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion, rai
               <HugeiconsIcon icon={SparklesIcon} size={28} className="text-accent" />
             </div>
           )}
-          <h2 className="text-[20px] font-bold text-foreground">
+          <h2 className="text-20 font-bold text-foreground">
             {guildName} is ready for loot
           </h2>
-          <p className="text-muted-foreground text-[13px] mt-1.5 max-w-sm">
+          <p className="text-muted-foreground text-13 mt-1.5 max-w-sm">
             All {steps.length} steps complete. Your guild is set up for fair, transparent loot distribution.
           </p>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleDismissCelebration}
-            className="mt-4 text-muted-foreground text-[12px]"
+            className="mt-4 text-muted-foreground text-12"
           >
             Dismiss
           </Button>
@@ -283,17 +284,17 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion, rai
   }
 
   return (
-    <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+    <Card className="overflow-hidden">
       {/* Header with guild identity */}
       <div className="px-5 pt-5 pb-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             {guildAvatar}
             <div className="min-w-0">
-              <h2 id={headingId} className="text-[16px] font-bold text-foreground truncate">
+              <h2 id={headingId} className="text-16 font-bold text-foreground truncate">
                 Set up {guildName}
               </h2>
-              <p className="text-muted-foreground text-[12px] mt-0.5">
+              <p className="text-muted-foreground text-12 mt-0.5">
                 {completedCount} of {steps.length} steps done
               </p>
             </div>
@@ -346,14 +347,14 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion, rai
             </div>
           ) : status === 'current' ? (
             <div
-              className="w-6 h-6 shrink-0 flex items-center justify-center rounded-full bg-accent text-success-foreground text-[11px] font-semibold tabular-nums"
+              className="w-6 h-6 shrink-0 flex items-center justify-center rounded-full bg-accent text-success-foreground text-11 font-semibold tabular-nums"
               aria-hidden="true"
             >
               {position}
             </div>
           ) : (
             <div
-              className="w-6 h-6 shrink-0 flex items-center justify-center rounded-full bg-muted text-muted-foreground text-[11px] font-semibold tabular-nums"
+              className="w-6 h-6 shrink-0 flex items-center justify-center rounded-full bg-muted text-muted-foreground text-11 font-semibold tabular-nums"
               aria-hidden="true"
             >
               {position}
@@ -373,7 +374,7 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion, rai
                 <div className={rowClasses}>
                   {statusSlot}
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-medium leading-5 text-foreground-secondary">
+                    <p className="text-13 font-medium leading-5 text-foreground-secondary">
                       {step.title}
                       <span className="sr-only">, done</span>
                     </p>
@@ -385,10 +386,10 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion, rai
                 <div className={rowClasses}>
                   {statusSlot}
                   <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                    <p className="text-[13px] font-medium leading-5 text-muted-foreground">
+                    <p className="text-13 font-medium leading-5 text-muted-foreground">
                       {step.title}
                     </p>
-                    <span className="text-[11px] text-muted-foreground">{FOREVER_WAITING_NOTE}</span>
+                    <span className="text-11 text-muted-foreground">{FOREVER_WAITING_NOTE}</span>
                   </div>
                 </div>
               )}
@@ -403,7 +404,7 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion, rai
                 >
                   {statusSlot}
                   <div className="flex-1 min-w-0">
-                    <p className={`text-[13px] font-medium leading-5 ${
+                    <p className={`text-13 font-medium leading-5 ${
                       status === 'current' ? 'text-foreground' : 'text-foreground-secondary'
                     }`}>
                       {step.title}
@@ -421,7 +422,7 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion, rai
 
               {expanded && (
                 <div className="pl-12 pr-2 pb-3">
-                  <p className="text-[12px] text-muted-foreground mb-3">
+                  <p className="text-12 text-muted-foreground mb-3">
                     {step.description}
                   </p>
                   <Button
@@ -438,6 +439,6 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion, rai
           )
         })}
       </ol>
-    </div>
+    </Card>
   )
 }

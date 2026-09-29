@@ -96,7 +96,7 @@ export default function GuardianConversionModal({
         </ModalDescription>
       </ModalHeader>
       <ModalBody>
-        <div className="space-y-3 text-[13px] text-foreground-secondary">
+        <div className="space-y-3 text-13 text-foreground-secondary">
           <p>
             <span className="font-semibold text-foreground">Feral</span> is now
             DPS only (cat form). <span className="font-semibold text-foreground">Guardian</span> is

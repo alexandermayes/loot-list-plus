@@ -133,12 +133,11 @@ img[alt=""] {
     --background: 35 33% 97%;           /* #faf8f5 - Base */
     --background-subtle: 35 20% 94%;    /* #f2efe9 - Subtle (slightly darker) */
     --background-elevated: 0 0% 100%;   /* #ffffff - Cards/elevated */
-    --background-inset: 35 25% 96%;     /* #f7f5f1 - Nested cards inside elevated */
 
     /* Foreground/Text - Improved contrast */
     --foreground: 220 20% 4%;           /* #09090c - Primary text */
     --foreground-secondary: 25 8% 32%;  /* #574f49 - Secondary text (darker) */
-    --foreground-muted: 25 6% 45%;      /* #7a7269 - Muted text (darker) */
+    --foreground-muted: 25 6% 42%;      /* #726a65 - Muted text (darker) */
 
     /* Cards & Popovers */
     --card: 0 0% 100%;
@@ -158,6 +157,7 @@ img[alt=""] {
     --accent: 30 100% 45%;              /* #e67300 - Slightly darker for light mode */
     --accent-foreground: 0 0% 100%;
     --accent-subtle: 30 100% 45% / 0.15;
+    --accent-text: 30 100% 36%;         /* #b85c00 - Text-only accent, contrast-safe on white (COLOR-01, D-06) */
 
     /* Muted */
     --muted: 35 15% 90%;
@@ -181,6 +181,11 @@ img[alt=""] {
     --success-foreground: 142 71% 10%;
     --warning: 45 93% 47%;
     --warning-foreground: 220 20% 4%;
+    /* Standby sits at hue 38, deliberately between --accent (hue 30) and
+       --warning (hue 45), so the benched/needs-revision state reads as its
+       own amber rather than as either neighbour (D-07, COLOR-06). */
+    --standby: 38 92% 42%;               /* #ce8509 */
+    --standby-foreground: 0 0% 4%;       /* #0a0a0a */
     --error: 0 72% 51%;
     --error-foreground: 0 72% 15%;
     --info: 217 91% 60%;
@@ -206,21 +211,25 @@ img[alt=""] {
      DARK MODE (Primary Theme - from Figma)
      ========================================================================== */
   .dark {
-    /* Backgrounds - Dark scale from Figma */
+    /* Backgrounds - Dark scale from Figma. --background and
+       --background-subtle are deliberately untouched by the COLOR-02
+       surface ramp below: they are the near-black identity anchor the
+       landing page and the weapon renders are built on. Only the card
+       family (--background-elevated and its siblings) is lifted. */
     --background: 230 18% 3%;           /* #09090c - Base/deepest */
     --background-subtle: 225 15% 5%;    /* #0d0e11 - Sidebar */
-    --background-elevated: 228 12% 8%;  /* #141519 - Cards/inputs */
-    --background-inset: 228 12% 10%;    /* #18191f - Nested cards (slightly lighter) */
+    --background-elevated: 228 12% 13%; /* #1d1f25 - Cards/inputs (COLOR-02: lifted from 8%
+                                            so page vs card clears 1.2:1) */
 
     /* Foreground/Text */
     --foreground: 0 0% 100%;            /* #ffffff - Primary */
     --foreground-secondary: 0 0% 63%;   /* #a1a1a1 - Secondary */
-    --foreground-muted: 0 0% 40%;       /* #666666 - Muted */
+    --foreground-muted: 0 0% 53%;       /* #878787 - Muted */
 
     /* Cards & Popovers */
-    --card: 228 12% 8%;                 /* #141519 */
+    --card: 228 12% 13%;                /* #1d1f25 - matches --background-elevated exactly */
     --card-foreground: 0 0% 100%;
-    --popover: 228 12% 8%;
+    --popover: 228 12% 13%;             /* #1d1f25 - matches --background-elevated exactly */
     --popover-foreground: 0 0% 100%;
 
     /* Primary Action (White button) */
@@ -228,26 +237,40 @@ img[alt=""] {
     --primary-foreground: 0 0% 4%;      /* #0a0a0a */
 
     /* Secondary Action (Dark elevated) */
-    --secondary: 228 12% 8%;            /* #141519 */
+    --secondary: 228 12% 13%;           /* #1d1f25 - matches --background-elevated exactly */
     --secondary-foreground: 0 0% 100%;
 
     /* Accent (Orange - #ff8000) */
     --accent: 30 100% 50%;              /* #ff8000 */
     --accent-foreground: 0 0% 100%;
     --accent-subtle: 30 100% 50% / 0.2;
+    --accent-text: 30 100% 50%;         /* #ff8000 - identical to --accent; dark accent already
+                                            clears 6.530 against the lifted card, so no separate
+                                            value is needed here (D-06) */
 
-    /* Muted (hover states) */
-    --muted: 0 0% 12%;                    /* #1f1f1f - Hover background */
+    /* Muted (hover states). Rises to 16% (OI-5) because it was tuned
+       against the old 8% card and at 12% it would now sit marginally
+       darker than the lifted card, inverting the convention that a hover
+       surface is lighter than the thing it sits on. 16% restores the
+       pre-lift ratio: 1.122 before, 1.131 after. */
+    --muted: 0 0% 16%;                    /* #292929 - Hover background */
     --muted-foreground: 0 0% 63%;
 
     /* Destructive (Red) */
     --destructive: 0 84% 60%;           /* #ef4444 */
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders - from Figma */
-    --border: 0 0% 10%;                 /* #1a1a1a - Default */
-    --border-strong: 0 0% 22%;          /* #383838 - Strong */
-    --input: 0 0% 10%;
+    /* Borders - from Figma. Widened alongside the card lift (COLOR-02) so
+       both tiers stay visible against the new card value and distinct
+       from each other. */
+    --border: 0 0% 18%;                 /* #2e2e2e - Default (about 1.213 against the card) */
+    --border-strong: 0 0% 26%;          /* #424242 - Strong (stays distinct from --border) */
+    /* --input follows --border rather than the card value. Its sole
+       consumer is components/ui/switch.tsx's unchecked track fill sitting
+       on a card; at the card value the track would measure 1.004 against
+       its own container and effectively vanish, while at this value it
+       measures 1.213, the same floor --border clears (OI-4). */
+    --input: 0 0% 18%;                  /* #2e2e2e */
     --ring: 30 100% 50%;                /* Orange focus ring */
 
     /* Status Colors */
@@ -255,6 +278,11 @@ img[alt=""] {
     --success-foreground: 142 71% 10%;
     --warning: 45 93% 47%;
     --warning-foreground: 220 20% 4%;
+    /* Standby sits at hue 38, deliberately between --accent (hue 30) and
+       --warning (hue 45), so the benched/needs-revision state reads as its
+       own amber rather than as either neighbour (D-07, COLOR-06). */
+    --standby: 38 92% 50%;               /* #f59f0a */
+    --standby-foreground: 0 0% 4%;       /* #0a0a0a */
     --error: 0 84% 60%;
     --error-foreground: 0 72% 15%;
     --info: 217 91% 60%;
@@ -286,8 +314,38 @@ img[alt=""] {
     @apply border-border;
   }
 
+  /* Universal scrollbar theming (SURF-01): every scrollable region in the
+     app -- main content, modals, dropdowns, horizontally-scrolling tables --
+     not only the sidebar. Values reused verbatim from the sidebar's own
+     prior scrollbar treatment, plus a height alongside width so
+     horizontally-scrolling regions are covered too. Inert on elements that
+     do not overflow-scroll. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 3px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--border-strong));
+  }
+
   html {
     scrollbar-gutter: stable;
+    caret-color: hsl(var(--accent));
   }
 
   body {
@@ -295,9 +353,14 @@ img[alt=""] {
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
+  /* Text selection wash, themed from the accent token (SURF-01). No explicit
+     foreground override: selected text keeps its own inherited colour. */
+  ::selection {
+    background-color: hsl(var(--accent) / 0.3);
+  }
+
   /* Tabular numbers for scores, rankings, attendance, and other dynamic values */
   td, th,
-  [data-score],
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
@@ -335,30 +398,6 @@ img[alt=""] {
     display: block !important;
   }
 
-  /* Custom scrollbar styles */
-  .sidebar-scrollable::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .sidebar-scrollable::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  .sidebar-scrollable::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 3px;
-  }
-
-  .sidebar-scrollable::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--border-strong));
-  }
-
-  /* Firefox scrollbar */
-  .sidebar-scrollable {
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border)) transparent;
-  }
-
 }
 
 /* ==========================================================================
@@ -387,6 +426,16 @@ img[alt=""] {
   mask-repeat: no-repeat;
   -webkit-mask-position: center;
   mask-position: center;
+}
+
+/* G-11-1: numeral face for .tabular-nums, placed outside every @layer
+   because a layered declaration loses to any same-element Tailwind
+   font-family utility, which is how the font-variant-numeric declaration
+   this rule accompanies became silently inert. Fallback chain deliberately
+   does NOT degrade to Poppins -- Poppins ignores tabular-nums, so falling
+   back to it would silently reproduce the defect this rule fixes. */
+.tabular-nums {
+  font-family: var(--font-tabular), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* ==========================================================================
@@ -566,12 +615,6 @@ img[alt=""] {
    ========================================================================== */
 
 @layer components {
-  /* Section Label - uppercase small labels */
-  .section-label {
-    @apply text-[10px] font-medium uppercase tracking-wider;
-    color: hsl(var(--foreground-secondary));
-  }
-
   /* Nav item active state */
   .nav-item-active {
     background-color: hsl(var(--accent) / 0.2);
@@ -584,6 +627,11 @@ img[alt=""] {
     background: linear-gradient(90deg, hsl(var(--background-elevated)) 0%, hsl(var(--background-elevated)) 100%);
     border: 1px solid hsl(var(--border));
     border-radius: var(--radius);
+  }
+
+  /* TYPE-04: readable measure for long-form prose blocks. Width only -- no font-size, no color. */
+  .prose-measure {
+    max-width: 70ch;
   }
 }
 

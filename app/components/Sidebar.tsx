@@ -9,12 +9,14 @@ import { CharacterSelector } from './CharacterSelector'
 import UpgradeModal from './UpgradeModal'
 import { useSidebar } from '../contexts/SidebarContext'
 import { Button } from '@/components/ui/button'
+import { Text } from '@/components/ui/typography'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon, Settings01Icon, Notification03Icon, BubbleChatEditIcon } from '@hugeicons/core-free-icons'
 import { usePendingSubmissionCount } from '../hooks/usePendingSubmissionCount'
 import { useResubmitCount } from '../hooks/useResubmitCount'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { hasFeature, isPro } from '@/domain/guild/feature-flags'
+import { Card } from '@/components/ui/card'
 
 // Lazy load modals to keep them out of the initial Sidebar chunk.
 const CreateGuildModal = dynamic(() => import('./CreateGuildModal').then(mod => ({ default: mod.CreateGuildModal })), {
@@ -256,7 +258,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
       }`}
     >
       <div className="bg-destructive/95 border border-destructive/50 rounded-[12px] px-[24px] py-[16px] shadow-lg backdrop-blur-sm">
-        <p className="font-poppins text-[14px] text-destructive-foreground">{toastMessage}</p>
+        <p className="font-poppins text-14 text-destructive-foreground">{toastMessage}</p>
       </div>
     </div>
 
@@ -320,13 +322,13 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
             </Button>
             {activeGuild && (
               isPro(activeGuild) ? (
-                <span className="text-[10px] font-semibold text-[#ff8000] bg-[#ff8000]/15 px-1.5 py-0.5 rounded-md uppercase tracking-wide">
+                <span className="text-11 font-semibold text-[#ff8000] bg-[#ff8000]/15 px-1.5 py-0.5 rounded-md uppercase tracking-wide">
                   Premium
                 </span>
               ) : (
                 <button
                   onClick={() => setShowUpgradeModal(true)}
-                  className="text-[10px] font-semibold text-[#ff8000] border border-[#ff8000]/40 px-1.5 py-0.5 rounded-md uppercase tracking-wide cursor-pointer hover:bg-[#ff8000]/15 transition-colors"
+                  className="text-11 font-semibold text-[#ff8000] border border-[#ff8000]/40 px-1.5 py-0.5 rounded-md uppercase tracking-wide cursor-pointer hover:bg-[#ff8000]/15 transition-colors"
                 >
                   Upgrade
                 </button>
@@ -343,21 +345,21 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
         {/* Guild Selector */}
         <div className="flex flex-col gap-[4px]">
           <div className="px-3">
-            <p className="font-poppins font-medium text-[10px] text-muted-foreground uppercase tracking-wide">
-              GUILD
-            </p>
+            <Text size="sm" weight="semibold" color="secondary">
+              Guild
+            </Text>
           </div>
 
           <div className="relative" ref={dropdownRef}>
           {loading ? (
             /* Loading skeleton for guild selector */
-            <div className="w-full bg-background-elevated border border-border rounded-[12px] px-[14px] py-2 flex items-center gap-3 animate-pulse">
+            <Card className="w-full px-[14px] py-2 flex items-center gap-3 animate-pulse">
               <div className="w-5 h-5 rounded-[4px] bg-border-strong shrink-0 border border-border" />
               <div className="flex-1 min-w-0 space-y-1.5">
                 <div className="h-3 bg-border-strong rounded w-24" />
                 <div className="h-2 bg-border-strong rounded w-16" />
               </div>
-            </div>
+            </Card>
           ) : !activeGuild ? (
             <Button
               variant="ghost"
@@ -373,10 +375,10 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                 className="icon-adaptive w-5 h-5 shrink-0 brightness-0 invert"
               />
               <div className="flex-1 text-left leading-[normal]">
-                <p className="font-poppins font-medium text-[13px] text-foreground">
+                <p className="font-poppins font-medium text-13 text-foreground">
                   Create a guild
                 </p>
-                <p className="font-poppins font-normal text-[10px] text-foreground/70">
+                <p className="font-poppins font-normal text-11 text-foreground/70">
                   Start your own guild
                 </p>
               </div>
@@ -401,10 +403,10 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                 <div className="w-5 h-5 bg-muted-foreground rounded-[4px] shrink-0 border border-border" />
               )}
               <div className="flex-1 text-left leading-[normal] min-w-0">
-                <p className="font-poppins font-medium text-[13px] text-foreground w-full truncate">
+                <p className="font-poppins font-medium text-13 text-foreground w-full truncate">
                   {activeGuild.name}
                 </p>
-                <p className="font-poppins font-normal text-[10px] text-muted-foreground w-full truncate">
+                <p className="font-poppins font-normal text-11 text-muted-foreground w-full truncate">
                   {activeGuild.realm ? `${activeGuild.realm} • ${activeGuild.faction}` : ''}
                 </p>
               </div>
@@ -435,12 +437,12 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
 
           {/* Guild Dropdown */}
           {guildDropdownOpen && (
-            <div className="absolute top-full mt-2 left-0 w-full bg-background-elevated border border-border rounded-[12px] shadow-lg overflow-hidden overflow-y-auto max-h-[60vh] z-50 py-2">
+            <Card className="absolute top-full mt-2 left-0 w-full shadow-lg overflow-hidden overflow-y-auto max-h-[60vh] z-50 py-2">
               {/* Guilds Section */}
               <div className="px-3 pt-2 pb-1">
-                <p className="font-poppins font-medium text-[10px] text-muted-foreground uppercase tracking-wide">
-                  GUILDS
-                </p>
+                <Text size="sm" weight="semibold" color="secondary">
+                  Guilds
+                </Text>
               </div>
               {userGuilds.map((g) => {
                 const isSelected = g.guild.id === activeGuild?.id
@@ -464,10 +466,10 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                         <div className="w-5 h-5 bg-muted-foreground rounded-[4px] shrink-0 border border-border" />
                       )}
                       <div className="flex-1 leading-[normal] min-w-0">
-                        <p className="font-poppins font-medium text-[13px] text-foreground truncate">
+                        <p className="font-poppins font-medium text-13 text-foreground truncate">
                           {g.guild.name}
                         </p>
-                        <p className="font-poppins font-normal text-[10px] text-muted-foreground truncate">
+                        <p className="font-poppins font-normal text-11 text-muted-foreground truncate">
                           {g.guild.realm ? `${g.guild.realm} • ${g.guild.faction}` : ''}
                         </p>
                       </div>
@@ -525,7 +527,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                   height={20}
                   className="icon-adaptive w-5 h-5 shrink-0"
                 />
-                <p className="font-poppins font-medium text-[13px] text-foreground">
+                <p className="font-poppins font-medium text-13 text-foreground">
                   Join a guild
                 </p>
               </Button>
@@ -546,11 +548,11 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                   height={20}
                   className="icon-adaptive w-5 h-5 shrink-0"
                 />
-                <p className="font-poppins font-medium text-[13px] text-foreground">
+                <p className="font-poppins font-medium text-13 text-foreground">
                   Create a guild
                 </p>
               </Button>
-            </div>
+            </Card>
           )}
           </div>
         </div>
@@ -559,19 +561,19 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
         {(loading || activeGuild) && (
           <div className="flex flex-col gap-[4px]">
             <div className="px-3">
-              <p className="font-poppins font-medium text-[10px] text-muted-foreground uppercase tracking-wide">
-                CHARACTER
-              </p>
+              <Text size="sm" weight="semibold" color="secondary">
+                Character
+              </Text>
             </div>
             {loading ? (
               /* Loading skeleton for character selector */
-              <div className="w-full px-[14px] py-2 bg-background-elevated border border-border rounded-[12px] flex items-center gap-3 animate-pulse">
+              <Card className="w-full px-[14px] py-2 flex items-center gap-3 animate-pulse">
                 <div className="w-5 h-5 rounded-full bg-border-strong flex-shrink-0 border border-border" />
                 <div className="flex-1 min-w-0 space-y-1.5">
                   <div className="h-3 bg-border-strong rounded w-24" />
                   <div className="h-2 bg-border-strong rounded w-16" />
                 </div>
-              </div>
+              </Card>
             ) : (
               <CharacterSelector />
             )}
@@ -586,7 +588,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
               variant="ghost"
               onClick={() => handleNavClick(item.view)}
               disabled={!activeGuild}
-              className={`w-full px-3.5 py-2.5 h-auto flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-[13px] border-[0.5px] justify-start ${
+              className={`w-full px-3.5 py-2.5 h-auto flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-13 border-[0.5px] justify-start ${
                 !activeGuild
                   ? 'opacity-20 cursor-not-allowed text-foreground border-transparent'
                   : isActive(item.view)
@@ -611,7 +613,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
               )}
               <span className="whitespace-nowrap">{item.name}</span>
               {item.view === 'loot-list' && resubmitCount > 0 && (
-                <span className="ml-auto bg-warning text-warning-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                <span className="ml-auto bg-warning text-warning-foreground text-11 font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
                   {resubmitCount > 99 ? '99+' : resubmitCount}
                 </span>
               )}
@@ -623,16 +625,16 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
         {adminItems.length > 0 && (
           <div className="flex flex-col gap-[8px]">
             <div className="px-3">
-              <p className="font-poppins font-medium text-[10px] text-muted-foreground uppercase tracking-wide">
-                ADMIN SETTINGS
-              </p>
+              <Text size="sm" weight="semibold" color="secondary">
+                Admin settings
+              </Text>
             </div>
             {adminItems.map((item) => (
               <Button
                 key={item.view}
                 variant="ghost"
                 onClick={() => handleNavClick(item.view)}
-                className={`w-full px-3.5 py-[10px] h-auto flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-[13px] text-left border-[0.5px] justify-start ${
+                className={`w-full px-3.5 py-[10px] h-auto flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-13 text-left border-[0.5px] justify-start ${
                   isActive(item.view)
                     ? 'bg-accent/20 border-accent/20 text-accent hover:bg-accent/30'
                     : 'text-foreground hover:bg-muted border-transparent'
@@ -655,7 +657,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                 )}
                 <span className="whitespace-nowrap overflow-hidden text-ellipsis">{item.name}</span>
                 {item.view === 'loot-submissions' && pendingSubmissionCount > 0 && (
-                  <span className="ml-auto bg-accent text-accent-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                  <span className="ml-auto bg-accent text-accent-foreground text-11 font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
                     {pendingSubmissionCount > 99 ? '99+' : pendingSubmissionCount}
                   </span>
                 )}
@@ -687,7 +689,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
               router.push('/help')
               onNavigate?.()
             }}
-            className={`w-full px-3.5 py-2 h-auto flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-[13px] border-[0.5px] justify-start ${
+            className={`w-full px-3.5 py-2 h-auto flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-13 border-[0.5px] justify-start ${
               pathname?.startsWith('/help')
                 ? 'bg-accent/20 border-accent/20 text-accent hover:bg-accent/30'
                 : 'text-foreground hover:bg-muted border-transparent'
@@ -717,7 +719,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
               router.push('/updates')
               onNavigate?.()
             }}
-            className={`w-full px-3.5 py-2 h-auto flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-[13px] border-[0.5px] justify-start ${
+            className={`w-full px-3.5 py-2 h-auto flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-13 border-[0.5px] justify-start ${
               pathname?.startsWith('/updates')
                 ? 'bg-accent/20 border-accent/20 text-accent hover:bg-accent/30'
                 : 'text-foreground hover:bg-muted border-transparent'
@@ -732,7 +734,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
           <Button
             variant="ghost"
             onClick={() => setShowFeedbackModal(true)}
-            className="w-full px-3.5 py-2 h-auto flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-[13px] text-foreground hover:bg-muted border-[0.5px] border-transparent justify-start"
+            className="w-full px-3.5 py-2 h-auto flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-13 text-foreground hover:bg-muted border-[0.5px] border-transparent justify-start"
           >
             <span className="w-5 h-5 flex items-center justify-center shrink-0 overflow-visible">
               <HugeiconsIcon icon={BubbleChatEditIcon} size={24} strokeWidth={1.5} />
@@ -744,7 +746,7 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
             href="https://discord.gg/JNJewThYAB"
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-[13px] text-foreground hover:bg-muted"
+            className="w-full px-3.5 py-2 flex items-center gap-3 rounded-[40px] transition-colors font-poppins font-medium text-13 text-foreground hover:bg-muted"
           >
             <Image
               src="/icons/discord-large.svg"
@@ -790,13 +792,13 @@ export default function Sidebar({ currentView = 'overview', onViewChange, isMobi
                   }}
                 />
               ) : (
-                <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shrink-0 border border-border" />
+                <div className="w-5 h-5 rounded-full bg-accent shrink-0 border border-border" />
               )}
               <div className="flex-1 text-left pb-[2px] pt-0 px-0 leading-[normal] min-w-0">
-                <p className="font-poppins font-medium text-[13px] text-foreground w-full truncate">
+                <p className="font-poppins font-medium text-13 text-foreground w-full truncate">
                   {user?.user_metadata?.custom_claims?.global_name || user?.user_metadata?.full_name || activeMember?.character_name || 'User'}
                 </p>
-                <p className="font-poppins font-normal text-[10px] text-muted-foreground w-full truncate">
+                <p className="font-poppins font-normal text-11 text-muted-foreground w-full truncate">
                   {activeMember?.role || 'Member'}
                 </p>
               </div>

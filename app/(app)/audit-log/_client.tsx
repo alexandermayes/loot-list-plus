@@ -28,6 +28,7 @@ import {
 } from '@hugeicons/core-free-icons'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { hasFeature } from '@/domain/guild/feature-flags'
+import { Card } from '@/components/ui/card'
 
 interface AuditData {
   status?: string
@@ -451,7 +452,7 @@ function StatCard({ label, value, icon, color, bgColor }: {
   bgColor: string
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-background-elevated px-4 py-3">
+    <Card className="flex items-center gap-3 px-4 py-3">
       <div className={`flex items-center justify-center w-9 h-9 rounded-lg ${bgColor}`}>
         <HugeiconsIcon icon={icon} size={18} className={color} />
       </div>
@@ -459,14 +460,14 @@ function StatCard({ label, value, icon, color, bgColor }: {
         <p className="text-xl font-semibold text-foreground tabular-nums">{value}</p>
         <p className="text-xs text-muted-foreground">{label}</p>
       </div>
-    </div>
+    </Card>
   )
 }
 
 function CategoryBadge({ category }: { category: AuditCategory }) {
   const config = CATEGORY_CONFIG[category]
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${config.color} ${config.bgColor}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-11 font-medium ${config.color} ${config.bgColor}`}>
       <HugeiconsIcon icon={config.icon} size={12} />
       {config.label}
     </span>
@@ -488,16 +489,16 @@ function AuditEntry({ log }: { log: AuditLog }) {
           <HugeiconsIcon icon={catConfig.icon} size={16} className={catConfig.color} />
         </div>
         {/* Small action badge */}
-        <div className={`absolute -bottom-1.5 -right-1.5 flex items-center justify-center w-5 h-5 rounded-full bg-background-elevated border border-border ${actionColor}`}>
+        <Card className={`absolute -bottom-1.5 -right-1.5 flex items-center justify-center w-5 h-5 ${actionColor}`}>
           <HugeiconsIcon icon={actionIcon} size={12} />
-        </div>
+        </Card>
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-[13px] font-medium text-foreground">{log.user_display_name}</span>
-          <span className="text-[13px] text-foreground-secondary">{summary}</span>
+          <span className="text-13 font-medium text-foreground">{log.user_display_name}</span>
+          <span className="text-13 text-foreground-secondary">{summary}</span>
         </div>
         {detail && (
           <p className="text-xs text-muted-foreground mt-0.5 truncate">{detail}</p>
@@ -521,7 +522,7 @@ function AuditEntry({ log }: { log: AuditLog }) {
 function DateGroupHeader({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-3 px-5 py-2 bg-background-subtle/50">
-      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
+      <span className="text-11 font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
       <div className="flex-1 h-px bg-border" />
     </div>
   )
@@ -529,7 +530,7 @@ function DateGroupHeader({ label }: { label: string }) {
 
 function LoadingSkeleton() {
   return (
-    <div className="rounded-xl border border-border overflow-hidden bg-background-elevated">
+    <Card className="overflow-hidden">
       {/* Skeleton stats */}
       <div className="flex gap-4 p-5 border-b border-border">
         {Array.from({ length: 3 }).map((_, i) => (
@@ -554,7 +555,7 @@ function LoadingSkeleton() {
           <Skeleton className="h-3 w-12" />
         </div>
       ))}
-    </div>
+    </Card>
   )
 }
 
@@ -764,7 +765,7 @@ export default function AuditLogPage() {
           </div>
 
           {/* Activity feed */}
-          <div className="rounded-xl border border-border overflow-hidden bg-background-elevated">
+          <Card className="overflow-hidden">
             {groupedLogs.map((group) => (
               <div key={group.label}>
                 <DateGroupHeader label={group.label} />
@@ -773,7 +774,7 @@ export default function AuditLogPage() {
                 ))}
               </div>
             ))}
-          </div>
+          </Card>
 
           {/* Pagination */}
           {totalPages > 1 && (

@@ -1,0 +1,134 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/(app)/raid-tracking/_client.tsx"
+        ],
+        "createdAt": "2026-09-23T17:05:59.990Z",
+        "reason": "Sanctioned exception per 2026-09-15 UI audit (UI-AUDIT-2026-09-15.md) and 07-05-PLAN.md prohibition: raid-tracking legend rails intentionally mirror the 2px cell-state left border; 07-05 changed only the colour token (orange literal -> --standby), not the rail"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#c79c6e",
+        "files": [
+          "app/reserve/join/[token]/page.tsx"
+        ],
+        "createdAt": "2026-09-23T17:06:00.042Z",
+        "reason": "D-13 audit item, 2026-09-17 audit decision: design-system-color observed firing on the PostToolUse pass for value #C79C6E (WOW_CLASSES Warrior, line 30) in the class-colours and C1 probes (12-HOOK-PROBES-RED.json). Provisional: this value already exists as the class-warrior Tailwind token; route via WINDOWS to migrate WOW_CLASSES onto the existing class-* tokens, then delete this entry."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#f58cba",
+        "files": [
+          "app/reserve/join/[token]/page.tsx"
+        ],
+        "createdAt": "2026-09-23T17:06:00.121Z",
+        "reason": "D-13 audit item, 2026-09-17 audit decision: design-system-color observed firing on the PostToolUse pass for value #F58CBA (WOW_CLASSES Paladin, line 31) in the class-colours and C1 probes (12-HOOK-PROBES-RED.json). Provisional: this value already exists as the class-paladin Tailwind token; route via WINDOWS to migrate WOW_CLASSES onto the existing class-* tokens, then delete this entry."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#abd473",
+        "files": [
+          "app/reserve/join/[token]/page.tsx"
+        ],
+        "createdAt": "2026-09-23T17:06:00.204Z",
+        "reason": "D-13 audit item, 2026-09-17 audit decision: design-system-color observed firing on the PostToolUse pass for value #ABD473 (WOW_CLASSES Hunter, line 32) in the class-colours and C1 probes (12-HOOK-PROBES-RED.json). Provisional: this value already exists as the class-hunter Tailwind token; route via WINDOWS to migrate WOW_CLASSES onto the existing class-* tokens, then delete this entry."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#fff569",
+        "files": [
+          "app/reserve/join/[token]/page.tsx"
+        ],
+        "createdAt": "2026-09-23T17:06:00.307Z",
+        "reason": "D-13 audit item, 2026-09-17 audit decision: design-system-color observed firing on the PostToolUse pass for value #FFF569 (WOW_CLASSES Rogue, line 33) in the class-colours and C1 probes (12-HOOK-PROBES-RED.json). Provisional: this value already exists as the class-rogue Tailwind token; route via WINDOWS to migrate WOW_CLASSES onto the existing class-* tokens, then delete this entry."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#c41e3a",
+        "files": [
+          "app/reserve/join/[token]/page.tsx"
+        ],
+        "createdAt": "2026-09-23T17:06:00.435Z",
+        "reason": "D-13 audit item, 2026-09-17 audit decision: design-system-color observed firing on the PostToolUse pass for value #C41E3A (WOW_CLASSES Death Knight, line 35) in the class-colours and C1 probes (12-HOOK-PROBES-RED.json). Provisional: this value already exists as the class-deathknight Tailwind token; route via WINDOWS to migrate WOW_CLASSES onto the existing class-* tokens, then delete this entry."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#0070de",
+        "files": [
+          "app/reserve/join/[token]/page.tsx"
+        ],
+        "createdAt": "2026-09-23T17:06:00.505Z",
+        "reason": "D-13 audit item, 2026-09-17 audit decision: design-system-color observed firing on the PostToolUse pass for value #0070DE (WOW_CLASSES Shaman, line 36) in the class-colours and C1 probes (12-HOOK-PROBES-RED.json). Provisional: this value already exists as the class-shaman Tailwind token; route via WINDOWS to migrate WOW_CLASSES onto the existing class-* tokens, then delete this entry."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#69ccf0",
+        "files": [
+          "app/reserve/join/[token]/page.tsx"
+        ],
+        "createdAt": "2026-09-23T17:06:00.598Z",
+        "reason": "D-13 audit item, 2026-09-17 audit decision: design-system-color observed firing on the PostToolUse pass for value #69CCF0 (WOW_CLASSES Mage, line 37) in the class-colours and C1 probes (12-HOOK-PROBES-RED.json). Provisional: this value already exists as the class-mage Tailwind token; route via WINDOWS to migrate WOW_CLASSES onto the existing class-* tokens, then delete this entry."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#9482c9",
+        "files": [
+          "app/reserve/join/[token]/page.tsx"
+        ],
+        "createdAt": "2026-09-23T17:06:00.708Z",
+        "reason": "D-13 audit item, 2026-09-17 audit decision: design-system-color observed firing on the PostToolUse pass for value #9482C9 (WOW_CLASSES Warlock, line 38) in the class-colours and C1 probes (12-HOOK-PROBES-RED.json). Provisional: this value already exists as the class-warlock Tailwind token; route via WINDOWS to migrate WOW_CLASSES onto the existing class-* tokens, then delete this entry."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#00ff96",
+        "files": [
+          "app/reserve/join/[token]/page.tsx"
+        ],
+        "createdAt": "2026-09-23T17:06:00.793Z",
+        "reason": "D-13 audit item, 2026-09-17 audit decision: design-system-color observed firing on the PostToolUse pass for value #00FF96 (WOW_CLASSES Monk, line 39) in the class-colours and C1 probes (12-HOOK-PROBES-RED.json). Provisional: this value already exists as the class-monk Tailwind token; route via WINDOWS to migrate WOW_CLASSES onto the existing class-* tokens, then delete this entry."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#ff7d0a",
+        "files": [
+          "app/reserve/join/[token]/page.tsx"
+        ],
+        "createdAt": "2026-09-23T17:06:00.888Z",
+        "reason": "D-13 audit item, 2026-09-17 audit decision: design-system-color observed firing on the PostToolUse pass for value #FF7D0A (WOW_CLASSES Druid, line 40) in the class-colours and C1 probes (12-HOOK-PROBES-RED.json). Provisional: this value already exists as the class-druid Tailwind token; route via WINDOWS to migrate WOW_CLASSES onto the existing class-* tokens, then delete this entry."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "#9940ec",
+        "files": [
+          "app/globals.css"
+        ],
+        "createdAt": "2026-09-23T17:06:01.010Z",
+        "reason": "2026-09-15 UI audit decision (UI-AUDIT-2026-09-15.md): sanctioned marketing purple #9940ec on .text-shimmer-purple (globals.css:52). design-system-color observed firing on the PostToolUse pass for this value in the marketing-purple probe (12-HOOK-PROBES-RED.json). Scoped to app/globals.css only; the co-located #ff8000 literal and the design-system-radius 3px scrollbar-thumb finding in the same file are not sanctioned and route via WINDOWS instead."
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "components/ui/__tests__/skeletons.test.tsx"
+        ],
+        "createdAt": "2026-09-23T17:06:01.131Z",
+        "reason": "Re-labelled per D-07 re-judgement: false positive on a negative assertion, not a usage. Line 25 is expect(container.innerHTML).not.toContain('border-l-4') asserting the anti-pattern's absence after 08-04 removed it from LootListBracketSkeleton. side-tab observed firing on the Stop pass in the existing-skeletons-test probe (12-HOOK-PROBES-RED.json emptyOverride run, 1 raw finding at line 25). Scoped to components/ui/__tests__/skeletons.test.tsx only, where the assertion text itself contains the matched string."
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          "utils/expansionVisuals.ts"
+        ],
+        "createdAt": "2026-09-25T19:37:48.004Z",
+        "reason": "Sanctioned exception, 2026-09-25 user decision: per-expansion brand colours (gradient, bg, accent, text, border) mirror each expansion's official Blizzard art and are game data, not the app UI palette. Kept as data here instead of DESIGN.md tokens so the palette does not grow by roughly 40 single-use values; new expansions (e.g. Forever) follow the same pattern."
+      }
+    ]
+  }
+}

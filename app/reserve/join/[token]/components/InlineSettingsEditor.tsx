@@ -8,7 +8,7 @@ import { Select } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { LabelText, Text } from '@/components/ui/typography'
+import { Text } from '@/components/ui/typography'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import ItemLink from '@/app/components/ItemLink'
@@ -218,10 +218,10 @@ export default function InlineSettingsEditor({
         <div className="pt-3 border-t border-border">
           {editingSettings ? (
             <div className="space-y-4">
-              <LabelText size="xs">Run settings</LabelText>
+              <Text size="sm" weight="semibold" color="secondary" as="span">Run settings</Text>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-[12px] mb-1.5">Reserves per player</Label>
+                  <Label className="text-12 mb-1.5">Reserves per player</Label>
                   <Select
                     variant="rounded"
                     value={String(maxReservesDraft)}
@@ -233,7 +233,7 @@ export default function InlineSettingsEditor({
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-[12px] mb-1.5">Max per item</Label>
+                  <Label className="text-12 mb-1.5">Max per item</Label>
                   <Select
                     variant="rounded"
                     value={String(maxPerItemDraft)}
@@ -247,7 +247,7 @@ export default function InlineSettingsEditor({
                 </div>
               </div>
               <div>
-                <Label className="text-[12px] mb-1.5">Visibility</Label>
+                <Label className="text-12 mb-1.5">Visibility</Label>
                 <Select
                   variant="rounded"
                   value={visibilityDraft}
@@ -259,11 +259,11 @@ export default function InlineSettingsEditor({
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-[12px]">Allow duplicate reserves</Label>
+                  <Label className="text-12">Allow duplicate reserves</Label>
                   <Switch checked={allowDuplicatesDraft} onCheckedChange={setAllowDuplicatesDraft} />
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label className="text-[12px]">Enforce class restrictions</Label>
+                  <Label className="text-12">Enforce class restrictions</Label>
                   <Switch checked={enforceClassDraft} onCheckedChange={setEnforceClassDraft} />
                 </div>
               </div>
@@ -281,7 +281,7 @@ export default function InlineSettingsEditor({
             </div>
           ) : (
             <div className="flex items-start justify-between gap-2">
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-12 text-muted-foreground">
                 <span>{maxReserves} reserve{maxReserves !== 1 ? 's' : ''} / player</span>
                 {maxReservesPerItem && <span>Max {maxReservesPerItem} per item</span>}
                 <span>{visibility === 'hidden_until_lock' ? 'Hidden until locked' : 'Everyone can see reserves'}</span>
@@ -304,7 +304,7 @@ export default function InlineSettingsEditor({
       <div className="pt-3 border-t border-border">
         {editingNote ? (
           <div className="space-y-2">
-            <LabelText size="xs">Rules note</LabelText>
+            <Text size="sm" weight="semibold" color="secondary" as="span">Rules note</Text>
             <Textarea
               value={noteDraft}
               onChange={(e) => setNoteDraft(e.target.value)}
@@ -342,7 +342,7 @@ export default function InlineSettingsEditor({
       <div className="pt-3 border-t border-border">
         {editingDiscord ? (
           <div className="space-y-2">
-            <LabelText size="xs">Discord invite link</LabelText>
+            <Text size="sm" weight="semibold" color="secondary" as="span">Discord invite link</Text>
             <Input
               value={discordDraft}
               onChange={(e) => setDiscordDraft(e.target.value)}
@@ -363,7 +363,7 @@ export default function InlineSettingsEditor({
                 href={discordInviteUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-[13px] text-accent hover:underline"
+                className="inline-flex items-center gap-2 text-13 text-accent hover:underline"
               >
                 <HugeiconsIcon icon={DiscordIcon} size={16} />
                 Join the guild Discord
@@ -388,7 +388,7 @@ export default function InlineSettingsEditor({
       {/* Hard reserves */}
       {hardReserves.length > 0 && (
         <div className="pt-3 border-t border-border">
-          <LabelText size="xs" className="mb-1.5">Hard reserves</LabelText>
+          <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-1.5">Hard reserves</Text>
           <div className="flex flex-wrap gap-1.5">
             {hardReserves.map((hr) => {
               const item = itemMap.get(hr.loot_item_id)
@@ -419,7 +419,7 @@ export default function InlineSettingsEditor({
       <div className="pt-3 border-t border-destructive/20">
         <button
           onClick={handleDeleteRun}
-          className="text-[12px] text-muted-foreground hover:text-destructive transition-colors"
+          className="text-12 text-muted-foreground hover:text-destructive transition-colors"
         >
           Delete this run
         </button>

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
-import { Heading, Text, LabelText } from '@/components/ui/typography'
+import { Heading, Text } from '@/components/ui/typography'
 import { Skeleton } from '@/components/ui/skeletons'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import ReserveItemPicker from '@/app/components/ReserveItemPicker'
@@ -188,7 +188,7 @@ function ColoredPicker({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 h-11 px-4 rounded-xl border border-border-strong bg-background-elevated text-[13px] text-foreground hover:border-border hover:bg-muted focus:outline-none focus:border-accent transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full flex items-center justify-between gap-2 h-11 px-4 rounded-xl border border-border-strong bg-background-elevated text-13 text-foreground hover:border-border hover:bg-muted focus:outline-none focus:border-accent transition-colors disabled:cursor-not-allowed disabled:opacity-50"
       >
         {selected ? (
           <span
@@ -210,7 +210,7 @@ function ColoredPicker({
         </svg>
       </button>
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1 z-30 bg-background-elevated border border-border-strong rounded-xl shadow-lg overflow-hidden max-h-72 overflow-y-auto">
+        <Card className="absolute top-full left-0 right-0 mt-1 z-30 border-border-strong shadow-lg overflow-hidden max-h-72 overflow-y-auto">
           {options.map((opt) => {
             const isSelected = opt.value === value
             return (
@@ -221,7 +221,7 @@ function ColoredPicker({
                   onChange(opt.value)
                   setOpen(false)
                 }}
-                className={`w-full flex items-center gap-2 px-4 py-2.5 text-left text-[13px] hover:bg-muted transition-colors ${isSelected ? 'bg-muted' : ''}`}
+                className={`w-full flex items-center gap-2 px-4 py-2.5 text-left text-13 hover:bg-muted transition-colors ${isSelected ? 'bg-muted' : ''}`}
                 style={opt.color ? { color: opt.color } : undefined}
               >
                 <span className="font-medium flex-1 truncate">{opt.label}</span>
@@ -233,7 +233,7 @@ function ColoredPicker({
               </button>
             )
           })}
-        </div>
+        </Card>
       )}
     </div>
   )
@@ -829,8 +829,8 @@ export default function ReserveJoinPage() {
               className="h-3.5 w-auto"
               priority
             />
-            <span className="text-muted-foreground/60 text-[14px] font-light" aria-hidden="true">|</span>
-            <span className="text-[14px] font-semibold text-muted-foreground">Reserve</span>
+            <span className="text-muted-foreground/60 text-14 font-light" aria-hidden="true">|</span>
+            <span className="text-14 font-semibold text-muted-foreground">Reserve</span>
           </Link>
 
           {authUser ? (
@@ -854,14 +854,14 @@ export default function ReserveJoinPage() {
               ) : (
                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border border-border" />
               )}
-              <span className="text-[13px] font-medium text-foreground group-hover:text-accent transition-colors truncate max-w-[140px]">
+              <span className="text-13 font-medium text-foreground group-hover:text-accent transition-colors truncate max-w-[140px]">
                 {authUser.displayName}
               </span>
             </Link>
           ) : (
             <Link
               href={loginHref}
-              className="inline-flex items-center justify-center h-8 px-4 rounded-full bg-white text-[13px] font-semibold text-black hover:bg-white/90 transition-colors"
+              className="inline-flex items-center justify-center h-8 px-4 rounded-full bg-white text-13 font-semibold text-black hover:bg-white/90 transition-colors"
             >
               Log in
             </Link>
@@ -900,7 +900,7 @@ export default function ReserveJoinPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted-foreground mb-3 mt-3">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-13 text-muted-foreground mb-3 mt-3">
             {run.expansion_name && (
               <span>{EXPANSION_SHORT_NAME[run.expansion_name] || run.expansion_name}</span>
             )}
@@ -915,16 +915,16 @@ export default function ReserveJoinPage() {
             <Badge variant="outline" className={statusInfo.className}>
               {statusInfo.text}
             </Badge>
-            <span className="text-[12px] text-muted-foreground">
+            <span className="text-12 text-muted-foreground">
               <span className="tabular-nums">{run.max_reserves}</span> reserve{run.max_reserves !== 1 ? 's' : ''} / player
             </span>
             {run.max_reserves_per_item && (
-              <span className="text-[12px] text-muted-foreground">
+              <span className="text-12 text-muted-foreground">
                 Max <span className="tabular-nums">{run.max_reserves_per_item}</span> per item
               </span>
             )}
             {run.enforce_class_restrictions && (
-              <span className="text-[12px] text-muted-foreground">
+              <span className="text-12 text-muted-foreground">
                 Class restrictions enforced
               </span>
             )}
@@ -959,7 +959,7 @@ export default function ReserveJoinPage() {
                     href={run.discord_invite_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-[13px] text-accent hover:underline"
+                    className="inline-flex items-center gap-2 text-13 text-accent hover:underline"
                   >
                     <HugeiconsIcon icon={DiscordIcon} size={16} />
                     Join the guild Discord
@@ -975,7 +975,7 @@ export default function ReserveJoinPage() {
                   )}
                   {run.hard_reserves.length > 0 && (
                     <div>
-                      <LabelText size="xs" className="mb-1.5">Hard reserves</LabelText>
+                      <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-1.5">Hard reserves</Text>
                       <div className="flex flex-wrap gap-1.5">
                         {run.hard_reserves.map((hr) => {
                           const item = itemMap.get(hr.loot_item_id)
@@ -1005,15 +1005,15 @@ export default function ReserveJoinPage() {
             <div className="px-5 py-3 border-b border-border flex items-center justify-between gap-4 flex-wrap">
               <div className="flex items-center gap-2">
                 <HugeiconsIcon icon={UserMultiple02Icon} size={16} className="text-muted-foreground" />
-                <LabelText size="sm">
+                <Text size="sm" weight="semibold" color="secondary" as="span">
                   Reserve board (<span className="tabular-nums">{submissions.length}</span> player{submissions.length === 1 ? '' : 's'})
-                </LabelText>
+                </Text>
               </div>
               <div className="flex items-center gap-1 p-0.5 rounded-full border border-border bg-background-subtle">
                 <button
                   type="button"
                   onClick={() => setBoardView('item')}
-                  className={`px-3 py-1 rounded-full text-[12px] font-medium transition-colors ${
+                  className={`px-3 py-1 rounded-full text-12 font-medium transition-colors ${
                     boardView === 'item'
                       ? 'bg-background-elevated text-foreground'
                       : 'text-muted-foreground hover:text-foreground'
@@ -1024,7 +1024,7 @@ export default function ReserveJoinPage() {
                 <button
                   type="button"
                   onClick={() => setBoardView('player')}
-                  className={`px-3 py-1 rounded-full text-[12px] font-medium transition-colors ${
+                  className={`px-3 py-1 rounded-full text-12 font-medium transition-colors ${
                     boardView === 'player'
                       ? 'bg-background-elevated text-foreground'
                       : 'text-muted-foreground hover:text-foreground'
@@ -1040,7 +1040,7 @@ export default function ReserveJoinPage() {
                 {Array.from(boardByBoss.entries()).map(([boss, bossItems]) => (
                   <div key={boss}>
                     <div className="px-5 py-2 bg-background-subtle border-y border-border">
-                      <LabelText size="xs">{boss}</LabelText>
+                      <Text size="sm" weight="semibold" color="secondary" as="span">{boss}</Text>
                     </div>
                     <div className="divide-y divide-border">
                       {bossItems.map((item) => {
@@ -1051,9 +1051,9 @@ export default function ReserveJoinPage() {
                           <div key={item.id} className="px-5 py-3">
                             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                               <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
-                              <span className="text-[11px] text-muted-foreground">{item.item_slot}</span>
+                              <span className="text-11 text-muted-foreground">{item.item_slot}</span>
                               <span
-                                className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${
+                                className={`text-11 px-1.5 py-0.5 rounded-full font-medium ${
                                   contested
                                     ? 'bg-warning/15 text-warning'
                                     : 'bg-background-subtle text-muted-foreground'
@@ -1062,7 +1062,7 @@ export default function ReserveJoinPage() {
                                 <span className="tabular-nums">{reservers.length}</span> reserve{reservers.length === 1 ? '' : 's'}
                               </span>
                               {itemAwards.length > 0 && (
-                                <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-success/15 text-success font-medium inline-flex items-center gap-1">
+                                <span className="text-11 px-1.5 py-0.5 rounded-full bg-success/15 text-success font-medium inline-flex items-center gap-1">
                                   <HugeiconsIcon icon={CheckmarkCircle01Icon} size={11} />
                                   Awarded to {itemAwards.map((a) => a.character_name).join(', ')}
                                 </span>
@@ -1079,7 +1079,7 @@ export default function ReserveJoinPage() {
                                 return (
                                   <span
                                     key={`${sub.id}-${item.id}`}
-                                    className={`text-[12px] inline-flex items-center gap-1 ${
+                                    className={`text-12 inline-flex items-center gap-1 ${
                                       isMine ? 'font-semibold' : ''
                                     }`}
                                   >
@@ -1090,7 +1090,7 @@ export default function ReserveJoinPage() {
                                       <span className="text-muted-foreground">({sub.character_spec})</span>
                                     )}
                                     {isMine && (
-                                      <span className="text-[10px] uppercase tracking-wide text-accent">
+                                      <span className="text-11 uppercase tracking-wide text-accent">
                                         You
                                       </span>
                                     )}
@@ -1122,18 +1122,18 @@ export default function ReserveJoinPage() {
                       <div className="flex items-center justify-between gap-2 mb-1.5">
                         <div className="flex items-center gap-2">
                           <span
-                            className="text-[14px] font-semibold"
+                            className="text-14 font-semibold"
                             style={{ color: classInfo?.color || '#FFFFFF' }}
                           >
                             {sub.character_name}
                           </span>
                           {sub.character_spec && (
-                            <span className="text-[11px] text-muted-foreground">
+                            <span className="text-11 text-muted-foreground">
                               ({sub.character_spec} {sub.character_class})
                             </span>
                           )}
                           {isMine && (
-                            <span className="text-[10px] uppercase tracking-wide text-accent font-semibold">
+                            <span className="text-11 uppercase tracking-wide text-accent font-semibold">
                               You
                             </span>
                           )}
@@ -1160,7 +1160,7 @@ export default function ReserveJoinPage() {
                           return (
                             <span
                               key={itemId}
-                              className="inline-flex items-center gap-1 text-[12px]"
+                              className="inline-flex items-center gap-1 text-12"
                             >
                               <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
                               {wonByThisChar && (
@@ -1205,7 +1205,7 @@ export default function ReserveJoinPage() {
             <div className="rounded-xl border border-border bg-background-subtle px-4 py-3 mb-3">
               <div className="flex items-center gap-2 mb-2">
                 <span
-                  className="text-[14px] font-semibold"
+                  className="text-14 font-semibold"
                   style={{
                     color:
                       WOW_CLASSES.find((c) => c.name === characterClass)?.color ||
@@ -1215,17 +1215,17 @@ export default function ReserveJoinPage() {
                   {characterName}
                 </span>
                 {characterSpec && (
-                  <span className="text-[12px] text-muted-foreground">
+                  <span className="text-12 text-muted-foreground">
                     {characterSpec} {characterClass}
                   </span>
                 )}
               </div>
               <ul className="space-y-1">
                 {reservedItems.map((item) => (
-                  <li key={item.id} className="text-[13px] flex items-center gap-2">
+                  <li key={item.id} className="text-13 flex items-center gap-2">
                     <span className="text-muted-foreground">•</span>
                     <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
-                    <span className="text-[11px] text-muted-foreground">{item.item_slot}</span>
+                    <span className="text-11 text-muted-foreground">{item.item_slot}</span>
                   </li>
                 ))}
               </ul>
@@ -1245,7 +1245,7 @@ export default function ReserveJoinPage() {
                   href={run.discord_invite_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 h-8 px-3 rounded-full border border-border text-[13px] font-medium hover:bg-muted transition-colors"
+                  className="inline-flex items-center gap-2 h-8 px-3 rounded-full border border-border text-13 font-medium hover:bg-muted transition-colors"
                 >
                   <HugeiconsIcon icon={DiscordIcon} size={14} />
                   Open guild Discord
@@ -1304,7 +1304,7 @@ export default function ReserveJoinPage() {
                 <>
                   {authUser && run.guild_name && userCharacters.length === 0 && (
                     <Alert className="border-accent/30 bg-accent/5">
-                      <AlertDescription className="text-[12px]">
+                      <AlertDescription className="text-12">
                         You&apos;re logged in but don&apos;t have a character in{' '}
                         <span className="font-semibold">{run.guild_name}</span>. You can still submit as a guest below.
                       </AlertDescription>
@@ -1327,7 +1327,7 @@ export default function ReserveJoinPage() {
                             setCharacterSpec(main.spec_name || '')
                           }
                         }}
-                        className="text-[12px] text-accent hover:underline"
+                        className="text-12 text-accent hover:underline"
                       >
                         Use my linked character
                       </button>

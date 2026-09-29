@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 import { trackClientEvent } from '@/utils/analytics/client'
+import { Card } from '@/components/ui/card'
 
 interface FeedbackModalProps {
   isOpen: boolean
@@ -157,8 +158,8 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
               <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-4">
                 <HugeiconsIcon icon={SentIcon} size={32} className="text-success" />
               </div>
-              <h4 className="text-[18px] font-semibold text-foreground mb-2">Thanks for your feedback!</h4>
-              <p className="text-[14px] text-muted-foreground">We&apos;ll look into this and get back to you if needed.</p>
+              <h4 className="text-18 font-semibold text-foreground mb-2">Thanks for your feedback!</h4>
+              <p className="text-14 text-muted-foreground">We&apos;ll look into this and get back to you if needed.</p>
             </ModalBody>
           </>
         ) : (
@@ -196,12 +197,12 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                     size="sm"
                     onClick={captureScreenshot}
                     disabled={capturing}
-                    className="text-[12px] h-auto p-0"
+                    className="text-12 h-auto p-0"
                   >
                     {capturing ? 'Capturing...' : 'Retake'}
                   </Button>
                 </div>
-                <div className="relative bg-background-elevated border border-border-strong rounded-xl overflow-hidden aspect-video">
+                <Card className="relative border-border-strong overflow-hidden aspect-video">
                   {capturing ? (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <Spinner size="lg" className="text-muted-foreground" />
@@ -217,8 +218,8 @@ export function FeedbackModal({ isOpen, onClose }: FeedbackModalProps) {
                       No screenshot captured
                     </div>
                   )}
-                </div>
-                <p className="text-[11px] text-foreground-muted mt-1">
+                </Card>
+                <p className="text-11 text-foreground-muted mt-1">
                   This screenshot was taken when you opened the feedback form
                 </p>
               </div>

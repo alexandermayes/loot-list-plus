@@ -20,7 +20,7 @@ const textareaVariants = cva(
     "flex w-full bg-background-elevated border text-foreground transition-colors resize-none",
     "placeholder:text-muted-foreground",
     "hover:border-border-strong",
-    "focus:outline-none focus:border-accent",
+    "focus:outline-none focus:border-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     "disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-background",
   ],
   {
@@ -30,9 +30,9 @@ const textareaVariants = cva(
         rounded: "rounded-xl border-border-strong",
       },
       size: {
-        sm: "min-h-[80px] px-4 py-3 text-[16px] sm:text-[12px]",
-        default: "min-h-[100px] px-5 py-4 text-[16px] sm:text-[13px]",
-        lg: "min-h-[120px] px-6 py-5 text-[16px] sm:text-[14px]",
+        sm: "min-h-[80px] px-4 py-3 text-16 sm:text-12",
+        default: "min-h-[100px] px-5 py-4 text-16 sm:text-13",
+        lg: "min-h-[120px] px-6 py-5 text-16 sm:text-14",
       },
     },
     defaultVariants: {

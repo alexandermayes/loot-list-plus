@@ -137,7 +137,7 @@ export default function ReserveItemPicker({
           {selectedItems.map(({ item, count }) => (
             <span
               key={item.id}
-              className="inline-flex items-center gap-1.5 text-[12px]"
+              className="inline-flex items-center gap-1.5 text-12"
             >
               <ItemLink
                 name={item.name}
@@ -185,21 +185,21 @@ export default function ReserveItemPicker({
             size="sm"
           />
         </div>
-        <span className="text-[12px] text-muted-foreground whitespace-nowrap">
+        <span className="text-12 text-muted-foreground whitespace-nowrap">
           {selectedIds.length}/{maxSelections} reserves selected
         </span>
       </div>
 
       <div className="max-h-80 overflow-y-auto border-t border-border">
         {filteredItems.length === 0 ? (
-          <div className="px-3 py-4 text-center text-muted-foreground text-[13px]">
+          <div className="px-3 py-4 text-center text-muted-foreground text-13">
             No items found
           </div>
         ) : (
           bossNames.map((boss) => (
             <div key={boss}>
               <div className="px-3 py-1.5 bg-background-subtle border-y border-border sticky top-0 z-10">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <p className="text-11 font-semibold uppercase tracking-wide text-muted-foreground">
                   {boss}
                 </p>
               </div>
@@ -235,24 +235,24 @@ export default function ReserveItemPicker({
                     }`}
                   >
                     <span className="flex-1 min-w-0 flex items-center gap-2">
-                      <span className="truncate text-[12px]">
+                      <span className="truncate text-12">
                         <ItemLink
                           name={item.name}
                           wowheadId={item.wowhead_id}
                           clickable={false}
                         />
                       </span>
-                      <span className="text-[11px] text-muted-foreground flex-shrink-0">
+                      <span className="text-11 text-muted-foreground flex-shrink-0">
                         {item.item_slot}
                       </span>
                       {item.classification &&
                         item.classification !== 'Unlimited' && (
-                          <span className="text-[11px] text-muted-foreground flex-shrink-0">
+                          <span className="text-11 text-muted-foreground flex-shrink-0">
                             [{item.classification}]
                           </span>
                         )}
                       {isHardReserved && (
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-destructive/20 text-destructive flex-shrink-0">
+                        <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-destructive/20 text-destructive flex-shrink-0">
                           Hard reserved
                         </span>
                       )}
@@ -260,7 +260,7 @@ export default function ReserveItemPicker({
                     {isSelected && (
                       <span className="flex items-center gap-1 shrink-0">
                         {allowDuplicates && count > 1 && (
-                          <span className="text-[11px] text-muted-foreground tabular-nums">
+                          <span className="text-11 text-muted-foreground tabular-nums">
                             ×{count}
                           </span>
                         )}

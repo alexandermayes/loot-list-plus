@@ -18,7 +18,7 @@ Closes the plan → execute → verify → ship loop.
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/ship.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/ship.md
 </execution_context>
 
-Execute the ship workflow from @/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/ship.md end-to-end.
+Execute the ship workflow from @/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/ship.md end-to-end.

@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
+import { Card } from '@/components/ui/card'
 
 interface LootItem {
   id: string
@@ -255,7 +256,7 @@ export function PrioListItemModal({
         <ModalTitle>Set item priority</ModalTitle>
         <div className="flex items-center gap-2 mt-2">
           <ItemLink name={item.name} wowheadId={item.wowhead_id} />
-          <span className="text-muted-foreground text-[13px]">({item.item_slot})</span>
+          <span className="text-muted-foreground text-13">({item.item_slot})</span>
         </div>
         <ModalDescription>{item.boss_name}</ModalDescription>
       </ModalHeader>
@@ -265,7 +266,7 @@ export function PrioListItemModal({
         <div className="space-y-3">
           <div>
             <Label className="mb-1">Role priority</Label>
-            <p className="text-foreground-muted text-[12px]">
+            <p className="text-foreground-muted text-12">
               Select roles and set point values for this item
             </p>
           </div>
@@ -282,11 +283,11 @@ export function PrioListItemModal({
           {sortedRoles.length > 0 && (
             <div className="space-y-2 mt-3">
               {sortedRoles.map(([role, points]) => (
-                <div
+                <Card
                   key={role}
-                  className="flex items-center gap-3 p-3 bg-background-elevated border border-border-strong rounded-xl"
+                  className="flex items-center gap-3 p-3 border-border-strong"
                 >
-                  <span className="flex-1 text-foreground font-medium text-[13px]">
+                  <span className="flex-1 text-foreground font-medium text-13">
                     {getRoleDisplayName(role as Role)}
                   </span>
                   <Input
@@ -299,8 +300,8 @@ export function PrioListItemModal({
                     size="sm"
                     className="w-20 text-center"
                   />
-                  <span className="text-foreground-muted text-[12px]">pts</span>
-                </div>
+                  <span className="text-foreground-muted text-12">pts</span>
+                </Card>
               ))}
             </div>
           )}
@@ -310,7 +311,7 @@ export function PrioListItemModal({
         <div className="space-y-3">
           <div>
             <Label className="mb-1">Class/spec priority</Label>
-            <p className="text-foreground-muted text-[12px]">
+            <p className="text-foreground-muted text-12">
               Select specs and set point values for this item
             </p>
           </div>
@@ -329,15 +330,15 @@ export function PrioListItemModal({
           {sortedSpecs.length > 0 && (
             <div className="space-y-2 mt-3">
               {sortedSpecs.map(([specId, points]) => (
-                <div
+                <Card
                   key={specId}
-                  className="flex items-center gap-3 p-3 bg-background-elevated border border-border-strong rounded-xl"
+                  className="flex items-center gap-3 p-3 border-border-strong"
                 >
                   <div
                     className="w-2 h-2 rounded-full flex-shrink-0"
                     style={{ backgroundColor: getSpecColor(specId) }}
                   />
-                  <span className="flex-1 text-foreground font-medium text-[13px]">
+                  <span className="flex-1 text-foreground font-medium text-13">
                     {getSpecName(specId)}
                   </span>
                   <Input
@@ -350,8 +351,8 @@ export function PrioListItemModal({
                     size="sm"
                     className="w-20 text-center"
                   />
-                  <span className="text-foreground-muted text-[12px]">pts</span>
-                </div>
+                  <span className="text-foreground-muted text-12">pts</span>
+                </Card>
               ))}
             </div>
           )}
@@ -361,7 +362,7 @@ export function PrioListItemModal({
         <div className="space-y-3">
           <div>
             <Label className="mb-1">Individual raiders</Label>
-            <p className="text-foreground-muted text-[12px]">
+            <p className="text-foreground-muted text-12">
               Select specific raiders and set point values for this item
             </p>
           </div>
@@ -381,15 +382,15 @@ export function PrioListItemModal({
               {sortedCharacters.map(([charId, points]) => {
                 const char = characters.find(c => c.id === charId)
                 return (
-                  <div
+                  <Card
                     key={charId}
-                    className="flex items-center gap-3 p-3 bg-background-elevated border border-border-strong rounded-xl"
+                    className="flex items-center gap-3 p-3 border-border-strong"
                   >
                     <div
                       className="w-2 h-2 rounded-full flex-shrink-0"
                       style={{ backgroundColor: getCharacterColor(charId) }}
                     />
-                    <span className="flex-1 text-foreground font-medium text-[13px]">
+                    <span className="flex-1 text-foreground font-medium text-13">
                       {char?.name || charId}
                       <span className="text-foreground-muted ml-2">
                         ({char?.class?.name || 'Unknown'})
@@ -405,8 +406,8 @@ export function PrioListItemModal({
                       size="sm"
                       className="w-20 text-center"
                     />
-                    <span className="text-foreground-muted text-[12px]">pts</span>
-                  </div>
+                    <span className="text-foreground-muted text-12">pts</span>
+                  </Card>
                 )
               })}
             </div>

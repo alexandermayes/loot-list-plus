@@ -18,6 +18,7 @@ import { SegmentedControl } from '@/components/ui/segmented-control'
 import { BattlenetCharacterPickerModal } from '@/app/components/BattlenetCharacterPickerModal'
 import { Modal, ModalHeader, ModalTitle, ModalBody, ModalFooter } from '@/components/ui/modal'
 import Image from 'next/image'
+import { Card } from '@/components/ui/card'
 
 interface WowClass {
   id: string
@@ -339,7 +340,7 @@ export default function EditCharacterPage() {
     return (
       <div className="min-h-screen bg-background-subtle p-4 sm:p-6 lg:p-8">
         <div className="max-w-2xl mx-auto">
-          <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
+          <Card className="p-12 text-center">
             <Heading level={2} className="mb-4">Character not found</Heading>
             <Button
               variant="primary"
@@ -348,7 +349,7 @@ export default function EditCharacterPage() {
             >
               Back to characters
             </Button>
-          </div>
+          </Card>
         </div>
       </div>
     )
@@ -365,7 +366,7 @@ export default function EditCharacterPage() {
             className="mb-4 px-0"
           >
             <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
-            <span className="text-[14px]">Back to characters</span>
+            <span className="text-14">Back to characters</span>
           </Button>
 
           <Heading level={1}>Edit character</Heading>
@@ -452,7 +453,7 @@ export default function EditCharacterPage() {
                   onChange={(value) => setIsMain(value === 'main')}
                 />
               </div>
-              <p className="text-[12px] text-muted-foreground">
+              <p className="text-12 text-muted-foreground">
                 You can only have one main character. Setting this as main will change your current main to an alt.
               </p>
             </div>
@@ -460,8 +461,8 @@ export default function EditCharacterPage() {
             {/* Guild memberships */}
             {characterGuildMemberships.length > 0 && (
               <div className="bg-background-subtle border border-border rounded-lg p-4">
-                <p className="font-medium text-foreground mb-1 text-[14px]">Guild memberships</p>
-                <p className="text-[13px] text-muted-foreground mb-3">
+                <p className="font-medium text-foreground mb-1 text-14">Guild memberships</p>
+                <p className="text-13 text-muted-foreground mb-3">
                   This character is a member of {characterGuildMemberships.length} guild{characterGuildMemberships.length !== 1 ? 's' : ''}
                 </p>
                 <div className="space-y-2">
@@ -470,9 +471,9 @@ export default function EditCharacterPage() {
                     const isCreator = !!user && guild.created_by === user.id
                     const blockRemove = isCreator && isLastOwnCharacterInGuild(guild.id)
                     return (
-                      <div
+                      <Card
                         key={membership.id}
-                        className="flex items-center justify-between gap-3 p-3 bg-background-elevated border border-border rounded-lg"
+                        className="flex items-center justify-between gap-3 p-3"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           {guild.icon_url ? (
@@ -485,19 +486,19 @@ export default function EditCharacterPage() {
                             />
                           ) : (
                             <div className="w-8 h-8 rounded bg-accent/20 border border-accent/30 flex items-center justify-center shrink-0">
-                              <span className="text-accent text-[12px] font-bold">{guild.name.charAt(0)}</span>
+                              <span className="text-accent text-12 font-bold">{guild.name.charAt(0)}</span>
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="text-[13px] font-medium text-foreground truncate">{guild.name}</p>
-                            <p className="text-[11px] text-muted-foreground truncate">
+                            <p className="text-13 font-medium text-foreground truncate">{guild.name}</p>
+                            <p className="text-11 text-muted-foreground truncate">
                               {membership.role}
                             </p>
                           </div>
                         </div>
                         {blockRemove ? (
                           <span
-                            className="text-[12px] text-muted-foreground text-right shrink-0"
+                            className="text-12 text-muted-foreground text-right shrink-0"
                             title="You created this guild and this is your last character in it. Add another character first or delete the guild."
                           >
                             Last creator character
@@ -515,7 +516,7 @@ export default function EditCharacterPage() {
                             Remove
                           </Button>
                         )}
-                      </div>
+                      </Card>
                     )
                   })}
                 </div>
@@ -549,11 +550,11 @@ export default function EditCharacterPage() {
 
         {/* Gear Sync / Link Section */}
         {character.battle_net_id ? (
-          <div className="bg-background-elevated border border-border rounded-xl p-6 mb-6">
+          <Card className="p-6 mb-6">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <Heading level={5}>Battle.net gear sync</Heading>
-                <p className="text-[13px] text-muted-foreground mt-1">
+                <p className="text-13 text-muted-foreground mt-1">
                   Replace equipped gear with the latest data from Battle.net
                 </p>
               </div>
@@ -567,17 +568,17 @@ export default function EditCharacterPage() {
                 Sync gear
               </Button>
             </div>
-          </div>
+          </Card>
         ) : hasBattlenet ? (
-          <div className="bg-background-elevated border border-border rounded-xl p-6 mb-6">
+          <Card className="p-6 mb-6">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#0074E0]/10 border border-[#0074E0]/30 rounded-lg flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 bg-brand-battlenet/10 border border-brand-battlenet/30 rounded-lg flex items-center justify-center shrink-0">
                   <Image src="/icons/battlenet.svg" alt="Battle.net" width={20} height={20} className="w-5 h-5" style={{ filter: 'brightness(0) saturate(100%) invert(30%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(97%) contrast(101%)' }} />
                 </div>
                 <div>
                   <Heading level={5}>Link to Battle.net</Heading>
-                  <p className="text-[13px] text-muted-foreground mt-1">
+                  <p className="text-13 text-muted-foreground mt-1">
                     Connect this character to your Battle.net account to enable gear sync
                   </p>
                 </div>
@@ -591,13 +592,13 @@ export default function EditCharacterPage() {
                 Link character
               </Button>
             </div>
-          </div>
+          </Card>
         ) : null}
 
         {/* Delete Character Section */}
         <div className="bg-background-elevated border border-destructive/30 rounded-xl p-6">
           <Heading level={4} className="text-destructive mb-2">Danger zone</Heading>
-          <p className="text-[14px] text-muted-foreground mb-4">
+          <p className="text-14 text-muted-foreground mb-4">
             Deleting a character is permanent and cannot be undone. This will delete all loot submissions and remove the character from all guilds.
           </p>
 
@@ -612,7 +613,7 @@ export default function EditCharacterPage() {
           ) : (
             <div className="space-y-4">
               <div className="p-4 bg-destructive/10 border border-destructive/50 rounded-xl">
-                <p className="text-destructive text-[14px] mb-3">
+                <p className="text-destructive text-14 mb-3">
                   To confirm deletion, type <span className="font-bold text-foreground">{character?.name}</span> below:
                 </p>
                 <Input
@@ -672,7 +673,7 @@ export default function EditCharacterPage() {
           <ModalTitle>Remove from guild?</ModalTitle>
         </ModalHeader>
         <ModalBody>
-          <p className="text-muted-foreground text-[14px]">
+          <p className="text-muted-foreground text-14">
             {character?.name} will be removed from {pendingRemovalMembership?.guild.name ?? 'this guild'}. Their loot list and submissions in this guild will no longer be visible until you add them back.
           </p>
         </ModalBody>

@@ -32,6 +32,7 @@ import { ScrollIcon, ArrowUpRight01Icon, InformationCircleIcon } from '@hugeicon
 import { HorizontalScroll } from '@/components/ui/horizontal-scroll'
 import { Heading } from '@/components/ui/typography'
 import type { LootListAggregateItem } from '@/app/components/LootListSummaryView'
+import { Card } from '@/components/ui/card'
 
 const ScoreBreakdownModal = dynamic(() => import('@/app/components/ScoreBreakdownModal'), { loading: () => null })
 const ScoreComparisonModal = dynamic(() => import('@/app/components/ScoreComparisonModal'), { loading: () => null })
@@ -1750,7 +1751,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
                   disabled={contentLoading || raidTiers.length === 0 || isExporting}
                   loading={isExporting}
                   loadingText="Exporting..."
-                  className="bg-violet-600 hover:bg-violet-500 text-white border-0 shadow-lg"
+                  className="bg-accent hover:bg-accent/90 text-accent-foreground border-0 shadow-lg"
                 >
                   <Image src="/icons/gargul.png" alt="Gargul" width={20} height={20} priority />
                   <span className="hidden sm:inline">Export to Gargul</span>
@@ -1810,7 +1811,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
                         key={group.canonicalPhase}
                         variant="ghost"
                         onClick={() => setSelectedPhase(group.canonicalPhase)}
-                        className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium transition-all border ${
+                        className={`px-5 py-2.5 rounded-[40px] whitespace-nowrap text-13 font-medium transition-all border ${
                           isSelected
                             ? allDisabled
                               ? 'bg-muted/50 border-border text-muted-foreground'
@@ -1821,7 +1822,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
                         }`}
                       >
                         <span className="flex items-center gap-2">
-                          <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${
+                          <span className={`px-1.5 py-0.5 rounded text-11 font-bold ${
                             isSelected
                               ? allDisabled
                                 ? 'bg-muted text-muted-foreground'
@@ -1840,7 +1841,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
                             />
                           )}
                           <span>{raidNames}</span>
-                          {allDisabled && <span className="text-[10px] uppercase tracking-wide">Off</span>}
+                          {allDisabled && <span className="text-11 uppercase tracking-wide">Off</span>}
                         </span>
                       </Button>
                     )
@@ -1988,7 +1989,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
         <div className="animate-fade-in">
         {/* Master Sheet Access Gates */}
         {!canManageLoot && !canViewMasterSheet && !hasApprovedSubmission ? (
-          <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
+          <Card className="p-12 text-center">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-3xl">🔒</span>
@@ -1998,9 +1999,9 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
                 You need an approved loot list before you can view the master sheet. Submit your list and wait for officer approval.
               </p>
             </div>
-          </div>
+          </Card>
         ) : !masterSheetVisible && !canManageLoot && !canViewMasterSheet ? (
-          <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
+          <Card className="p-12 text-center">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-3xl">🔒</span>
@@ -2010,7 +2011,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
                 The loot rankings for this raid tier are currently hidden. Officers will make them visible once the submission deadline has passed.
               </p>
             </div>
-          </div>
+          </Card>
         ) : (
           <>
             {/* Hidden-sheet preview banner — shown to anyone bypassing the
@@ -2102,18 +2103,18 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
 
         {/* Legend (rankings view only, hidden during loading to prevent CLS) */}
         {viewMode === 'rankings' && contentReady && !initialLoading && !contentLoading && (
-        <div className="bg-background-elevated border border-border rounded-xl p-4">
+        <Card className="p-4">
           <div className="flex items-center justify-between">
-            <p className="text-foreground-muted text-[12px]">
+            <p className="text-foreground-muted text-12">
               Scores = item rank + attendance + role modifiers + priority bonuses + trial penalty. Ties go to roll. <span className="inline-flex items-center gap-1"><span className="text-yellow-400">(T)</span> = Trial member <InfoTooltip content="Trial members receive a score penalty configured by officers. The penalty is removed when promoted to full member." iconSize={12} /></span>{guildSettings?.new_member_mode === 'minimum_gate' && <> <span className="inline-flex items-center gap-1"><span className="text-red-400">⊘</span> = Ineligible <InfoTooltip content={`Must attend ${guildSettings?.minimum_raid_days || 2}+ raids before becoming eligible for loot. Score still tracks in the background.`} iconSize={12} /></span></>}
             </p>
             {Object.keys(itemPriorities).length > 0 && (
-              <p className="text-foreground-muted text-[12px]">
+              <p className="text-foreground-muted text-12">
                 {Object.keys(itemPriorities).length} items with priority
               </p>
             )}
           </div>
-        </div>
+        </Card>
         )}
 
         {/* Score Breakdown Modal */}

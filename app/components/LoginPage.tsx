@@ -141,7 +141,7 @@ export default function LoginPage({ nextParam = null, isAuthenticated = false, a
           <div className="w-full max-w-[373px] flex flex-col items-center gap-[60px]">
             <div className="flex flex-col items-center gap-5 w-full">
               <Image src="/lootlist-icon.svg" alt="" width={33} height={44} className="w-8 h-11" />
-              <h1 className="text-[32px] lg:text-[42px] font-bold text-foreground text-center leading-[1.02]">
+              <h1 className="text-32 lg:text-42 font-bold text-foreground text-center leading-[1.02]">
                 Fair loot decisions, out of the spreadsheet.
               </h1>
               <p className="text-muted-foreground text-base text-center">

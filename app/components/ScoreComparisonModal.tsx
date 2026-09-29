@@ -70,7 +70,7 @@ function rankingToScoreResult(r: PlayerRanking): ScoreResult {
 const COMPONENT_STYLES: Record<string, { icon: IconSvgElement; iconColor: string }> = {
   itemRank: { icon: Target01Icon, iconColor: 'bg-yellow-500/20 text-yellow-500' },
   attendance: { icon: Calendar03Icon, iconColor: 'bg-blue-500/20 text-blue-500' },
-  rankModifier: { icon: UserIcon, iconColor: 'bg-purple-500/20 text-purple-500' },
+  rankModifier: { icon: UserIcon, iconColor: 'bg-accent/20 text-accent' },
   roleBonus: { icon: Shield01Icon, iconColor: 'bg-cyan-500/20 text-cyan-500' },
   badLuckBonus: { icon: SparklesIcon, iconColor: 'bg-red-500/20 text-red-500' },
   priorityBonus: { icon: Award01Icon, iconColor: 'bg-green-500/20 text-green-500' },
@@ -99,10 +99,10 @@ function ScoreRow({
       <div className={`w-6 h-6 rounded-full ${iconColor} flex items-center justify-center flex-shrink-0`}>
         <HugeiconsIcon icon={icon} size={14} className="text-current opacity-80" />
       </div>
-      <span className="text-foreground-secondary text-[13px] flex-1">{label}</span>
-      <span className="text-foreground font-medium text-[13px] w-16 text-right tabular-nums">{userValue.toFixed(1)}</span>
-      <span className="text-foreground font-medium text-[13px] w-16 text-right tabular-nums">{winnerValue.toFixed(1)}</span>
-      <span className={`${diffColor} font-medium text-[12px] w-12 text-right tabular-nums`}>
+      <span className="text-foreground-secondary text-13 flex-1">{label}</span>
+      <span className="text-foreground font-medium text-13 w-16 text-right tabular-nums">{userValue.toFixed(1)}</span>
+      <span className="text-foreground font-medium text-13 w-16 text-right tabular-nums">{winnerValue.toFixed(1)}</span>
+      <span className={`${diffColor} font-medium text-12 w-12 text-right tabular-nums`}>
         {diff !== 0 ? diffFormatted : '0'}
       </span>
     </div>
@@ -193,17 +193,17 @@ export default function ScoreComparisonModal({
         {/* Score Summary */}
         <div className="flex gap-4">
           <div className="flex-1 bg-background-subtle border border-border rounded-lg p-4 text-center">
-            <p className="text-muted-foreground text-[12px] uppercase tracking-wide mb-1">Your score</p>
+            <p className="text-muted-foreground text-12 uppercase tracking-wide mb-1">Your score</p>
             <p className="text-foreground text-2xl font-semibold tabular-nums">{userRanking.loot_score.toFixed(1)}</p>
-            <p className="text-foreground-secondary text-[13px]" style={{ color: userRanking.class_color }}>
+            <p className="text-foreground-secondary text-13" style={{ color: userRanking.class_color }}>
               {userRanking.player_name}
             </p>
           </div>
 
           <div className="flex-1 bg-accent/10 border border-accent/30 rounded-lg p-4 text-center">
-            <p className="text-muted-foreground text-[12px] uppercase tracking-wide mb-1">Winner&apos;s score</p>
+            <p className="text-muted-foreground text-12 uppercase tracking-wide mb-1">Winner&apos;s score</p>
             <p className="text-accent text-2xl font-semibold tabular-nums">{winnerRanking.loot_score.toFixed(1)}</p>
-            <p className="text-foreground-secondary text-[13px]" style={{ color: winnerRanking.class_color }}>
+            <p className="text-foreground-secondary text-13" style={{ color: winnerRanking.class_color }}>
               {winnerRanking.player_name}
             </p>
           </div>
@@ -211,7 +211,7 @@ export default function ScoreComparisonModal({
 
         {/* Difference Badge */}
         <div className="text-center">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-destructive/10 border border-destructive/20 rounded-full text-destructive text-[12px] font-medium tabular-nums">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-destructive/10 border border-destructive/20 rounded-full text-destructive text-12 font-medium tabular-nums">
             -{scoreDiff.toFixed(1)} points behind
           </span>
         </div>
@@ -219,10 +219,10 @@ export default function ScoreComparisonModal({
         {/* Detailed Breakdown — driven by explainScore() */}
         <div className="bg-background-subtle border border-border rounded-lg p-4">
           <div className="flex items-center gap-3 mb-3 pb-2 border-b border-border">
-            <span className="text-muted-foreground text-[12px] uppercase tracking-wide flex-1">Component</span>
-            <span className="text-muted-foreground text-[12px] uppercase tracking-wide w-16 text-right">You</span>
-            <span className="text-muted-foreground text-[12px] uppercase tracking-wide w-16 text-right">Winner</span>
-            <span className="text-muted-foreground text-[12px] uppercase tracking-wide w-12 text-right">Diff</span>
+            <span className="text-muted-foreground text-12 uppercase tracking-wide flex-1">Component</span>
+            <span className="text-muted-foreground text-12 uppercase tracking-wide w-16 text-right">You</span>
+            <span className="text-muted-foreground text-12 uppercase tracking-wide w-16 text-right">Winner</span>
+            <span className="text-muted-foreground text-12 uppercase tracking-wide w-12 text-right">Diff</span>
           </div>
 
           <div className="divide-y divide-border/50">
@@ -248,8 +248,8 @@ export default function ScoreComparisonModal({
             <HugeiconsIcon icon={InformationCircleIcon} size={18} className="text-accent" />
           </div>
           <div>
-            <p className="text-foreground font-medium text-[13px] mb-0.5">Tip</p>
-            <p className="text-foreground-secondary text-[13px]">{tip}</p>
+            <p className="text-foreground font-medium text-13 mb-0.5">Tip</p>
+            <p className="text-foreground-secondary text-13">{tip}</p>
           </div>
         </div>
       </ModalBody>

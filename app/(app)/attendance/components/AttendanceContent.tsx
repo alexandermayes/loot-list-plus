@@ -21,6 +21,7 @@ import { useRaidTeam } from '@/app/hooks/useRaidTeam'
 import { TeamSelector } from '@/app/components/TeamSelector'
 import { paginatedSelect } from '@/utils/supabase/paginate'
 import { useRouter } from 'next/navigation'
+import { Card } from '@/components/ui/card'
 
 // Guild settings row shape used by the attendance views. Mirrors the guild
 // settings shape used elsewhere (e.g. MasterSheetContent): the explicit fields
@@ -1098,62 +1099,62 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
           {activeCharacter && (
         <>
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[14px] font-medium" style={{ color: (activeCharacter.class as { color_hex?: string } | null)?.color_hex || '#fff' }}>
+            <span className="text-14 font-medium" style={{ color: (activeCharacter.class as { color_hex?: string } | null)?.color_hex || '#fff' }}>
               {activeCharacter.name}
             </span>
-            <span className="text-foreground-muted text-[13px]">• Your attendance</span>
+            <span className="text-foreground-muted text-13">• Your attendance</span>
           </div>
           <div className="grid grid-cols-3 gap-3 sm:gap-6">
-            <div className="bg-background-elevated border border-border rounded-xl p-3 sm:p-6">
+            <Card className="p-3 sm:p-6">
               <p className="text-muted-foreground text-xs sm:text-sm mb-1 inline-flex items-center gap-1">
                 <span className="hidden sm:inline">Attendance credit (previous {guildSettings?.rolling_attendance_weeks || 4} weeks)</span>
                 <span className="sm:hidden">Credit</span>
                 <InfoTooltip content="Points earned from attending raids within the rolling window. Contributes directly to your Loot Score." iconSize={12} />
               </p>
-              <p className={`text-[28px] sm:text-[42px] font-bold leading-none tabular-nums ${
+              <p className={`text-28 sm:text-42 font-bold leading-none tabular-nums ${
                 attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.75 ? 'text-success' :
                 attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.5 ? 'text-warning' :
                 'text-destructive'
               }`}>
-                {attendanceScore.toFixed(guildSettings?.decimal_places || 2)} <span className="text-[14px] sm:text-[18px] text-muted-foreground">/ {(guildSettings?.max_attendance_bonus || 8).toFixed(guildSettings?.decimal_places || 2)}</span>
+                {attendanceScore.toFixed(guildSettings?.decimal_places || 2)} <span className="text-14 sm:text-18 text-muted-foreground">/ {(guildSettings?.max_attendance_bonus || 8).toFixed(guildSettings?.decimal_places || 2)}</span>
               </p>
-            </div>
+            </Card>
 
-            <div className="bg-background-elevated border border-border rounded-xl p-3 sm:p-6">
+            <Card className="p-3 sm:p-6">
               <p className="text-muted-foreground text-xs sm:text-sm mb-1 inline-flex items-center gap-1">Role modifier <InfoTooltip content="Guild-configured modifier based on your role. Most members have 0." iconSize={12} /></p>
-              <p className={`text-[28px] sm:text-[42px] font-bold leading-none ${roleModifier < 0 ? 'text-destructive' : roleModifier > 0 ? 'text-success' : 'text-foreground'}`}>
+              <p className={`text-28 sm:text-42 font-bold leading-none ${roleModifier < 0 ? 'text-destructive' : roleModifier > 0 ? 'text-success' : 'text-foreground'}`}>
                 {roleModifier >= 0 ? '+' : ''}{roleModifier}
               </p>
               <p className="text-muted-foreground text-xs sm:text-sm mt-2">{memberRole}</p>
-            </div>
+            </Card>
 
-            <div className="bg-background-elevated border border-border rounded-xl p-3 sm:p-6">
+            <Card className="p-3 sm:p-6">
               <p className="text-muted-foreground text-xs sm:text-sm mb-1 inline-flex items-center gap-1">Tracked raids <InfoTooltip content="Total raids logged within the rolling attendance window. Your attendance rate is based on how many of these you attended." iconSize={12} /></p>
-              <p className="text-[28px] sm:text-[42px] font-bold text-foreground leading-none">
+              <p className="text-28 sm:text-42 font-bold text-foreground leading-none">
                 {trackedRaidCount ?? guildRaidEvents.length}
               </p>
               <p className="text-muted-foreground text-xs sm:text-sm mt-2"><span className="hidden sm:inline">Last {guildSettings?.rolling_attendance_weeks || 4} reset weeks</span><span className="sm:hidden">{guildSettings?.rolling_attendance_weeks || 4}wk window</span></p>
-            </div>
+            </Card>
           </div>
         </>
       )}
 
       {/* Guild attendance Table */}
-      <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+      <Card className="overflow-hidden">
         <div className="p-4 border-b border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-foreground font-semibold">Guild attendance</h2>
-            <p className="text-foreground-muted text-[12px] mt-0.5">
+            <p className="text-foreground-muted text-12 mt-0.5">
               Last {guildSettings?.rolling_attendance_weeks || 4} reset weeks
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[12px] text-foreground-muted">Sort:</span>
+            <span className="text-12 text-foreground-muted">Sort:</span>
             <Button
               variant={sortBy === 'score' ? 'accent-subtle' : 'ghost'}
               size="sm"
               onClick={() => toggleSort('score')}
-              className="text-[12px]"
+              className="text-12"
             >
               Credit
               {sortBy === 'score' && (sortDirection === 'desc' ? <HugeiconsIcon icon={ArrowDown01Icon} size={12} /> : <HugeiconsIcon icon={ArrowUp01Icon} size={12} />)}
@@ -1162,7 +1163,7 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
               variant={sortBy === 'name' ? 'accent-subtle' : 'ghost'}
               size="sm"
               onClick={() => toggleSort('name')}
-              className="text-[12px]"
+              className="text-12"
             >
               Name
               {sortBy === 'name' && (sortDirection === 'desc' ? <HugeiconsIcon icon={ArrowDown01Icon} size={12} /> : <HugeiconsIcon icon={ArrowUp01Icon} size={12} />)}
@@ -1187,13 +1188,13 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
               {/* Header row with week groupings */}
               <thead className="sticky top-14 sm:top-0 z-20">
                 <tr className="bg-background-subtle">
-                  <th className="sticky left-0 z-20 bg-background-subtle px-2 sm:px-3 py-2 text-left text-[11px] font-medium text-foreground-muted min-w-[80px] sm:min-w-[120px]">
+                  <th className="sticky left-0 z-20 bg-background-subtle px-2 sm:px-3 py-2 text-left text-11 font-medium text-foreground-muted min-w-[80px] sm:min-w-[120px]">
                     Character
                   </th>
-                  <th className="sticky left-[80px] sm:left-[120px] z-20 bg-background-subtle px-2 py-2 text-left text-[11px] font-medium text-foreground-muted min-w-[56px] sm:min-w-[80px] hidden sm:table-cell">
+                  <th className="sticky left-[80px] sm:left-[120px] z-20 bg-background-subtle px-2 py-2 text-left text-11 font-medium text-foreground-muted min-w-[56px] sm:min-w-[80px] hidden sm:table-cell">
                     Role
                   </th>
-                  <th className="sticky left-[80px] sm:left-[200px] z-20 bg-background-subtle px-2 py-2 text-center text-[11px] font-medium text-foreground-muted min-w-[48px] sm:min-w-[56px]">
+                  <th className="sticky left-[80px] sm:left-[200px] z-20 bg-background-subtle px-2 py-2 text-center text-11 font-medium text-foreground-muted min-w-[48px] sm:min-w-[56px]">
                     Credit
                   </th>
                   {/* Week grouping headers */}
@@ -1201,7 +1202,7 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
                     <th
                       key={week.weekStart}
                       colSpan={week.raids.length}
-                      className={`px-2 py-2 text-center text-[11px] font-medium border-l border-border ${
+                      className={`px-2 py-2 text-center text-11 font-medium border-l border-border ${
                         week.isOutsideWindow
                           ? 'bg-muted/50 text-muted-foreground/50'
                           : week.isUpcoming
@@ -1224,7 +1225,7 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
                     week.raids.map(raid => (
                       <th
                         key={raid.id}
-                        className={`px-2 py-1.5 text-center text-[10px] font-normal min-w-[50px] border-l border-border ${
+                        className={`px-2 py-1.5 text-center text-11 font-normal min-w-[50px] border-l border-border ${
                           week.isOutsideWindow
                             ? 'bg-muted/30 text-muted-foreground/30'
                             : week.isUpcoming
@@ -1244,7 +1245,7 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
                               href={getWclReportUrl(raid.wcl_report_code, guildSettings?.wcl_guild_url)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="hover:underline text-[#e35e15]"
+                              className="hover:underline text-brand-wcl"
                               title="View WCL report"
                             >
                               {formatShortDate(raid.raid_date)}
@@ -1262,15 +1263,15 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
                 {sortedRaiders.map(raider => (
                   <tr key={raider.id} className="hover:bg-muted transition-colors">
                     <td className="sticky left-0 z-10 bg-background-elevated px-2 sm:px-3 py-2.5">
-                      <span className="font-medium text-[12px] sm:text-[13px]" style={{ color: raider.classColor }}>
+                      <span className="font-medium text-12 sm:text-13" style={{ color: raider.classColor }}>
                         {raider.name}
                       </span>
                     </td>
-                    <td className="sticky left-[80px] sm:left-[120px] z-10 bg-background-elevated px-2 py-2.5 text-[11px] sm:text-[12px] text-muted-foreground hidden sm:table-cell">
+                    <td className="sticky left-[80px] sm:left-[120px] z-10 bg-background-elevated px-2 py-2.5 text-11 sm:text-12 text-muted-foreground hidden sm:table-cell">
                       {raider.role}
                     </td>
                     <td className="sticky left-[80px] sm:left-[200px] z-10 bg-background-elevated px-2 py-2.5 text-center">
-                      <span className={`font-semibold text-[13px] tabular-nums ${
+                      <span className={`font-semibold text-13 tabular-nums ${
                         raider.attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.75 ? 'text-success' :
                         raider.attendanceScore >= (guildSettings?.max_attendance_bonus || 8) * 0.5 ? 'text-warning' :
                         'text-destructive'
@@ -1286,7 +1287,7 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
                               key={raid.id}
                               className="px-2 py-2.5 text-center border-l border-border bg-muted/30"
                             >
-                              <span className="inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-medium text-muted-foreground/40">
+                              <span className="inline-flex items-center justify-center w-6 h-6 rounded text-11 font-medium text-muted-foreground/40">
                                 -
                               </span>
                             </td>
@@ -1311,7 +1312,7 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
                             }`}
                           >
                             <span
-                              className={`inline-flex items-center justify-center w-6 h-6 rounded text-[11px] font-medium ${
+                              className={`inline-flex items-center justify-center w-6 h-6 rounded text-11 font-medium ${
                                 week.isOutsideWindow ? 'opacity-30 ' + getCellStyle(state)
                                   : notOwed ? 'opacity-25 ' + getCellStyle(state)
                                   : getCellStyle(state)
@@ -1333,39 +1334,39 @@ export default function AttendanceContent({ serverHeading }: AttendanceContentPr
             </table>
           </div>
         )}
-      </div>
+      </Card>
 
           {/* Legend */}
-          <div className="flex flex-wrap items-center gap-4 text-[12px]">
+          <div className="flex flex-wrap items-center gap-4 text-12">
             <span className="text-foreground-muted">Legend:</span>
             <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-success/20 text-success text-[10px] font-medium">A</span>
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-success/20 text-success text-11 font-medium">A</span>
               <span className="text-muted-foreground">Attended</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-warning/20 text-warning text-[10px] font-medium">L</span>
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-warning/20 text-warning text-11 font-medium">L</span>
               <span className="text-muted-foreground">Late</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-accent/20 text-accent text-[10px] font-medium">B</span>
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-accent/20 text-accent text-11 font-medium">B</span>
               <span className="text-muted-foreground">Benched</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-accent/20 text-accent text-[10px] font-medium">S</span>
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-accent/20 text-accent text-11 font-medium">S</span>
               <span className="text-muted-foreground">Signed up only</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-destructive/20 text-destructive text-[10px] font-medium">X</span>
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-destructive/20 text-destructive text-11 font-medium">X</span>
               <span className="text-muted-foreground">No-show</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-muted text-foreground-muted text-[10px] font-medium">-</span>
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-muted text-foreground-muted text-11 font-medium">-</span>
               <span className="text-muted-foreground">No record</span>
             </div>
           </div>
 
           {/* Color coding explanation */}
-          <div className="flex flex-wrap items-center gap-4 text-[12px] text-foreground-muted">
+          <div className="flex flex-wrap items-center gap-4 text-12 text-foreground-muted">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded bg-success/10 border border-success/30" />
               <span>Current week</span>

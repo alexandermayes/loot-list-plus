@@ -60,32 +60,32 @@ function StatusPill({ state, isSignedUp }: { state: CellState; isSignedUp: boole
   return (
     <>
       {state === 'attended' && (
-        <span className="text-[11px] font-medium text-success bg-success/15 px-2 py-0.5 rounded-full flex-shrink-0">
+        <span className="text-11 font-medium text-success bg-success/15 px-2 py-0.5 rounded-full flex-shrink-0">
           Attended
         </span>
       )}
       {state === 'late' && (
-        <span className="text-[11px] font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">
+        <span className="text-11 font-medium text-warning bg-warning/15 px-2 py-0.5 rounded-full flex-shrink-0">
           Late
         </span>
       )}
       {state === 'standby' && (
-        <span className="text-[11px] font-medium text-orange-500 bg-orange-500/15 px-2 py-0.5 rounded-full flex-shrink-0">
+        <span className="text-11 font-medium text-standby bg-standby/15 px-2 py-0.5 rounded-full flex-shrink-0">
           Standby
         </span>
       )}
       {state === 'no-show' && (
-        <span className="text-[11px] font-medium text-destructive bg-destructive/15 px-2 py-0.5 rounded-full flex-shrink-0">
+        <span className="text-11 font-medium text-destructive bg-destructive/15 px-2 py-0.5 rounded-full flex-shrink-0">
           No Show
         </span>
       )}
       {state === 'excused' && (
-        <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0">
+        <span className="text-11 font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0">
           Excused
         </span>
       )}
       {isSignedUp && (
-        <span className="text-[11px] font-medium text-accent bg-accent/15 px-2 py-0.5 rounded-full flex-shrink-0">
+        <span className="text-11 font-medium text-accent bg-accent/15 px-2 py-0.5 rounded-full flex-shrink-0">
           Signed up
         </span>
       )}
@@ -153,10 +153,10 @@ export function RaidMemberList({
               />
             </svg>
           </div>
-          <h4 className="text-[16px] font-semibold text-foreground mb-2">
+          <h4 className="text-16 font-semibold text-foreground mb-2">
             No raiders with loot lists
           </h4>
-          <p className="text-foreground-muted text-[13px] max-w-md mx-auto">
+          <p className="text-foreground-muted text-13 max-w-md mx-auto">
             Guild members with loot submissions will appear here. Use the &quot;Import data&quot;
             button to add attendance for this raid day.
           </p>
@@ -226,14 +226,14 @@ export function RaidMemberList({
                   className="flex items-center gap-2 min-w-0 flex-1 px-3 py-2 text-left cursor-pointer hover:bg-muted/50 rounded-l-lg transition-colors"
                 >
                   <span
-                    className="font-medium text-[13px] truncate"
+                    className="font-medium text-13 truncate"
                     style={{ color: member.class_color }}
                   >
                     {member.character_name}
                   </span>
 
                   {memberLoot.length > 0 && (
-                    <span className="hidden sm:flex items-center gap-2 text-[12px] min-w-0 overflow-hidden">
+                    <span className="hidden sm:flex items-center gap-2 text-12 min-w-0 overflow-hidden">
                       <span className="text-muted-foreground flex-shrink-0">→</span>
                       {memberLoot.slice(0, 2).map((lootEntry) => (
                         <span
@@ -243,13 +243,13 @@ export function RaidMemberList({
                           <ItemLink
                             name={lootEntry.item_name}
                             wowheadId={lootEntry.item_wowhead_id}
-                            className="text-[12px]"
+                            className="text-12"
                           />
                         </span>
                       ))}
                       {memberLoot.length > 2 && (
                         <span
-                          className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0"
+                          className="text-11 font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full flex-shrink-0"
                           title={memberLoot
                             .slice(2)
                             .map((l) => l.item_name)
@@ -382,14 +382,14 @@ export function RaidMemberList({
               </div>
 
               {memberLoot.length > 0 && (
-                <div className="flex items-center gap-2 text-[12px] sm:hidden px-3 pb-2 flex-wrap">
+                <div className="flex items-center gap-2 text-12 sm:hidden px-3 pb-2 flex-wrap">
                   <span className="text-muted-foreground">→</span>
                   {memberLoot.map((lootEntry) => (
                     <div key={lootEntry.id} className="flex items-center gap-1">
                       <ItemLink
                         name={lootEntry.item_name}
                         wowheadId={lootEntry.item_wowhead_id}
-                        className="text-[12px]"
+                        className="text-12"
                       />
                       <Button
                         variant="ghost"
@@ -421,7 +421,7 @@ export function RaidMemberList({
             >
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 <span
-                  className="font-medium text-muted-foreground text-[13px] truncate"
+                  className="font-medium text-muted-foreground text-13 truncate"
                   title={`${attendee.character_name} (account not linked)`}
                 >
                   {attendee.character_name}

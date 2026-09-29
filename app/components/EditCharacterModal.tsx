@@ -22,6 +22,7 @@ import { useNotification } from '@/app/contexts/NotificationContext'
 import { BattlenetCharacterPickerModal } from '@/app/components/BattlenetCharacterPickerModal'
 import Image from 'next/image'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { Card } from '@/components/ui/card'
 
 interface WowClass {
   id: string
@@ -388,9 +389,9 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
 
           {/* Guild memberships */}
           {characterGuildMemberships.length > 0 && (
-            <div className="bg-background-elevated border border-border-strong rounded-xl p-4">
-              <p className="font-medium text-foreground mb-1 text-[13px]">Guild memberships</p>
-              <p className="text-[12px] text-muted-foreground mb-3">
+            <Card className="border-border-strong p-4">
+              <p className="font-medium text-foreground mb-1 text-13">Guild memberships</p>
+              <p className="text-12 text-muted-foreground mb-3">
                 This character is a member of {characterGuildMemberships.length} guild{characterGuildMemberships.length !== 1 ? 's' : ''}
               </p>
               <div className="space-y-2">
@@ -399,9 +400,10 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                   const isCreator = !!user && guild.created_by === user.id
                   const blockRemove = isCreator && isLastOwnCharacterInGuild(guild.id)
                   return (
-                    <div
+                    <Card
+                      variant="nested"
                       key={membership.id}
-                      className="flex items-center justify-between gap-3 p-3 bg-background-inset border border-border rounded-lg"
+                      className="flex items-center justify-between gap-3 p-3"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         {guild.icon_url ? (
@@ -414,17 +416,17 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                           />
                         ) : (
                           <div className="w-7 h-7 rounded bg-accent/20 border border-accent/30 flex items-center justify-center shrink-0">
-                            <span className="text-accent text-[11px] font-bold">{guild.name.charAt(0)}</span>
+                            <span className="text-accent text-11 font-bold">{guild.name.charAt(0)}</span>
                           </div>
                         )}
                         <div className="min-w-0">
-                          <p className="text-[13px] font-medium text-foreground truncate">{guild.name}</p>
-                          <p className="text-[11px] text-muted-foreground truncate">{membership.role}</p>
+                          <p className="text-13 font-medium text-foreground truncate">{guild.name}</p>
+                          <p className="text-11 text-muted-foreground truncate">{membership.role}</p>
                         </div>
                       </div>
                       {blockRemove ? (
                         <span
-                          className="text-[11px] text-muted-foreground text-right shrink-0"
+                          className="text-11 text-muted-foreground text-right shrink-0"
                           title="You created this guild and this is your last character in it. Add another character first, or delete the guild."
                         >
                           Last creator character
@@ -442,23 +444,23 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                           Remove
                         </Button>
                       )}
-                    </div>
+                    </Card>
                   )
                 })}
               </div>
-            </div>
+            </Card>
           )}
 
           {/* Link to Battle.net */}
           {!character.battle_net_id && hasBattlenet && (
-            <div className="flex items-center justify-between gap-3 p-3 bg-background-elevated border border-border rounded-lg">
+            <Card className="flex items-center justify-between gap-3 p-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 bg-[#0074E0]/10 border border-[#0074E0]/30 rounded-lg flex items-center justify-center shrink-0">
+                <div className="w-9 h-9 bg-brand-battlenet/10 border border-brand-battlenet/30 rounded-lg flex items-center justify-center shrink-0">
                   <Image src="/icons/battlenet.svg" alt="Battle.net" width={20} height={20} className="w-5 h-5" style={{ filter: 'brightness(0) saturate(100%) invert(30%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(97%) contrast(101%)' }} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[13px] font-medium text-foreground">Link to Battle.net</p>
-                  <p className="text-[12px] text-muted-foreground">Enable gear sync by linking to your account</p>
+                  <p className="text-13 font-medium text-foreground">Link to Battle.net</p>
+                  <p className="text-12 text-muted-foreground">Enable gear sync by linking to your account</p>
                 </div>
               </div>
               <Button
@@ -470,13 +472,13 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                 <HugeiconsIcon icon={Link01Icon} size={14} />
                 Link
               </Button>
-            </div>
+            </Card>
           )}
 
           {/* Delete Section */}
           <div className="border-t border-border-strong pt-5">
-            <p className="text-[13px] font-medium text-destructive mb-2">Danger zone</p>
-            <p className="text-[12px] text-muted-foreground mb-3">
+            <p className="text-13 font-medium text-destructive mb-2">Danger zone</p>
+            <p className="text-12 text-muted-foreground mb-3">
               Deleting a character will remove all loot submissions and guild memberships.
             </p>
 
@@ -494,7 +496,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
             ) : (
               <div className="space-y-3">
                 <div className="p-3 bg-destructive/10 border border-destructive/50 rounded-xl">
-                  <p className="text-destructive text-[12px] mb-2">
+                  <p className="text-destructive text-12 mb-2">
                     Type <span className="font-bold text-foreground">{character.name}</span> to confirm:
                   </p>
                   <Input
@@ -579,7 +581,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
         <ModalTitle>Remove from guild?</ModalTitle>
       </ModalHeader>
       <ModalBody>
-        <p className="text-muted-foreground text-[14px]">
+        <p className="text-muted-foreground text-14">
           {character.name} will be removed from {pendingRemovalMembership?.guild.name ?? 'this guild'}. Their loot list and submissions in this guild will no longer be visible until you add them back.
         </p>
       </ModalBody>

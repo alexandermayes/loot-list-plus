@@ -16,6 +16,7 @@ import { Settings01Icon } from '@hugeicons/core-free-icons'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import Link from 'next/link'
 import ItemLink from '@/app/components/ItemLink'
+import { Card } from '@/components/ui/card'
 
 interface Submission {
   id: string
@@ -316,7 +317,7 @@ export default function MasterLootPage() {
         </div>
         <Link
           href="/loot-management"
-          className="flex items-center gap-2 px-5 py-2.5 bg-muted hover:bg-muted border border-border rounded-lg text-foreground text-[14px] font-medium transition-colors"
+          className="flex items-center gap-2 px-5 py-2.5 bg-muted hover:bg-muted border border-border rounded-lg text-foreground text-14 font-medium transition-colors"
         >
           <HugeiconsIcon icon={Settings01Icon} size={16} />
           Loot settings
@@ -358,29 +359,29 @@ export default function MasterLootPage() {
           {/* Submissions List */}
           <div className="space-y-3">
             {filteredSubmissions.length === 0 ? (
-              <div className="bg-background-elevated border border-border rounded-xl p-8 text-center">
+              <Card className="p-8 text-center">
                 <p className="text-muted-foreground">No submissions yet. They will appear here once raiders submit their Loot Lists.</p>
-              </div>
+              </Card>
             ) : (
               filteredSubmissions.map((submission) => (
-                <div
+                <Card
                   key={submission.id}
-                  className="bg-background-elevated border border-border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted transition-colors"
+                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted transition-colors"
                 >
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                    <h3 className="text-[16px] sm:text-[20px] font-semibold text-foreground">
+                    <h3 className="text-16 sm:text-20 font-semibold text-foreground">
                       {submission.member?.character_name || 'Unknown'}
                     </h3>
                     {submission.member?.class && (
                       <span
-                        className="px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-[12px] font-medium"
+                        className="px-2 sm:px-3 py-1 rounded-full text-11 sm:text-12 font-medium"
                         style={{ backgroundColor: submission.member.class.color_hex, color: 'white' }}
                       >
                         {submission.member.class.name}
                       </span>
                     )}
                     <StatusBadge status={submission.status as SubmissionStatus} />
-                    <span className="text-muted-foreground text-[12px] sm:text-[14px]">
+                    <span className="text-muted-foreground text-12 sm:text-14">
                       {submission.item_count} items • {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'N/A'}
                     </span>
                   </div>
@@ -392,7 +393,7 @@ export default function MasterLootPage() {
                   >
                     View details
                   </Button>
-                </div>
+                </Card>
               ))
             )}
           </div>
@@ -414,11 +415,11 @@ export default function MasterLootPage() {
                     <ItemLink
                       name={detail.loot_item?.name || 'Unknown'}
                       wowheadId={detail.loot_item?.wowhead_id}
-                      className="font-medium text-[14px]"
+                      className="font-medium text-14"
                     />
-                    <p className="text-muted-foreground text-[12px]">{detail.loot_item?.boss_name}</p>
+                    <p className="text-muted-foreground text-12">{detail.loot_item?.boss_name}</p>
                   </div>
-                  <span className="px-3 py-1 bg-accent text-foreground rounded-full text-[13px] font-medium">
+                  <span className="px-3 py-1 bg-accent text-foreground rounded-full text-13 font-medium">
                     Rank {detail.rank}
                   </span>
                 </div>

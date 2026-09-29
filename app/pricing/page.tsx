@@ -61,14 +61,14 @@ export default function PricingPage() {
 
       <div className="max-w-4xl mx-auto px-6 md:px-12 pt-16 md:pt-24 pb-20">
         <header className="text-center mb-12 md:mb-16">
-          <h1 className="font-poppins font-bold text-[32px] md:text-[48px] leading-[1.05] text-white mb-4">
+          <h1 className="font-poppins font-bold text-32 md:text-48 leading-[1.05] text-white mb-4">
             One guild. One plan. No per-raider pricing.
           </h1>
-          <p className="font-poppins text-[16px] text-[#bababa] leading-relaxed max-w-2xl mx-auto">
+          <p className="font-poppins text-16 text-[#bababa] leading-relaxed max-w-2xl mx-auto">
             Start with the complete core loot system for free. Upgrade the whole guild only
             when you need multiple raid teams or deeper officer oversight.
           </p>
-          <p className="font-poppins text-[16px] text-[#bababa] leading-relaxed max-w-2xl mx-auto mt-3">
+          <p className="font-poppins text-16 text-[#bababa] leading-relaxed max-w-2xl mx-auto mt-3">
             Curious how real guilds use it? Across our data,{' '}
             <a
               href="/research/wow-classic-loot-systems-2026"
@@ -86,16 +86,16 @@ export default function PricingPage() {
             className="flex flex-col gap-5 rounded-[20px] md:rounded-[28px] p-8 md:p-10"
             style={{ backgroundImage: cardGradient }}
           >
-            <p className="font-poppins font-semibold text-[14px] uppercase tracking-wide text-[#bababa]">Free</p>
+            <p className="font-poppins font-semibold text-14 uppercase tracking-wide text-[#bababa]">Free</p>
             <div className="flex items-baseline gap-2">
-              <span className="font-poppins font-bold text-[56px] leading-none text-white">$0</span>
+              <span className="font-poppins font-bold text-56 leading-none text-white">$0</span>
             </div>
-            <p className="font-poppins font-medium text-[14px] text-[#bababa]">
+            <p className="font-poppins font-medium text-14 text-[#bababa]">
               For guilds running one raid team.
             </p>
             <ul className="flex flex-col gap-2">
               {FREE_FEATURES.map((item) => (
-                <li key={item} className="flex items-start gap-2 font-poppins font-medium text-[14px] text-white">
+                <li key={item} className="flex items-start gap-2 font-poppins font-medium text-14 text-white">
                   <span className="text-[#9940ec] shrink-0">✦</span> {item}
                 </li>
               ))}
@@ -103,7 +103,7 @@ export default function PricingPage() {
             <div className="mt-auto pt-2">
               <a
                 href={APP_URL}
-                className="inline-flex items-center justify-center px-5 py-3 rounded-[60px] bg-white font-poppins font-semibold text-[16px] text-black no-underline hover:bg-white/90 transition-colors"
+                className="inline-flex items-center justify-center px-5 py-3 rounded-[60px] bg-white font-poppins font-semibold text-16 text-black no-underline hover:bg-white/90 transition-colors"
               >
                 Create your guild free
               </a>
@@ -115,18 +115,18 @@ export default function PricingPage() {
             className="flex flex-col gap-5 rounded-[20px] md:rounded-[28px] p-8 md:p-10 border border-[#ff8000]/40"
             style={{ backgroundImage: premiumGradient }}
           >
-            <p className="font-poppins font-semibold text-[14px] uppercase tracking-wide text-[#ff8000]">Premium</p>
+            <p className="font-poppins font-semibold text-14 uppercase tracking-wide text-[#ff8000]">Premium</p>
             <div className="flex items-baseline gap-2">
-              <span className="font-poppins font-bold text-[40px] leading-none text-white">$4.99</span>
-              <span className="font-poppins font-medium text-[16px] text-[#bababa]">/month or $39/year</span>
+              <span className="font-poppins font-bold text-40 leading-none text-white">$4.99</span>
+              <span className="font-poppins font-medium text-16 text-[#bababa]">/month or $39/year</span>
             </div>
-            <p className="font-poppins font-medium text-[14px] text-[#bababa]">
+            <p className="font-poppins font-medium text-14 text-[#bababa]">
               For guilds running multiple teams or needing deeper officer visibility.
             </p>
-            <p className="font-poppins font-semibold text-[13px] text-white">Everything in Free, plus</p>
+            <p className="font-poppins font-semibold text-13 text-white">Everything in Free, plus</p>
             <ul className="flex flex-col gap-2">
               {PREMIUM_FEATURES.map((item) => (
-                <li key={item} className="flex items-start gap-2 font-poppins font-medium text-[14px] text-white">
+                <li key={item} className="flex items-start gap-2 font-poppins font-medium text-14 text-white">
                   <span className="text-[#ff8000] shrink-0">✦</span> {item}
                 </li>
               ))}
@@ -134,7 +134,7 @@ export default function PricingPage() {
             <div className="mt-auto pt-2">
               <Link
                 href="/premium"
-                className="inline-flex items-center justify-center px-5 py-3 rounded-[60px] bg-[#121218] border border-[#383838] font-poppins font-semibold text-[16px] text-white no-underline hover:bg-[#1a1a22] transition-colors"
+                className="inline-flex items-center justify-center px-5 py-3 rounded-[60px] bg-[#121218] border border-[#383838] font-poppins font-semibold text-16 text-white no-underline hover:bg-[#1a1a22] transition-colors"
               >
                 Start free trial
               </Link>
@@ -144,12 +144,12 @@ export default function PricingPage() {
 
         {/* FAQ */}
         <section className="mt-16 md:mt-20">
-          <h2 className="font-poppins font-bold text-[24px] md:text-[28px] text-white mb-8">Pricing FAQ</h2>
+          <h2 className="font-poppins font-bold text-24 md:text-28 text-white mb-8">Pricing FAQ</h2>
           <div className="space-y-8">
             {FAQ.map(({ q, a }) => (
               <div key={q}>
-                <h3 className="font-poppins font-semibold text-[16px] text-white mb-2">{q}</h3>
-                <p className="font-poppins text-[15px] text-[#bababa] leading-relaxed">{a}</p>
+                <h3 className="font-poppins font-semibold text-16 text-white mb-2">{q}</h3>
+                <p className="font-poppins text-15 text-[#bababa] leading-relaxed prose-measure">{a}</p>
               </div>
             ))}
           </div>

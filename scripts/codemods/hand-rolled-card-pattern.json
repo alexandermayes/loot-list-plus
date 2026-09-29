@@ -1,0 +1,27 @@
+{
+  "surfaceTokens": ["bg-background-elevated", "bg-card"],
+  "radiusTokenPrefix": "rounded-",
+  "bareBorderToken": "border",
+  "borderColorToken": "border-border",
+  "borderColorStrongToken": "border-border-strong",
+  "detectionRegexSource": "(?=.*(?:bg-background-elevated|bg-card))(?=.*rounded-\\S+)(?=.*\\bborder-border\\b)",
+  "scanExclusions": [
+    "components/ui/card.tsx",
+    "components/ui/dropdown-menu.tsx",
+    "components/ui/empty-state.tsx",
+    "components/ui/error-state.tsx",
+    "components/ui/radio-group.tsx",
+    "components/ui/segmented-control.tsx",
+    "app/components/MultiSelectDropdown.tsx",
+    "app/components/Navigation.tsx",
+    "app/reserve/join/[token]/page.tsx",
+    "app/(app)/loot-management/components/SettingsModal.tsx",
+    "app/(app)/overview/components/DashboardContent.tsx",
+    "app/(app)/raid-tracking/components/LootItemSelectionModal.tsx",
+    "app/(app)/raid-tracking/import/_client.tsx",
+    "app/(app)/reserve/runs/[id]/_client.tsx",
+    "app/(app)/sheet-import/_client.tsx",
+    "app/components/StyledSelect.tsx",
+    "app/(app)/characters/[id]/edit/_client.tsx"
+  ]
+}

@@ -1,0 +1,179 @@
+{
+  "notice": "ENF-02 probe manifest (12-05). Each probe names one file the hook is exercised against. `role` is exception (a candidate .impeccable/config.json entry), existing-entry (one of the five pre-rewrite entries, re-judged from scratch per D-07), or control (must flag; a hook-tier discriminating-power proof, D-09). `source` names where the category comes from. `watch` lists the rule id(s) of interest; an empty array means no rule is expected to fire (the category's own hypothesis, per D-13/D-15, is that nothing fires).",
+  "probes": [
+    {
+      "id": "rails",
+      "file": "app/(app)/raid-tracking/_client.tsx",
+      "category": "raid-tracking legend rails",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": ["side-tab"],
+      "expect": { "rule": "side-tab", "state": "absent" }
+    },
+    {
+      "id": "quality-module",
+      "file": "lib/design-system/quality-colors.ts",
+      "category": "item-quality / brand hex source module",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": ["design-system-color"],
+      "expect": { "rule": "design-system-color", "state": "absent" }
+    },
+    {
+      "id": "quality-config",
+      "file": "tailwind.config.js",
+      "category": "item-quality / brand hex (Tailwind theme extension)",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": ["design-system-color"],
+      "expect": { "rule": "design-system-color", "state": "absent" }
+    },
+    {
+      "id": "quality-brand-1",
+      "file": "app/components/PremiumItemTooltip.tsx",
+      "category": "item-quality / brand class usage (top-3 by grep count, excluding the /design-system docs page)",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": ["design-system-color"],
+      "expect": { "rule": "design-system-color", "state": "absent" }
+    },
+    {
+      "id": "quality-brand-2",
+      "file": "app/(app)/raid-tracking/components/RaidCardHeader.tsx",
+      "category": "item-quality / brand class usage (top-3 by grep count, excluding the /design-system docs page)",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": ["design-system-color"],
+      "expect": { "rule": "design-system-color", "state": "absent" }
+    },
+    {
+      "id": "quality-brand-3",
+      "file": "app/components/EditCharacterModal.tsx",
+      "category": "item-quality / brand class usage (top-3 by grep count, excluding the /design-system docs page)",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": ["design-system-color"],
+      "expect": { "rule": "design-system-color", "state": "absent" }
+    },
+    {
+      "id": "class-colours",
+      "file": "app/reserve/join/[token]/page.tsx",
+      "category": "audit DB/WoW class colours (WOW_CLASSES array, lines 30-40), folded into item quality per D-13",
+      "source": "D-13 audit item / audit decision",
+      "role": "exception",
+      "watch": ["design-system-color"],
+      "expect": { "rule": "design-system-color", "state": "absent" }
+    },
+    {
+      "id": "skeletons",
+      "file": "components/ui/skeletons.tsx",
+      "category": "skeleton pulse (animate-pulse)",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": ["pulsing-dot"],
+      "expect": { "rule": "pulsing-dot", "state": "absent" }
+    },
+    {
+      "id": "mono-invite",
+      "file": "app/(app)/guild-settings/components/InviteCodeManager.tsx",
+      "category": "monospace on invite-code display (D-14 sanctioned site)",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": ["design-system-font"],
+      "expect": { "rule": "design-system-font", "state": "absent" }
+    },
+    {
+      "id": "mono-guild-confirm",
+      "file": "app/(app)/guild-settings/components/GuildSettingsContent.tsx",
+      "category": "monospace on type-to-confirm target (D-14 sanctioned site)",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": ["design-system-font"],
+      "expect": { "rule": "design-system-font", "state": "absent" }
+    },
+    {
+      "id": "mono-profile-confirm",
+      "file": "app/(app)/profile/components/ProfileContent.tsx",
+      "category": "monospace on type-to-confirm target (D-14 sanctioned site)",
+      "source": "criterion 2 (sanctioned exception category)",
+      "role": "exception",
+      "watch": ["design-system-font"],
+      "expect": { "rule": "design-system-font", "state": "absent" }
+    },
+    {
+      "id": "score-numbers",
+      "file": "app/components/ScoreComparisonModal.tsx",
+      "category": "ScoreComparisonModal big numbers",
+      "source": "D-13 audit item 1",
+      "role": "exception",
+      "watch": []
+    },
+    {
+      "id": "how-it-works",
+      "file": "app/components/landing/LandingHowItWorks.tsx",
+      "category": "numbered how-it-works steps",
+      "source": "D-13 audit item 2",
+      "role": "exception",
+      "watch": ["numbered-section-labels"],
+      "expect": { "rule": "numbered-section-labels", "state": "absent" }
+    },
+    {
+      "id": "marketing-purple",
+      "file": "app/globals.css",
+      "category": "marketing purple #9940ec (.text-shimmer-purple, public pages only)",
+      "source": "2026-09-15 UI audit decision",
+      "role": "exception",
+      "watch": ["design-system-color"],
+      "expect": { "rule": "design-system-color", "state": "present" },
+      "expectNote": "design-system-color remains PRESENT on this probe after the #9940ec suppression because the co-located, unsanctioned #ff8000 literal in the same file (app/globals.css) also triggers this rule id; extractRuleIds() reads rule ids per finding line, not per value, so it cannot distinguish the now-filtered #9940ec finding from the still-live #ff8000 finding at this coarse level. The #9940ec-specific suppression is proven instead by the finding-line count dropping from two design-system-color lines (pre-rewrite, no suppression) to one (post-rewrite) -- see 12-06-SUMMARY.md's per-entry discrimination discussion."
+    },
+    {
+      "id": "existing-skeletons-test",
+      "file": "components/ui/__tests__/skeletons.test.tsx",
+      "category": "existing config entry: side-tab, stated false-positive (negative assertion, not a usage)",
+      "source": "pre-rewrite .impeccable/config.json entry",
+      "role": "existing-entry",
+      "watch": ["side-tab"],
+      "expect": { "rule": "side-tab", "state": "absent" }
+    },
+    {
+      "id": "existing-lootlist",
+      "file": "app/(app)/loot-list/components/LootListContent.tsx",
+      "category": "existing config entry: side-tab, rank/quality-tier border colour coding",
+      "source": "pre-rewrite .impeccable/config.json entry",
+      "role": "existing-entry",
+      "watch": ["side-tab"],
+      "expect": { "rule": "side-tab", "state": "present" },
+      "expectNote": "The side-tab entry on LootListContent.tsx was REMOVED, not kept (Decision B, 12-05's classification gate): the finding is deliberately left visible and routed via WINDOWS entry 47 to milestone C."
+    },
+    {
+      "id": "existing-onboarding",
+      "file": "app/components/OnboardingModal.tsx",
+      "category": "existing config entry: ai-color-palette, purple/cyan gradient (predicted expired -- Phase 10 migrated it, commit 5967189e)",
+      "source": "pre-rewrite .impeccable/config.json entry",
+      "role": "existing-entry",
+      "watch": ["ai-color-palette"],
+      "expect": { "rule": "ai-color-palette", "state": "absent" }
+    },
+    {
+      "id": "C1",
+      "file": "app/reserve/join/[token]/page.tsx",
+      "category": "control: must flag ai-color-palette (Stop tier) -- same file as class-colours, and the file the pre-rewrite config's fifth entry currently suppresses this exact rule on",
+      "source": "control (D-09)",
+      "role": "control",
+      "watch": ["ai-color-palette"],
+      "expectedRule": "ai-color-palette",
+      "expect": { "rule": "ai-color-palette", "state": "present" }
+    },
+    {
+      "id": "C2",
+      "file": "app/components/KonamiEasterEgg.tsx",
+      "category": "control: must flag design-system-color #ff8000 (PostToolUse immediate tier)",
+      "source": "control (D-09)",
+      "role": "control",
+      "watch": ["design-system-color"],
+      "expectedRule": "design-system-color",
+      "expect": { "rule": "design-system-color", "state": "present" }
+    }
+  ]
+}

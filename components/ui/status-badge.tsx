@@ -27,11 +27,11 @@ const statusConfig: Record<Status, { label: string; className: string }> = {
   },
   pending: {
     label: 'Pending',
-    className: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/20'
+    className: 'bg-warning/10 text-warning border-warning/20 hover:bg-warning/20'
   },
   needs_revision: {
     label: 'Needs Revision',
-    className: 'bg-orange-500/10 text-orange-500 border-orange-500/20 hover:bg-orange-500/20'
+    className: 'bg-standby/10 text-standby border-standby/20 hover:bg-standby/20'
   },
   rejected: {
     label: 'Rejected',
@@ -48,11 +48,11 @@ const statusConfig: Record<Status, { label: string; className: string }> = {
   },
   late: {
     label: 'Late',
-    className: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20 hover:bg-yellow-500/20'
+    className: 'bg-warning/10 text-warning border-warning/20 hover:bg-warning/20'
   },
   benched: {
     label: 'Benched',
-    className: 'bg-orange-500/10 text-orange-500 border-orange-500/20 hover:bg-orange-500/20'
+    className: 'bg-standby/10 text-standby border-standby/20 hover:bg-standby/20'
   },
   no_show: {
     label: 'No Show',

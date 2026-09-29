@@ -7,6 +7,7 @@ import LandingFooter from '@/app/components/landing/LandingFooter'
 import BlogTracker from '@/app/components/landing/BlogTracker'
 import { Button } from '@/components/ui/button'
 import aggregates from '@/public/research/wow-classic-loot-systems-2026-aggregates.json'
+import { Card } from '@/components/ui/card'
 
 // ---------------------------------------------------------------------------
 // Artifact shapes
@@ -406,7 +407,7 @@ export default function ResearchReportPage() {
 
       <article className="relative pt-32 pb-20 px-6 md:px-12 lg:px-20">
         <BlogTracker slug="wow-classic-loot-systems-2026" title={PAGE_H1} />
-        <div className="max-w-3xl mx-auto">
+        <div className="prose-measure mx-auto">
           <nav className="mb-8 text-sm text-foreground-secondary">
             <Link href="/" className="hover:text-foreground transition-colors">
               Home
@@ -456,12 +457,12 @@ export default function ResearchReportPage() {
                     `[&_p]:text-foreground-secondary` rule above cannot
                     override the accent color -- a <p> here would lose the
                     color fight on CSS specificity. */}
-                <div className="my-6 p-4 rounded-xl border border-border bg-background-elevated">
+                <Card className="my-6 p-4">
                   <div className="text-5xl font-bold text-accent">{calloutValue(finding)}</div>
                   <div className="text-lg text-foreground-muted mt-1">
                     {approved(`finding.${finding.metric_id}.callout-label`)}
                   </div>
-                </div>
+                </Card>
 
                 {finding.segments.length > 0 && (
                   <div className="-mx-4 sm:mx-0 overflow-x-auto my-6">
@@ -572,13 +573,13 @@ export default function ResearchReportPage() {
               that is invisible against the button's own accent background.
               Plain anchor, no click handler: it stays inside <article>, so
               BlogTracker's existing click delegation already reports it. */}
-          <div className="my-12 p-8 rounded-xl border border-border bg-background-elevated flex flex-col items-start gap-4">
+          <Card className="my-12 p-8 flex flex-col items-start gap-4">
             <div className="text-2xl font-bold text-foreground">{CTA_HEADING}</div>
             <p className="text-lg text-foreground-secondary">{CTA_BODY}</p>
             <Button asChild variant="accent" size="lg" className="font-bold">
               <a href={CTA_URL}>{CTA_BUTTON_LABEL}</a>
             </Button>
-          </div>
+          </Card>
         </div>
       </article>
 

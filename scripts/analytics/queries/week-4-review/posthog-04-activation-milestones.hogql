@@ -1,0 +1,202 @@
+-- metric-id: activation-milestones
+-- label: Guild-scoped activation milestone event counts per period, over guild distinct ids only
+-- columns: period,milestone,events,guilds
+-- window: 2026-08-24..2026-09-24
+--
+-- D-09/D-02: guild identity space only. Every row restricts distinct_id
+-- to the "guild:" prefix funnel.ts sets for every milestone capture, so
+-- guilds is a count of distinct guild-scoped ids within that
+-- restriction, not a count of people. Never joined, unioned, or
+-- compared against the identity space the CTA and landing queries use.
+--
+-- These are event counts stamped when the evaluator re-observed a
+-- condition as true. They carry the same late-stamp caveat as
+-- guild_funnel_milestones and are never the source of the cohort
+-- headline comparison -- that comparison uses its own reconstructed
+-- source-row query, not this event count.
+--
+-- Counts only: no output column carries a raw distinct id; it appears
+-- only inside a count or distinct-count aggregate. No identifying event
+-- properties are read.
+
+SELECT 'sprint_window' AS period, 'raid_schedule_configured' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'raid_schedule_configured' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'sprint_window' AS period, 'loot_settings_completed' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'loot_settings_completed' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'sprint_window' AS period, 'roster_threshold_reached' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'roster_threshold_reached' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'sprint_window' AS period, 'guild_qualified' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'guild_qualified' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'sprint_window' AS period, 'first_raid_recorded' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'first_raid_recorded' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'sprint_window' AS period, 'first_loot_awarded' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'first_loot_awarded' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'sprint_window' AS period, 'guild_activated' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'guild_activated' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'raid_schedule_configured' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'raid_schedule_configured' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'loot_settings_completed' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'loot_settings_completed' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'roster_threshold_reached' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'roster_threshold_reached' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'guild_qualified' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'guild_qualified' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'first_raid_recorded' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'first_raid_recorded' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'first_loot_awarded' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'first_loot_awarded' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'baseline_week' AS period, 'guild_activated' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'guild_activated' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'raid_schedule_configured' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'raid_schedule_configured' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'loot_settings_completed' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'loot_settings_completed' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'roster_threshold_reached' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'roster_threshold_reached' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'guild_qualified' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'guild_qualified' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'first_raid_recorded' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'first_raid_recorded' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'first_loot_awarded' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'first_loot_awarded' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT 'week4' AS period, 'guild_activated' AS milestone, count() AS events, uniqExact(distinct_id) AS guilds
+FROM events
+WHERE event = 'guild_activated' AND distinct_id LIKE 'guild:%'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+ORDER BY
+    CASE period
+        WHEN 'sprint_window' THEN 0
+        WHEN 'baseline_week' THEN 1
+        WHEN 'week4' THEN 2
+    END,
+    CASE milestone
+        WHEN 'raid_schedule_configured' THEN 0
+        WHEN 'loot_settings_completed' THEN 1
+        WHEN 'roster_threshold_reached' THEN 2
+        WHEN 'guild_qualified' THEN 3
+        WHEN 'first_raid_recorded' THEN 4
+        WHEN 'first_loot_awarded' THEN 5
+        WHEN 'guild_activated' THEN 6
+    END

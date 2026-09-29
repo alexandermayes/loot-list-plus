@@ -1,4 +1,4 @@
-date,ai_surface,prompt_id,lootlist_appeared,factually_correct,cited_url,competing_sources,notes
+date,ai_surface,prompt_id,lootlist_appeared,factually_correct,cited_url,competing_sources,notes,error_type
 2026-08-28,chatgpt,P1,yes,yes,https://www.getlootlist.com/,thatsmybis.com;github.com,"Identified LootList+ as a WoW Classic loot-management system combining ranked loot lists, attendance, Loot Scores, modifiers, loot history, and Discord/raid workflows."
 2026-08-28,chatgpt,P2,yes,yes,https://www.getlootlist.com/,thatsmybis.com,"Recommended LootList+ as a strong fit for guilds wanting ranked lists plus attendance-based priority; also discussed TMB, DKP, EPGP, and Suicide Kings."
 2026-08-28,chatgpt,P3,yes,yes,https://www.getlootlist.com/,thatsmybis.com,"Presented LootList+ as a strong alternative to That's My BIS, distinguishing TMB's wishlist/loot-council focus from LootList+'s scoring and attendance model."

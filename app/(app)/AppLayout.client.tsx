@@ -15,6 +15,7 @@ import { AccentColorProvider } from '@/app/contexts/AccentColorContext'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { DeploymentCheck } from '@/app/components/DeploymentCheck'
 import { KonamiEasterEgg } from '@/app/components/KonamiEasterEgg'
+import { Card } from '@/components/ui/card'
 import ForeverAnnouncementModal from '@/app/components/ForeverAnnouncementModal'
 
 function AppLayoutContent({
@@ -74,13 +75,13 @@ function AppLayoutContent({
               <div className="px-3">
                 <Skeleton className="h-2.5 w-10 mb-1" />
               </div>
-              <div className="bg-background-elevated border border-border rounded-xl px-3.5 py-2 flex items-center gap-3">
+              <Card className="px-3.5 py-2 flex items-center gap-3">
                 <Skeleton className="w-5 h-5 rounded" />
                 <div className="flex-1 space-y-1.5">
                   <Skeleton className="h-3 w-24" />
                   <Skeleton className="h-2 w-16" />
                 </div>
-              </div>
+              </Card>
             </div>
 
             {/* Character selector skeleton */}
@@ -88,13 +89,13 @@ function AppLayoutContent({
               <div className="px-3">
                 <Skeleton className="h-2.5 w-16 mb-1" />
               </div>
-              <div className="bg-background-elevated border border-border rounded-xl px-3.5 py-2 flex items-center gap-3">
+              <Card className="px-3.5 py-2 flex items-center gap-3">
                 <Skeleton className="w-5 h-5 rounded-full" />
                 <div className="flex-1 space-y-1.5">
                   <Skeleton className="h-3 w-20" />
                   <Skeleton className="h-2 w-14" />
                 </div>
-              </div>
+              </Card>
             </div>
 
             {/* Nav items skeleton */}
@@ -233,7 +234,7 @@ function AppLayoutContent({
                   }}
                 />
               ) : (
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 border border-border" />
+                <div className="w-6 h-6 rounded-full bg-accent border border-border" />
               )}
             </Link>
           </div>

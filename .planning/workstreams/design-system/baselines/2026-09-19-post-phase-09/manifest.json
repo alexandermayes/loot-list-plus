@@ -1,0 +1,54 @@
+{
+  "label": "post-phase-09",
+  "captured_at": "2026-09-19T21:55:32.872Z",
+  "git_sha": "4c28a895",
+  "origin_hostname": "localhost",
+  "images": [
+    {
+      "file": "home-light-1440.png",
+      "page": "home",
+      "path": "/",
+      "theme": "light",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "home-light-390.png",
+      "page": "home",
+      "path": "/",
+      "theme": "light",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "file": "home-dark-1440.png",
+      "page": "home",
+      "path": "/",
+      "theme": "dark",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "file": "home-dark-390.png",
+      "page": "home",
+      "path": "/",
+      "theme": "dark",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "skipped": [
+    {
+      "page": "overview",
+      "reason": "GET /api/dev/test-users returned 404"
+    },
+    {
+      "page": "guild-settings",
+      "reason": "GET /api/dev/test-users returned 404"
+    },
+    {
+      "page": "loot-management",
+      "reason": "GET /api/dev/test-users returned 404"
+    }
+  ]
+}

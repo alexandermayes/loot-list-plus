@@ -91,6 +91,7 @@ measure; a clean miss is exactly the data point Phase 6 needs.
 | `cited_url` | the LootList+ URL the answer cited, empty if none (required empty when the product did not appear) |
 | `competing_sources` | semicolon separated list of the other products or sites the answer named, empty if none |
 | `notes` | free text |
+| `error_type` | `not_mentioned`, `wrong_price_or_plan`, `outdated_feature_claim`, `wrong_category`, or `other` (required when the product did not appear, always `not_mentioned`, or when the answer was `no` or `partial`; empty for a clean correct cell) |
 
 ## 8. How to record it
 
@@ -102,7 +103,8 @@ python3 scripts/analytics/log-ai-answer.py \
   --appeared yes --correct partial \
   --cited-url "https://getlootlist.com" \
   --competing-sources "That's My BiS;DKPSystem" \
-  --notes "named LootList+ second, described attendance-weighted scoring loosely"
+  --notes "named LootList+ second, described attendance-weighted scoring loosely" \
+  --error-type outdated_feature_claim
 ```
 
 Worked example, a cell where the product did not appear at all:
@@ -112,7 +114,8 @@ python3 scripts/analytics/log-ai-answer.py \
   --date 2026-08-28 --surface google-ai-overviews --prompt-id P2 \
   --appeared no --correct n/a --cited-url "" \
   --competing-sources "That's My BiS;DKPSystem;Loot Council spreadsheet" \
-  --notes "AI Overview named three competitors, no mention of LootList+"
+  --notes "AI Overview named three competitors, no mention of LootList+" \
+  --error-type not_mentioned
 ```
 
 The log is append only. Use `scripts/analytics/log-ai-answer.py` for every

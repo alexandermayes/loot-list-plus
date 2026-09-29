@@ -7,6 +7,7 @@ import dynamic from 'next/dynamic'
 import WelcomeScreen from '@/app/components/WelcomeScreen'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserIcon, CheckmarkCircle01Icon, AlertCircleIcon, Award01Icon, Cancel01Icon, Add01Icon, Calendar03Icon, Shield01Icon, AnalyticsUpIcon } from '@hugeicons/core-free-icons'
+import { Card } from '@/components/ui/card'
 import { NoRaidsEmptyState } from '@/app/components/NoRaidsEmptyState'
 import { getGuildGame, hidesRaidDependentCards, type RaidTierStatus } from '@/domain/expansion/game'
 
@@ -1871,16 +1872,16 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
         {(characterTeams.length > 0 || (activeCharacter && raidTiers.length > 0)) && (
           <div className="flex items-center gap-2 flex-wrap mt-4">
             {characterTeams.map(team => (
-              <span
+              <Card
                 key={team.id}
-                className="inline-flex items-center gap-2 h-7 px-3 rounded-full border border-border bg-background-elevated"
+                className="inline-flex items-center gap-2 h-7 px-3"
               >
                 <span
                   className="w-2.5 h-2.5 rounded-full border border-border/50 shrink-0"
                   style={{ backgroundColor: team.color_hex }}
                 />
                 <span className="text-xs text-foreground">{team.name}</span>
-              </span>
+              </Card>
             ))}
             {activeCharacter && raidTiers.length > 0 && (() => {
               const phases = [...new Set(raidTiers.map(t => t.phase).filter((p): p is number => p != null))].sort((a, b) => a - b)
@@ -1920,7 +1921,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                         onClick={() => router.push(`/loot-list?phase=${phase}`)}
                         className="inline-flex items-center gap-2 h-7 pl-1.5 pr-3 rounded-full border border-border bg-background-elevated hover:border-accent/40 transition-colors cursor-pointer"
                       >
-                        <span className="px-1.5 py-0.5 rounded bg-accent/20 text-accent text-[10px] font-bold">P{phase}</span>
+                        <span className="px-1.5 py-0.5 rounded bg-accent/20 text-accent text-11 font-bold">P{phase}</span>
                         {iconTier && (
                           <img
                             src={getRaidIcon(iconTier.name)}
@@ -2009,16 +2010,16 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
 
           {/* Create Character CTA - Show when no active character */}
           {!activeCharacter && (
-            <div
+            <Card
               onClick={() => setShowCreateCharacterModal(true)}
-              className="bg-background-elevated border border-border rounded-xl p-6 hover:border-accent/50 transition-colors cursor-pointer"
+              className="p-6 hover:border-accent/50 transition-colors cursor-pointer"
             >
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <div className="w-16 h-16 bg-muted border border-border-strong rounded-full flex items-center justify-center flex-shrink-0">
                   <HugeiconsIcon icon={Add01Icon} size={32} className="text-muted-foreground" />
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-[20px] sm:text-[24px] font-bold text-foreground">
+                  <h2 className="text-20 sm:text-24 font-bold text-foreground">
                     Create your first character
                   </h2>
                   <p className="text-muted-foreground text-sm mt-1">
@@ -2029,7 +2030,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                   Create character
                 </Button>
               </div>
-            </div>
+            </Card>
           )}
 
           {/* No raid tiers yet for the active expansion (e.g. a new
@@ -2049,10 +2050,10 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
             <div className={`grid grid-cols-1 ${trialData?.isTrial ? 'md:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-3'} gap-4`}>
               {/* Widget 1: Score Breakdown (contract-driven from explainScore) */}
               {scoreExplanation && (
-                <div className="bg-background-elevated border border-border rounded-xl p-5">
+                <Card className="p-5">
                   <div className="flex items-center gap-2 mb-4">
                     <HugeiconsIcon icon={AnalyticsUpIcon} size={18} className="text-accent" />
-                    <h3 className="text-[15px] font-semibold text-foreground">Score breakdown</h3>
+                    <h3 className="text-15 font-semibold text-foreground">Score breakdown</h3>
                   </div>
                   <div className="space-y-2.5">
                     {scoreExplanation.lines
@@ -2066,19 +2067,19 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
 
                         return (
                           <div key={line.key} className="flex items-center justify-between">
-                            <span className="text-[13px] text-foreground-secondary inline-flex items-center gap-1.5">
+                            <span className="text-13 text-foreground-secondary inline-flex items-center gap-1.5">
                               {line.label}
                               {contextLabel && <span className="text-muted-foreground">{contextLabel}</span>}
                               <InfoTooltip content={line.detail} />
                             </span>
-                            <span className={`text-[13px] font-medium tabular-nums ${line.value >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                            <span className={`text-13 font-medium tabular-nums ${line.value >= 0 ? 'text-foreground' : 'text-destructive'}`}>
                               {line.value >= 0 ? '+' : ''}{line.value.toFixed(decimalPlaces)}
                             </span>
                           </div>
                         )
                       })}
                     <div className="border-t border-border pt-2 mt-2">
-                      <p className="text-[11px] text-muted-foreground">
+                      <p className="text-11 text-muted-foreground">
                         Base score before item ranking
                         {blpInfo.enabled && (
                           <span className="inline-flex items-center gap-1 ml-1">
@@ -2089,22 +2090,22 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                       </p>
                     </div>
                   </div>
-                </div>
+                </Card>
               )}
 
               {/* Widget 2: Attendance Snapshot */}
               {attendanceData && (
-                <div className="bg-background-elevated border border-border rounded-xl p-5">
+                <Card className="p-5">
                   <div className="flex items-center gap-2 mb-4">
                     <HugeiconsIcon icon={CheckmarkCircle01Icon} size={18} className="text-accent" />
-                    <h3 className="text-[15px] font-semibold text-foreground">Attendance</h3>
+                    <h3 className="text-15 font-semibold text-foreground">Attendance</h3>
                   </div>
                   <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-[28px] font-bold text-foreground leading-none">{attendanceData.percentage}%</span>
-                    <span className="text-[13px] text-foreground-secondary">{attendanceData.attended} of {attendanceData.total} raids</span>
+                    <span className="text-28 font-bold text-foreground leading-none">{attendanceData.percentage}%</span>
+                    <span className="text-13 text-foreground-secondary">{attendanceData.attended} of {attendanceData.total} raids</span>
                   </div>
                   {/* Progress bar */}
-                  <div className="w-full h-2 bg-background-inset rounded-full mt-3 overflow-hidden">
+                  <div className="w-full h-2 bg-muted rounded-full mt-3 overflow-hidden">
                     <div
                       className="h-full bg-accent rounded-full transition-all duration-500"
                       style={{ width: `${Math.min(attendanceData.percentage, 100)}%` }}
@@ -2123,13 +2124,13 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                           strokeLinejoin="round"
                         />
                       </svg>
-                      <span className="text-[10px] text-muted-foreground whitespace-nowrap flex-shrink-0">
+                      <span className="text-11 text-muted-foreground whitespace-nowrap flex-shrink-0">
                         {attendanceTrend.length}w
                       </span>
                     </div>
                   )}
                   {attendanceData.tierInfo && (
-                    <p className="text-[11px] text-muted-foreground mt-2 tabular-nums">
+                    <p className="text-11 text-muted-foreground mt-2 tabular-nums">
                       {attendanceData.tierInfo.raidsNeeded > 0
                         ? `${attendanceData.tierInfo.raidsNeeded} more raid${attendanceData.tierInfo.raidsNeeded !== 1 ? 's' : ''} to reach ${attendanceData.tierInfo.nextTier} tier (+${attendanceData.tierInfo.nextBonus.toFixed(decimalPlaces)})`
                         : `${attendanceData.tierInfo.current} tier`}
@@ -2138,7 +2139,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                   {/* Missed raids breakdown */}
                   {attendanceData.missedRaids && attendanceData.missedRaids.length > 0 && (
                     <div className="mt-3 pt-3 border-t border-border">
-                      <p className="text-[11px] font-semibold text-muted-foreground mb-2">Missed raids</p>
+                      <p className="text-11 font-semibold text-muted-foreground mb-2">Missed raids</p>
                       <div className="space-y-1">
                         {attendanceData.missedRaids.map((r, i) => {
                           const statusLabels: Record<string, { label: string; color: string }> = {
@@ -2154,7 +2155,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                           const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                           const dayStr = date.toLocaleDateString('en-US', { weekday: 'short' })
                           return (
-                            <div key={i} className="flex items-center justify-between text-[11px]">
+                            <div key={i} className="flex items-center justify-between text-11">
                               <span className="text-foreground-secondary">{dayStr} {dateStr}</span>
                               <span className={info.color}>{info.label}</span>
                             </div>
@@ -2164,67 +2165,67 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                     </div>
                   )}
                   {attendanceData.total === 0 && (
-                    <p className="text-[11px] text-muted-foreground mt-2">No raids logged yet</p>
+                    <p className="text-11 text-muted-foreground mt-2">No raids logged yet</p>
                   )}
-                </div>
+                </Card>
               )}
 
               {/* Widget 3: Trial Progress (conditional) OR Widget 4: Upcoming Raids */}
               {trialData?.isTrial ? (
-                <div className="bg-background-elevated border border-border rounded-xl p-5">
+                <Card className="p-5">
                   <div className="flex items-center gap-2 mb-4">
                     <HugeiconsIcon icon={Shield01Icon} size={18} className="text-warning" />
-                    <h3 className="text-[15px] font-semibold text-foreground">Trial progress</h3>
+                    <h3 className="text-15 font-semibold text-foreground">Trial progress</h3>
                   </div>
                   <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-[28px] font-bold text-foreground leading-none">
+                    <span className="text-28 font-bold text-foreground leading-none">
                       Week {trialData.weeksCompleted}
                     </span>
-                    <span className="text-[13px] text-foreground-secondary">of {trialData.weeksRequired}</span>
+                    <span className="text-13 text-foreground-secondary">of {trialData.weeksRequired}</span>
                   </div>
                   {/* Progress bar */}
-                  <div className="w-full h-2 bg-background-inset rounded-full mt-3 overflow-hidden">
+                  <div className="w-full h-2 bg-muted rounded-full mt-3 overflow-hidden">
                     <div
                       className="h-full bg-warning rounded-full transition-all duration-500"
                       style={{ width: `${Math.min((trialData.weeksCompleted / trialData.weeksRequired) * 100, 100)}%` }}
                     />
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-2">
+                  <p className="text-11 text-muted-foreground mt-2">
                     {trialData.autoPromote
                       ? trialData.weeksCompleted >= trialData.weeksRequired
                         ? 'Eligible for promotion'
                         : `Auto-promote after ${trialData.weeksRequired} weeks`
                       : 'Promotion at officer discretion'}
                   </p>
-                </div>
+                </Card>
               ) : (
-                <div className="bg-background-elevated border border-border rounded-xl p-5">
+                <Card className="p-5">
                   <div className="flex items-center gap-2 mb-4">
                     <HugeiconsIcon icon={Calendar03Icon} size={18} className="text-accent" />
-                    <h3 className="text-[15px] font-semibold text-foreground">Next raid</h3>
+                    <h3 className="text-15 font-semibold text-foreground">Next raid</h3>
                   </div>
                   {nextRaidDates.length > 0 ? (
                     <div className="space-y-2">
                       {nextRaidDates.map((date, i) => (
                         <div key={i} className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-accent/10 rounded-lg flex flex-col items-center justify-center flex-shrink-0">
-                            <span className="text-[10px] font-medium text-accent leading-none">
+                            <span className="text-11 font-medium text-accent leading-none">
                               {date.toLocaleDateString(undefined, { month: 'short' }).toUpperCase()}
                             </span>
-                            <span className="text-[16px] font-bold text-foreground leading-tight">
+                            <span className="text-16 font-bold text-foreground leading-tight">
                               {date.getDate()}
                             </span>
                           </div>
-                          <span className="text-[13px] text-foreground-secondary">
+                          <span className="text-13 text-foreground-secondary">
                             {date.toLocaleDateString(undefined, { weekday: 'long' })}
                           </span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-[13px] text-muted-foreground">No raid schedule set</p>
+                    <p className="text-13 text-muted-foreground">No raid schedule set</p>
                   )}
-                </div>
+                </Card>
               )}
             </div>
           )}
@@ -2233,12 +2234,12 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
           {!hideRaidCards && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Next in Line - Top Items */}
-            <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
                 <HugeiconsIcon icon={Award01Icon} size={28} className="text-accent flex-shrink-0 sm:hidden" />
                 <HugeiconsIcon icon={Award01Icon} size={32} className="text-accent flex-shrink-0 hidden sm:block" />
                 <div>
-                  <h2 className="text-[20px] sm:text-[24px] font-bold text-foreground">Next in line</h2>
+                  <h2 className="text-20 sm:text-24 font-bold text-foreground">Next in line</h2>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">Your highest priority items</p>
                 </div>
               </div>
@@ -2253,10 +2254,11 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
               ) : (
                 <div className="space-y-2 sm:space-y-3">
                   {lootPriority.map((item, index) => (
-                    <div
+                    <Card
+                      variant="nested"
                       key={item.item_id}
                       onClick={() => router.push(`/master-sheet?tier=${item.raid_tier_id}&item=${item.item_id}`)}
-                      className="bg-background-inset border border-border rounded-xl p-3 sm:p-4 hover:border-accent/50 transition-colors cursor-pointer"
+                      className="p-3 sm:p-4 hover:bg-muted transition-colors cursor-pointer"
                     >
                       <div className="flex items-start sm:items-center gap-3 sm:gap-4">
                         <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-accent/20 rounded-full flex items-center justify-center mt-0.5 sm:mt-0">
@@ -2269,7 +2271,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                             </div>
                             <div className="flex items-center gap-1.5 flex-wrap">
                               {item.is_loot_council && (
-                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">Loot Council</span>
+                                <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">Loot Council</span>
                               )}
                               {item.classification && item.classification !== 'Unlimited' && (
                                 <span className="text-xs px-2 py-0.5 bg-accent/20 text-accent rounded-full border border-accent/30 flex-shrink-0 whitespace-nowrap">
@@ -2278,7 +2280,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-muted-foreground flex-wrap">
+                          <div className="flex items-center gap-1.5 sm:gap-2 text-11 sm:text-xs text-muted-foreground flex-wrap">
                             <span className="truncate max-w-[100px] sm:max-w-none">{item.boss_name}</span>
                             {!item.is_loot_council && (
                               <>
@@ -2305,7 +2307,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                             const rank = competitionData[item.item_id]?.userRank
                             if (rank == null && teamFilteredTied.length === 0) return null
                             return (
-                              <div className="flex items-center gap-1.5 text-[11px] sm:text-xs text-muted-foreground flex-wrap mt-1">
+                              <div className="flex items-center gap-1.5 text-11 sm:text-xs text-muted-foreground flex-wrap mt-1">
                                 {rank != null && (
                                   <span className={rank === 1 ? 'text-success font-medium' : ''}>
                                     you&apos;re #{rank}
@@ -2333,21 +2335,21 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                           })()}
                         </div>
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               )}
               {/* Low-competition callout */}
               {lowCompetitionItems.length > 0 && (
                 <div className="mt-4 bg-success/5 border border-success/20 rounded-xl p-4">
-                  <p className="text-[12px] font-semibold text-success mb-2">Low competition on your list</p>
+                  <p className="text-12 font-semibold text-success mb-2">Low competition on your list</p>
                   <div className="space-y-1.5">
                     {lowCompetitionItems.map(item => (
                       <div key={item.item_id} className="flex items-center justify-between min-w-0">
                         <div className="min-w-0 flex-1">
                           <ItemLink name={item.item_name} wowheadId={item.wowhead_id} clickable={true} showIcon={true} />
                         </div>
-                        <span className="text-[11px] text-muted-foreground ml-2 flex-shrink-0">
+                        <span className="text-11 text-muted-foreground ml-2 flex-shrink-0">
                           {item.competitors === 0 ? 'No competition' : '1 other'}
                         </span>
                       </div>
@@ -2355,15 +2357,15 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                   </div>
                 </div>
               )}
-            </div>
+            </Card>
 
             {/* Recently Received Items */}
-            <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
                 <HugeiconsIcon icon={CheckmarkCircle01Icon} size={28} className="text-success flex-shrink-0 sm:hidden" />
                 <HugeiconsIcon icon={CheckmarkCircle01Icon} size={32} className="text-success flex-shrink-0 hidden sm:block" />
                 <div>
-                  <h2 className="text-[20px] sm:text-[24px] font-bold text-foreground">Recently received</h2>
+                  <h2 className="text-20 sm:text-24 font-bold text-foreground">Recently received</h2>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">
                     {lootEfficiency && lootEfficiency.total > 0
                       ? `Won ${lootEfficiency.received} of ${lootEfficiency.total} items`
@@ -2382,9 +2384,9 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
               ) : (
                 <div className="space-y-2 sm:space-y-3">
                   {receivedItems.map((item) => (
-                    <div
+                    <Card
                       key={item.id}
-                      className="bg-background-elevated border border-border rounded-xl p-3 sm:p-4"
+                      className="p-3 sm:p-4"
                     >
                       <div className="flex items-start sm:items-center gap-3 sm:gap-4">
                         <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-success/20 rounded-full flex items-center justify-center mt-0.5 sm:mt-0">
@@ -2402,7 +2404,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-muted-foreground flex-wrap">
+                          <div className="flex items-center gap-1.5 sm:gap-2 text-11 sm:text-xs text-muted-foreground flex-wrap">
                             <span className="truncate max-w-[120px] sm:max-w-none">{item.boss_name}</span>
                             <span>•</span>
                             <span className="truncate max-w-[100px] sm:max-w-none">{item.raid_tier_name}</span>
@@ -2411,25 +2413,26 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               )}
-            </div>
+            </Card>
           </div>
           )}
 
           {/* Actions Needed - Current Character */}
           {actionsNeeded.filter(submission => !dismissedActions.has(submission.id)).length > 0 && (
-            <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-6">
+            <Card className="p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4 sm:mb-6">
-                <h2 className="text-[20px] sm:text-[24px] font-bold text-foreground">Actions needed</h2>
+                <h2 className="text-20 sm:text-24 font-bold text-foreground">Actions needed</h2>
               </div>
               <div className="space-y-4">
                 {actionsNeeded.filter(submission => !dismissedActions.has(submission.id)).map(submission => (
-                  <div
+                  <Card
+                    variant="nested"
                     key={submission.id}
-                    className="bg-background-inset border border-border rounded-xl p-4 hover:border-accent/50 transition-colors cursor-pointer"
+                    className="p-4 hover:bg-muted transition-colors cursor-pointer"
                     onClick={() => router.push('/loot-list')}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
@@ -2466,10 +2469,10 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                         </Button>
                       </div>
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
-            </div>
+            </Card>
           )}
 
           </>

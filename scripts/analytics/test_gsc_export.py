@@ -15,8 +15,10 @@ import os
 import tempfile
 import unittest
 
+import gsc_clusters
 from gsc_export import (
     CSV_HEADER_PAGE,
+    CSV_HEADER_PAGE_QUERY,
     CSV_HEADER_QUERY,
     EXPORTS_DIR,
     export_csv,
@@ -124,6 +126,99 @@ class TestExportHelpers(unittest.TestCase):
             with open(path, newline="") as f:
                 lines = f.readlines()
             self.assertEqual(len(lines), 1)
+
+    # -- export_csv: page-query dimension (D-12) -------------------------
+
+    def test_csv_header_page_query_constant(self):
+        self.assertEqual(
+            CSV_HEADER_PAGE_QUERY,
+            ["page", "query", "clicks", "impressions", "ctr", "position", "cluster"],
+        )
+
+    def test_export_csv_writes_page_query_header_and_row_in_order(self):
+        rows = [
+            {
+                "keys": ["/guide", "loot spreadsheet"],
+                "clicks": 5,
+                "impressions": 50,
+                "ctr": 0.1,
+                "position": 8.5,
+            }
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "pq.csv")
+            count = export_csv(rows, path, "page-query", cluster_fn=lambda q: "problem")
+            with open(path, newline="") as f:
+                reader = csv.reader(f)
+                header = next(reader)
+                self.assertEqual(header, CSV_HEADER_PAGE_QUERY)
+                row = next(reader)
+            self.assertEqual(
+                row, ["/guide", "loot spreadsheet", "5", "50", "0.1", "8.5", "problem"]
+            )
+            self.assertEqual(count, 1)
+
+    def test_export_csv_page_query_clusters_the_query_not_the_page_url(self):
+        # The page URL contains a competitor keyword ("thatsmybis"); the query
+        # text contains a problem keyword ("loot spreadsheet"). If clustering
+        # were wrongly applied to the page instead of the query, this would
+        # resolve to "competitor" instead of "problem".
+        rows = [
+            {
+                "keys": ["/thatsmybis-comparison", "loot spreadsheet"],
+                "clicks": 1,
+                "impressions": 10,
+                "ctr": 0.1,
+                "position": 5.0,
+            }
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "pq.csv")
+            export_csv(rows, path, "page-query", cluster_fn=gsc_clusters.cluster_query)
+            with open(path, newline="") as f:
+                read_rows = list(csv.DictReader(f))
+            self.assertEqual(read_rows[0]["cluster"], "problem")
+
+    def test_export_csv_page_query_without_cluster_fn_is_unclustered(self):
+        rows = [
+            {
+                "keys": ["/page", "query text"],
+                "clicks": 0,
+                "impressions": 5,
+                "ctr": 0.0,
+                "position": 10.0,
+            }
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "pq.csv")
+            export_csv(rows, path, "page-query")
+            with open(path, newline="") as f:
+                read_rows = list(csv.DictReader(f))
+            self.assertEqual(read_rows[0]["cluster"], "unclustered")
+
+    def test_export_csv_page_query_quoting_round_trips_comma_and_quote(self):
+        tricky_query = 'weird, "quoted" query'
+        rows = [
+            {
+                "keys": ["/page", tricky_query],
+                "clicks": 2,
+                "impressions": 20,
+                "ctr": 0.1,
+                "position": 3.0,
+            }
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "pq-quoting.csv")
+            export_csv(rows, path, "page-query", cluster_fn=lambda q: "unclustered")
+            with open(path, newline="") as f:
+                read_rows = list(csv.DictReader(f))
+            self.assertEqual(read_rows[0]["query"], tricky_query)
+
+    def test_export_csv_raises_value_error_for_unknown_dimension(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "bad.csv")
+            with self.assertRaises(ValueError):
+                export_csv([], path, "bogus-dimension")
 
     # -- resolve_export_path --------------------------------------------
 

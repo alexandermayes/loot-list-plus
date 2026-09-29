@@ -43,7 +43,7 @@ export function SegmentedControl<T extends string>({
           onClick={() => onChange(option.value)}
           className={cn(
             'font-medium transition-colors',
-            size === 'sm' ? 'px-3 py-1.5 text-[12px] rounded-[40px]' : 'px-5 py-2.5 text-[13px] rounded-[40px]',
+            size === 'sm' ? 'px-3 py-1.5 text-12 rounded-[40px]' : 'px-5 py-2.5 text-13 rounded-[40px]',
             value === option.value
               ? variant === 'accent'
                 ? 'bg-accent/20 text-accent hover:bg-accent/30'

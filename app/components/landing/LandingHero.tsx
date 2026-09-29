@@ -116,10 +116,10 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
               href="/changelog"
               className="flex items-center gap-2 bg-[#17151b] rounded-[60px] pl-1 pr-3 py-1 no-underline hover:bg-[#1f1d25] transition-colors max-w-full"
             >
-              <span className="flex items-center justify-center px-2 py-1 bg-[#9940ec] rounded-[60px] font-poppins font-semibold text-[10px] text-white shrink-0">
+              <span className="flex items-center justify-center px-2 py-1 bg-[#9940ec] rounded-[60px] font-poppins font-semibold text-11 text-white shrink-0">
                 NEW
               </span>
-              <span className="font-poppins text-[14px] text-white whitespace-nowrap truncate min-w-0">
+              <span className="font-poppins text-14 text-white whitespace-nowrap truncate min-w-0">
                 {recentFeatures}
               </span>
               <Image src="/images/landing/icons/arrow-right-02.svg" alt="" width={16} height={16} className="shrink-0" />
@@ -127,11 +127,11 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
 
             {/* Headline */}
             <div className="text-center w-full max-w-[720px]">
-              <h1 className="font-poppins font-bold text-[40px] md:text-[56px] lg:text-[72px] leading-[0.92] text-white mb-6">
-                <span className="font-wow text-shimmer-purple text-[48px] md:text-[64px] lg:text-[80px] leading-[0.82]">Epic loot</span>
+              <h1 className="font-poppins font-bold text-40 md:text-56 lg:text-72 leading-[0.92] text-white mb-6">
+                <span className="font-wow text-shimmer-purple text-48 md:text-64 lg:text-80 leading-[0.82]">Epic loot</span>
                 {' '}deserves an epic system.
               </h1>
-              <p className="font-poppins font-medium text-[16px] text-[#bababa] leading-normal max-w-[620px] mx-auto">
+              <p className="font-poppins font-medium text-16 text-[#bababa] leading-normal max-w-[620px] mx-auto">
                 LootList+ is loot management for World of Warcraft guilds. Raiders rank what they
                 want, officers set the rules, and every drop gets a priority the whole guild
                 can see.
@@ -147,7 +147,7 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
                     trackClientEvent('landing_nav_clicked', { target: 'loot-decision', source: 'hero' })
                     scrollToSection('loot-decision')
                   }}
-                  className="flex items-center justify-center px-4 py-3 rounded-[60px] bg-[#121218] border border-[#383838] font-poppins font-semibold text-[16px] text-white cursor-pointer hover:bg-[#1a1a22] transition-colors"
+                  className="flex items-center justify-center px-4 py-3 rounded-[60px] bg-[#121218] border border-[#383838] font-poppins font-semibold text-16 text-white cursor-pointer hover:bg-[#1a1a22] transition-colors"
                 >
                   See a loot decision
                 </MagneticButton>
@@ -158,12 +158,12 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
                     trackClientEvent('landing_cta_clicked', { cta: 'hero_create_guild' })
                     trackMarketingCta({ cta_text: 'Create your guild free', cta_placement: 'hero', destination: APP_URL })
                   }}
-                  className="flex items-center justify-center px-4 py-3 rounded-[60px] bg-white font-poppins font-semibold text-[16px] text-black no-underline hover:bg-white/90 transition-colors"
+                  className="flex items-center justify-center px-4 py-3 rounded-[60px] bg-white font-poppins font-semibold text-16 text-black no-underline hover:bg-white/90 transition-colors"
                 >
                   Create your guild free
                 </MagneticButton>
               </div>
-              <p className="font-poppins text-[13px] text-[#bababa]/70">
+              <p className="font-poppins text-13 text-[#bababa]/70">
                 Free core plan · Discord sign-in · WoW Forever and WoW Classic
               </p>
             </div>
@@ -208,7 +208,7 @@ export default function LandingHero({ recentFeatures = 'See what\'s new' }: { re
 
           {/* Social proof counter with count-up */}
           <motion.p
-            className="text-center mt-16 md:mt-20 font-poppins font-medium text-[16px] md:text-[20px] text-white pb-20 md:pb-32"
+            className="text-center mt-16 md:mt-20 font-poppins font-medium text-16 md:text-20 text-white pb-20 md:pb-32"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}

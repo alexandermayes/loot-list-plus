@@ -52,10 +52,10 @@ export default function GlobalError({
 
               {/* Message */}
               <div className="space-y-3">
-                <h1 className="text-[32px] font-bold tracking-tight text-[#ffffff]">
+                <h1 className="text-32 font-bold tracking-tight text-[#ffffff]">
                   Something broke
                 </h1>
-                <p className="text-[16px] text-[#a1a1aa]">
+                <p className="text-16 text-[#a1a1aa]">
                   A critical error occurred. Hit retry or hearth back home.
                 </p>
               </div>

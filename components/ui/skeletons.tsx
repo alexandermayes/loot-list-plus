@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import { Card } from '@/components/ui/card'
 
 /**
  * Base skeleton element with pulse animation
@@ -23,7 +24,7 @@ export function Skeleton({ className }: SkeletonProps) {
  */
 export function StatCardSkeleton() {
   return (
-    <div className="bg-background-elevated border border-border rounded-xl p-3 sm:p-6">
+    <Card className="p-3 sm:p-6">
       <div className="flex items-center justify-between">
         <div className="space-y-3">
           <Skeleton className="h-4 w-16 sm:w-24" />
@@ -31,7 +32,7 @@ export function StatCardSkeleton() {
         </div>
         <Skeleton className="w-10 h-10 sm:w-12 sm:h-12 rounded-full" />
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -40,7 +41,7 @@ export function StatCardSkeleton() {
  */
 export function CharacterCardSkeleton() {
   return (
-    <div className="bg-background-elevated border border-border rounded-xl p-6 lg:w-1/3">
+    <Card className="p-6 lg:w-1/3">
       <div className="flex items-center gap-4">
         <Skeleton className="w-16 h-16 rounded-full" />
         <div className="flex-1 space-y-2">
@@ -52,7 +53,7 @@ export function CharacterCardSkeleton() {
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -63,9 +64,10 @@ export function ItemListSkeleton({ count = 3 }: { count?: number }) {
   return (
     <div className="space-y-3">
       {Array.from({ length: count }).map((_, i) => (
-        <div
+        <Card
+          variant="nested"
           key={i}
-          className="bg-background-inset border border-border rounded-xl p-4"
+          className="p-4"
         >
           <div className="flex items-center gap-4">
             <Skeleton className="w-10 h-10 rounded-full flex-shrink-0" />
@@ -80,7 +82,7 @@ export function ItemListSkeleton({ count = 3 }: { count?: number }) {
               </div>
             </div>
           </div>
-        </div>
+        </Card>
       ))}
     </div>
   )
@@ -91,7 +93,7 @@ export function ItemListSkeleton({ count = 3 }: { count?: number }) {
  */
 export function LootCardSkeleton() {
   return (
-    <div className="bg-background-elevated border border-border rounded-xl p-6">
+    <Card className="p-6">
       <div className="flex items-center gap-4 mb-6">
         <Skeleton className="w-8 h-8 rounded" />
         <div className="space-y-2">
@@ -100,7 +102,7 @@ export function LootCardSkeleton() {
         </div>
       </div>
       <ItemListSkeleton count={3} />
-    </div>
+    </Card>
   )
 }
 
@@ -109,7 +111,7 @@ export function LootCardSkeleton() {
  */
 export function SubmissionCardSkeleton() {
   return (
-    <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+    <Card className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         <Skeleton className="h-[19px] w-24" />
         <Skeleton className="h-[13px] w-16" />
@@ -120,7 +122,7 @@ export function SubmissionCardSkeleton() {
         <Skeleton className="h-8 w-[52px] rounded-[40px]" />
         <Skeleton className="h-8 w-8 rounded-[40px]" />
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -129,7 +131,7 @@ export function SubmissionCardSkeleton() {
  */
 export function GuildCardSkeleton() {
   return (
-    <div className="flex items-center justify-between gap-3 p-4 bg-background-inset border border-border rounded-lg">
+    <Card variant="nested" className="flex items-center justify-between gap-3 p-4">
       <div className="flex items-center gap-3 sm:gap-4 min-w-0">
         <Skeleton className="w-10 h-10 sm:w-12 sm:h-12 rounded-full shrink-0" />
         <div className="space-y-2">
@@ -139,7 +141,7 @@ export function GuildCardSkeleton() {
         </div>
       </div>
       <Skeleton className="h-10 w-20 sm:w-28 rounded-[52px] shrink-0" />
-    </div>
+    </Card>
   )
 }
 
@@ -168,7 +170,7 @@ export function TierTabsSkeleton() {
  */
 export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
   return (
-    <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+    <Card className="overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-border bg-background-subtle">
         <div className="flex items-center gap-4">
@@ -195,7 +197,7 @@ export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -252,7 +254,7 @@ export function DashboardDataSkeleton() {
       {/* Insights Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="bg-background-elevated border border-border rounded-xl p-5">
+          <Card key={i} className="p-5">
             <div className="flex items-center gap-2 mb-4">
               <Skeleton className="w-5 h-5 rounded" />
               <Skeleton className="h-4 w-28" />
@@ -262,7 +264,7 @@ export function DashboardDataSkeleton() {
               <Skeleton className="h-3 w-24" />
               <Skeleton className="h-2 w-full rounded-full" />
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
@@ -283,7 +285,7 @@ export function ProfileContentSkeleton() {
   return (
     <div className="space-y-6">
       {/* Header Card - matches flex-col sm:flex-row layout */}
-      <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-6">
+      <Card className="p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
           <Skeleton className="w-16 h-16 sm:w-20 sm:h-20 rounded-full shrink-0" />
           <div className="flex-1 min-w-0 space-y-2">
@@ -296,7 +298,7 @@ export function ProfileContentSkeleton() {
           {/* Logout button: full-width on mobile, auto on desktop */}
           <Skeleton className="h-10 w-full sm:w-28 rounded-[52px]" />
         </div>
-      </div>
+      </Card>
 
       {/* Tabs */}
       <div className="flex items-center gap-2">
@@ -308,7 +310,7 @@ export function ProfileContentSkeleton() {
       {/* Content - matches Account tab (default) layout */}
       <div className="space-y-6">
         {/* Notifications section - 2 rows to match real content */}
-        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+        <Card className="overflow-hidden">
           <div className="px-6 py-4 border-b border-border">
             <Skeleton className="h-5 w-44" />
             <Skeleton className="h-4 w-64 mt-1" />
@@ -329,9 +331,9 @@ export function ProfileContentSkeleton() {
               <Skeleton className="h-4 w-16" />
             </div>
           </div>
-        </div>
+        </Card>
         {/* Battle.net section */}
-        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+        <Card className="overflow-hidden">
           <div className="px-6 py-4 border-b border-border">
             <Skeleton className="h-5 w-36" />
             <Skeleton className="h-4 w-56 mt-1" />
@@ -343,7 +345,7 @@ export function ProfileContentSkeleton() {
               <Skeleton className="h-9 w-36 rounded-[40px]" />
             </div>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   )
@@ -386,7 +388,7 @@ export function SubmissionsListSkeleton({ count = 4 }: { count?: number }) {
  */
 export function PendingSubmissionCardSkeleton() {
   return (
-    <div className="p-6 bg-background-elevated border border-border rounded-xl">
+    <Card className="p-6">
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-3">
@@ -416,7 +418,7 @@ export function PendingSubmissionCardSkeleton() {
           <Skeleton className="h-12 w-24 rounded-[52px]" />
         </div>
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -438,7 +440,7 @@ export function PendingSubmissionsListSkeleton({ count = 3 }: { count?: number }
  */
 export function SettingsCardSkeleton() {
   return (
-    <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+    <Card className="overflow-hidden">
       <div className="p-6 border-b border-border">
         <Skeleton className="h-6 w-40" />
         <Skeleton className="h-4 w-56 mt-2" />
@@ -460,7 +462,7 @@ export function SettingsCardSkeleton() {
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -470,8 +472,9 @@ export function SettingsCardSkeleton() {
 export function GuildSettingsContentSkeleton() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <SettingsCardSkeleton />
-      <SettingsCardSkeleton />
+      {Array.from({ length: 8 }).map((_, i) => (
+        <SettingsCardSkeleton key={i} />
+      ))}
     </div>
   )
 }
@@ -481,9 +484,9 @@ export function GuildSettingsContentSkeleton() {
  */
 export function LootListBracketSkeleton() {
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
+    <Card className="overflow-hidden">
       {/* Bracket header */}
-      <div className="bg-muted/30 border-l-4 border-l-muted px-4 py-2">
+      <div className="bg-muted/30 px-4 py-2">
         <Skeleton className="h-5 w-32" />
         <Skeleton className="h-3 w-48 mt-1" />
       </div>
@@ -499,7 +502,7 @@ export function LootListBracketSkeleton() {
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -524,7 +527,7 @@ export function LootListContentSkeleton() {
  */
 export function MasterSheetBossSkeleton({ rows = 4 }: { rows?: number }) {
   return (
-    <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+    <Card className="overflow-hidden">
       {/* Boss header - matches BossSection: px-5 py-3 with 24x24 icon */}
       <div className="flex items-center justify-between px-5 py-3">
         <div className="flex items-center gap-3">
@@ -560,7 +563,7 @@ export function MasterSheetBossSkeleton({ rows = 4 }: { rows?: number }) {
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -595,7 +598,7 @@ export function CharacterFormSkeleton() {
         </div>
 
         {/* Form Card */}
-        <div className="bg-background-elevated border border-border rounded-xl p-6">
+        <Card className="p-6">
           <div className="space-y-6">
             {/* Character Name */}
             <div>
@@ -638,7 +641,7 @@ export function CharacterFormSkeleton() {
             <Skeleton className="h-12 w-40 rounded-[52px]" />
             <Skeleton className="h-12 w-24 rounded-[52px]" />
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   )
@@ -659,15 +662,15 @@ export function LootItemsPageSkeleton() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-background-elevated border border-border rounded-xl p-4">
+          <Card key={i} className="p-4">
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-8 w-12 mt-1" />
-          </div>
+          </Card>
         ))}
       </div>
 
       {/* Filters */}
-      <div className="bg-background-elevated border border-border rounded-xl p-4">
+      <Card className="p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Skeleton className="h-4 w-24 mb-2" />
@@ -678,10 +681,10 @@ export function LootItemsPageSkeleton() {
             <Skeleton className="h-10 w-full rounded-lg" />
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Table */}
-      <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+      <Card className="overflow-hidden">
         {/* Table Header */}
         <div className="px-4 py-3 border-b border-border bg-muted">
           <div className="flex items-center gap-4">
@@ -712,7 +715,7 @@ export function LootItemsPageSkeleton() {
             </div>
           ))}
         </div>
-      </div>
+      </Card>
     </div>
   )
 }
@@ -735,10 +738,12 @@ export function RaidTrackingPageSkeleton() {
         <Skeleton className="h-10 w-56 rounded-[40px] self-start" />
       </div>
 
-      {/* Legend row - matches status legend with 4 colored squares + labels */}
+      {/* Legend row - matches status legend with 5 colored squares + labels (always;
+          the skeleton renders before guildSettings loads, so it never speculates the
+          conditional 6th "Signed Up" indicator gated on guildSettings?.use_signups) */}
       <div className="flex items-center gap-3 sm:gap-4">
         <Skeleton className="h-4 w-12" />
-        {Array.from({ length: 4 }).map((_, i) => (
+        {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="flex items-center gap-1">
             <Skeleton className="w-5 h-5 rounded" />
             <Skeleton className="h-4 w-14" />
@@ -758,7 +763,7 @@ export function RaidTrackingPageSkeleton() {
 
           {/* Raid day cards (2 per week) */}
           {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+            <Card key={i} className="overflow-hidden">
               <div className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                 <div className="flex items-center gap-3 sm:gap-4">
                   <Skeleton className="w-5 h-5 rounded flex-shrink-0" />
@@ -772,7 +777,7 @@ export function RaidTrackingPageSkeleton() {
                   <Skeleton className="h-9 w-20 rounded-[40px]" />
                 </div>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
 
@@ -821,15 +826,15 @@ export function LootSettingsPageSkeleton() {
       {/* Stats Grid - 4 columns */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-background-elevated border border-border rounded-xl p-4">
+          <Card key={i} className="p-4">
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-7 w-12 mt-1" />
-          </div>
+          </Card>
         ))}
       </div>
 
       {/* Filters Bar */}
-      <div className="bg-background-elevated border border-border rounded-xl p-4">
+      <Card className="p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="space-y-2">
@@ -838,10 +843,10 @@ export function LootSettingsPageSkeleton() {
             </div>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* Item Table Rows */}
-      <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+      <Card className="overflow-hidden">
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-border last:border-b-0">
             <Skeleton className="w-8 h-8 rounded shrink-0" />
@@ -850,7 +855,7 @@ export function LootSettingsPageSkeleton() {
             <Skeleton className="h-6 w-20 rounded-full" />
           </div>
         ))}
-      </div>
+      </Card>
     </div>
   )
 }

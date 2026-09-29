@@ -1,0 +1,57 @@
+-- metric-id: cta-breakdown
+-- label: Person-scoped landing_cta_clicked counts grouped by CTA button, per period
+-- columns: period,cta,events,persons
+-- window: 2026-08-24..2026-09-24
+--
+-- Same person identity space as the CTA funnel query; this file answers
+-- which specific button on the page is driving (or failing to drive)
+-- clicks, rather than the step-by-step reach the funnel query answers.
+--
+-- Counts only: no output column carries a raw distinct id; it appears
+-- only inside a count or uniq aggregate. No identifying event
+-- properties are read beyond the button label itself.
+
+SELECT
+    'sprint_window' AS period,
+    properties.cta AS cta,
+    count() AS events,
+    uniq(person_id) AS persons
+FROM events
+WHERE event = 'landing_cta_clicked'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+GROUP BY cta
+
+UNION ALL
+
+SELECT
+    'baseline_week' AS period,
+    properties.cta AS cta,
+    count() AS events,
+    uniq(person_id) AS persons
+FROM events
+WHERE event = 'landing_cta_clicked'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+GROUP BY cta
+
+UNION ALL
+
+SELECT
+    'week4' AS period,
+    properties.cta AS cta,
+    count() AS events,
+    uniq(person_id) AS persons
+FROM events
+WHERE event = 'landing_cta_clicked'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+GROUP BY cta
+
+ORDER BY
+    CASE period
+        WHEN 'sprint_window' THEN 0
+        WHEN 'baseline_week' THEN 1
+        WHEN 'week4' THEN 2
+    END,
+    cta

@@ -16,6 +16,7 @@ import { StatusBadge } from '@/components/ui/status-badge'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Copy01Icon, Cancel01Icon, Add01Icon, SentIcon } from '@hugeicons/core-free-icons'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { Card } from '@/components/ui/card'
 
 interface InviteCode {
   id: string
@@ -139,12 +140,12 @@ export default function InviteCodeManager() {
   }
 
   return (
-    <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+    <Card className="overflow-hidden">
       <div className="p-6 border-b border-border">
         <div className="flex items-center justify-between">
           <div>
             <Heading level={2}>Invite Codes</Heading>
-            <p className="text-muted-foreground text-[13px] mt-1">Generate and manage invite codes for your guild</p>
+            <p className="text-muted-foreground text-13 mt-1">Generate and manage invite codes for your guild</p>
           </div>
           <Button size="sm" onClick={() => setShowGenerateForm(!showGenerateForm)}>
             <HugeiconsIcon icon={Add01Icon} size={16} />
@@ -220,7 +221,7 @@ export default function InviteCodeManager() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center gap-2">
-                        <code className="px-2 py-1 bg-background-elevated rounded font-mono text-foreground text-[13px]">
+                        <code className="px-2 py-1 bg-background-elevated rounded font-mono text-foreground text-13">
                           {code.code}
                         </code>
                         {isExpired && (
@@ -231,7 +232,7 @@ export default function InviteCodeManager() {
                         )}
                       </div>
 
-                      <div className="text-[13px] text-muted-foreground space-y-1">
+                      <div className="text-13 text-muted-foreground space-y-1">
                         <p>
                           Uses: {code.current_uses}
                           {code.max_uses ? ` / ${code.max_uses}` : ' (unlimited)'}
@@ -277,6 +278,6 @@ export default function InviteCodeManager() {
       </div>
 
       {ConfirmDialog}
-    </div>
+    </Card>
   )
 }

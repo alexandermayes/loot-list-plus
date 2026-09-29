@@ -9,6 +9,7 @@ import { useGuildContext } from '../contexts/GuildContext'
 import { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 
 interface NavigationProps {
   user: User | null
@@ -115,7 +116,7 @@ export default function Navigation({
             </Button>
 
             {dropdownOpen && (
-              <div className="absolute top-full mt-2 right-0 sm:left-0 w-[calc(100vw-24px)] max-w-[256px] bg-background-elevated border border-border-strong rounded-lg shadow-lg z-50">
+              <Card className="absolute top-full mt-2 right-0 sm:left-0 w-[calc(100vw-24px)] max-w-[256px] border-border-strong shadow-lg z-50">
                 <div className="p-2">
                   <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Your Guilds
@@ -151,14 +152,14 @@ export default function Navigation({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                       </svg>
                       <div className="flex-1 text-left">
-                        <p className="font-poppins font-medium text-[13px] text-primary">
+                        <p className="font-poppins font-medium text-13 text-primary">
                           Join a guild
                         </p>
                       </div>
                     </Button>
                   </div>
                 </div>
-              </div>
+              </Card>
             )}
           </div>
         )}

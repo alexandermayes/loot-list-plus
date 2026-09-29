@@ -106,7 +106,7 @@ function PrioritySummary({ priority }: { priority: ItemPriority }) {
   if (roles.length === 0 && specs.length === 0 && chars.length === 0) return null
 
   return (
-    <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted-foreground">
+    <div className="flex flex-wrap gap-x-4 gap-y-1 text-12 text-muted-foreground">
       {roles.length > 0 && (
         <span>
           <span className="text-foreground-secondary font-medium">Role:</span>{' '}
@@ -414,10 +414,10 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
             <ModalDescription>
               {item.boss_name} &middot; {item.item_slot}
               {item.classification && (
-                <span className="ml-2 text-[12px] text-muted-foreground">({item.classification})</span>
+                <span className="ml-2 text-12 text-muted-foreground">({item.classification})</span>
               )}
               {priority && (
-                <span className="ml-2 text-accent text-[12px]">Has priority rules</span>
+                <span className="ml-2 text-accent text-12">Has priority rules</span>
               )}
             </ModalDescription>
           </div>
@@ -442,7 +442,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
         )}
 
         {/* Candidate count */}
-        <div className="px-6 py-2 text-[12px] text-muted-foreground border-b border-border">
+        <div className="px-6 py-2 text-12 text-muted-foreground border-b border-border">
           {sortedRankings.length} candidate{sortedRankings.length !== 1 ? 's' : ''}
           {receivedCharacterIds.size > 0 && (
             <span className="ml-2">
@@ -457,11 +457,11 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
             {contestInfo.isTied ? (
               <>
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-warning">
+                  <span className="text-11 font-medium uppercase tracking-wider text-warning">
                     {contestInfo.tiedAtTop.length}-way tie at <span className="tabular-nums">{contestInfo.tiedAtTop[0].loot_score.toFixed(decimalPlaces)}</span> pts
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-13">
                   {contestInfo.tiedAtTop.map((r, i) => (
                     <span key={r.character_id} className="flex items-center gap-1">
                       {i > 0 && <span className="text-muted-foreground mr-1">&middot;</span>}
@@ -476,13 +476,13 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
             ) : contestInfo.isClose && contestInfo.nextAfterTied ? (
               <>
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[11px] font-medium uppercase tracking-wider text-warning">
+                  <span className="text-11 font-medium uppercase tracking-wider text-warning">
                     Close contest, <span className="tabular-nums">{contestInfo.gapToNext.toFixed(decimalPlaces)}</span> pts apart
                   </span>
                 </div>
-                <div className="flex items-center gap-4 text-[13px]">
+                <div className="flex items-center gap-4 text-13">
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-muted-foreground">#1</span>
+                    <span className="text-11 text-muted-foreground">#1</span>
                     <span className="font-semibold" style={{ color: sortedRankings[0].class_color }}>
                       {sortedRankings[0].player_name}
                     </span>
@@ -490,7 +490,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                   </div>
                   <span className="text-muted-foreground">vs</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-muted-foreground">#2</span>
+                    <span className="text-11 text-muted-foreground">#2</span>
                     <span className="font-semibold" style={{ color: contestInfo.nextAfterTied.class_color }}>
                       {contestInfo.nextAfterTied.player_name}
                     </span>
@@ -520,9 +520,9 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-[13px]">
+            <table className="w-full text-13">
               <thead>
-                <tr className="bg-background-subtle text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                <tr className="bg-background-subtle text-11 font-medium text-muted-foreground uppercase tracking-wider">
                   <th className="px-4 py-2 text-left w-8">#</th>
                   <th className="px-4 py-2 text-left">Candidate</th>
                   <th className="px-4 py-2 text-right">Score</th>
@@ -549,27 +549,27 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                         !r.is_eligible ? 'opacity-50' : ''
                       } ${hasReceived ? 'bg-success/5' : ''} ${isConfirming ? 'bg-accent/10' : ''}`}
                     >
-                      <td className="px-4 py-2 text-muted-foreground text-[12px]">{i + 1}</td>
+                      <td className="px-4 py-2 text-muted-foreground text-12">{i + 1}</td>
                       <td className="px-4 py-2">
                         <div className="flex items-center gap-2">
                           <span className="font-medium" style={{ color: r.class_color }}>
                             {r.player_name}
                           </span>
                           {r.is_trial && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-warning/20 text-warning">Trial</span>
+                            <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-warning/20 text-warning">Trial</span>
                           )}
                           {!r.is_eligible && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-destructive/20 text-destructive">Ineligible</span>
+                            <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-destructive/20 text-destructive">Ineligible</span>
                           )}
                           {hasReceived && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success">Has item</span>
+                            <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success">Has item</span>
                           )}
                         </div>
                         {/* Inline score explanation for top 3 */}
                         {explanation && (
                           <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
                             {explanation.lines.map(line => (
-                              <span key={line.key} className="text-[10px] text-muted-foreground">
+                              <span key={line.key} className="text-11 text-muted-foreground">
                                 {line.label}: <span className={`font-medium tabular-nums ${line.value > 0 ? 'text-foreground-secondary' : line.value < 0 ? 'text-destructive' : ''}`}>
                                   {line.value > 0 ? '+' : ''}{line.value.toFixed(decimalPlaces)}
                                 </span>
@@ -619,7 +619,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                           <Button
                             variant={isConfirming ? 'outline' : 'primary'}
                             size="sm"
-                            className={`text-[11px] h-7 px-3 ${isConfirming ? '' : 'opacity-0 group-hover:opacity-100 transition-opacity'}`}
+                            className={`text-11 h-7 px-3 ${isConfirming ? '' : 'opacity-0 group-hover:opacity-100 transition-opacity'}`}
                             onClick={() => setAwardingCandidate(isConfirming ? null : r)}
                           >
                             {isConfirming ? 'Cancel' : 'Award'}
@@ -706,7 +706,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
           ) : (
             <div className="space-y-1">
               {recentAwards.map((award) => (
-                <div key={award.id} className="group flex items-center gap-2 text-[12px]">
+                <div key={award.id} className="group flex items-center gap-2 text-12">
                   <span className="text-muted-foreground tabular-nums">{formatDate(award.awarded_date)}</span>
                   <span className="text-muted-foreground">&rarr;</span>
                   <span className="font-medium" style={{ color: award.character_class_color || undefined }}>
@@ -722,7 +722,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                     <button
                       onClick={() => handleUndoAward(award)}
                       disabled={undoingAwardId === award.id}
-                      className="ml-auto text-[11px] text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+                      className="ml-auto text-11 text-destructive/70 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
                     >
                       {undoingAwardId === award.id ? 'Removing...' : 'Undo'}
                     </button>

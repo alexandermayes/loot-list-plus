@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import ItemLink from '@/app/components/ItemLink'
 import { Button } from '@/components/ui/button'
 import { getBossImage } from '@/utils/bossImages'
+import { Card } from '@/components/ui/card'
 // Lazy-load boss quotes to keep initial bundle small
 let _bossQuotes: typeof import('@/data/boss-quotes') | null = null
 async function loadBossQuote(boss: string): Promise<string | null> {
@@ -104,40 +105,40 @@ function ScoreBreakdownPopover({
   const explanation = explainScore(result, config)
 
   return createPortal(
-    <div
+    <Card
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className="fixed z-[9999] bg-background-elevated border border-border rounded-lg shadow-lg p-3 w-56"
+      className="fixed z-[9999] shadow-lg p-3 w-56"
       style={{ top: position.top, left: position.left, transform: 'translateX(-50%)' }}
     >
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[12px] font-semibold" style={{ color: ranking.class_color }}>
+        <span className="text-12 font-semibold" style={{ color: ranking.class_color }}>
           {ranking.player_name}
         </span>
-        <span className="text-[12px] font-bold text-foreground tabular-nums">{explanation.total.toFixed(decimalPlaces)}</span>
+        <span className="text-12 font-bold text-foreground tabular-nums">{explanation.total.toFixed(decimalPlaces)}</span>
       </div>
       <div className="space-y-1">
         {explanation.lines.map(line => (
           <div key={line.key} className="flex items-center justify-between">
-            <span className="text-[11px] text-foreground-secondary">{line.label}</span>
-            <span className={`text-[11px] font-medium tabular-nums ${line.value >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+            <span className="text-11 text-foreground-secondary">{line.label}</span>
+            <span className={`text-11 font-medium tabular-nums ${line.value >= 0 ? 'text-foreground' : 'text-destructive'}`}>
               {line.value >= 0 ? '+' : ''}{line.value.toFixed(decimalPlaces)}
             </span>
           </div>
         ))}
       </div>
       {ranking.is_trial && (
-        <p className="text-[10px] text-warning mt-1.5 pt-1.5 border-t border-border">Trial member</p>
+        <p className="text-11 text-warning mt-1.5 pt-1.5 border-t border-border">Trial member</p>
       )}
       {!ranking.is_eligible && (
-        <p className="text-[10px] text-destructive mt-1.5 pt-1.5 border-t border-border">Ineligible (min raids not met)</p>
+        <p className="text-11 text-destructive mt-1.5 pt-1.5 border-t border-border">Ineligible (min raids not met)</p>
       )}
       {gapOverNext != null && gapOverNext > 0.01 && (
-        <p className="text-[10px] text-muted-foreground mt-1.5 pt-1.5 border-t border-border">
+        <p className="text-11 text-muted-foreground mt-1.5 pt-1.5 border-t border-border">
           {gapOverNext.toFixed(decimalPlaces)} point lead over #2
         </p>
       )}
-    </div>,
+    </Card>,
     document.body
   )
 }
@@ -189,9 +190,9 @@ export const BossSection = memo(function BossSection({
   const columnIndices = Array.from({ length: columnCount }, (_, i) => i)
 
   return (
-    <div
+    <Card
       id={`boss-${boss.replace(/\s+/g, '-')}`}
-      className="bg-background-elevated border border-border rounded-xl overflow-hidden scroll-mt-[140px]"
+      className="overflow-hidden scroll-mt-[140px]"
     >
       {/* Boss Header - Clickable */}
       <Button
@@ -210,14 +211,14 @@ export const BossSection = memo(function BossSection({
             />
           )}
           <div>
-            <h2 className="text-[15px] font-semibold text-foreground">{boss}</h2>
+            <h2 className="text-15 font-semibold text-foreground">{boss}</h2>
             {bossQuote && !isCollapsed && (
-              <p className="text-[11px] italic text-muted-foreground/60 mt-0.5">&quot;{bossQuote}&quot;</p>
+              <p className="text-11 italic text-muted-foreground/60 mt-0.5">&quot;{bossQuote}&quot;</p>
             )}
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-[12px] text-foreground-muted font-medium">
+          <span className="text-12 text-foreground-muted font-medium">
             {items.length} item{items.length !== 1 ? 's' : ''}
           </span>
           <svg
@@ -243,17 +244,17 @@ export const BossSection = memo(function BossSection({
                     <ItemLink
                       name={ir.item.name}
                       wowheadId={ir.item.wowhead_id}
-                      className={`font-medium text-[13px] ${isOfficer && onItemClick ? 'cursor-pointer' : ''}`}
+                      className={`font-medium text-13 ${isOfficer && onItemClick ? 'cursor-pointer' : ''}`}
                       onClick={isOfficer && onItemClick ? (e: React.MouseEvent) => {
                         e.preventDefault()
                         onItemClick(ir.item, ir.rankings)
                       } : undefined}
                     />
-                    <p className="text-[11px] text-foreground-muted mt-0.5">{ir.item.item_slot}</p>
+                    <p className="text-11 text-foreground-muted mt-0.5">{ir.item.item_slot}</p>
                   </div>
                 </div>
                 {ir.item.is_loot_council ? (
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-accent/20 text-accent">Loot Council</span>
+                  <span className="text-11 font-medium px-2 py-0.5 rounded bg-accent/20 text-accent">Loot Council</span>
                 ) : ir.rankings.length > 0 ? (
                   <div className="flex flex-wrap gap-x-3 gap-y-1">
                     {ir.rankings.map((ranking, index) => {
@@ -265,38 +266,38 @@ export const BossSection = memo(function BossSection({
                           className={`flex items-baseline gap-1 ${canCompare ? 'cursor-pointer' : ''}`}
                           onClick={canCompare && onCompare ? () => onCompare(ir.item.name, ranking, ir.rankings[0]) : undefined}
                         >
-                          <span className="text-[11px] text-foreground-muted">#{index + 1}</span>
+                          <span className="text-11 text-foreground-muted">#{index + 1}</span>
                           <span
-                            className={`text-[12px] font-medium ${isCurrentUser ? 'underline decoration-dotted underline-offset-2' : ''}`}
+                            className={`text-12 font-medium ${isCurrentUser ? 'underline decoration-dotted underline-offset-2' : ''}`}
                             style={{ color: ranking.class_color }}
                           >
                             {ranking.player_name}
-                            {ranking.is_trial && <span className="text-warning text-[9px] ml-0.5">(T)</span>}
-                            {!ranking.is_eligible && <span className="text-destructive text-[9px] ml-0.5">⊘</span>}
+                            {ranking.is_trial && <span className="text-warning text-11 ml-0.5">(T)</span>}
+                            {!ranking.is_eligible && <span className="text-destructive text-11 ml-0.5">⊘</span>}
                           </span>
-                          <span className="text-[10px] text-foreground-muted inline-flex items-center gap-0.5 tabular-nums">
+                          <span className="text-11 text-foreground-muted inline-flex items-center gap-0.5 tabular-nums">
                             {ranking.loot_score.toFixed(decimalPlaces)}
                             {(() => {
                               const topScore = ir.rankings[0]?.loot_score ?? 0
                               const isTiedAtTop = ir.rankings.length > 1
                                 && Math.abs(ranking.loot_score - topScore) < 0.01
                                 && Math.abs(ir.rankings[1].loot_score - topScore) < 0.01
-                              if (isTiedAtTop) return <span className="text-[8px] font-medium text-warning px-0.5 rounded bg-warning/15">tied</span>
+                              if (isTiedAtTop) return <span className="text-11 font-medium text-warning px-0.5 rounded bg-warning/15">tied</span>
                               if (index === 0 && ir.rankings[1]) {
                                 const gap = ranking.loot_score - ir.rankings[1].loot_score
                                 const threshold = Math.max(1, topScore * 0.1)
-                                if (gap > 0.01 && gap <= threshold) return <span className="text-[8px] text-muted-foreground/70" title={`${gap.toFixed(decimalPlaces)} point lead over #2`}>+{gap.toFixed(decimalPlaces)}</span>
+                                if (gap > 0.01 && gap <= threshold) return <span className="text-11 text-muted-foreground/70" title={`${gap.toFixed(decimalPlaces)} point lead over #2`}>+{gap.toFixed(decimalPlaces)}</span>
                               }
                               return null
                             })()}
                           </span>
-                          {canCompare && <span className="text-[9px] text-accent">Why?</span>}
+                          {canCompare && <span className="text-11 text-accent">Why?</span>}
                         </div>
                       )
                     })}
                   </div>
                 ) : (
-                  <span className="text-[11px] text-muted-foreground">No one has ranked this item</span>
+                  <span className="text-11 text-muted-foreground">No one has ranked this item</span>
                 )}
               </div>
             ))}
@@ -307,10 +308,10 @@ export const BossSection = memo(function BossSection({
             <table className="w-full" style={{ minWidth: `${380 + columnCount * 120}px` }}>
               <thead className="sticky top-0 z-10">
                 <tr className="bg-background-subtle">
-                  <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[280px] bg-background-subtle">Item</th>
-                  <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[100px] bg-background-subtle">Slot</th>
+                  <th className="px-5 py-2.5 text-left text-12 font-medium text-foreground-muted w-[280px] bg-background-subtle">Item</th>
+                  <th className="px-3 py-2.5 text-left text-12 font-medium text-foreground-muted w-[100px] bg-background-subtle">Slot</th>
                   {columnIndices.map((i) => (
-                    <th key={i} className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[120px] bg-background-subtle">#{i + 1}</th>
+                    <th key={i} className="px-3 py-2.5 text-center text-12 font-medium text-foreground-muted w-[120px] bg-background-subtle">#{i + 1}</th>
                   ))}
                 </tr>
               </thead>
@@ -335,7 +336,7 @@ export const BossSection = memo(function BossSection({
           </div>
         </>
       )}
-    </div>
+    </Card>
   )
 })
 
@@ -393,7 +394,7 @@ const ItemRow = memo(function ItemRow({
         <ItemLink
           name={ir.item.name}
           wowheadId={ir.item.wowhead_id}
-          className={`font-medium text-[13px] ${isOfficer && onItemClick ? 'cursor-pointer' : ''}`}
+          className={`font-medium text-13 ${isOfficer && onItemClick ? 'cursor-pointer' : ''}`}
           onClick={isOfficer && onItemClick ? (e: React.MouseEvent) => {
             e.preventDefault()
             e.stopPropagation()
@@ -401,13 +402,13 @@ const ItemRow = memo(function ItemRow({
           } : undefined}
         />
       </td>
-      <td className="px-3 py-2.5 text-[12px] text-foreground-muted">
+      <td className="px-3 py-2.5 text-12 text-foreground-muted">
         {ir.item.item_slot}
       </td>
       {ir.item.is_loot_council ? (
         <>
           <td className="px-3 py-2.5">
-            <span className="text-[12px] font-medium px-2.5 py-0.5 rounded bg-accent/20 text-accent">Loot Council</span>
+            <span className="text-12 font-medium px-2.5 py-0.5 rounded bg-accent/20 text-accent">Loot Council</span>
           </td>
           {columnCount > 1 && <td colSpan={columnCount - 1} />}
         </>
@@ -441,18 +442,18 @@ const ItemRow = memo(function ItemRow({
                   onMouseLeave={scheduleHide}
                 >
                   <span
-                    className={`text-[13px] font-medium ${isCurrentUser ? 'underline decoration-dotted underline-offset-2' : ''}`}
+                    className={`text-13 font-medium ${isCurrentUser ? 'underline decoration-dotted underline-offset-2' : ''}`}
                     style={{ color: ranking.class_color }}
                   >
                     {ranking.player_name}
                     {ranking.is_trial && (
-                      <span className="text-warning text-[10px] ml-0.5" title="Trial member">(T)</span>
+                      <span className="text-warning text-11 ml-0.5" title="Trial member">(T)</span>
                     )}
                     {!ranking.is_eligible && (
-                      <span className="text-destructive text-[10px] ml-0.5" title={`Ineligible: ${ranking.raids_attended}/${minimumRaidDays} raids attended`}>⊘</span>
+                      <span className="text-destructive text-11 ml-0.5" title={`Ineligible: ${ranking.raids_attended}/${minimumRaidDays} raids attended`}>⊘</span>
                     )}
                   </span>
-                  <span className="text-[11px] text-foreground-muted inline-flex items-center gap-0.5 tabular-nums">
+                  <span className="text-11 text-foreground-muted inline-flex items-center gap-0.5 tabular-nums">
                     {ranking.loot_score.toFixed(decimalPlaces)}
                     {/* Tied badge on all candidates sharing #1 score, close-gap on #1 only */}
                     {(() => {
@@ -460,11 +461,11 @@ const ItemRow = memo(function ItemRow({
                       const isTiedAtTop = ir.rankings.length > 1
                         && Math.abs(ranking.loot_score - topScore) < 0.01
                         && Math.abs(ir.rankings[1].loot_score - topScore) < 0.01
-                      if (isTiedAtTop) return <span className="ml-1 text-[9px] font-medium text-warning px-1 py-px rounded bg-warning/15">tied</span>
+                      if (isTiedAtTop) return <span className="ml-1 text-11 font-medium text-warning px-1 py-px rounded bg-warning/15">tied</span>
                       if (index === 0 && ir.rankings[1]) {
                         const gap = ranking.loot_score - ir.rankings[1].loot_score
                         const threshold = Math.max(1, topScore * 0.1)
-                        if (gap > 0.01 && gap <= threshold) return <span className="ml-1 text-[9px] text-muted-foreground/70" title={`${gap.toFixed(decimalPlaces)} point lead over #2`}>+{gap.toFixed(decimalPlaces)}</span>
+                        if (gap > 0.01 && gap <= threshold) return <span className="ml-1 text-11 text-muted-foreground/70" title={`${gap.toFixed(decimalPlaces)} point lead over #2`}>+{gap.toFixed(decimalPlaces)}</span>
                       }
                       return null
                     })()}
@@ -485,7 +486,7 @@ const ItemRow = memo(function ItemRow({
                     />
                   )}
                   {canCompare && (
-                    <span className="text-[10px] text-accent mt-0.5">Why?</span>
+                    <span className="text-11 text-accent mt-0.5">Why?</span>
                   )}
                 </div>
               ) : (

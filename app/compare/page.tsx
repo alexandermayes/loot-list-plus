@@ -124,7 +124,7 @@ export default function ComparePage() {
       <LandingNav />
 
       <article className="relative pt-32 pb-20 px-6 md:px-12 lg:px-20">
-        <div className="max-w-4xl mx-auto">
+        <div className="prose-measure mx-auto">
           {/* Breadcrumb */}
           <nav className="mb-8 text-sm text-foreground-secondary">
             <Link href="/" className="hover:text-foreground transition-colors">Home</Link>

@@ -179,7 +179,7 @@ export default function ReservePage() {
                         {badge.label}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
+                    <div className="flex items-center gap-4 text-12 text-muted-foreground">
                       <span className="flex items-center gap-1.5">
                         <HugeiconsIcon icon={Calendar03Icon} size={14} />
                         {formatDate(run.raid_at)}

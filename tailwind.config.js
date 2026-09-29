@@ -26,7 +26,7 @@ module.exports = {
 
       // Font sizes from design system
       fontSize: {
-        'xs': ['10px', { lineHeight: '1.5' }],
+        'xs': ['11px', { lineHeight: '1.5' }],
         'sm': ['12px', { lineHeight: '1.5' }],
         'base': ['13px', { lineHeight: '1.5' }],
         'md': ['14px', { lineHeight: '1.5' }],
@@ -36,6 +36,38 @@ module.exports = {
         '3xl': ['24px', { lineHeight: '1.2' }],
         '4xl': ['32px', { lineHeight: '1.2' }],
         '5xl': ['42px', { lineHeight: '1.02' }],
+        // New step between 'base' (13px) and 'lg' (16px); both share 1.5
+        // line height, so this step inherits it too (TYPE-01, D-02).
+        '15': ['15px', { lineHeight: '1.5' }],
+
+        // Pixel-named aliases (TYPE-01, D-02): each one is a twin of the
+        // semantic step above it, not a new size. They exist so the
+        // Phase 09 codemod can map an arbitrary text-[Npx] literal onto a
+        // scale step by name, mechanically, without inventing a value.
+        '11': ['11px', { lineHeight: '1.5' }],
+        '12': ['12px', { lineHeight: '1.5' }],
+        '13': ['13px', { lineHeight: '1.5' }],
+        '14': ['14px', { lineHeight: '1.5' }],
+        '16': ['16px', { lineHeight: '1.5' }],
+        '18': ['18px', { lineHeight: '1.2' }],
+        '20': ['20px', { lineHeight: '1.2' }],
+        '24': ['24px', { lineHeight: '1.2' }],
+        '32': ['32px', { lineHeight: '1.2' }],
+        '42': ['42px', { lineHeight: '1.02' }],
+
+        // Display aliases (D-01): landing hero and sections, pricing, about,
+        // the six app stat tiles and the UpgradeModal price. Each maps 1:1
+        // onto its exact current pixel value so nothing in the sacred hero
+        // H1 shifts. Line-heights follow their neighbours (D-04): 1.2
+        // through 48px, 1.02 from 56px up.
+        '28': ['28px', { lineHeight: '1.2' }],
+        '40': ['40px', { lineHeight: '1.2' }],
+        '44': ['44px', { lineHeight: '1.2' }],
+        '48': ['48px', { lineHeight: '1.2' }],
+        '56': ['56px', { lineHeight: '1.02' }],
+        '64': ['64px', { lineHeight: '1.02' }],
+        '72': ['72px', { lineHeight: '1.02' }],
+        '80': ['80px', { lineHeight: '1.02' }],
       },
 
       // Colors from design tokens
@@ -48,7 +80,6 @@ module.exports = {
           DEFAULT: "hsl(var(--background))",
           subtle: "hsl(var(--background-subtle))",
           elevated: "hsl(var(--background-elevated))",
-          inset: "hsl(var(--background-inset))",
         },
         foreground: {
           DEFAULT: "hsl(var(--foreground))",
@@ -92,6 +123,14 @@ module.exports = {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
+        // Standby (COLOR-06, D-07): the benched/needs-revision amber, kept
+        // distinct from both --accent and --warning. A full colour object
+        // rather than a bare property, because RaidMemberList.tsx consumes
+        // it as both text and an alpha-modified background fill.
+        standby: {
+          DEFAULT: "hsl(var(--standby))",
+          foreground: "hsl(var(--standby-foreground))",
+        },
         error: {
           DEFAULT: "hsl(var(--error))",
           foreground: "hsl(var(--error-foreground))",
@@ -121,6 +160,43 @@ module.exports = {
         "class-druid": "#FF7D0A",
         "class-demonhunter": "#A330C9",
         "class-evoker": "#33937F",
+
+        // Quality/brand colours (COLOR-05, D-12/D-13): raw hex values
+        // duplicated from lib/design-system/quality-colors.ts. Not a
+        // CSS-variable token by design -- a CJS config can't import a TS
+        // module, and importing the config into a client bundle would drag
+        // the whole design-system module in, so the two copies are proven
+        // to agree by __tests__/quality-brand-token-parity.test.ts's
+        // deep-equal assertion instead of sharing a single definition.
+        "quality-epic": "#a335ee",
+        "quality-uncommon": "#1eff00",
+        "brand-battlenet": "#0074e0",
+        // Disclosed duplicate: the `discord` key above already resolves to
+        // hsl(var(--discord)), a different Discord blue than this literal.
+        // brand-discord carries the exact hex the product's Discord-brand
+        // sites use; reconciling the two is routed to Phase 12's design
+        // documentation, not this phase.
+        "brand-discord": "#5865f2",
+        "brand-wcl": "#e35e15",
+      },
+
+      // Splits the `text-accent` utility's colour source from the shared
+      // `accent` colour object above (D-06): `text-accent` needs a
+      // contrast-safe value in light mode (--accent-text) while
+      // `bg-accent`, `border-accent` and `ring-accent` keep resolving to
+      // the brand fill colour (--accent) unchanged. Tailwind merges
+      // `theme.extend` at the key level, so this must be an object
+      // carrying DEFAULT/foreground/subtle, not a bare string — a bare
+      // string would replace the whole `accent` entry in the text-colour
+      // scale and the 9 existing `text-accent-foreground` sites would stop
+      // resolving. This is the same per-utility override mechanism the
+      // `accentColor` block below already uses for form controls.
+      textColor: {
+        accent: {
+          DEFAULT: "hsl(var(--accent-text))",
+          foreground: "hsl(var(--accent-foreground))",
+          subtle: "hsl(var(--accent-subtle))",
+        },
       },
 
       // Border radius from design tokens

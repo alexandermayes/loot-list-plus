@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import {
   Modal,
+  ModalTitle,
   ModalBody,
   ModalFooter,
 } from '@/components/ui/modal'
@@ -91,7 +92,7 @@ export default function OnboardingModal({ open, onClose, isOfficer, guildName }:
           <div className="relative overflow-hidden rounded-t-xl">
             {/* Animated gradient background - subtle color shift */}
             <motion.div
-              className="absolute inset-0 pointer-events-none bg-gradient-to-br from-accent/20 via-purple-500/15 to-accent/20 bg-[length:200%_200%]"
+              className="absolute inset-0 pointer-events-none bg-gradient-to-br from-accent/20 via-accent/10 to-accent/20 bg-[length:200%_200%]"
               animate={{
                 backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
               }}
@@ -138,10 +139,10 @@ export default function OnboardingModal({ open, onClose, isOfficer, guildName }:
                 />
               </div>
 
-              <h2 className="text-xl font-semibold text-foreground mb-1">
+              <ModalTitle className="text-xl font-semibold text-foreground mb-1">
                 {isOfficer ? `Welcome to LootList+` : `Welcome${guildName ? ` to ${guildName}` : ''}`}
-              </h2>
-              <p className="text-foreground-secondary text-[14px]">
+              </ModalTitle>
+              <p className="text-foreground-secondary text-14">
                 {isOfficer ? 'Here\'s a quick overview of how loot works' : 'Here\'s how the loot system works'}
               </p>
             </div>
@@ -181,8 +182,8 @@ export default function OnboardingModal({ open, onClose, isOfficer, guildName }:
                         <HugeiconsIcon icon={CrownIcon} size={24} className="text-accent" />
                       </motion.div>
                       <div>
-                        <h3 className="text-foreground font-semibold text-[16px] mb-2">What is this?</h3>
-                        <p className="text-foreground-secondary text-[14px] leading-relaxed">
+                        <h3 className="text-foreground font-semibold text-16 mb-2">What is this?</h3>
+                        <p className="text-foreground-secondary text-14 leading-relaxed">
                           A loot priority system that speeds up raid loot distribution, sets clear expectations, and removes drama.
                         </p>
                       </div>
@@ -200,10 +201,10 @@ export default function OnboardingModal({ open, onClose, isOfficer, guildName }:
                         <HugeiconsIcon icon={CheckListIcon} size={24} className="text-accent" />
                       </motion.div>
                       <div>
-                        <h3 className="text-foreground font-semibold text-[16px] mb-2">
+                        <h3 className="text-foreground font-semibold text-16 mb-2">
                           {isOfficer ? 'Your setup checklist' : 'Getting started'}
                         </h3>
-                        <ol className="text-foreground-secondary text-[14px] space-y-1.5 list-decimal list-inside">
+                        <ol className="text-foreground-secondary text-14 space-y-1.5 list-decimal list-inside">
                           {isOfficer ? (
                             <>
                               <li>Share your <span className="text-foreground font-medium">invite code</span> with guildies</li>
@@ -237,8 +238,8 @@ export default function OnboardingModal({ open, onClose, isOfficer, guildName }:
                         <HugeiconsIcon icon={Shield01Icon} size={24} className="text-accent" />
                       </motion.div>
                       <div>
-                        <h3 className="text-foreground font-semibold text-[16px] mb-2">How ranking works</h3>
-                        <div className="text-foreground-secondary text-[14px] leading-relaxed space-y-3">
+                        <h3 className="text-foreground font-semibold text-16 mb-2">How ranking works</h3>
+                        <div className="text-foreground-secondary text-14 leading-relaxed space-y-3">
                           <p>
                             Rank items from <span className="text-foreground font-medium">50 to 1</span> based on how much you want them.
                           </p>
@@ -257,9 +258,9 @@ export default function OnboardingModal({ open, onClose, isOfficer, guildName }:
                       className="relative rounded-lg p-4 text-center overflow-hidden"
                     >
                       {/* Animated gradient border */}
-                      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-purple-500/50 via-accent/50 to-purple-500/50 animate-gradient-x" />
+                      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-accent/30 via-accent/70 to-accent/30 animate-gradient-x" />
                       <div className="absolute inset-[1px] rounded-lg bg-background-subtle" />
-                      <p className="relative text-foreground font-medium text-[14px]">
+                      <p className="relative text-foreground font-medium text-14">
                         Higher number = High priority
                       </p>
                     </motion.div>
@@ -278,8 +279,8 @@ export default function OnboardingModal({ open, onClose, isOfficer, guildName }:
                         <HugeiconsIcon icon={SparklesIcon} size={24} className="text-success" />
                       </motion.div>
                       <div>
-                        <h3 className="text-foreground font-semibold text-[16px] mb-2">Why use it?</h3>
-                        <ul className="text-foreground-secondary text-[14px] space-y-2">
+                        <h3 className="text-foreground font-semibold text-16 mb-2">Why use it?</h3>
+                        <ul className="text-foreground-secondary text-14 space-y-2">
                           <li><span className="text-foreground font-medium">Faster loot distribution</span> = more raid time</li>
                           <li><span className="text-foreground font-medium">Clear expectations</span> = no surprises</li>
                           <li><span className="text-foreground font-medium">Export to in-game addons</span> = easy reference during raids</li>
@@ -297,7 +298,7 @@ export default function OnboardingModal({ open, onClose, isOfficer, guildName }:
                       {/* Animated gradient border */}
                       <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-accent/50 via-yellow-500/50 to-accent/50 animate-gradient-x" />
                       <div className="absolute inset-[1px] rounded-lg bg-background-subtle" />
-                      <p className="relative text-foreground-secondary text-[14px]">
+                      <p className="relative text-foreground-secondary text-14">
                         Ready to get started? Head to your <span className="text-accent font-medium">Loot List</span> and rank the items you want.
                       </p>
                     </motion.div>

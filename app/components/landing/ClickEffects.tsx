@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { QUALITY_COLORS } from '@/lib/design-system/quality-colors'
 
 export type ClickEffectType = 'lightning' | 'shockwave' | 'slash' | 'eyeFlash' | 'holyNova' | 'frostShatter' | 'warCry' | 'shadowCleave'
 
@@ -174,7 +175,7 @@ function SlashEffect({ x, y, onComplete }: EffectProps) {
       <svg width="200" height="200" viewBox="-100 -100 200 200" className="overflow-visible">
         <motion.line
           x1={-70} y1={-60} x2={70} y2={60}
-          stroke="#1eff00" strokeWidth={4} strokeLinecap="round"
+          stroke={QUALITY_COLORS.uncommon} strokeWidth={4} strokeLinecap="round"
           filter="url(#slash-glow)"
           initial={{ pathLength: 0 }}
           animate={{ pathLength: 1 }}
@@ -182,7 +183,7 @@ function SlashEffect({ x, y, onComplete }: EffectProps) {
         />
         <motion.line
           x1={65} y1={-65} x2={-65} y2={65}
-          stroke="#1eff00" strokeWidth={4} strokeLinecap="round"
+          stroke={QUALITY_COLORS.uncommon} strokeWidth={4} strokeLinecap="round"
           filter="url(#slash-glow)"
           initial={{ pathLength: 0 }}
           animate={{ pathLength: 1 }}
@@ -190,20 +191,20 @@ function SlashEffect({ x, y, onComplete }: EffectProps) {
         />
         <motion.line
           x1={-70} y1={-60} x2={70} y2={60}
-          stroke="#1eff0050" strokeWidth={14} strokeLinecap="round"
+          stroke={`${QUALITY_COLORS.uncommon}50`} strokeWidth={14} strokeLinecap="round"
           initial={{ pathLength: 0, opacity: 0.8 }}
           animate={{ pathLength: 1, opacity: 0 }}
           transition={{ duration: 0.4, ease: 'easeOut' }}
         />
         <motion.line
           x1={65} y1={-65} x2={-65} y2={65}
-          stroke="#1eff0050" strokeWidth={14} strokeLinecap="round"
+          stroke={`${QUALITY_COLORS.uncommon}50`} strokeWidth={14} strokeLinecap="round"
           initial={{ pathLength: 0, opacity: 0.8 }}
           animate={{ pathLength: 1, opacity: 0 }}
           transition={{ duration: 0.4, delay: 0.1, ease: 'easeOut' }}
         />
         <motion.circle
-          cx={0} cy={0} r={6} fill="#1eff00" filter="url(#slash-glow)"
+          cx={0} cy={0} r={6} fill={QUALITY_COLORS.uncommon} filter="url(#slash-glow)"
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: [0, 1, 0], scale: [0, 2, 3] }}
           transition={{ duration: 0.4, delay: 0.15 }}
@@ -231,8 +232,8 @@ function EyeFlashEffect({ x, y, onComplete }: EffectProps) {
         className="absolute rounded-full"
         style={{
           left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-          border: '2px solid #a335ee',
-          boxShadow: '0 0 30px #a335ee80, 0 0 60px #a335ee40',
+          border: `2px solid ${QUALITY_COLORS.epic}`,
+          boxShadow: `0 0 30px ${QUALITY_COLORS.epic}80, 0 0 60px ${QUALITY_COLORS.epic}40`,
         }}
         initial={{ width: 20, height: 20, opacity: 1 }}
         animate={{ width: 140, height: 140, opacity: 0 }}
@@ -272,7 +273,7 @@ function EyeFlashEffect({ x, y, onComplete }: EffectProps) {
       </svg>
       <motion.div
         className="fixed inset-0 pointer-events-none"
-        style={{ left: -x, top: -y, background: 'radial-gradient(circle at 50% 50%, #a335ee15 0%, transparent 60%)' }}
+        style={{ left: -x, top: -y, background: `radial-gradient(circle at 50% 50%, ${QUALITY_COLORS.epic}15 0%, transparent 60%)` }}
         initial={{ opacity: 1 }}
         animate={{ opacity: 0 }}
         transition={{ duration: 0.5 }}

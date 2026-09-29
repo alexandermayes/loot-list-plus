@@ -60,10 +60,10 @@ export default function PremiumFeatures() {
         >
           <motion.h2
             variants={fadeInUp}
-            className="font-poppins font-bold text-[28px] md:text-[40px] leading-[1.1] text-white"
+            className="font-poppins font-bold text-28 md:text-40 leading-[1.1] text-white"
           >
             What&apos;s in the{' '}
-            <span className="font-wow text-shimmer-gold text-[32px] md:text-[44px]">bag</span>?
+            <span className="font-wow text-shimmer-gold text-32 md:text-44">bag</span>?
           </motion.h2>
         </motion.div>
 
@@ -82,10 +82,10 @@ export default function PremiumFeatures() {
               <div className="flex items-center justify-center w-12 h-12 rounded-[14px] bg-[#ff8000]/10 border border-[#ff8000]/25">
                 <Image src={feature.icon} alt="" width={24} height={24} />
               </div>
-              <p className="font-poppins font-semibold text-[20px] text-white leading-tight">
+              <p className="font-poppins font-semibold text-20 text-white leading-tight">
                 {feature.title}
               </p>
-              <p className="font-poppins font-medium text-[15px] text-[#bababa] leading-normal">
+              <p className="font-poppins font-medium text-15 text-[#bababa] leading-normal">
                 {feature.description}
               </p>
             </TiltCard>

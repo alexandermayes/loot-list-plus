@@ -594,10 +594,10 @@ export default function MemberManager() {
               {/* Section header */}
               {section.label && (
                 <div className="flex items-center gap-2 px-1 pt-2 pb-1">
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  <span className="text-11 font-semibold text-muted-foreground uppercase tracking-wider">
                     {section.label}
                   </span>
-                  <span className="text-[11px] text-muted-foreground">{section.members.length}</span>
+                  <span className="text-11 text-muted-foreground">{section.members.length}</span>
                   <div className="flex-1 border-t border-border/50" />
                 </div>
               )}
@@ -655,31 +655,31 @@ export default function MemberManager() {
                       {/* Name + meta */}
                       <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
                         <span
-                          className="font-semibold text-[13px] truncate"
+                          className="font-semibold text-13 truncate"
                           style={{ color: classColor }}
                         >
                           {displayName}
                         </span>
                         {isGuildOwner && (
-                          <span className="px-1 py-px rounded text-[9px] font-semibold bg-accent/15 text-accent leading-tight">
+                          <span className="px-1 py-px rounded text-11 font-semibold bg-accent/15 text-accent leading-tight">
                             Owner
                           </span>
                         )}
                         {member.membership_status === 'trial' && (
-                          <span className="px-1 py-px rounded text-[9px] font-semibold bg-warning/15 text-warning leading-tight">
+                          <span className="px-1 py-px rounded text-11 font-semibold bg-warning/15 text-warning leading-tight">
                             Trial
                           </span>
                         )}
                         {!hasCharacters && (
-                          <span className="text-muted-foreground text-[11px] italic">No characters</span>
+                          <span className="text-muted-foreground text-11 italic">No characters</span>
                         )}
                         {member.raid_team && sortMode !== 'team' && (
-                          <span className="text-[10px] font-medium" style={{ color: member.raid_team.color }}>
+                          <span className="text-11 font-medium" style={{ color: member.raid_team.color }}>
                             {member.raid_team.name}
                           </span>
                         )}
                         {member.joined_at && (
-                          <span className="text-muted-foreground/60 text-[10px] hidden md:inline">
+                          <span className="text-muted-foreground/60 text-11 hidden md:inline">
                             {getJoinedAgo(member.joined_at)}
                           </span>
                         )}
@@ -710,7 +710,7 @@ export default function MemberManager() {
                             value={member.raid_team?.id || ''}
                             onChange={(e) => handleTeamChange(member, e.target.value || null)}
                             size="sm"
-                            className="w-[120px] text-[12px]"
+                            className="w-[120px] text-12"
                           >
                             <option value="" className="bg-background-elevated">No team</option>
                             {raidTeams.map(team => (
@@ -723,7 +723,7 @@ export default function MemberManager() {
                             value={member.role}
                             onChange={(e) => handleChangeRole(member.user_id, e.target.value)}
                             size="sm"
-                            className="w-[130px] text-[12px]"
+                            className="w-[130px] text-12"
                           >
                             {!assignableRoles.find(r => r.name === member.role) && (
                               <option value={member.role} className="bg-background-elevated">{member.role}</option>
@@ -733,7 +733,7 @@ export default function MemberManager() {
                             ))}
                           </Select>
                         ) : (
-                          <span className="text-[11px] text-muted-foreground px-1.5 w-[130px] text-right">{member.role}</span>
+                          <span className="text-11 text-muted-foreground px-1.5 w-[130px] text-right">{member.role}</span>
                         )}
                       </div>
                     </div>
@@ -769,24 +769,24 @@ export default function MemberManager() {
                                 <div className="w-4 h-4 rounded-full flex-shrink-0 bg-muted" />
                               )}
                               <span
-                                className="text-[12px] font-medium truncate"
+                                className="text-12 font-medium truncate"
                                 style={{ color: charClassColor }}
                               >
                                 {char.name}
                               </span>
                               {char.is_main && (
-                                <span className="text-[9px] font-semibold text-muted-foreground/80 uppercase tracking-wider">
+                                <span className="text-11 font-semibold text-muted-foreground/80 uppercase tracking-wider">
                                   main
                                 </span>
                               )}
                               {specLabel && (
-                                <span className="text-muted-foreground text-[11px] truncate hidden sm:inline">
+                                <span className="text-muted-foreground text-11 truncate hidden sm:inline">
                                   {specLabel}
                                 </span>
                               )}
                               <div className="ml-auto flex items-center gap-1.5">
                                 {(roleDiffers || teamDiffers) && (
-                                  <span className="text-[9px] font-semibold text-accent uppercase tracking-wider">
+                                  <span className="text-11 font-semibold text-accent uppercase tracking-wider">
                                     custom
                                   </span>
                                 )}
@@ -796,7 +796,7 @@ export default function MemberManager() {
                                     onChange={(e) => handleCharacterTeamChange(member, char, e.target.value || null)}
                                     size="sm"
                                     disabled={isSavingTeam}
-                                    className="w-[120px] text-[12px]"
+                                    className="w-[120px] text-12"
                                     aria-label={`Team for ${char.name}`}
                                   >
                                     <option value="" className="bg-background-elevated">No team</option>
@@ -811,7 +811,7 @@ export default function MemberManager() {
                                     onChange={(e) => handleCharacterRoleChange(member, char, e.target.value)}
                                     size="sm"
                                     disabled={isSavingRole}
-                                    className="w-[130px] text-[12px]"
+                                    className="w-[130px] text-12"
                                     aria-label={`Rank for ${char.name}`}
                                   >
                                     {!charAssignableRoles.find(r => r.name === char.role) && (
@@ -822,7 +822,7 @@ export default function MemberManager() {
                                     ))}
                                   </Select>
                                 ) : (
-                                  <span className="text-[11px] text-muted-foreground px-1.5 w-[130px] text-right">
+                                  <span className="text-11 text-muted-foreground px-1.5 w-[130px] text-right">
                                     {char.role}
                                   </span>
                                 )}
@@ -841,7 +841,7 @@ export default function MemberManager() {
       )}
 
       <div className="pt-2 border-t border-border">
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-11 text-muted-foreground">
           {members.length} members • {officerCount} officers • {trialCount} trials
         </p>
       </div>

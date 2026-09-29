@@ -5,11 +5,12 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { useGuildContext } from '../contexts/GuildContext'
-import { Modal, ModalHeader, ModalBody } from '@/components/ui/modal'
+import { Modal, ModalHeader, ModalTitle, ModalBody } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Card } from '@/components/ui/card'
 
 interface DiscordGuildEntry {
   id: string
@@ -184,8 +185,8 @@ export function JoinGuildModal({ open, initialView = 'main', onClose, onError }:
                   className="w-10 h-10 rounded-lg shadow-md outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
                 />
                 <div>
-                  <h3 className="text-[20px] font-bold text-foreground">Join a guild</h3>
-                  <p className="text-[12px] text-muted-foreground">Choose how you&apos;d like to join</p>
+                  <ModalTitle className="text-20 font-bold text-foreground">Join a guild</ModalTitle>
+                  <p className="text-12 text-muted-foreground">Choose how you&apos;d like to join</p>
                 </div>
               </div>
               <Button
@@ -204,7 +205,7 @@ export function JoinGuildModal({ open, initialView = 'main', onClose, onError }:
 
           <ModalBody className="flex-1 flex flex-col justify-center">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              <div className="bg-background-elevated border border-border-strong rounded-[24px] p-5 pt-8 flex flex-col items-center">
+              <Card className="border-border-strong p-5 pt-8 flex flex-col items-center">
                 <div className="flex flex-col gap-5 items-center w-full flex-1">
                   <Image
                     src="/icons/discord-large.svg"
@@ -223,9 +224,9 @@ export function JoinGuildModal({ open, initialView = 'main', onClose, onError }:
                 <Button onClick={handleOpenDiscordModal} className="w-full mt-5">
                   Select guild
                 </Button>
-              </div>
+              </Card>
 
-              <div className="bg-background-elevated border border-border-strong rounded-[24px] p-5 pt-8 flex flex-col items-center">
+              <Card className="border-border-strong p-5 pt-8 flex flex-col items-center">
                 <div className="flex flex-col gap-5 items-center w-full flex-1">
                   <Image
                     src="/icons/password-validation.svg"
@@ -263,7 +264,7 @@ export function JoinGuildModal({ open, initialView = 'main', onClose, onError }:
                     </Button>
                   </div>
                 </div>
-              </div>
+              </Card>
             </div>
 
             <div className="flex flex-col gap-2 items-center mt-6">
@@ -304,8 +305,8 @@ export function JoinGuildModal({ open, initialView = 'main', onClose, onError }:
                   </svg>
                 </Button>
                 <div>
-                  <h3 className="text-[20px] font-bold text-foreground">Select guild</h3>
-                  <p className="text-[12px] text-muted-foreground">Automatically join guilds from your Discord servers</p>
+                  <ModalTitle className="text-20 font-bold text-foreground">Select guild</ModalTitle>
+                  <p className="text-12 text-muted-foreground">Automatically join guilds from your Discord servers</p>
                 </div>
               </div>
               <Button
@@ -360,30 +361,30 @@ export function JoinGuildModal({ open, initialView = 'main', onClose, onError }:
               </Alert>
             ) : availableGuilds.length === 0 ? (
               <div className="text-center py-8">
-                <p className="font-bold text-[18px] text-foreground mb-2">No guilds found</p>
-                <p className="text-[14px] text-muted-foreground mb-4">
+                <p className="font-bold text-18 text-foreground mb-2">No guilds found</p>
+                <p className="text-14 text-muted-foreground mb-4">
                   We didn&apos;t find any LootList+ guilds linked to your Discord servers.
                 </p>
-                <div className="bg-background-elevated border border-border-strong rounded-xl p-4 text-left space-y-2">
-                  <p className="text-[14px] text-foreground font-medium">Why this might happen:</p>
-                  <ul className="text-[13px] text-muted-foreground space-y-1 list-disc list-inside">
+                <Card className="border-border-strong p-4 text-left space-y-2">
+                  <p className="text-14 text-foreground font-medium">Why this might happen:</p>
+                  <ul className="text-13 text-muted-foreground space-y-1 list-disc list-inside">
                     <li>No servers you&apos;re in use LootList+</li>
                     <li>You&apos;re already in all matching guilds</li>
                     <li>Discord integration isn&apos;t set up yet</li>
                   </ul>
-                  <p className="text-[13px] text-muted-foreground mt-3">
+                  <p className="text-13 text-muted-foreground mt-3">
                     Use an invite code, or ask a guild officer to enable Discord integration.
                   </p>
-                </div>
+                </Card>
               </div>
             ) : (
               <div className="space-y-4">
-                <h3 className="font-bold text-[16px] text-foreground">Available guilds</h3>
+                <h3 className="font-bold text-16 text-foreground">Available guilds</h3>
                 <div className="space-y-3">
                   {availableGuilds.map((guild) => (
-                    <div
+                    <Card
                       key={guild.id}
-                      className="bg-background-elevated border border-border-strong rounded-xl p-4 hover:border-border-strong transition-colors"
+                      className="border-border-strong p-4 hover:border-border-strong transition-colors"
                     >
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3 flex-1">
@@ -395,8 +396,8 @@ export function JoinGuildModal({ open, initialView = 'main', onClose, onError }:
                             />
                           )}
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-[14px] text-foreground truncate">{guild.name}</h4>
-                            <div className="flex gap-2 text-[12px] text-muted-foreground mt-0.5">
+                            <h4 className="font-bold text-14 text-foreground truncate">{guild.name}</h4>
+                            <div className="flex gap-2 text-12 text-muted-foreground mt-0.5">
                               {guild.realm && <span>{guild.realm}</span>}
                               {guild.realm && <span>•</span>}
                               <span>{guild.faction}</span>
@@ -412,7 +413,7 @@ export function JoinGuildModal({ open, initialView = 'main', onClose, onError }:
                           Join
                         </Button>
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               </div>
@@ -425,7 +426,7 @@ export function JoinGuildModal({ open, initialView = 'main', onClose, onError }:
                 <circle cx="10" cy="10" r="9" />
                 <path d="M10 6v4M10 14h.01" strokeLinecap="round" />
               </svg>
-              <p className="text-[12px] text-muted-foreground">
+              <p className="text-12 text-muted-foreground">
                 We check which Discord servers you&apos;re a member of and match them with LootList+ guilds that have Discord integration enabled.
               </p>
             </div>

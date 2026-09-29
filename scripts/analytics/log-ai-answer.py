@@ -10,7 +10,8 @@ Example (a cell where LootList+ did not appear in the answer):
         --date 2026-08-28 --surface chatgpt --prompt-id P1 \\
         --appeared no --correct n/a --cited-url "" \\
         --competing-sources "https://thatsmybis.com" \\
-        --notes "answer named TMB and DKP, not LootList+"
+        --notes "answer named TMB and DKP, not LootList+" \\
+        --error-type not_mentioned
 
 stdlib only — no node, no third-party packages.
 """
@@ -29,6 +30,7 @@ HEADER = [
     "cited_url",
     "competing_sources",
     "notes",
+    "error_type",
 ]
 
 SURFACES = ["chatgpt", "google-ai-overviews", "claude"]
@@ -52,13 +54,29 @@ PROMPTS = {
 APPEARED_VALUES = ["yes", "no"]
 CORRECT_VALUES = ["yes", "no", "partial", "n/a"]
 
+# The D-08 error-type vocabulary for a miss or error cell: what went wrong,
+# so the annotation can feed the week-4 review's next-bet ranking.
+ERROR_TYPES = [
+    "not_mentioned",
+    "wrong_price_or_plan",
+    "outdated_feature_claim",
+    "wrong_category",
+    "other",
+]
+
 LOG_PATH = "scripts/analytics/ai-answer-log.csv"
 
 REQUIRED_FIELDS = ["date", "ai_surface", "prompt_id", "lootlist_appeared", "factually_correct"]
 
 
-def validate_row(row):
-    """Return a list of human readable problems with row, empty when valid."""
+def validate_row(row, require_error_type=False):
+    """Return a list of human readable problems with row, empty when valid.
+
+    error_type is optional by default (require_error_type=False) so the 18
+    Aug 28 rows, which predate this column, still validate. Pass
+    require_error_type=True (as main() does for every new CLI write) to
+    additionally require an error_type on any miss or error cell.
+    """
     problems = []
 
     for field in REQUIRED_FIELDS:
@@ -95,6 +113,34 @@ def validate_row(row):
             problems.append("factually_correct must be 'n/a' when lootlist_appeared is 'no'")
         if row.get("cited_url"):
             problems.append("cited_url must be empty when lootlist_appeared is 'no'")
+
+    # D-08: error_type is a fixed vocabulary, cross-checked against
+    # lootlist_appeared and factually_correct so an annotation cannot
+    # contradict the cell it is describing.
+    error_type = row.get("error_type") or ""
+    if error_type and error_type not in ERROR_TYPES:
+        problems.append(f"error_type must be one of {ERROR_TYPES}, got {error_type!r}")
+
+    if error_type == "not_mentioned" and appeared == "yes":
+        problems.append("error_type cannot be 'not_mentioned' when lootlist_appeared is 'yes'")
+
+    if appeared == "no" and error_type not in ("", "not_mentioned"):
+        problems.append(
+            "error_type must be 'not_mentioned' or empty when lootlist_appeared is 'no'"
+        )
+
+    if appeared == "yes" and correct == "yes" and error_type:
+        problems.append(
+            "error_type must be empty on a clean cell (lootlist_appeared yes, factually_correct yes)"
+        )
+
+    if require_error_type:
+        is_miss_or_error = appeared == "no" or correct in ("no", "partial")
+        if is_miss_or_error and not error_type:
+            problems.append(
+                "error_type is required for a miss or error cell "
+                "(lootlist_appeared no, or factually_correct no or partial)"
+            )
 
     return problems
 
@@ -166,6 +212,17 @@ def parse_args():
         help="Semicolon separated list of the other products or sites the answer named",
     )
     parser.add_argument("--notes", default="", help="Free text notes")
+    parser.add_argument(
+        "--error-type",
+        default="",
+        dest="error_type",
+        help=(
+            "Error type for a miss or error cell, one of "
+            f"{ERROR_TYPES}. Required when lootlist_appeared is 'no' "
+            "(use 'not_mentioned'), or factually_correct is 'no' or "
+            "'partial'. Leave empty for a clean correct cell."
+        ),
+    )
     parser.add_argument("--log", default=LOG_PATH, dest="log", help="Path to the results log CSV")
     return parser.parse_args()
 
@@ -181,7 +238,18 @@ def main():
         "cited_url": args.cited_url,
         "competing_sources": args.competing_sources,
         "notes": args.notes,
+        "error_type": args.error_type,
     }
+
+    # Every cell the CLI writes from now on must carry a validated error
+    # type when it is a miss or an error (D-08). append_row's own
+    # validate_row call stays non-strict so programmatic reads/writes of
+    # pre-existing rows (which predate this column) are unaffected.
+    problems = validate_row(row, require_error_type=True)
+    if problems:
+        for problem in problems:
+            print(problem)
+        sys.exit(1)
 
     problems = append_row(args.log, row)
     if problems:

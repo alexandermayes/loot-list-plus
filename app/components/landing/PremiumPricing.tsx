@@ -35,9 +35,9 @@ export default function PremiumPricing() {
   const requirementMet = !activeGuild || isOfficer
 
   const primaryBtn =
-    'inline-flex items-center justify-center px-5 py-3 rounded-[60px] bg-white font-poppins font-semibold text-[16px] text-black no-underline hover:bg-white/90 transition-colors cursor-pointer'
+    'inline-flex items-center justify-center px-5 py-3 rounded-[60px] bg-white font-poppins font-semibold text-16 text-black no-underline hover:bg-white/90 transition-colors cursor-pointer'
   const secondaryBtn =
-    'inline-flex items-center justify-center px-5 py-3 rounded-[60px] bg-[#121218] border border-[#383838] font-poppins font-semibold text-[16px] text-white no-underline hover:bg-[#1a1a22] transition-colors cursor-pointer'
+    'inline-flex items-center justify-center px-5 py-3 rounded-[60px] bg-[#121218] border border-[#383838] font-poppins font-semibold text-16 text-white no-underline hover:bg-[#1a1a22] transition-colors cursor-pointer'
 
   return (
     <section className="relative pt-12 md:pt-16 pb-24 md:pb-32 bg-[#080808]">
@@ -49,7 +49,7 @@ export default function PremiumPricing() {
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ duration: 0.4 }}
-          className="font-poppins text-[14px] text-[#bababa] text-center mb-4"
+          className="font-poppins text-14 text-[#bababa] text-center mb-4"
         >
           Your guild receives loot:
         </motion.p>
@@ -88,7 +88,7 @@ export default function PremiumPricing() {
             </MagneticButton>
           )}
           {guildIsPro && (
-            <p className="font-poppins font-medium text-[15px] text-[#bababa] text-center">
+            <p className="font-poppins font-medium text-15 text-[#bababa] text-center">
               <span className="text-[#ff8000]">✦</span> {activeGuild?.name} already has Premium.{' '}
               <Link href="/guild-settings" className="text-white underline hover:text-[#ff8000] transition-colors">
                 manage billing in guild settings
@@ -96,14 +96,15 @@ export default function PremiumPricing() {
             </p>
           )}
           {!guildIsPro && activeGuild && !isOfficer && (
-            <p className="font-poppins font-medium text-[15px] text-[#bababa] text-center">
+            <p className="font-poppins font-medium text-15 text-[#bababa] text-center">
               Upgrading is done by a guild officer. Send them this page.
             </p>
           )}
-          <p className="font-poppins text-[13px] text-[#bababa]/60 text-center max-w-[400px]">
-            Every new guild starts with a 14-day free trial. Cancel during the trial
-            and you won&apos;t be charged. One subscription covers your whole guild, and
-            you keep Premium until the end of the billing period if you cancel later.
+          <p className="font-poppins text-13 text-[#bababa]/60 text-center max-w-[400px]">
+            Every new guild starts with a 14-day free trial, no credit card required.
+            Premium pauses when the trial ends unless you add a payment method. One
+            subscription covers your whole guild, and you keep Premium until the end
+            of the billing period if you cancel later.
           </p>
         </motion.div>
       </div>

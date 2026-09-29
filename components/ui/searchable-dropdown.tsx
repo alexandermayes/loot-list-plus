@@ -4,6 +4,7 @@ import * as React from 'react'
 import { useState, useRef, useEffect } from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
+import { Card } from '@/components/ui/card'
 
 /**
  * SearchableDropdown Component - LootList+ Design System
@@ -23,9 +24,9 @@ import { cn } from '@/lib/utils'
  * - rounded: Rounded corners - used in cards/compact areas
  *
  * Sizes:
- * - sm: Compact (h-9, text-[12px])
- * - default: Standard (h-11, text-[13px])
- * - lg: Large (h-12, text-[14px])
+ * - sm: Compact (h-9, text-12)
+ * - default: Standard (h-11, text-13)
+ * - lg: Large (h-12, text-14)
  */
 
 const dropdownButtonVariants = cva(
@@ -43,9 +44,9 @@ const dropdownButtonVariants = cva(
         rounded: 'rounded-xl border-border',
       },
       size: {
-        sm: 'h-9 px-3 text-[12px]',
-        default: 'h-11 px-4 text-[13px]',
-        lg: 'h-12 px-5 text-[14px]',
+        sm: 'h-9 px-3 text-12',
+        default: 'h-11 px-4 text-13',
+        lg: 'h-12 px-5 text-14',
       },
     },
     defaultVariants: {
@@ -263,9 +264,9 @@ export function SearchableDropdown({
       </button>
 
       {isOpen && (
-        <div
+        <Card
           ref={dropdownRef}
-          className="fixed z-[9999] bg-background-elevated border border-border-strong rounded-lg shadow-lg max-h-96 overflow-hidden"
+          className="fixed z-[9999] border-border-strong shadow-lg max-h-96 overflow-hidden"
           style={{
             top: `${dropdownPosition.top + 4}px`,
             left: `${dropdownPosition.left}px`,
@@ -281,7 +282,7 @@ export function SearchableDropdown({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="w-full px-3 py-2 bg-background-subtle border border-border rounded-md text-foreground text-[13px] focus:outline-none focus:border-accent"
+                className="w-full px-3 py-2 bg-background-subtle border border-border rounded-md text-foreground text-13 focus:outline-none focus:border-accent"
               />
             </div>
           )}
@@ -291,7 +292,7 @@ export function SearchableDropdown({
             <button
               type="button"
               onClick={handleClear}
-              className="w-full px-3 py-2 text-left hover:bg-muted text-muted-foreground text-[13px] border-b border-border"
+              className="w-full px-3 py-2 text-left hover:bg-muted text-muted-foreground text-13 border-b border-border"
             >
               {clearLabel}
             </button>
@@ -300,7 +301,7 @@ export function SearchableDropdown({
           {/* Options List */}
           <div className="max-h-80 overflow-y-auto">
             {!hasOptions ? (
-              <div className="px-3 py-4 text-center text-muted-foreground text-[13px]">
+              <div className="px-3 py-4 text-center text-muted-foreground text-13">
                 No results found
               </div>
             ) : grouped ? (
@@ -308,7 +309,7 @@ export function SearchableDropdown({
                 <div key={group.label}>
                   {/* Group Header */}
                   <div className="px-3 py-2 bg-muted border-b border-border">
-                    <p className="text-[11px] font-semibold text-foreground uppercase tracking-wide">
+                    <p className="text-11 font-semibold text-foreground uppercase tracking-wide">
                       {group.label}
                     </p>
                   </div>
@@ -319,7 +320,7 @@ export function SearchableDropdown({
                       type="button"
                       onClick={() => handleSelect(option.value)}
                       className={cn(
-                        'w-full px-3 py-2 text-left hover:bg-muted text-[13px]',
+                        'w-full px-3 py-2 text-left hover:bg-muted text-13',
                         value === option.value ? 'bg-muted' : ''
                       )}
                     >
@@ -335,7 +336,7 @@ export function SearchableDropdown({
                   type="button"
                   onClick={() => handleSelect(option.value)}
                   className={cn(
-                    'w-full px-3 py-2 text-left hover:bg-muted text-[13px]',
+                    'w-full px-3 py-2 text-left hover:bg-muted text-13',
                     value === option.value ? 'bg-muted' : ''
                   )}
                 >
@@ -344,7 +345,7 @@ export function SearchableDropdown({
               ))
             )}
           </div>
-        </div>
+        </Card>
       )}
     </div>
   )
@@ -556,9 +557,9 @@ export function ComboDropdown({
 
   // Determine size-based styles
   const sizeStyles = {
-    sm: 'h-9 text-[12px]',
-    default: 'h-11 text-[13px]',
-    lg: 'h-12 text-[14px]',
+    sm: 'h-9 text-12',
+    default: 'h-11 text-13',
+    lg: 'h-12 text-14',
   }
   const currentSize = size || 'default'
 
@@ -582,9 +583,9 @@ export function ComboDropdown({
         </button>
 
         {prefixOpen && (
-          <div
+          <Card
             ref={prefixDropdownRef}
-            className="absolute z-[9999] mt-1 bg-background-elevated border border-border-strong rounded-lg shadow-lg overflow-hidden min-w-[120px]"
+            className="absolute z-[9999] mt-1 border-border-strong shadow-lg overflow-hidden min-w-[120px]"
           >
             {prefixOptions.map((option) => (
               <button
@@ -592,14 +593,14 @@ export function ComboDropdown({
                 type="button"
                 onClick={() => handlePrefixSelect(option.value)}
                 className={cn(
-                  'w-full px-4 py-2 text-left hover:bg-muted transition text-[13px]',
+                  'w-full px-4 py-2 text-left hover:bg-muted transition text-13',
                   prefixValue === option.value ? 'bg-muted' : ''
                 )}
               >
                 <span className="font-medium text-foreground">{option.label}</span>
               </button>
             ))}
-          </div>
+          </Card>
         )}
       </div>
 
@@ -623,9 +624,9 @@ export function ComboDropdown({
         </button>
 
         {mainOpen && (
-          <div
+          <Card
             ref={mainDropdownRef}
-            className="fixed z-[9999] bg-background-elevated border border-border-strong rounded-lg shadow-lg max-h-96 overflow-hidden"
+            className="fixed z-[9999] border-border-strong shadow-lg max-h-96 overflow-hidden"
             style={{
               top: `${dropdownPosition.top + 4}px`,
               left: `${dropdownPosition.left}px`,
@@ -641,7 +642,7 @@ export function ComboDropdown({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={searchPlaceholder}
-                  className="w-full px-3 py-2 bg-background-subtle border border-border rounded-md text-foreground text-[13px] focus:outline-none focus:border-accent"
+                  className="w-full px-3 py-2 bg-background-subtle border border-border rounded-md text-foreground text-13 focus:outline-none focus:border-accent"
                 />
               </div>
             )}
@@ -651,7 +652,7 @@ export function ComboDropdown({
               <button
                 type="button"
                 onClick={handleClear}
-                className="w-full px-3 py-2 text-left hover:bg-muted text-muted-foreground text-[13px] border-b border-border"
+                className="w-full px-3 py-2 text-left hover:bg-muted text-muted-foreground text-13 border-b border-border"
               >
                 -- Clear Selection --
               </button>
@@ -660,7 +661,7 @@ export function ComboDropdown({
             {/* Options List */}
             <div className="max-h-80 overflow-y-auto">
               {!hasOptions ? (
-                <div className="px-3 py-4 text-center text-muted-foreground text-[13px]">
+                <div className="px-3 py-4 text-center text-muted-foreground text-13">
                   No results found
                 </div>
               ) : grouped ? (
@@ -668,7 +669,7 @@ export function ComboDropdown({
                   <div key={group.label}>
                     {/* Group Header */}
                     <div className="px-3 py-2 bg-muted border-b border-border">
-                      <p className="text-[11px] font-semibold text-foreground uppercase tracking-wide">
+                      <p className="text-11 font-semibold text-foreground uppercase tracking-wide">
                         {group.label}
                       </p>
                     </div>
@@ -679,7 +680,7 @@ export function ComboDropdown({
                         type="button"
                         onClick={() => handleMainSelect(option.value)}
                         className={cn(
-                          'w-full px-3 py-2 text-left hover:bg-muted text-[13px]',
+                          'w-full px-3 py-2 text-left hover:bg-muted text-13',
                           value === option.value ? 'bg-muted' : ''
                         )}
                       >
@@ -695,7 +696,7 @@ export function ComboDropdown({
                     type="button"
                     onClick={() => handleMainSelect(option.value)}
                     className={cn(
-                      'w-full px-3 py-2 text-left hover:bg-muted text-[13px]',
+                      'w-full px-3 py-2 text-left hover:bg-muted text-13',
                       value === option.value ? 'bg-muted' : ''
                     )}
                   >
@@ -704,7 +705,7 @@ export function ComboDropdown({
                 ))
               )}
             </div>
-          </div>
+          </Card>
         )}
       </div>
     </div>

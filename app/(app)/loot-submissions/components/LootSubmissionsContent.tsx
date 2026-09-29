@@ -35,6 +35,7 @@ import { trackClientEvent } from '@/utils/analytics/client'
 import { notifySubmissionChanged } from '@/app/hooks/usePendingSubmissionCount'
 import { resolvePhaseGroups, getPhaseGroupLabel, getPhaseGroupShortLabel, getCanonicalPhase, type PhaseGroup } from '@/domain/expansion/phase-groups'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
+import { Card } from '@/components/ui/card'
 
 interface Submission {
   id: string
@@ -1064,31 +1065,31 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
               />
             ) : (
               filteredSubmissions.map((submission) => (
-                <div
+                <Card
                   key={submission.id}
-                  className="bg-background-elevated border border-border rounded-xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 hover:bg-muted transition-colors cursor-pointer"
+                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 hover:bg-muted transition-colors cursor-pointer"
                   onClick={() => viewSubmissionDetails(submission.id)}
                 >
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <h3
-                      className="text-[16px] font-semibold"
+                      className="text-16 font-semibold"
                       style={{ color: submission.member?.class?.color_hex || 'var(--foreground)' }}
                     >
                       {submission.member?.character_name || 'Unknown'}
                     </h3>
                     {submission.tier_name && (
-                      <span className="text-muted-foreground text-[13px]">
+                      <span className="text-muted-foreground text-13">
                         {submission.tier_name}
                       </span>
                     )}
                     <StatusBadge status={submission.status as SubmissionStatus} />
                     {submission.resubmission_count > 0 && submission.status === 'pending' && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-warning/15 text-warning border border-warning/30">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-11 font-semibold bg-warning/15 text-warning border border-warning/30">
                         <HugeiconsIcon icon={AlertCircleIcon} size={11} />
                         Resubmitted {submission.resubmission_count}x
                       </span>
                     )}
-                    <span className="text-muted-foreground text-[13px]">
+                    <span className="text-muted-foreground text-13">
                       {submission.item_count} items • Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'N/A'}
                     </span>
                   </div>
@@ -1146,7 +1147,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                       <HugeiconsIcon icon={Delete01Icon} size={16} />
                     </Button>
                   </div>
-                </div>
+                </Card>
               ))
             )}
           </div>
@@ -1195,7 +1196,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                     e.stopPropagation()
                     handleRestoreItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
                   }}
-                  className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0 hover:bg-accent/20 hover:text-accent transition-colors"
+                  className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0 hover:bg-accent/20 hover:text-accent transition-colors"
                   title="Restore item"
                 >
                   Undo
@@ -1223,7 +1224,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
           const isRemoved = !!item.removed_at
           return (
             <div className="px-3 py-2 border-t border-border/50">
-              <p className="text-[11px] text-muted-foreground font-medium mb-1">{slotLabel}</p>
+              <p className="text-11 text-muted-foreground font-medium mb-1">{slotLabel}</p>
               <div className={`flex items-center gap-2 group ${isRemoved ? 'opacity-50' : ''}`}>
                 <ItemLink
                   name={item.loot_item?.name || 'Unknown'}
@@ -1239,7 +1240,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                       e.stopPropagation()
                       handleRestoreItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
                     }}
-                    className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0 hover:bg-accent/20 hover:text-accent transition-colors"
+                    className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0 hover:bg-accent/20 hover:text-accent transition-colors"
                     title="Restore item"
                   >
                     Undo
@@ -1265,7 +1266,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
 
         const headerContent = (
           <div className="flex flex-col gap-1">
-            <h2 className="text-[20px] font-semibold text-foreground">
+            <h2 className="text-20 font-semibold text-foreground">
               <span style={{ color: viewedSubmission?.member?.class?.color_hex || 'inherit' }}>
                 {viewedSubmission?.member?.character_name || 'Unknown Character'}
               </span>
@@ -1340,16 +1341,16 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                     const rankNum = Number(rank)
                     const itemsArr = items as SubmissionDetailItem[]
                     return (
-                      <div key={rank} className="bg-card border border-border rounded-lg overflow-hidden">
+                      <Card key={rank} className="overflow-hidden">
                         <div className="px-3 py-2 flex items-center gap-2">
-                          <span className={`inline-flex items-center justify-center w-8 h-6 rounded text-[12px] font-bold text-white ${getRankBg(rankNum)}`}>
+                          <span className={`inline-flex items-center justify-center w-8 h-6 rounded text-12 font-bold text-white ${getRankBg(rankNum)}`}>
                             {rank}
                           </span>
-                          <span className="text-[13px] text-muted-foreground">Rank {rank}</span>
+                          <span className="text-13 text-muted-foreground">Rank {rank}</span>
                         </div>
                         {renderMobileItem(itemsArr[0], 'Item #1')}
                         {renderMobileItem(itemsArr[1], 'Item #2')}
-                      </div>
+                      </Card>
                     )
                   })}
                 </div>
@@ -1362,7 +1363,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
           if (!viewedSubmission || viewedSubmission.resubmission_count === 0) return null
           return (
             <div className="border-t border-border px-4 py-3">
-              <h4 className="text-[13px] font-semibold text-foreground mb-2">
+              <h4 className="text-13 font-semibold text-foreground mb-2">
                 Changes from previous submission
               </h4>
               {loadingDiff ? (
@@ -1370,11 +1371,11 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                   <LoadingSpinner size="sm" />
                 </div>
               ) : submissionDiff.length === 0 ? (
-                <p className="text-[13px] text-muted-foreground">No changes detected</p>
+                <p className="text-13 text-muted-foreground">No changes detected</p>
               ) : (
                 <div className="space-y-1">
                   {submissionDiff.map((entry, i) => (
-                    <div key={i} className="text-[13px] flex items-center gap-1.5">
+                    <div key={i} className="text-13 flex items-center gap-1.5">
                       {entry.type === 'added' && (
                         <>
                           <span className="text-success font-medium">+</span>
@@ -1422,7 +1423,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                   <button
                     key={suggestion}
                     type="button"
-                    className="px-2.5 py-1 text-[11px] rounded-full border border-border bg-background-subtle text-foreground-secondary hover:bg-muted hover:text-foreground transition-colors text-left"
+                    className="px-2.5 py-1 text-11 rounded-full border border-border bg-background-subtle text-foreground-secondary hover:bg-muted hover:text-foreground transition-colors text-left"
                     onClick={() => setReviewNotes(suggestion)}
                   >
                     {suggestion}
@@ -1585,13 +1586,13 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
 
       {/* Undo toast */}
       {undoAction && (
-        <div className="fixed bottom-6 right-6 z-50 bg-background-elevated border border-border rounded-xl shadow-lg px-4 py-3 flex items-center gap-3 animate-in slide-in-from-bottom-4 duration-200">
-          <span className="text-[13px] text-foreground">
+        <Card className="fixed bottom-6 right-6 z-50 shadow-lg px-4 py-3 flex items-center gap-3 animate-in slide-in-from-bottom-4 duration-200">
+          <span className="text-13 text-foreground">
             {undoAction.newStatus === 'approved' ? 'Approved' : 'Rejected'} {undoAction.characterName}&apos;s submission
           </span>
           <button
             onClick={handleUndoReview}
-            className="text-[13px] font-medium text-accent hover:text-accent/80 transition-colors"
+            className="text-13 font-medium text-accent hover:text-accent/80 transition-colors"
           >
             Undo
           </button>
@@ -1599,9 +1600,9 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
             onClick={() => { if (undoTimer) clearTimeout(undoTimer); setUndoAction(null) }}
             className="text-muted-foreground hover:text-foreground transition-colors ml-1"
           >
-            <span className="text-[16px]">&times;</span>
+            <span className="text-16">&times;</span>
           </button>
-        </div>
+        </Card>
       )}
       </div>
     </div>

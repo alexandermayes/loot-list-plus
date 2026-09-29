@@ -3,6 +3,7 @@ import Link from 'next/link'
 import LandingNav from '@/app/components/landing/LandingNav'
 import LandingCTA from '@/app/components/landing/LandingCTA'
 import LandingFooter from '@/app/components/landing/LandingFooter'
+import { Card } from '@/components/ui/card'
 
 export const metadata: Metadata = {
   title: 'Blog',
@@ -148,14 +149,14 @@ export default function BlogIndex() {
                 href={`/blog/${post.slug}`}
                 className="block group"
               >
-                <article className="p-6 rounded-xl border border-border bg-background-elevated hover:border-accent/40 transition-colors">
+                <Card className="p-6 hover:border-accent/40 transition-colors">
                   <p className="text-sm font-medium text-accent mb-2">
                     {post.tag}
                   </p>
                   <h2 className="text-xl font-semibold text-foreground group-hover:text-accent transition-colors mb-2">
                     {post.title}
                   </h2>
-                  <p className="text-foreground-secondary text-[15px] leading-relaxed mb-4">
+                  <p className="text-foreground-secondary text-15 leading-relaxed mb-4">
                     {post.description}
                   </p>
                   <div className="flex items-center gap-4 text-sm text-foreground-muted">
@@ -163,7 +164,7 @@ export default function BlogIndex() {
                     <span>·</span>
                     <span>{post.readTime}</span>
                   </div>
-                </article>
+                </Card>
               </Link>
             ))}
           </div>

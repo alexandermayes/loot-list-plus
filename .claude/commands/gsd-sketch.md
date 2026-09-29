@@ -30,13 +30,13 @@ Does not require prior new-project setup — auto-creates `.planning/sketches/` 
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/sketch.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/sketch-wrap-up.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/references/ui-brand.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/references/sketch-theme-system.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/references/sketch-interactivity.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/references/sketch-tooling.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/references/sketch-variant-patterns.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/sketch.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/sketch-wrap-up.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/ui-brand.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/sketch-theme-system.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/sketch-interactivity.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/sketch-tooling.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/sketch-variant-patterns.md
 </execution_context>
 
 <runtime_note>

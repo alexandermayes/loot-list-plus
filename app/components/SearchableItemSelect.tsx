@@ -15,6 +15,7 @@ import ItemLink from './ItemLink'
 import ClassPrioritySubline from './ClassPrioritySubline'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
+import { Card } from '@/components/ui/card'
 
 interface Item {
   id: string
@@ -286,7 +287,7 @@ export default function SearchableItemSelect({
                 <ItemLink name={selectedItem.name} wowheadId={selectedItem.wowhead_id} clickable={false} />
               </span>
               {selectedItem.is_loot_council ? (
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">Loot Council</span>
+                <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">Loot Council</span>
               ) : selectedItem.classification && selectedItem.classification !== 'Unlimited' ? (
                 <span className="text-xs text-muted-foreground flex-shrink-0">[{selectedItem.classification}]</span>
               ) : null}
@@ -338,9 +339,9 @@ export default function SearchableItemSelect({
 
       {/* Desktop Dropdown */}
       {isOpen && !mobile && dropdownPosition.width > 0 && (
-        <div
+        <Card
           ref={dropdownContentRef}
-          className="fixed z-[9999] bg-background-elevated border border-border-strong rounded-lg shadow-lg overflow-hidden flex flex-col"
+          className="fixed z-[9999] border-border-strong shadow-lg overflow-hidden flex flex-col"
           style={{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
@@ -365,7 +366,7 @@ export default function SearchableItemSelect({
           {/* Items List */}
           <div className="flex-1 overflow-y-auto">
             {filteredItems.length === 0 ? (
-              <div className="px-3 py-4 text-center text-muted-foreground text-[13px]">
+              <div className="px-3 py-4 text-center text-muted-foreground text-13">
                 No items found
               </div>
             ) : (
@@ -404,18 +405,18 @@ export default function SearchableItemSelect({
                               <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
                             </span>
                             {isLc ? (
-                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">
+                              <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">
                                 Loot Council
                               </span>
                             ) : (
                               <>
                                 {item.dps_gain && item.dps_gain > 0 && (
-                                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">
+                                  <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">
                                     +{item.dps_gain.toLocaleString()} DPS
                                   </span>
                                 )}
                                 {isOwned && (
-                                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0">
+                                  <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0">
                                     Owned
                                   </span>
                                 )}
@@ -446,7 +447,7 @@ export default function SearchableItemSelect({
               ))
             )}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Mobile Full-Screen Modal */}
@@ -487,7 +488,7 @@ export default function SearchableItemSelect({
             {/* Items List */}
             <div className="flex-1 overflow-y-auto overscroll-contain">
               {filteredItems.length === 0 ? (
-                <div className="px-3 py-8 text-center text-muted-foreground text-[13px]">
+                <div className="px-3 py-8 text-center text-muted-foreground text-13">
                   No items found
                 </div>
               ) : (
@@ -523,18 +524,18 @@ export default function SearchableItemSelect({
                                 <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
                               </span>
                               {isLc ? (
-                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">
+                                <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">
                                   Loot Council
                                 </span>
                               ) : (
                                 <>
                                   {item.dps_gain && item.dps_gain > 0 && (
-                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">
+                                    <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">
                                       +{item.dps_gain.toLocaleString()} DPS
                                     </span>
                                   )}
                                   {isOwned && (
-                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0">
+                                    <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0">
                                       Owned
                                     </span>
                                   )}

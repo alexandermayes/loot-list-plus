@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { Card } from '@/components/ui/card'
 import { getExpansionDisplayName } from '@/utils/expansionVisuals'
 import { GAME_VERSION_LABELS, resolveSignupExpansion, DEFAULT_SIGNUP_GAME } from '@/domain/expansion/game'
 import type { GameVersion } from '@/domain/expansion/game'
@@ -445,7 +446,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                       else if (step === 'settings' && canProceedFromDiscord() && canProceedFromDetails()) setCurrentStep('settings')
                     }}
                     disabled={!canAccess}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-medium transition-colors shrink-0 ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-12 font-medium transition-colors shrink-0 ${
                       isCompleted
                         ? 'bg-accent text-foreground'
                         : isCurrent
@@ -490,8 +491,8 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
               <div className="w-16 h-16 bg-warning/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-3xl">⚠️</span>
               </div>
-              <h4 className="text-[18px] font-bold text-foreground mb-2">Discord verification required</h4>
-              <p className="text-muted-foreground text-[14px] mb-4">
+              <h4 className="text-18 font-bold text-foreground mb-2">Discord verification required</h4>
+              <p className="text-muted-foreground text-14 mb-4">
                 You need to verify your Discord account before creating a guild.
               </p>
               <Button
@@ -514,9 +515,9 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
 
                     {discordError ? (
                       <div className="p-4 bg-warning/10 border border-warning/50 rounded-xl">
-                        <p className="text-warning text-[13px] mb-2">{discordError}</p>
+                        <p className="text-warning text-13 mb-2">{discordError}</p>
                         {discordError.includes('log out') && (
-                          <p className="text-warning/70 text-[12px]">
+                          <p className="text-warning/70 text-12">
                             Your Discord session may have expired. Try logging out and back in, or use the manual entry below.
                           </p>
                         )}
@@ -550,13 +551,13 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                                 className="w-12 h-12 rounded-full"
                               />
                             ) : (
-                              <div className="w-12 h-12 rounded-full bg-discord flex items-center justify-center text-foreground font-bold text-[16px]">
+                              <div className="w-12 h-12 rounded-full bg-discord flex items-center justify-center text-foreground font-bold text-16">
                                 {guild.name.charAt(0)}
                               </div>
                             )}
                             <div className="w-full min-w-0">
-                              <p className="text-foreground font-medium text-[12px] truncate">{guild.name}</p>
-                              <p className="text-[10px] text-muted-foreground">{guild.owner ? 'Owner' : 'Admin'}</p>
+                              <p className="text-foreground font-medium text-12 truncate">{guild.name}</p>
+                              <p className="text-11 text-muted-foreground">{guild.owner ? 'Owner' : 'Admin'}</p>
                             </div>
                           </Button>
                         ))}
@@ -584,8 +585,8 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                             </svg>
                           </div>
                           <div className="w-full min-w-0">
-                            <p className="text-foreground font-medium text-[12px]">Enter ID</p>
-                            <p className="text-[10px] text-muted-foreground">Manually</p>
+                            <p className="text-foreground font-medium text-12">Enter ID</p>
+                            <p className="text-11 text-muted-foreground">Manually</p>
                           </div>
                         </Button>
                       </div>
@@ -607,8 +608,8 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                             </svg>
                           </div>
                           <div className="w-full min-w-0">
-                            <p className="text-foreground font-medium text-[12px]">Enter ID</p>
-                            <p className="text-[10px] text-muted-foreground">Manually</p>
+                            <p className="text-foreground font-medium text-12">Enter ID</p>
+                            <p className="text-11 text-muted-foreground">Manually</p>
                           </div>
                         </Button>
                       </div>
@@ -623,7 +624,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                           placeholder="Paste your Discord Server ID"
                           variant="rounded"
                         />
-                        <p className="text-[11px] text-muted-foreground mt-2">
+                        <p className="text-11 text-muted-foreground mt-2">
                           Enable Developer Mode in Discord, right-click your server → Copy Server ID
                         </p>
                       </div>
@@ -642,7 +643,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                           {checkingBot ? (
                             <div className="flex items-center gap-3">
                               <Spinner size="lg" className="text-muted-foreground" />
-                              <p className="text-[13px] text-muted-foreground">Checking bot installation...</p>
+                              <p className="text-13 text-muted-foreground">Checking bot installation...</p>
                             </div>
                           ) : botInstalled ? (
                             <div className="flex items-center gap-3">
@@ -650,19 +651,19 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                                 <HugeiconsIcon icon={Tick01Icon} size={20} className="text-success" />
                               </div>
                               <div>
-                                <p className="text-[14px] font-medium text-success">Bot connected</p>
-                                <p className="text-[12px] text-success/70">LootList+ bot is in your server</p>
+                                <p className="text-14 font-medium text-success">Bot connected</p>
+                                <p className="text-12 text-success/70">LootList+ bot is in your server</p>
                               </div>
                             </div>
                           ) : (
                             <div className="space-y-3">
                               <div className="flex items-start gap-3">
                                 <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
-                                  <span className="text-[16px]">🤖</span>
+                                  <span className="text-16">🤖</span>
                                 </div>
                                 <div>
-                                  <p className="text-[14px] font-medium text-foreground">Add LootList+ bot</p>
-                                  <p className="text-[12px] text-muted-foreground">Required for Discord integration</p>
+                                  <p className="text-14 font-medium text-foreground">Add LootList+ bot</p>
+                                  <p className="text-12 text-muted-foreground">Required for Discord integration</p>
                                 </div>
                               </div>
                               <div className="flex gap-2">
@@ -716,8 +717,8 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                         <HugeiconsIcon icon={Tick01Icon} size={20} className="absolute right-4 top-1/2 -translate-y-1/2 text-success" />
                       )}
                     </div>
-                    {nameError && <p className="text-[12px] text-destructive mt-1">{nameError}</p>}
-                    {nameAvailable === true && <p className="text-[12px] text-success mt-1">Name is available</p>}
+                    {nameError && <p className="text-12 text-destructive mt-1">{nameError}</p>}
+                    {nameAvailable === true && <p className="text-12 text-success mt-1">Name is available</p>}
                   </div>
 
                   {/* Game version */}
@@ -739,7 +740,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                             }`}>
                               <img src={tile.image} alt={tile.name} className="w-full h-full object-contain p-2" />
                             </div>
-                            <span className={`text-[10px] font-medium text-center leading-tight transition-colors ${
+                            <span className={`text-11 font-medium text-center leading-tight transition-colors ${
                               game === tile.id ? 'text-accent' : 'text-muted-foreground'
                             }`}>
                               {tile.name}
@@ -772,7 +773,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                               }`}>
                                 <img src={exp.image} alt={exp.name} className="w-full h-full object-contain p-2" />
                               </div>
-                              <span className={`text-[10px] font-medium text-center leading-tight transition-colors ${
+                              <span className={`text-11 font-medium text-center leading-tight transition-colors ${
                                 !exp.available
                                   ? 'text-foreground-muted'
                                   : classicExpansion === exp.id ? 'text-accent' : 'text-muted-foreground'
@@ -782,7 +783,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                             </Button>
                             {/* Coming Soon Tooltip */}
                             {!exp.available && (
-                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-muted border border-border-strong rounded-lg text-[10px] text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-muted border border-border-strong rounded-lg text-11 text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                                 Coming Soon
                                 <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-border-strong" />
                               </div>
@@ -790,7 +791,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                           </div>
                         ))}
                       </div>
-                      <p className="text-[11px] text-muted-foreground mt-2">
+                      <p className="text-11 text-muted-foreground mt-2">
                         You can add more expansions from Admin settings later
                       </p>
                     </div>
@@ -822,7 +823,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                       />
                     )}
                     {isForeverExpansion && (
-                      <p className="text-[11px] text-muted-foreground mt-2">
+                      <p className="text-11 text-muted-foreground mt-2">
                         WoW Forever has no realms. Pick the region and ruleset your guild plays on.
                       </p>
                     )}
@@ -846,7 +847,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                           alt="Alliance"
                           className="w-6 h-6 rounded border border-border/50 shadow-sm relative z-10"
                         />
-                        <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Alliance' ? 'text-blue-400' : 'text-foreground group-hover:text-blue-400'}`}>
+                        <span className={`font-medium text-13 relative z-10 transition-colors duration-300 ${faction === 'Alliance' ? 'text-blue-400' : 'text-foreground group-hover:text-blue-400'}`}>
                           Alliance
                         </span>
                       </Button>
@@ -864,7 +865,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                           alt="Horde"
                           className="w-6 h-6 rounded border border-border/50 shadow-sm relative z-10"
                         />
-                        <span className={`font-medium text-[13px] relative z-10 transition-colors duration-300 ${faction === 'Horde' ? 'text-red-400' : 'text-foreground group-hover:text-red-400'}`}>
+                        <span className={`font-medium text-13 relative z-10 transition-colors duration-300 ${faction === 'Horde' ? 'text-red-400' : 'text-foreground group-hover:text-red-400'}`}>
                           Horde
                         </span>
                       </Button>
@@ -884,20 +885,20 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                   </div>
 
                   {/* Summary */}
-                  <div className="p-4 bg-background-elevated border border-border-strong rounded-xl">
-                    <p className="text-[12px] text-muted-foreground mb-2">Summary</p>
+                  <Card className="p-4 border-border-strong">
+                    <p className="text-12 text-muted-foreground mb-2">Summary</p>
                     <div className="space-y-1">
-                      <p className="text-[14px] text-foreground font-medium">{guildName}</p>
-                      <p className="text-[12px] text-muted-foreground">
+                      <p className="text-14 text-foreground font-medium">{guildName}</p>
+                      <p className="text-12 text-muted-foreground">
                         {getExpansionDisplayName(expansion)} • {realm || (isForeverExpansion ? 'No ruleset selected' : 'No realm selected')} • {faction}
                       </p>
                       {selectedGuild && (
-                        <p className="text-[12px] text-muted-foreground">
+                        <p className="text-12 text-muted-foreground">
                           Discord: {selectedGuild.name}
                         </p>
                       )}
                     </div>
-                  </div>
+                  </Card>
                 </div>
               )}
 

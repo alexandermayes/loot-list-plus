@@ -141,7 +141,7 @@ export function WowSimsImportModal({
           <>
             <div className="space-y-3 p-4 bg-background-subtle rounded-xl border border-border">
               <Text size="sm" className="font-medium">How to export your gear:</Text>
-              <ol className="space-y-2 text-foreground-secondary text-[13px]">
+              <ol className="space-y-2 text-foreground-secondary text-13">
                 <li className="flex gap-2">
                   <span className="text-accent font-medium">1.</span>
                   <span>Install the <a href="https://www.curseforge.com/wow/addons/wowsimsexporter" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline inline-flex items-center gap-1">WowSims Exporter addon <HugeiconsIcon icon={LinkSquare01Icon} size={14} /></a></span>
@@ -152,7 +152,7 @@ export function WowSimsImportModal({
                 </li>
                 <li className="flex gap-2">
                   <span className="text-accent font-medium">3.</span>
-                  <span>Type <code className="px-1.5 py-0.5 bg-background rounded text-[12px]">/wowsims</code> to open the export window</span>
+                  <span>Type <code className="px-1.5 py-0.5 bg-background rounded text-12">/wowsims</code> to open the export window</span>
                 </li>
                 <li className="flex gap-2">
                   <span className="text-accent font-medium">4.</span>
@@ -167,7 +167,7 @@ export function WowSimsImportModal({
                 onChange={(e) => setJsonInput(e.target.value)}
                 placeholder='{"character":{"name":"YourChar"...}'
                 rows={8}
-                className="font-mono text-[12px]"
+                className="font-mono text-12"
               />
               <Text size="xs" color="muted" className="mt-2">
                 Paste the complete JSON export from WowSims Exporter
