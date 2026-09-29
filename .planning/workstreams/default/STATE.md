@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 Phase: 06 (Week-4 Review & Next Bet) — EXECUTING
 Plan: 6 of 9
 Status: Ready to execute
-Last activity: 2026-09-29 - Completed quick task 260928-x7o: Classic raid recipes (GH #284); PR #308 merged, PR #309 (migration) awaiting merge
+Last activity: 2026-09-29 - Completed quick task 260929-fz0: guild checks on remaining loot_history writes (GH #296, #297), PR #315 merged
 
 Progress: [████████████████████] 23/23 plans ([███████░░░] 67%)
 
@@ -205,6 +205,7 @@ Recent decisions affecting current work:
 | 260928-iom | Fix GH #300: server side of the companion app's OAuth PKCE login. addon_auth_codes table (single use, 60s, hashed, service role only; PR #302, migration), GET /api/addon/auth plus an officer guild picker (user-approved copy), POST /api/addon/auth/token issuing a guild-scoped sync token, and a shared cookie-or-Bearer gate on all four addon routes, rate-limited, with CSP form-action allowing lootlistplus:. Also cherry-picked the KB-002 Card 'use client' fix (50a91c9e), which the new Server Component page needed on origin/main. PR #303 (stacked on #302) | 2026-09-28 | f004ce68 | Needs Review | [260928-iom-fix-gh-300-companion-app-oauth-pkce-logi](./quick/260928-iom-fix-gh-300-companion-app-oauth-pkce-logi/) |
 | 260928-m5n | Sync the unpushed local main (356 ahead, 17 behind) to GitHub: full-history merge kept local on sync/local-main-2026-09-28 (15 conflicts resolved, both intents preserved, LabelText and pixel-size conformance), published as one clean commit on origin/main (9 new analytics exports left out plus a .gitignore rule, fake placeholder redacted, exports README kept at GitHub's version) plus a CodeQL test fix. Draft PR #305, CI green; nested-dialog follow-up #304 | 2026-09-28 | 581e7bd9 | Needs Review | [260928-m5n-sync-unpushed-local-main-to-github-throu](./quick/260928-m5n-sync-unpushed-local-main-to-github-throu/) |
 | 260928-x7o | Fix GH #284: 21 verified Classic raid profession recipes (28 raid entries: MC 10, AQ20 8, AQ40 10; all boss drops, Wowhead + AtlasLoot confirmed) added as slot Recipe, Unlimited, cost 0, all classes, shared-table drops in a Shared Boss Loot group per raid. PR #308 (catalog, merged) and PR #309 (backfill migration, plus a fix to #302's brittle migration-ordering test). Follow-up #307 (multi-tier award resolution) | 2026-09-29 | 77b9aa59 |  | [260928-x7o-fix-gh-284-add-classic-raid-profession-r](./quick/260928-x7o-fix-gh-284-add-classic-raid-profession-r/) |
+| 260929-fz0 | Fix GH #296 and #297: bulk award route and reassign now check raid_event_id and character_id belong to the calling guild (active membership), with user-approved copy; remove-item builds a typed history row with expansion_id and scopes its item lookups to the guild. Follow-ups #313 (RLS gap) and #314 (master sheet lists departed raiders). Also switched GSD quick tasks to their own gsd/quick-* branches and a docs PR per task. PR #315 | 2026-09-29 | 2b1f2b76 |  | [260929-fz0-fix-gh-296-and-297-harden-remaining-loot](./quick/260929-fz0-fix-gh-296-and-297-harden-remaining-loot/) |
 
 ## Deferred Items
 
