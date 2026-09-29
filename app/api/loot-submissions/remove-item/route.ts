@@ -5,6 +5,46 @@ import { verifyPermission } from '@/utils/server-roles'
 import { logAudit } from '@/utils/audit/log'
 import { trackEvent, trackApiError } from '@/utils/analytics/server'
 import { toDateString } from '@/utils/date'
+import { resolveGuildLootItemIds, formatInvalidLootItemIdsError, type GuildScopedLootItem } from '@/lib/loot/guild-scoped-lookup'
+import { buildRemoveItemHistoryRow } from '@/lib/loot/loot-history-rows'
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type QueryClient = SupabaseClient<any, any, any>
+
+/**
+ * Resolves loot_item_id to a row owned by guildId (GH #297 D-07): the
+ * guild-owned scope from resolveGuildLootItemIds, plus name and
+ * wowhead_id read filtered by both id and the resolved raid_tier_id, so
+ * every loot_items query in this route carries a guild-owned tier filter.
+ * Returns null when the guild does not own this loot_item_id.
+ *
+ * Throws if the name/wowhead_id query errors (see guild-scoped-lookup.ts
+ * module doc for why errors are never swallowed).
+ */
+async function loadGuildLootItem(
+  supabase: QueryClient,
+  guildId: string,
+  lootItemId: string
+): Promise<(GuildScopedLootItem & { name: string; wowhead_id: number | null }) | null> {
+  const { resolved } = await resolveGuildLootItemIds(supabase, guildId, [lootItemId])
+  const scope = resolved.get(lootItemId)
+  if (!scope) return null
+
+  const { data, error } = await supabase
+    .from('loot_items')
+    .select('id, name, wowhead_id')
+    .eq('id', scope.id)
+    .eq('raid_tier_id', scope.raid_tier_id)
+    .single()
+
+  if (error) {
+    throw new Error(`Failed to load loot_items row ${lootItemId} (guild ${guildId}): ${error.message}`)
+  }
+  if (!data) return null
+
+  return { ...scope, name: data.name, wowhead_id: data.wowhead_id }
+}
 
 /**
  * POST /api/loot-submissions/remove-item
@@ -21,6 +61,13 @@ import { toDateString } from '@/utils/date'
  *   reason?: string,
  *   already_obtained?: boolean  // If true, inserts into loot_history
  * }
+ *
+ * GH #297: every loot_items lookup is scoped to the calling guild via
+ * loadGuildLootItem. When already_obtained is set, the loot_history row is
+ * built by buildRemoveItemHistoryRow (typed, carries raid_tier_id and
+ * expansion_id from the guild-scoped item) instead of an inline untyped
+ * insert. An item the guild does not own is rejected with 400 before the
+ * soft delete.
  */
 export async function POST(request: Request) {
   try {
@@ -112,11 +159,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Couldn\'t restore item. Try again.' }, { status: 500 })
       }
 
-      const { data: lootItem } = await serviceSupabase
-        .from('loot_items')
-        .select('id, name, wowhead_id')
-        .eq('id', loot_item_id)
-        .single()
+      const lootItem = await loadGuildLootItem(serviceSupabase, guild_id, loot_item_id)
 
       await logAudit({
         supabase: serviceSupabase,
@@ -141,12 +184,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Item already removed' }, { status: 400 })
     }
 
-    // Fetch item details for audit log and loot_history
-    const { data: lootItem } = await serviceSupabase
-      .from('loot_items')
-      .select('id, name, wowhead_id, raid_tier_id')
-      .eq('id', loot_item_id)
-      .single()
+    // Fetch item details for audit log and loot_history, scoped to this
+    // guild (GH #297 D-07).
+    const lootItem = await loadGuildLootItem(serviceSupabase, guild_id, loot_item_id)
+
+    // An unowned item is rejected before the soft delete only when
+    // already_obtained would otherwise insert an unscoped loot_history row
+    // (PD-06). Without already_obtained, removal proceeds as today and the
+    // response/audit name falls back to "Unknown".
+    if (already_obtained && !lootItem) {
+      return NextResponse.json(
+        {
+          error: formatInvalidLootItemIdsError([loot_item_id]),
+          invalid_loot_item_ids: [loot_item_id],
+        },
+        { status: 400 }
+      )
+    }
 
     // Mark items as removed (soft delete) instead of deleting
     const { error: updateError } = await serviceSupabase
@@ -161,20 +215,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Couldn\'t remove item. Try again.' }, { status: 500 })
     }
 
-    // If the raider already has the item, record it in loot_history
+    // If the raider already has the item, record it in loot_history with a
+    // typed, guild-scoped row carrying expansion_id from the item's own
+    // raid tier (GH #297 D-06).
+    let historyRecorded: boolean | undefined
     if (already_obtained && character && lootItem) {
-      await serviceSupabase
+      const { error: historyError } = await serviceSupabase
         .from('loot_history')
-        .insert({
-          guild_id,
-          character_id: submission.character_id,
-          character_name: character.name,
-          loot_item_id,
-          raid_tier_id: lootItem.raid_tier_id,
-          awarded_date: toDateString(new Date()),
-          awarded_by: user.id,
-          notes: reason || 'Obtained outside of raid',
-        })
+        .insert(buildRemoveItemHistoryRow({
+          guildId: guild_id,
+          item: lootItem,
+          characterId: submission.character_id,
+          characterName: character.name,
+          awardedBy: user.id,
+          reason: typeof reason === 'string' ? reason : null,
+          today: toDateString(new Date()),
+        }))
+
+      if (historyError) {
+        // Fixed first argument (never request data) so CodeQL's tainted
+        // format string rule does not flag this — the route already
+        // removed the item, so this is reported, not thrown.
+        console.error('remove-item: loot_history insert failed', historyError)
+        trackApiError(user.id, 'POST /api/loot-submissions/remove-item', new Error(historyError.message))
+        historyRecorded = false
+      } else {
+        historyRecorded = true
+      }
     }
 
     // Audit log
@@ -217,6 +284,7 @@ export async function POST(request: Request) {
       success: true,
       item_name: lootItem?.name || 'Unknown',
       ranks_removed: itemRows.map(r => r.rank),
+      ...(already_obtained ? { history_recorded: historyRecorded ?? false } : {}),
     })
   } catch (error) {
     console.error('Error in remove-item:', error)

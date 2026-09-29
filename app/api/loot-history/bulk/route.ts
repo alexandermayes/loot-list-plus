@@ -9,6 +9,7 @@ import { notifyLootAward, type LootAward } from '@/lib/discord-loot-announcement
 import { recomputeBlpForItems } from '@/utils/blp/recompute'
 import { routeRecordsToTeamEvents } from '@/utils/raid-events/team-routing'
 import { resolveGuildLootItemIds, formatInvalidLootItemIdsError } from '@/lib/loot/guild-scoped-lookup'
+import { normalizeRefId, findInvalidRaidEventIds, findInvalidCharacterIds, formatInvalidAwardRefsError } from '@/lib/loot/guild-award-refs'
 import { buildBulkAwardRow } from '@/lib/loot/loot-history-rows'
 import type { AwardReason, AwardOutcomeType } from '@/domain/types'
 
@@ -108,6 +109,13 @@ function composeNotesFromReason(reason: AwardReason | null | undefined, note: st
  * are resolved server-side from loot_item_id via resolveGuildLootItemIds.
  * Any loot_item_id the calling guild does not own is rejected with 400
  * before anything is written (D-03).
+ *
+ * GH #296: raid_event_id and character_id are also checked against the
+ * calling guild before team routing or any write — a raid_event_id must
+ * belong to this guild, and a character_id must have an active membership
+ * here. null and absent values on either field stay allowed exactly as
+ * before. A mismatch returns 400 with invalid_raid_event_ids and
+ * invalid_character_ids, so an officer sees every problem at once.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -157,6 +165,42 @@ export async function POST(request: NextRequest) {
         {
           error: formatInvalidLootItemIdsError(idResolution.invalidIds),
           invalid_loot_item_ids: idResolution.invalidIds,
+        },
+        { status: 400 }
+      )
+    }
+
+    // GH #296: normalize raid_event_id and character_id (null/undefined/''
+    // all mean "absent") before checking or routing, then reject any value
+    // that does not belong to this guild. Written back onto each item so
+    // routing, the builder, audit and announcements all see the same
+    // validated values (PD-02). Runs before routeRecordsToTeamEvents, which
+    // reads raid_events by id with NO guild filter — a foreign id would
+    // otherwise steer routing by another guild's raid date (PD-04).
+    for (const item of items as Array<{ raid_event_id?: unknown; character_id?: unknown }>) {
+      item.raid_event_id = normalizeRefId(item.raid_event_id)
+      item.character_id = normalizeRefId(item.character_id)
+    }
+    const raidEventIdsToCheck = [...new Set(
+      (items as Array<{ raid_event_id: string | null }>)
+        .map((item) => item.raid_event_id)
+        .filter((id): id is string => id !== null)
+    )]
+    const characterIdsToCheck = [...new Set(
+      (items as Array<{ character_id: string | null }>)
+        .map((item) => item.character_id)
+        .filter((id): id is string => id !== null)
+    )]
+    const [invalidRaidEventIds, invalidCharacterIds] = await Promise.all([
+      findInvalidRaidEventIds(serviceSupabase, guild_id, raidEventIdsToCheck),
+      findInvalidCharacterIds(serviceSupabase, guild_id, characterIdsToCheck),
+    ])
+    if (invalidRaidEventIds.length > 0 || invalidCharacterIds.length > 0) {
+      return NextResponse.json(
+        {
+          error: formatInvalidAwardRefsError(invalidRaidEventIds, invalidCharacterIds),
+          invalid_raid_event_ids: invalidRaidEventIds,
+          invalid_character_ids: invalidCharacterIds,
         },
         { status: 400 }
       )
@@ -432,6 +476,11 @@ export async function DELETE(request: NextRequest) {
  * Uses service role to bypass RLS after verifying officer permissions.
  *
  * Body: { guild_id, id, updates: { character_id?, character_name?, notes? } }
+ *
+ * GH #296: updates.character_id, when present and non-null, is checked
+ * against the calling guild the same way POST checks it (an active
+ * character_guild_memberships row) before the before-read and update; a
+ * mismatch returns 400 with invalid_character_ids and does no write.
  */
 export async function PATCH(request: NextRequest) {
   try {
@@ -458,6 +507,25 @@ export async function PATCH(request: NextRequest) {
     const sanitized: Record<string, unknown> = {}
     for (const key of allowedFields) {
       if (key in updates) sanitized[key] = updates[key]
+    }
+
+    // GH #296: a reassigned character_id must have an active membership in
+    // this guild. Null stays allowed (unlinking, as today).
+    if ('character_id' in sanitized) {
+      sanitized.character_id = normalizeRefId(sanitized.character_id)
+      const characterId = sanitized.character_id as string | null
+      if (characterId !== null) {
+        const invalidCharacterIds = await findInvalidCharacterIds(serviceSupabase, guild_id, [characterId])
+        if (invalidCharacterIds.length > 0) {
+          return NextResponse.json(
+            {
+              error: formatInvalidAwardRefsError([], invalidCharacterIds),
+              invalid_character_ids: invalidCharacterIds,
+            },
+            { status: 400 }
+          )
+        }
+      }
     }
 
     // Read current state for audit log

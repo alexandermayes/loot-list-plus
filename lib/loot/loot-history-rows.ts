@@ -1,6 +1,7 @@
 /**
  * Pure, typed builders for every loot_history insert in the award routes
- * (GH #294). Each builder is annotated to return
+ * (GH #294) and in remove-item's "already obtained" path (GH #297). Each
+ * builder is annotated to return
  * Database['public']['Tables']['loot_history']['Insert'], so removing a
  * required column (guild_id, loot_item_id, raid_tier_id) from a builder
  * fails `npx tsc --noEmit` instead of surfacing as a 500 at insert time.
@@ -137,5 +138,43 @@ export function buildImportStringAwardRow(input: BuildImportStringAwardRowInput)
     awarded_by: awardedBy,
     source: 'addon',
     notes: manual ? 'Manual award from addon' : null,
+  }
+}
+
+export interface BuildRemoveItemHistoryRowInput {
+  guildId: string
+  item: LootItemScope
+  characterId: string
+  characterName: string
+  awardedBy: string
+  reason?: string | null
+  today: string
+}
+
+/**
+ * Builds the loot_history insert payload for POST
+ * /api/loot-submissions/remove-item's "already obtained" path (GH #297
+ * D-06). remove-item was a fourth, untyped insert that skipped
+ * expansion_id entirely (raid_tier_id has no default and expansion_id is
+ * how BLP and reporting attribute an award to its tier); this builder
+ * takes both scope columns from the guild-scoped item the route resolved,
+ * the same way the award-route builders above do.
+ *
+ * Sets no source key (the DB default 'web' still applies, as today) and no
+ * raid_event_id key (as today — remove-item has never linked to a raid
+ * night).
+ */
+export function buildRemoveItemHistoryRow(input: BuildRemoveItemHistoryRowInput): LootHistoryInsert {
+  const { guildId, item, characterId, characterName, awardedBy, reason, today } = input
+  return {
+    guild_id: guildId,
+    character_id: characterId,
+    character_name: characterName,
+    loot_item_id: item.id,
+    raid_tier_id: item.raid_tier_id,
+    expansion_id: item.expansion_id,
+    awarded_date: today,
+    awarded_by: awardedBy,
+    notes: reason ? reason : 'Obtained outside of raid',
   }
 }
