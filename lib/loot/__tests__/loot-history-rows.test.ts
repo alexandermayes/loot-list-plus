@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { buildAddonAwardRow, buildBulkAwardRow, buildImportStringAwardRow, type LootItemScope } from '../loot-history-rows'
+import { buildAddonAwardRow, buildBulkAwardRow, buildImportStringAwardRow, buildRemoveItemHistoryRow, type LootItemScope } from '../loot-history-rows'
 
 const ITEM: LootItemScope = { id: 'item-1', raid_tier_id: 'tier-1', expansion_id: 'exp-1' }
 
@@ -195,5 +195,59 @@ describe('buildBulkAwardRow', () => {
       guildId: 'guild-1', awardedBy: 'user-1', item: ITEM, notes: 'Score winner: great roll',
     })
     expect(row.notes).toBe('Score winner: great roll')
+  })
+})
+
+describe('buildRemoveItemHistoryRow', () => {
+  it('emits guild_id, character_id, character_name, loot_item_id, raid_tier_id, expansion_id, awarded_date and awarded_by from its inputs', () => {
+    const row = buildRemoveItemHistoryRow({
+      guildId: 'guild-1', item: ITEM, characterId: 'char-1', characterName: 'Thrall',
+      awardedBy: 'user-1', today: '2026-09-21',
+    })
+    expect(row.guild_id).toBe('guild-1')
+    expect(row.character_id).toBe('char-1')
+    expect(row.character_name).toBe('Thrall')
+    expect(row.loot_item_id).toBe('item-1')
+    expect(row.raid_tier_id).toBe('tier-1')
+    expect(row.expansion_id).toBe('exp-1')
+    expect(row.awarded_date).toBe('2026-09-21')
+    expect(row.awarded_by).toBe('user-1')
+  })
+
+  it('sets notes to the reason when non-empty', () => {
+    const row = buildRemoveItemHistoryRow({
+      guildId: 'guild-1', item: ITEM, characterId: 'char-1', characterName: 'Thrall',
+      awardedBy: 'user-1', today: '2026-09-21', reason: 'Bought from another guild',
+    })
+    expect(row.notes).toBe('Bought from another guild')
+  })
+
+  it('falls back to "Obtained outside of raid" when the reason is undefined, null or empty', () => {
+    const undefinedReason = buildRemoveItemHistoryRow({
+      guildId: 'guild-1', item: ITEM, characterId: 'char-1', characterName: 'Thrall',
+      awardedBy: 'user-1', today: '2026-09-21',
+    })
+    expect(undefinedReason.notes).toBe('Obtained outside of raid')
+
+    const nullReason = buildRemoveItemHistoryRow({
+      guildId: 'guild-1', item: ITEM, characterId: 'char-1', characterName: 'Thrall',
+      awardedBy: 'user-1', today: '2026-09-21', reason: null,
+    })
+    expect(nullReason.notes).toBe('Obtained outside of raid')
+
+    const emptyReason = buildRemoveItemHistoryRow({
+      guildId: 'guild-1', item: ITEM, characterId: 'char-1', characterName: 'Thrall',
+      awardedBy: 'user-1', today: '2026-09-21', reason: '',
+    })
+    expect(emptyReason.notes).toBe('Obtained outside of raid')
+  })
+
+  it('sets no source key and no raid_event_id key', () => {
+    const row = buildRemoveItemHistoryRow({
+      guildId: 'guild-1', item: ITEM, characterId: 'char-1', characterName: 'Thrall',
+      awardedBy: 'user-1', today: '2026-09-21',
+    })
+    expect('source' in row).toBe(false)
+    expect('raid_event_id' in row).toBe(false)
   })
 })
