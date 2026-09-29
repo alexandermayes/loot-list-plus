@@ -106,15 +106,16 @@ export class SyncEngine extends EventEmitter {
       // Step 3: Read pending data from SavedVariables
       const pending = this.readPendingFromSavedVars()
 
-      // Step 4: Push pending data to API
-      if (pending.awards.length > 0) {
-        const result = await this.api.submitAwards(pending.awards)
-        console.log(`Synced ${result.processed} awards (${result.errors} errors)`)
-      }
-
+      // Step 4: Push pending data to API. Attendance goes first: its import
+      // creates the raid night that the awards then link to (#295).
       if (pending.attendance.length > 0) {
         const result = await this.api.submitAttendance(pending.attendance)
         console.log(`Synced ${result.processed} attendance records (${result.errors} errors)`)
+      }
+
+      if (pending.awards.length > 0) {
+        const result = await this.api.submitAwards(pending.awards)
+        console.log(`Synced ${result.processed} awards (${result.errors} errors)`)
       }
 
       // Step 5: Clear pending data from SavedVariables
