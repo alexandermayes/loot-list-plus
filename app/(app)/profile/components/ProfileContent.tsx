@@ -45,6 +45,7 @@ import {
 import Image from 'next/image'
 import { useTheme } from 'next-themes'
 import { useAccentColor, ACCENT_COLORS, DEFAULT_ACCENT_COLOR } from '@/app/contexts/AccentColorContext'
+import { Card } from '@/components/ui/card'
 
 type TabId = 'account' | 'preferences' | 'guilds'
 
@@ -460,7 +461,7 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
           (avatar + name) paints with TTFB. Once preferences load, swap to
           the full card with Discord-link state and the Log Out button. */}
       {loading && serverHeading ? serverHeading : (
-      <div className="bg-background-elevated border border-border rounded-xl p-4 sm:p-6">
+      <Card className="p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
           <Image
             src={avatarUrl}
@@ -472,7 +473,7 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
           />
           <div className="flex-1 min-w-0">
             <Heading level={2} className="text-xl sm:text-3xl">{displayName}</Heading>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1 text-[13px] text-muted-foreground">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1 text-13 text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <HugeiconsIcon icon={Calendar01Icon} size={14} />
                 <span>Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString() : ''}</span>
@@ -517,7 +518,7 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
             Log Out
           </Button>
         </div>
-      </div>
+      </Card>
       )}
 
       {/* Tab Navigation */}
@@ -527,7 +528,7 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
             key={tab.id}
             variant={activeTab === tab.id ? 'accent-subtle' : 'outline'}
             onClick={() => setActiveTab(tab.id)}
-            className="px-5 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium"
+            className="px-5 py-2.5 rounded-[40px] whitespace-nowrap text-13 font-medium"
           >
             <HugeiconsIcon icon={tab.icon} size={16} />
             {tab.label}
@@ -538,7 +539,7 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
       {/* Tab Content */}
       {loading ? (
         <div className="space-y-6">
-          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <Card className="overflow-hidden">
             <div className="px-6 py-4 border-b border-border">
               <Skeleton className="h-5 w-40" />
               <Skeleton className="h-4 w-64 mt-2" />
@@ -559,8 +560,8 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
                 <Skeleton className="h-4 w-16" />
               </div>
             </div>
-          </div>
-          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          </Card>
+          <Card className="overflow-hidden">
             <div className="px-6 py-4 border-b border-border">
               <Skeleton className="h-5 w-36" />
               <Skeleton className="h-4 w-56 mt-2" />
@@ -573,23 +574,23 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
                 <Skeleton className="h-9 w-36 rounded-[52px]" />
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       ) : (
       <>
       {activeTab === 'account' && (
         <div className="space-y-6">
           {/* Notifications */}
-          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <Card className="overflow-hidden">
             <div className="px-6 py-4 border-b border-border">
               <Heading level={4}>Discord notifications</Heading>
-              <p className="text-muted-foreground text-[13px] mt-1">Control what Discord DMs you receive from the LootList+ bot</p>
+              <p className="text-muted-foreground text-13 mt-1">Control what Discord DMs you receive from the LootList+ bot</p>
             </div>
             <div className="p-4 sm:p-6 space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-[14px] font-medium text-foreground">Loot list review updates</p>
-                  <p className="text-[13px] text-muted-foreground">Get a DM when your loot list is approved, rejected or needs revision</p>
+                  <p className="text-14 font-medium text-foreground">Loot list review updates</p>
+                  <p className="text-13 text-muted-foreground">Get a DM when your loot list is approved, rejected or needs revision</p>
                 </div>
                 <Switch
                   checked={notifySubmissionStatus}
@@ -599,8 +600,8 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
 
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-[14px] font-medium text-foreground">Resubmit reminders</p>
-                  <p className="text-[13px] text-muted-foreground">Get a DM when you have a loot list that needs resubmitting (edited after approval, or sent back by officers)</p>
+                  <p className="text-14 font-medium text-foreground">Resubmit reminders</p>
+                  <p className="text-13 text-muted-foreground">Get a DM when you have a loot list that needs resubmitting (edited after approval, or sent back by officers)</p>
                 </div>
                 <Switch
                   checked={notifyResubmitReminder}
@@ -610,21 +611,21 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
 
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-[14px] font-medium text-foreground">New submission alerts</p>
-                  <p className="text-[13px] text-muted-foreground">Officers and guild masters get a DM when a raider submits their loot list</p>
+                  <p className="text-14 font-medium text-foreground">New submission alerts</p>
+                  <p className="text-13 text-muted-foreground">Officers and guild masters get a DM when a raider submits their loot list</p>
                 </div>
-                <span className="text-[12px] text-muted-foreground whitespace-nowrap">Always on</span>
+                <span className="text-12 text-muted-foreground whitespace-nowrap">Always on</span>
               </div>
             </div>
-          </div>
+          </Card>
 
           {/* Battle.net Connection */}
-          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <Card className="overflow-hidden">
             <div className="px-6 py-4 border-b border-border">
               <div className="flex items-center justify-between">
                 <div>
                   <Heading level={4}>Battle.net account</Heading>
-                  <p className="text-muted-foreground text-[13px] mt-1">Link your Battle.net to import characters and sync gear</p>
+                  <p className="text-muted-foreground text-13 mt-1">Link your Battle.net to import characters and sync gear</p>
                 </div>
               </div>
             </div>
@@ -633,14 +634,14 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[#0074E0]/10 border border-[#0074E0]/30 rounded-lg flex items-center justify-center">
+                      <div className="w-10 h-10 bg-brand-battlenet/10 border border-brand-battlenet/30 rounded-lg flex items-center justify-center">
                         <Image src="/icons/battlenet.svg" alt="Battle.net" width={22} height={22} className="w-[22px] h-[22px]" style={{ filter: 'brightness(0) saturate(100%) invert(30%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(97%) contrast(101%)' }} />
                       </div>
                       <div>
                         <p className="font-medium text-foreground">{battlenetAccount.battletag || 'Connected'}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <Badge variant="outline" className="text-[11px]">{battlenetAccount.region.toUpperCase()}</Badge>
-                          <span className="text-[12px] text-muted-foreground">
+                          <Badge variant="outline" className="text-11">{battlenetAccount.region.toUpperCase()}</Badge>
+                          <span className="text-12 text-muted-foreground">
                             Connected {new Date(battlenetAccount.updated_at).toLocaleDateString()}
                           </span>
                         </div>
@@ -673,12 +674,12 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <p className="text-[13px] text-muted-foreground">
+                  <p className="text-13 text-muted-foreground">
                     Connect your Battle.net account to import characters directly with their equipped gear.
                   </p>
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="bnet-region" className="text-[13px] shrink-0">Region</Label>
+                      <Label htmlFor="bnet-region" className="text-13 shrink-0">Region</Label>
                       <Select
                         id="bnet-region"
                         variant="rounded"
@@ -705,13 +706,13 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
                 </div>
               )}
             </div>
-          </div>
+          </Card>
 
           {/* Danger Zone */}
           <div className="bg-background-elevated border border-destructive/30 rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-destructive/30">
               <Heading level={4} className="text-destructive">Danger zone</Heading>
-              <p className="text-muted-foreground text-[13px] mt-1">Irreversible and destructive actions</p>
+              <p className="text-muted-foreground text-13 mt-1">Irreversible and destructive actions</p>
             </div>
             <div className="p-4 sm:p-6 space-y-4">
               {/* Disconnect Discord */}
@@ -720,9 +721,9 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <HugeiconsIcon icon={LinkSquare02Icon} size={18} className="text-destructive" />
-                      <h3 className="text-[16px] font-semibold text-destructive">Disconnect Discord</h3>
+                      <h3 className="text-16 font-semibold text-destructive">Disconnect Discord</h3>
                     </div>
-                    <p className="text-[13px] text-muted-foreground">
+                    <p className="text-13 text-muted-foreground">
                       Disconnect your Discord account from LootList+. You will be logged out and can sign in again with a different Discord account.
                     </p>
                   </div>
@@ -743,9 +744,9 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <HugeiconsIcon icon={Delete02Icon} size={18} className="text-destructive" />
-                      <h3 className="text-[16px] font-semibold text-destructive">Delete account</h3>
+                      <h3 className="text-16 font-semibold text-destructive">Delete account</h3>
                     </div>
-                    <p className="text-[13px] text-muted-foreground">
+                    <p className="text-13 text-muted-foreground">
                       Permanently delete your account and all associated data. This includes your characters, loot lists, attendance records and guild memberships. This action cannot be undone.
                     </p>
                   </div>
@@ -767,10 +768,10 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
       {activeTab === 'preferences' && (
         <div className="space-y-6">
           {/* Appearance */}
-          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <Card className="overflow-hidden">
             <div className="px-4 sm:px-6 py-4 border-b border-border">
               <Heading level={4}>Appearance</Heading>
-              <p className="text-muted-foreground text-[13px] mt-1">Customize how LootList+ looks</p>
+              <p className="text-muted-foreground text-13 mt-1">Customize how LootList+ looks</p>
             </div>
             <div className="p-4 sm:p-6 space-y-6">
               {/* Theme Toggle */}
@@ -781,7 +782,7 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
                   </div>
                   <div>
                     <p className="text-foreground font-medium">Theme</p>
-                    <p className="text-[13px] text-muted-foreground">Choose your preferred appearance</p>
+                    <p className="text-13 text-muted-foreground">Choose your preferred appearance</p>
                   </div>
                 </div>
                 <div className="relative flex items-center bg-background-subtle border border-border rounded-full p-1">
@@ -854,7 +855,7 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
                   </div>
                   <div className="min-w-0">
                     <p className="text-foreground font-medium">Accent Color</p>
-                    <p className="text-[13px] text-muted-foreground hidden sm:block">Choose your preferred accent color</p>
+                    <p className="text-13 text-muted-foreground hidden sm:block">Choose your preferred accent color</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-1.5">
@@ -882,17 +883,17 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
 
         </div>
       )}
 
       {activeTab === 'guilds' && (
         <div className="space-y-6">
-          <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+          <Card className="overflow-hidden">
             <div className="px-6 py-4 border-b border-border">
               <Heading level={4}>My guilds</Heading>
-              <p className="text-muted-foreground text-[13px] mt-1">Guilds you&apos;re a member of</p>
+              <p className="text-muted-foreground text-13 mt-1">Guilds you&apos;re a member of</p>
             </div>
             <div className="p-4 sm:p-6">
               {allGuilds.length > 0 ? (
@@ -902,9 +903,10 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
                     const isGuildMaster = membership.role === 'Guild Master'
                     const cannotLeave = isCreator || isGuildMaster
                     return (
-                      <div
+                      <Card
+                        variant="nested"
                         key={membership.guild.id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-background-inset border border-border rounded-lg"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4"
                       >
                         <div className="flex items-center gap-4 min-w-0">
                           {membership.guild.icon_url ? (
@@ -927,7 +929,7 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
                                 <span className="px-2 py-0.5 bg-accent/20 border border-accent/30 rounded text-accent text-xs shrink-0">Creator</span>
                               )}
                             </div>
-                            <p className="text-[13px] text-muted-foreground truncate">
+                            <p className="text-13 text-muted-foreground truncate">
                               {membership.guild.realm} • {membership.guild.faction}
                             </p>
                             <span className="inline-block mt-1 px-2 py-0.5 bg-background-elevated border border-border rounded text-muted-foreground text-xs">
@@ -937,7 +939,7 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
                         </div>
                         {cannotLeave ? (
                           <div className="sm:text-right shrink-0">
-                            <p className="text-[13px] text-muted-foreground mb-1">
+                            <p className="text-13 text-muted-foreground mb-1">
                               {isCreator ? 'Guild creators cannot leave' : 'Guild Masters cannot leave'}
                             </p>
                             <Button
@@ -946,7 +948,7 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
                                 await switchGuild(membership.guild.id)
                                 router.push('/guild-settings')
                               }}
-                              className="text-accent text-[13px] p-0 h-auto"
+                              className="text-accent text-13 p-0 h-auto"
                             >
                               Go to Guild Settings
                             </Button>
@@ -963,7 +965,7 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
                             Leave guild
                           </Button>
                         )}
-                      </div>
+                      </Card>
                     )
                   })}
                 </div>
@@ -980,7 +982,7 @@ export default function ProfileContent({ serverHeading }: ProfileContentProps = 
                 </div>
               )}
             </div>
-          </div>
+          </Card>
         </div>
       )}
       </>

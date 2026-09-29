@@ -11,6 +11,7 @@ import {
 import { Heading, Text } from '@/components/ui/typography'
 import { updates, type UpdateCategory, type UpdateItem, type UpdateEntry } from '@/lib/updates-data'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { Card } from '@/components/ui/card'
 
 // Category styling
 const categoryConfig: Record<UpdateCategory, { label: string; icon: typeof SparklesIcon; color: string }> = {
@@ -60,7 +61,7 @@ function UpdateEntryCard({ entry }: { entry: UpdateEntry }) {
       <div className="absolute left-0 top-1.5 w-[15px] h-[15px] rounded-full bg-background-elevated border-2 border-accent" />
 
       {/* Content */}
-      <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+      <Card className="overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-background-subtle">
           <span className="text-sm font-medium text-foreground">{entry.date}</span>
@@ -77,7 +78,7 @@ function UpdateEntryCard({ entry }: { entry: UpdateEntry }) {
             <UpdateItemCard key={index} item={item} />
           ))}
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

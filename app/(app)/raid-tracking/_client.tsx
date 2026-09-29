@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { PlusSignIcon } from '@hugeicons/core-free-icons'
 import nextDynamic from 'next/dynamic'
+import { Card } from '@/components/ui/card'
 
 const LootHistoryTab = nextDynamic(() => import('./components/LootHistoryTab'), {
   loading: () => (
@@ -2531,7 +2532,7 @@ export default function RaidTrackingPage() {
         <>
       {/* Legend */}
       {!raidStartDateInFuture && (
-        <div className="flex items-center gap-3 sm:gap-4 text-[12px] sm:text-[13px] flex-wrap">
+        <div className="flex items-center gap-3 sm:gap-4 text-12 sm:text-13 flex-wrap">
           <span className="text-muted-foreground">Status:</span>
           <div className="flex items-center gap-1">
             <div className="w-5 h-5 rounded bg-background-elevated border border-border border-l-2 border-l-success"></div>
@@ -2542,7 +2543,7 @@ export default function RaidTrackingPage() {
             <span className="text-muted-foreground">Late</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-5 h-5 rounded bg-background-elevated border border-border border-l-2 border-l-orange-500"></div>
+            <div className="w-5 h-5 rounded bg-background-elevated border border-border border-l-2 border-l-standby"></div>
             <span className="text-muted-foreground">Standby</span>
           </div>
           <div className="flex items-center gap-1">
@@ -2567,15 +2568,15 @@ export default function RaidTrackingPage() {
 
       {/* Future Raid Start Message */}
       {raidStartDateInFuture && currentExpansion && (
-        <div className="bg-background-elevated border border-border rounded-xl p-8 text-center">
+        <Card className="p-8 text-center">
           <div className="max-w-md mx-auto space-y-4">
             <div className="w-16 h-16 mx-auto bg-accent/20 rounded-full flex items-center justify-center">
               <svg className="w-8 h-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-[24px] font-bold text-foreground">{currentExpansion.expansion_name} raids haven&apos;t started yet</h3>
-            <p className="text-muted-foreground text-[14px]">
+            <h3 className="text-24 font-bold text-foreground">{currentExpansion.expansion_name} raids haven&apos;t started yet</h3>
+            <p className="text-muted-foreground text-14">
               Your first raid week for <span className="text-accent">{currentExpansion.expansion_name}</span> is scheduled to begin on{' '}
               <span className="text-foreground font-medium">
                 {parseDate(currentExpansion.raid_start_date || '2026-01-01').toLocaleDateString('en-US', {
@@ -2586,11 +2587,11 @@ export default function RaidTrackingPage() {
                 })}
               </span>
             </p>
-            <p className="text-foreground-muted text-[13px]">
+            <p className="text-foreground-muted text-13">
               Once raids begin, you&apos;ll be able to track attendance, signups, and manage raid days here.
             </p>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Raid Days Grouped by Week */}
@@ -2604,7 +2605,7 @@ export default function RaidTrackingPage() {
               <svg className="w-6 h-6 text-muted-foreground flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              <h2 className="text-[24px] font-bold text-muted-foreground">Coming up</h2>
+              <h2 className="text-24 font-bold text-muted-foreground">Coming up</h2>
               <div className="flex-1 h-[1px] bg-foreground/10"></div>
             </div>
 
@@ -2617,12 +2618,12 @@ export default function RaidTrackingPage() {
                   day: 'numeric',
                 })
                 return (
-                  <div key={dateStr} className="bg-background-elevated/50 border border-dashed border-border rounded-xl px-5 py-4">
-                    <p className="text-[14px] text-muted-foreground">
+                  <Card key={dateStr} className="bg-background-elevated/50 border-dashed px-5 py-4">
+                    <p className="text-14 text-muted-foreground">
                       <span className="font-medium text-foreground">{formatted}</span>
                       {' '}· available for tracking on the day
                     </p>
-                  </div>
+                  </Card>
                 )
               })}
             </div>

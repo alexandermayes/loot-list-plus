@@ -29,7 +29,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { useConfirm } from '@/components/ui/confirm-modal'
-import { Heading, Text, LabelText } from '@/components/ui/typography'
+import { Heading, Text } from '@/components/ui/typography'
 import { normalizeBossName } from '@/utils/bossOrder'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { CheckFilledIcon, ClockFilledIcon, AlertFilledIcon, CancelFilledIcon } from '@/components/ui/icons'
@@ -44,6 +44,7 @@ import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent, usePagePerf } from '@/utils/analytics/client'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
+import { Card } from '@/components/ui/card'
 import { NoRaidsEmptyState } from '@/app/components/NoRaidsEmptyState'
 import { getExpansionDisplayName } from '@/utils/expansionVisuals'
 // BisImportModal is lazy-loaded — its ~326-line chunk only downloads when
@@ -233,25 +234,25 @@ const RankRow = memo(function RankRow({
 
   return (
     <tr className={`border-b border-border ${hasRowError ? 'bg-red-900/20' : ''}`}>
-      <td className={`px-3 py-2.5 font-semibold text-[13px] text-foreground bg-gradient-to-r ${getRankColor(rank)}`} rowSpan={1}>
+      <td className={`px-3 py-2.5 font-semibold text-13 text-foreground bg-gradient-to-r ${getRankColor(rank)}`} rowSpan={1}>
         {rank}
       </td>
       <td className="px-3 py-2.5">
         {!selectedItemId1 && removedItem1 ? (
-          <div className="px-3 py-2 bg-background-elevated border border-border rounded-[52px] opacity-50 overflow-hidden group hover:opacity-75 transition-opacity">
+          <Card className="px-3 py-2 opacity-50 overflow-hidden group hover:opacity-75 transition-opacity">
             <span className="flex items-center gap-2 min-w-0">
               <span className="truncate min-w-0"><ItemLink name={removedItem1.name} wowheadId={removedItem1.wowhead_id} clickable={false} className="line-through" /></span>
-              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success shrink-0 group-hover:hidden">Removed</span>
+              <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success shrink-0 group-hover:hidden">Removed</span>
               {onRestoreItem && (
                 <button
                   onClick={() => onRestoreItem(removedItem1.id, removedItem1.name)}
-                  className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0 hidden group-hover:inline-block hover:bg-accent/30"
+                  className="text-11 font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0 hidden group-hover:inline-block hover:bg-accent/30"
                 >
                   Undo
                 </button>
               )}
             </span>
-          </div>
+          </Card>
         ) : (
           <DroppableSlot id={`${rank}-1`} disabled={isApproved || isSlot1DisabledByReserved}>
             <div className="space-y-1">
@@ -293,7 +294,7 @@ const RankRow = memo(function RankRow({
                 />
               )}
               {hasSlot1Error && (
-                <p className="text-destructive text-[11px] pl-3">
+                <p className="text-destructive text-11 pl-3">
                   {slot1ErrorMessages.join(' · ')}
                 </p>
               )}
@@ -304,33 +305,33 @@ const RankRow = memo(function RankRow({
       <td className="px-3 py-2.5">
         {selectedItem1 ? (
           <div className="flex items-center gap-2">
-            <p className="text-foreground-muted text-[12px]">{normalizeBossName(selectedItem1.boss_name)}</p>
+            <p className="text-foreground-muted text-12">{normalizeBossName(selectedItem1.boss_name)}</p>
             {selectedItem1.classification && (
               <ClassificationBadge classification={selectedItem1.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
             )}
           </div>
         ) : removedItem1 ? (
-          <span className="text-muted-foreground text-[12px]">{normalizeBossName(removedItem1.boss_name)}</span>
+          <span className="text-muted-foreground text-12">{normalizeBossName(removedItem1.boss_name)}</span>
         ) : isSlot1DisabledByReserved ? (
-          <span className="text-muted-foreground text-[12px] italic">Reserved item in slot 2</span>
-        ) : <span className="text-foreground-muted text-[12px]">-</span>}
+          <span className="text-muted-foreground text-12 italic">Reserved item in slot 2</span>
+        ) : <span className="text-foreground-muted text-12">-</span>}
       </td>
       <td className="px-3 py-2.5">
         {!selectedItemId2 && removedItem2 ? (
-          <div className="px-3 py-2 bg-background-elevated border border-border rounded-[52px] opacity-50 overflow-hidden group hover:opacity-75 transition-opacity">
+          <Card className="px-3 py-2 opacity-50 overflow-hidden group hover:opacity-75 transition-opacity">
             <span className="flex items-center gap-2 min-w-0">
               <span className="truncate min-w-0"><ItemLink name={removedItem2.name} wowheadId={removedItem2.wowhead_id} clickable={false} className="line-through" /></span>
-              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success shrink-0 group-hover:hidden">Removed</span>
+              <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success shrink-0 group-hover:hidden">Removed</span>
               {onRestoreItem && (
                 <button
                   onClick={() => onRestoreItem(removedItem2.id, removedItem2.name)}
-                  className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0 hidden group-hover:inline-block hover:bg-accent/30"
+                  className="text-11 font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0 hidden group-hover:inline-block hover:bg-accent/30"
                 >
                   Undo
                 </button>
               )}
             </span>
-          </div>
+          </Card>
         ) : (
           <DroppableSlot id={`${rank}-2`} disabled={isApproved || isSlot2DisabledByReserved}>
             <div className="space-y-1">
@@ -372,7 +373,7 @@ const RankRow = memo(function RankRow({
                 />
               )}
               {hasSlot2Error && (
-                <p className="text-destructive text-[11px] pl-3">
+                <p className="text-destructive text-11 pl-3">
                   {slot2ErrorMessages.join(' · ')}
                 </p>
               )}
@@ -383,16 +384,16 @@ const RankRow = memo(function RankRow({
       <td className="px-3 py-2.5">
         {selectedItem2 ? (
           <div className="flex items-center gap-2">
-            <p className="text-foreground-muted text-[12px]">{normalizeBossName(selectedItem2.boss_name)}</p>
+            <p className="text-foreground-muted text-12">{normalizeBossName(selectedItem2.boss_name)}</p>
             {selectedItem2.classification && (
               <ClassificationBadge classification={selectedItem2.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
             )}
           </div>
         ) : removedItem2 ? (
-          <span className="text-muted-foreground text-[12px]">{normalizeBossName(removedItem2.boss_name)}</span>
+          <span className="text-muted-foreground text-12">{normalizeBossName(removedItem2.boss_name)}</span>
         ) : isSlot2DisabledByReserved ? (
-          <span className="text-muted-foreground text-[12px] italic">Reserved item in slot 1</span>
-        ) : <span className="text-foreground-muted text-[12px]">-</span>}
+          <span className="text-muted-foreground text-12 italic">Reserved item in slot 1</span>
+        ) : <span className="text-foreground-muted text-12">-</span>}
       </td>
     </tr>
   )
@@ -452,22 +453,22 @@ const MobileRankCard = memo(function MobileRankCard({
     onRestore?: typeof onRestoreItem
   ) => (
     <div className="px-3 py-2.5 border-t border-border/50">
-      <p className="text-[11px] text-muted-foreground font-medium mb-1.5">Slot {slotNum}</p>
+      <p className="text-11 text-muted-foreground font-medium mb-1.5">Slot {slotNum}</p>
       {!selectedItemId && removedItem ? (
-        <div className="px-3 py-2 bg-background-elevated border border-border rounded-lg opacity-50 group">
+        <Card className="px-3 py-2 opacity-50 group">
           <span className="flex items-center gap-2 min-w-0">
             <span className="truncate min-w-0"><ItemLink name={removedItem.name} wowheadId={removedItem.wowhead_id} clickable={false} className="line-through" /></span>
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-success/20 text-success shrink-0 group-hover:hidden">Removed</span>
+            <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success shrink-0 group-hover:hidden">Removed</span>
             {onRestore && (
               <button
                 onClick={() => onRestore(removedItem.id, removedItem.name)}
-                className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0 hidden group-hover:inline-block hover:bg-accent/30"
+                className="text-11 font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0 hidden group-hover:inline-block hover:bg-accent/30"
               >
                 Undo
               </button>
             )}
           </span>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-1.5">
           <SearchableItemSelect
@@ -490,16 +491,16 @@ const MobileRankCard = memo(function MobileRankCard({
           {/* Boss + classification inline below the select */}
           {selectedItem ? (
             <div className="flex items-center gap-2 pl-1">
-              <p className="text-foreground-muted text-[11px]">{normalizeBossName(selectedItem.boss_name)}</p>
+              <p className="text-foreground-muted text-11">{normalizeBossName(selectedItem.boss_name)}</p>
               {selectedItem.classification && (
                 <ClassificationBadge classification={selectedItem.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
               )}
             </div>
           ) : isSlotDisabledByReserved ? (
-            <p className="text-muted-foreground text-[11px] italic pl-1">{otherSlotReservedLabel}</p>
+            <p className="text-muted-foreground text-11 italic pl-1">{otherSlotReservedLabel}</p>
           ) : null}
           {hasError && (
-            <p className="text-destructive text-[11px] pl-1">
+            <p className="text-destructive text-11 pl-1">
               {errorMessages.join(' · ')}
             </p>
           )}
@@ -509,17 +510,17 @@ const MobileRankCard = memo(function MobileRankCard({
   )
 
   return (
-    <div className={`bg-card border border-border rounded-lg overflow-hidden ${hasCardError ? 'border-destructive/50 bg-red-900/10' : ''}`}>
+    <Card className={`overflow-hidden ${hasCardError ? 'border-destructive/50 bg-red-900/10' : ''}`}>
       {/* Rank header */}
       <div className={`px-3 py-2 flex items-center gap-2`}>
-        <span className={`inline-flex items-center justify-center w-8 h-6 rounded text-[12px] font-bold text-white ${getRankBgColor(rank)}`}>
+        <span className={`inline-flex items-center justify-center w-8 h-6 rounded text-12 font-bold text-white ${getRankBgColor(rank)}`}>
           {rank}
         </span>
-        <span className="text-[13px] text-muted-foreground">Rank {rank}</span>
+        <span className="text-13 text-muted-foreground">Rank {rank}</span>
       </div>
       {renderSlot(1, selectedItemId1, selectedItem1, removedItem1, isSlot1DisabledByReserved, 'Reserved item in slot 2', hasSlot1Error, slot1ErrorMessages, onRestoreItem)}
       {renderSlot(2, selectedItemId2, selectedItem2, removedItem2, isSlot2DisabledByReserved, 'Reserved item in slot 1', hasSlot2Error, slot2ErrorMessages, onRestoreItem)}
-    </div>
+    </Card>
   )
 })
 
@@ -596,7 +597,7 @@ function BracketSection({
   ).length
 
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
+    <Card className="overflow-hidden">
       {/* Header - tappable on mobile for collapse */}
       <div
         className={`${headerBgClass} border-l-4 ${borderColorClass} px-4 py-2 sm:cursor-default cursor-pointer`}
@@ -604,17 +605,17 @@ function BracketSection({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
-            <h2 className="text-[15px] font-semibold text-foreground inline-flex items-center gap-1.5">
+            <h2 className="text-15 font-semibold text-foreground inline-flex items-center gap-1.5">
               {name} <InfoTooltip content={tooltipContent} />
             </h2>
             {showAllocationPoints && validation ? (
-              <p className={`text-[12px] font-medium mt-1 ${textColorClass}`}>
+              <p className={`text-12 font-medium mt-1 ${textColorClass}`}>
                 Allocation Points: {validation.allocationPoints}/{validation.maxPoints} <InfoTooltip content={`Reserved and Limited items cost 1 point each. Unlimited items cost 0. You can spend up to ${validation.maxPoints} points per bracket.`} iconSize={12} />
               </p>
             ) : showAllocationPoints ? (
-              <p className={`${textColorClass} text-[12px] mt-1`}>Max {maxAllocationPoints ?? 3} allocation points per bracket</p>
+              <p className={`${textColorClass} text-12 mt-1`}>Max {maxAllocationPoints ?? 3} allocation points per bracket</p>
             ) : subtitle ? (
-              <p className={`${textColorClass} text-[12px]`}>{subtitle}</p>
+              <p className={`${textColorClass} text-12`}>{subtitle}</p>
             ) : null}
           </div>
           <div className="flex items-center gap-3">
@@ -654,7 +655,7 @@ function BracketSection({
             {/* Collapse chevron (mobile only) */}
             <div className="sm:hidden flex items-center gap-2">
               {isCollapsed && (
-                <span className="text-[12px] text-muted-foreground">{rankedInSection} ranked</span>
+                <span className="text-12 text-muted-foreground">{rankedInSection} ranked</span>
               )}
               <svg
                 className={`w-4 h-4 text-muted-foreground transition-transform ${isCollapsed ? '' : 'rotate-90'}`}
@@ -681,11 +682,11 @@ function BracketSection({
             </colgroup>
             <thead className="sticky top-0 z-10">
               <tr className="bg-background-subtle border-b border-border">
-                <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Rank</th>
-                <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #1</th>
-                <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
-                <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Loot #2</th>
-                <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Details</th>
+                <th className="px-3 py-2.5 text-left text-12 font-medium text-foreground-muted bg-background-subtle">Rank</th>
+                <th className="px-3 py-2.5 text-left text-12 font-medium text-foreground-muted bg-background-subtle">Loot #1</th>
+                <th className="px-3 py-2.5 text-left text-12 font-medium text-foreground-muted bg-background-subtle">Details</th>
+                <th className="px-3 py-2.5 text-left text-12 font-medium text-foreground-muted bg-background-subtle">Loot #2</th>
+                <th className="px-3 py-2.5 text-left text-12 font-medium text-foreground-muted bg-background-subtle">Details</th>
               </tr>
             </thead>
             <tbody>
@@ -741,7 +742,7 @@ function BracketSection({
           ))}
         </div>
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -1724,10 +1725,10 @@ export default function LootListContent({
                         key={group.canonicalPhase}
                         variant={selectedPhase === group.canonicalPhase ? 'accent-subtle' : 'outline'}
                         onClick={() => setSelectedPhase(group.canonicalPhase)}
-                        className="px-4 py-2.5 rounded-[40px] whitespace-nowrap text-[13px] font-medium"
+                        className="px-4 py-2.5 rounded-[40px] whitespace-nowrap text-13 font-medium"
                       >
                         <div className="flex items-center gap-2">
-                          <span className={`px-1.5 py-0.5 rounded text-[11px] font-bold ${
+                          <span className={`px-1.5 py-0.5 rounded text-11 font-bold ${
                             selectedPhase === group.canonicalPhase
                               ? 'bg-accent/30 text-accent'
                               : 'bg-foreground/10 text-foreground-secondary'
@@ -1763,7 +1764,7 @@ export default function LootListContent({
         {/* Status Banner skeleton - reserves space during loading to prevent CLS (initial load only) */}
         {(isLoading || isContentLoading) && !hasLoadedOnce.current && (
           <div className="px-4 sm:px-6 lg:px-8 pb-2">
-            <div className="rounded-xl p-4 sm:p-6 border border-border bg-background-elevated">
+            <Card className="p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <Skeleton className="w-10 h-10 rounded-lg" />
@@ -1777,7 +1778,7 @@ export default function LootListContent({
                   <Skeleton className="h-10 w-32 rounded-[40px]" />
                 </div>
               </div>
-            </div>
+            </Card>
           </div>
         )}
         {/* Status Banner - inside sticky header */}
@@ -1835,7 +1836,7 @@ export default function LootListContent({
                       </svg>
                     </Button>
                     {showMoreMenu && (
-                      <div className="absolute right-0 top-full mt-2 w-48 bg-background-elevated border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+                      <Card className="absolute right-0 top-full mt-2 w-48 shadow-lg z-50 overflow-hidden">
                         <Button
                           variant="ghost"
                           className="w-full justify-start !rounded-none"
@@ -1865,7 +1866,7 @@ export default function LootListContent({
                             Clear list
                           </Button>
                         )}
-                      </div>
+                      </Card>
                     )}
                   </div>
                   {/* Approved + not editing: show Edit list button */}
@@ -2007,11 +2008,11 @@ export default function LootListContent({
         {/* First-time guidance - outside flex container so sidebar aligns with brackets */}
         {!isLoading && !isContentLoading && Object.keys(rankings).length === 0 && (
           <div className="px-4 sm:px-6 lg:px-8 pb-4">
-            <div className="bg-background-elevated border border-border rounded-xl px-4 py-3">
+            <Card className="px-4 py-3">
               <p className="text-sm text-foreground-secondary">
                 <span className="text-foreground font-medium">Click any empty slot</span> to pick an item, rank from 50 (highest) to 1, then hit Submit for officer review.
               </p>
-            </div>
+            </Card>
           </div>
         )}
 
@@ -2141,7 +2142,7 @@ export default function LootListContent({
           <ModalBody className="space-y-5">
             {/* Overview */}
             <div>
-              <LabelText size="xs" className="mb-2 block">Overview</LabelText>
+              <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-2 block">Overview</Text>
               <Text size="sm" color="muted">
                 The system uses <Text as="span" size="sm" weight="semibold" color="default">50 desirability levels</Text> (level 50 = most desirable),
                 with each level containing <Text as="span" size="sm" weight="semibold" color="default">2 item slots</Text>, divided into 6 brackets.
@@ -2149,9 +2150,9 @@ export default function LootListContent({
             </div>
 
             {/* Bracket reference */}
-            <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+            <Card className="overflow-hidden">
               <div className="px-4 py-3 border-b border-border">
-                <LabelText size="xs">Bracket reference</LabelText>
+                <Text size="sm" weight="semibold" color="secondary" as="span">Bracket reference</Text>
               </div>
               <div className="divide-y divide-border">
                 {[
@@ -2184,12 +2185,12 @@ export default function LootListContent({
                   <ClassificationBadge classification="Unlimited" compact /> <Text as="span" size="xs" color="muted">= 0 pts</Text>
                 </span>
               </div>
-            </div>
+            </Card>
 
             {/* Rules for Brackets 1-4 */}
-            <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+            <Card className="overflow-hidden">
               <div className="px-4 py-3 border-b border-border">
-                <LabelText size="xs">Rules for Brackets 1-4</LabelText>
+                <Text size="sm" weight="semibold" color="secondary" as="span">Rules for Brackets 1-4</Text>
               </div>
               <div className="divide-y divide-border">
                 {[
@@ -2211,7 +2212,7 @@ export default function LootListContent({
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
 
             {/* Important notes */}
             <Alert variant="info">
@@ -2272,7 +2273,7 @@ export default function LootListContent({
               "looked unpinned" — GH issue from 2026-05-29 thread. The new
               offset puts the panel header just below where the page header
               settles (approximate, but stable). */}
-          <div className="w-80 bg-background-elevated border border-border rounded-xl flex flex-col sticky top-[160px] sm:top-[120px] max-h-[calc(100vh-180px)] overflow-hidden">
+          <Card className="w-80 flex flex-col sticky top-[160px] sm:top-[120px] max-h-[calc(100vh-180px)] overflow-hidden">
             {/* Panel Header */}
             <div className="p-4 border-b border-border flex items-center justify-between shrink-0">
               <div>
@@ -2317,7 +2318,7 @@ export default function LootListContent({
                       key={view}
                       type="button"
                       onClick={() => setUnrankedView(view)}
-                      className={`flex-1 px-2 py-1 text-[11px] font-medium rounded transition-colors ${
+                      className={`flex-1 px-2 py-1 text-11 font-medium rounded transition-colors ${
                         unrankedView === view
                           ? 'bg-background-elevated text-foreground shadow-sm'
                           : 'text-muted-foreground hover:text-foreground'
@@ -2334,7 +2335,7 @@ export default function LootListContent({
                         key={diff}
                         type="button"
                         onClick={() => setUnrankedDifficulty(diff)}
-                        className={`flex-1 px-2 py-1 text-[11px] font-medium rounded transition-colors capitalize ${
+                        className={`flex-1 px-2 py-1 text-11 font-medium rounded transition-colors capitalize ${
                           unrankedDifficulty === diff
                             ? 'bg-background-elevated text-foreground shadow-sm'
                             : 'text-muted-foreground hover:text-foreground'
@@ -2349,7 +2350,7 @@ export default function LootListContent({
                   <button
                     type="button"
                     onClick={() => setUnrankedSpecOnly(v => !v)}
-                    className={`w-full px-3 py-1.5 text-[11px] font-medium rounded-md border transition-colors ${
+                    className={`w-full px-3 py-1.5 text-11 font-medium rounded-md border transition-colors ${
                       unrankedSpecOnly
                         ? 'bg-accent/15 border-accent/40 text-accent'
                         : 'bg-muted/40 border-transparent text-muted-foreground hover:text-foreground'
@@ -2363,7 +2364,7 @@ export default function LootListContent({
                   <button
                     type="button"
                     onClick={() => setUnrankedArmorOnly(v => !v)}
-                    className={`w-full px-3 py-1.5 text-[11px] font-medium rounded-md border transition-colors ${
+                    className={`w-full px-3 py-1.5 text-11 font-medium rounded-md border transition-colors ${
                       unrankedArmorOnly
                         ? 'bg-accent/15 border-accent/40 text-accent'
                         : 'bg-muted/40 border-transparent text-muted-foreground hover:text-foreground'
@@ -2377,7 +2378,7 @@ export default function LootListContent({
                   <button
                     type="button"
                     onClick={() => setUnrankedPrioOnly(v => !v)}
-                    className={`w-full px-3 py-1.5 text-[11px] font-medium rounded-md border transition-colors ${
+                    className={`w-full px-3 py-1.5 text-11 font-medium rounded-md border transition-colors ${
                       unrankedPrioOnly
                         ? 'bg-accent/15 border-accent/40 text-accent'
                         : 'bg-muted/40 border-transparent text-muted-foreground hover:text-foreground'
@@ -2438,7 +2439,7 @@ export default function LootListContent({
                                   opening the item. */}
                               {item.character_spec_type === 'primary' && (
                                 <span
-                                  className="flex-shrink-0 inline-flex items-center px-1.5 text-[10px] font-semibold rounded-full border bg-accent/15 text-accent border-accent/30"
+                                  className="flex-shrink-0 inline-flex items-center px-1.5 text-11 font-semibold rounded-full border bg-accent/15 text-accent border-accent/30"
                                   title="Your spec is the primary recipient for this item"
                                 >
                                   P
@@ -2446,7 +2447,7 @@ export default function LootListContent({
                               )}
                               {item.character_spec_type === 'secondary' && (
                                 <span
-                                  className="flex-shrink-0 inline-flex items-center px-1.5 text-[10px] font-medium rounded-full border bg-info/15 text-info border-info/30"
+                                  className="flex-shrink-0 inline-flex items-center px-1.5 text-11 font-medium rounded-full border bg-info/15 text-info border-info/30"
                                   title="Your spec is a secondary recipient for this item"
                                 >
                                   S
@@ -2460,7 +2461,7 @@ export default function LootListContent({
                                 />
                               )}
                             </div>
-                            <p className="text-[11px] text-muted-foreground mt-1">
+                            <p className="text-11 text-muted-foreground mt-1">
                               {normalizeBossName(item.boss_name || 'Unknown')}
                             </p>
                           </div>
@@ -2494,7 +2495,7 @@ export default function LootListContent({
                                   opening the item. */}
                               {item.character_spec_type === 'primary' && (
                                 <span
-                                  className="flex-shrink-0 inline-flex items-center px-1.5 text-[10px] font-semibold rounded-full border bg-accent/15 text-accent border-accent/30"
+                                  className="flex-shrink-0 inline-flex items-center px-1.5 text-11 font-semibold rounded-full border bg-accent/15 text-accent border-accent/30"
                                   title="Your spec is the primary recipient for this item"
                                 >
                                   P
@@ -2502,7 +2503,7 @@ export default function LootListContent({
                               )}
                               {item.character_spec_type === 'secondary' && (
                                 <span
-                                  className="flex-shrink-0 inline-flex items-center px-1.5 text-[10px] font-medium rounded-full border bg-info/15 text-info border-info/30"
+                                  className="flex-shrink-0 inline-flex items-center px-1.5 text-11 font-medium rounded-full border bg-info/15 text-info border-info/30"
                                   title="Your spec is a secondary recipient for this item"
                                 >
                                   S
@@ -2516,7 +2517,7 @@ export default function LootListContent({
                                 />
                               )}
                             </div>
-                            <p className="text-[11px] text-muted-foreground mt-1">{item.item_slot}</p>
+                            <p className="text-11 text-muted-foreground mt-1">{item.item_slot}</p>
                           </div>
                         </UnrankedDraggable>
                       ))}
@@ -2525,7 +2526,7 @@ export default function LootListContent({
                 ))
               )}
             </div>
-          </div>
+          </Card>
         </div>
         </div>
         </>
@@ -2534,7 +2535,7 @@ export default function LootListContent({
       <DragOverlay dropAnimation={null}>
         {activeDragItem ? (
           <div className="px-3 py-2 bg-background-elevated border border-accent rounded-[52px] shadow-lg pointer-events-none">
-            <span className="text-[13px] font-medium text-foreground truncate">
+            <span className="text-13 font-medium text-foreground truncate">
               {activeDragItem.name}
             </span>
           </div>

@@ -15,6 +15,7 @@ import { allRoles, getRoleDisplayName, type Role } from '@/domain/loot/spec-role
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { getCurrentResetWeekEnd, type RaiderBonusEntry } from '@/domain/scoring'
 import { parseDate, toDateString } from '@/utils/date'
+import { Card } from '@/components/ui/card'
 import { getGuildGame } from '@/domain/expansion/game'
 
 // Lazy load the modal to reduce initial bundle size
@@ -604,24 +605,24 @@ export default function PriorityListTab() {
         {/* Stats grid skeleton */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-background-elevated border border-border rounded-xl p-4">
+            <Card key={i} className="p-4">
               <Skeleton className="h-4 w-20" />
               <Skeleton className="h-7 w-12 mt-1" />
-            </div>
+            </Card>
           ))}
         </div>
         {/* Search + boss nav skeleton */}
         <div className="hidden sm:flex gap-3">
-          <div className="flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3">
+          <Card className="flex-shrink-0 p-3">
             <Skeleton className="h-9 w-[160px] rounded-[52px]" />
-          </div>
-          <div className="flex-1 bg-background-elevated border border-border rounded-xl p-3">
+          </Card>
+          <Card className="flex-1 p-3">
             <div className="flex gap-2">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Skeleton key={i} className="h-9 w-28 rounded-[40px] flex-shrink-0" />
               ))}
             </div>
-          </div>
+          </Card>
         </div>
         {/* Boss section skeletons */}
         {Array.from({ length: 3 }).map((_, i) => (
@@ -641,14 +642,14 @@ export default function PriorityListTab() {
   // Show message if no phases are available
   if (availablePhases.length === 0) {
     return (
-      <div className="bg-background-elevated border border-border rounded-xl p-8 text-center">
+      <Card className="p-8 text-center">
         <p className="text-foreground font-medium mb-2">No raid tiers available</p>
         <p className="text-muted-foreground text-sm">
           {isForeverGuild
             ? 'Enable raid tiers in Guild Settings → Game version to set up priorities.'
             : 'Enable raid tiers in Guild Settings → Expansions to set up priorities.'}
         </p>
-      </div>
+      </Card>
     )
   }
 
@@ -706,41 +707,41 @@ export default function PriorityListTab() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-background-elevated border border-border rounded-xl p-4">
+        <Card className="p-4">
           <p className="text-muted-foreground text-sm">Total Items</p>
           <p className="text-2xl font-bold text-foreground">{filteredItems.length}</p>
-        </div>
-        <div className="bg-background-elevated border border-border rounded-xl p-4">
+        </Card>
+        <Card className="p-4">
           <p className="text-muted-foreground text-sm">With Priorities</p>
           <p className="text-2xl font-bold text-success">
             {Object.keys(priorities).length}
           </p>
-        </div>
-        <div className="bg-background-elevated border border-border rounded-xl p-4">
+        </Card>
+        <Card className="p-4">
           <p className="text-muted-foreground text-sm">No Priorities</p>
           <p className="text-2xl font-bold text-warning">
             {filteredItems.length - Object.keys(priorities).filter(id =>
               filteredItems.some(item => item.id === id)
             ).length}
           </p>
-        </div>
-        <div className="bg-background-elevated border border-border rounded-xl p-4">
+        </Card>
+        <Card className="p-4">
           <p className="text-muted-foreground text-sm">Guild Raiders</p>
           <p className="text-2xl font-bold text-accent">{characters.length}</p>
-        </div>
+        </Card>
       </div>
 
       {/* Raider bonuses (permanent / per-week per-character modifiers) */}
       {raiderBonusEnabled && (
-        <div className="bg-background-elevated border border-border rounded-xl p-4 space-y-4">
+        <Card className="p-4 space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[15px] font-semibold text-foreground">Raider bonuses</p>
-              <p className="text-[12px] text-muted-foreground text-pretty">
+              <p className="text-15 font-semibold text-foreground">Raider bonuses</p>
+              <p className="text-12 text-muted-foreground text-pretty">
                 Give a specific raider a bonus or penalty on every item&apos;s Loot Score. Make it permanent, or have it fall off at the next weekly reset.
               </p>
             </div>
-            {savingRaiderMods && <span className="text-[12px] text-muted-foreground shrink-0">Saving...</span>}
+            {savingRaiderMods && <span className="text-12 text-muted-foreground shrink-0">Saving...</span>}
           </div>
 
           {/* Add row */}
@@ -793,7 +794,7 @@ export default function PriorityListTab() {
 
           {/* Configured list */}
           {raiderBonusRows.length === 0 ? (
-            <p className="text-[12px] text-muted-foreground">No raider bonuses yet. Add one above.</p>
+            <p className="text-12 text-muted-foreground">No raider bonuses yet. Add one above.</p>
           ) : (
             <div className="space-y-2">
               {raiderBonusRows.map(({ charId, index, entry }) => {
@@ -802,20 +803,20 @@ export default function PriorityListTab() {
                 return (
                   <div key={`${charId}-${index}`} className="flex items-center gap-3 bg-background border border-border rounded-lg px-3 py-2">
                     <span
-                      className="flex-1 text-[13px] font-medium truncate"
+                      className="flex-1 text-13 font-medium truncate"
                       style={{ color: char?.class?.color_hex || '#888888' }}
                     >
                       {char?.name || 'Unknown raider'}
                     </span>
-                    <span className={`text-[13px] font-semibold tabular-nums ${positive ? 'text-success' : 'text-destructive'}`}>
+                    <span className={`text-13 font-semibold tabular-nums ${positive ? 'text-success' : 'text-destructive'}`}>
                       {positive ? '+' : ''}{entry.amount}
                     </span>
                     {entry.expires_at ? (
-                      <span className="text-[11px] text-warning whitespace-nowrap">
+                      <span className="text-11 text-warning whitespace-nowrap">
                         until {parseDate(entry.expires_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       </span>
                     ) : (
-                      <span className="text-[11px] text-muted-foreground whitespace-nowrap">permanent</span>
+                      <span className="text-11 text-muted-foreground whitespace-nowrap">permanent</span>
                     )}
                     <Button
                       variant="ghost"
@@ -831,7 +832,7 @@ export default function PriorityListTab() {
               })}
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {/* Boss Quick Navigation */}
@@ -840,7 +841,7 @@ export default function PriorityListTab() {
           {/* Mobile: Search + Boss dropdown row */}
           <div className="sm:hidden flex gap-2">
             {/* Search input */}
-            <div className="flex-1 bg-background-elevated border border-border rounded-lg p-2">
+            <Card className="flex-1 p-2">
               <div className="relative">
                 <Input
                   variant="rounded"
@@ -863,10 +864,10 @@ export default function PriorityListTab() {
                   </button>
                 )}
               </div>
-            </div>
+            </Card>
             {/* Boss dropdown */}
             {bossNames.length > 0 && (
-              <div className="flex-1 bg-background-elevated border border-border rounded-lg p-2">
+              <Card className="flex-1 p-2">
                 <Select
                   variant="rounded"
                   size="sm"
@@ -883,11 +884,11 @@ export default function PriorityListTab() {
                     <option key={boss} value={boss}>{boss}</option>
                   ))}
                 </Select>
-              </div>
+              </Card>
             )}
           </div>
           {/* Desktop: Search input */}
-          <div className="hidden sm:flex flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3 items-center">
+          <Card className="hidden sm:flex flex-shrink-0 p-3 items-center">
             <div className="relative">
               <Input
                 variant="rounded"
@@ -910,9 +911,9 @@ export default function PriorityListTab() {
                 </button>
               )}
             </div>
-          </div>
+          </Card>
           {/* Desktop: Boss chips container with horizontal scroll fade */}
-          <div className="flex-1 min-w-0 bg-background-elevated border border-border rounded-xl p-3 overflow-hidden hidden sm:block">
+          <Card className="flex-1 min-w-0 p-3 overflow-hidden hidden sm:block">
             <div
               className="overflow-x-auto scrollbar-hide"
               style={{
@@ -939,9 +940,9 @@ export default function PriorityListTab() {
                 ))}
               </div>
             </div>
-          </div>
+          </Card>
           {/* Expand/Collapse container */}
-          <div className="flex-shrink-0 bg-background-elevated border border-border rounded-xl p-3">
+          <Card className="flex-shrink-0 p-3">
             <div className="flex gap-2 h-full items-center">
               <Button variant="outline" size="sm" onClick={expandAll}>
                 Expand All
@@ -950,7 +951,7 @@ export default function PriorityListTab() {
                 Collapse All
               </Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
@@ -1007,8 +1008,8 @@ export default function PriorityListTab() {
                           >
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
-                          <span className="text-[14px] font-semibold text-foreground">{raidName}</span>
-                          <span className="text-[12px] text-foreground-muted">
+                          <span className="text-14 font-semibold text-foreground">{raidName}</span>
+                          <span className="text-12 text-foreground-muted">
                             {totalItems} item{totalItems !== 1 ? 's' : ''}
                           </span>
                         </Button>
@@ -1022,10 +1023,10 @@ export default function PriorityListTab() {
                             const bossItems = raidBosses[boss]
 
                             return (
-                              <div
+                              <Card
                                 key={`${raidName}-${boss}`}
                                 id={`prio-boss-${boss.replace(/\s+/g, '-')}`}
-                                className="bg-background-elevated border border-border rounded-xl overflow-hidden scroll-mt-[140px]"
+                                className="overflow-hidden scroll-mt-[140px]"
                               >
                                 {/* Boss Header - Clickable */}
                                 <Button
@@ -1041,10 +1042,10 @@ export default function PriorityListTab() {
                                         className="w-6 h-6 rounded border border-border/50 shadow-sm"
                                       />
                                     )}
-                                    <h2 className="text-[15px] font-semibold text-foreground">{boss}</h2>
+                                    <h2 className="text-15 font-semibold text-foreground">{boss}</h2>
                                   </div>
                                   <div className="flex items-center gap-3">
-                                    <span className="text-[12px] text-foreground-muted font-medium">
+                                    <span className="text-12 text-foreground-muted font-medium">
                                       {bossItems.length} item{bossItems.length !== 1 ? 's' : ''}
                                     </span>
                                     <svg
@@ -1064,10 +1065,10 @@ export default function PriorityListTab() {
                                     <table className="w-full min-w-[600px]">
                                       <thead className="sticky top-0 z-10">
                                         <tr className="bg-background-subtle">
-                                          <th className="px-5 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Item</th>
-                                          <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted w-[100px] bg-background-subtle">Slot</th>
-                                          <th className="px-3 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Priority Summary</th>
-                                          <th className="px-3 py-2.5 text-center text-[12px] font-medium text-foreground-muted w-[180px] bg-background-subtle">Actions</th>
+                                          <th className="px-5 py-2.5 text-left text-12 font-medium text-foreground-muted bg-background-subtle">Item</th>
+                                          <th className="px-3 py-2.5 text-left text-12 font-medium text-foreground-muted w-[100px] bg-background-subtle">Slot</th>
+                                          <th className="px-3 py-2.5 text-left text-12 font-medium text-foreground-muted bg-background-subtle">Priority Summary</th>
+                                          <th className="px-3 py-2.5 text-center text-12 font-medium text-foreground-muted w-[180px] bg-background-subtle">Actions</th>
                                         </tr>
                                       </thead>
                                       <tbody className="divide-y divide-border">
@@ -1084,17 +1085,17 @@ export default function PriorityListTab() {
                                                 <ItemLink
                                                   name={item.name}
                                                   wowheadId={item.wowhead_id}
-                                                  className="font-medium text-[13px]"
+                                                  className="font-medium text-13"
                                                 />
                                               </td>
-                                              <td className="px-3 py-2.5 text-[12px] text-foreground-muted">
+                                              <td className="px-3 py-2.5 text-12 text-foreground-muted">
                                                 {item.item_slot}
                                               </td>
                                               <td className="px-3 py-2.5">
                                                 {summary ? (
-                                                  <span className="text-[12px] text-green-400">{summary}</span>
+                                                  <span className="text-12 text-green-400">{summary}</span>
                                                 ) : (
-                                                  <span className="text-[12px] text-muted-foreground italic">No priorities set</span>
+                                                  <span className="text-12 text-muted-foreground italic">No priorities set</span>
                                                 )}
                                               </td>
                                               <td className="px-3 py-2.5 text-center">
@@ -1116,7 +1117,7 @@ export default function PriorityListTab() {
                                     </table>
                                   </div>
                                 )}
-                              </div>
+                              </Card>
                             )
                           })}
                         </div>
@@ -1128,16 +1129,16 @@ export default function PriorityListTab() {
           )}
 
           {/* Legend */}
-          <div className="bg-background-elevated border border-border rounded-xl p-4">
+          <Card className="p-4">
             <div className="flex items-center justify-between">
-              <p className="text-foreground-muted text-[12px]">
+              <p className="text-foreground-muted text-12">
                 Priority values add directly to loot scores on the master sheet. A +1 adds 1 point.
               </p>
-              <p className="text-foreground-muted text-[12px]">
+              <p className="text-foreground-muted text-12">
                 {Object.keys(priorities).length} items with priorities
               </p>
             </div>
-          </div>
+          </Card>
         </>
       )}
 

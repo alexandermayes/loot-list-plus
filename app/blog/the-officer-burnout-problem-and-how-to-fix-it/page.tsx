@@ -119,7 +119,7 @@ export default function BlogPost() {
       {/* Article */}
       <article className="relative pt-32 pb-20 px-6 md:px-12 lg:px-20">
         <BlogTracker slug="the-officer-burnout-problem-and-how-to-fix-it" title="The Officer Burnout Problem (and How to Fix It)" />
-        <div className="max-w-3xl mx-auto">
+        <div className="prose-measure mx-auto">
           {/* Breadcrumb */}
           <nav className="mb-8 text-sm text-foreground-secondary">
             <a

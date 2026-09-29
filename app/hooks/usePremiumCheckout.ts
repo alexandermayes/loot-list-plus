@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { trialEligible } from '@/lib/billing/subscription-view'
 
 export type BillingInterval = 'monthly' | 'annual'
 
@@ -19,7 +20,9 @@ export function usePremiumCheckout(source: string) {
   const [redirecting, setRedirecting] = useState<BillingInterval | null>(null)
   // Guilds that never subscribed get a 14-day free trial. The lookup is
   // officer-readable (RLS); everyone else defaults to true, which is
-  // harmless since only officers can start checkout.
+  // harmless since only officers can start checkout. The eligibility rule
+  // itself lives in lib/billing/subscription-view.ts, shared with
+  // BillingSection, so it is defined in exactly one client-side place.
   const [trialAvailable, setTrialAvailable] = useState(true)
 
   useEffect(() => {
@@ -32,7 +35,7 @@ export function usePremiumCheckout(source: string) {
       .eq('guild_id', activeGuild.id)
       .maybeSingle()
       .then(({ data }: { data: { stripe_subscription_id: string | null } | null }) => {
-        if (!cancelled) setTrialAvailable(!data?.stripe_subscription_id)
+        if (!cancelled) setTrialAvailable(trialEligible(data))
       })
     return () => {
       cancelled = true

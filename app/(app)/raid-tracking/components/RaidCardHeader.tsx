@@ -78,7 +78,7 @@ export function RaidCardHeader({
         <div>
           <div className="flex items-center gap-3">
             <h3
-              className={`text-[18px] font-bold ${
+              className={`text-18 font-bold ${
                 raid.is_skipped ? 'line-through opacity-50' : 'text-foreground'
               }`}
             >
@@ -103,10 +103,10 @@ export function RaidCardHeader({
             )}
           </div>
           {!raid.is_skipped && (
-            <p className="text-foreground-muted text-[13px] mt-1">
+            <p className="text-foreground-muted text-13 mt-1">
               {attendedCount} attended • {signupCount} signed up
               {lootCount > 0 && (
-                <span className="text-[#a335ee]"> • {lootCount} loot</span>
+                <span className="text-quality-epic"> • {lootCount} loot</span>
               )}
               {raid.wcl_report_code && (
                 <span>
@@ -116,7 +116,7 @@ export function RaidCardHeader({
                     href={`https://classic.warcraftlogs.com/reports/${raid.wcl_report_code}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#e35e15] hover:underline"
+                    className="text-brand-wcl hover:underline"
                     onClick={(e) => e.stopPropagation()}
                   >
                     WCL Report
@@ -151,7 +151,7 @@ export function RaidCardHeader({
             size="sm"
             onClick={() => onPostToDiscord(raid.id)}
             loading={isPostingDiscord}
-            className="border-[#5865F2]/50 text-[#5865F2] hover:bg-[#5865F2]/10"
+            className="border-brand-discord/50 text-brand-discord hover:bg-brand-discord/10"
           >
             <HugeiconsIcon icon={DiscordIcon} size={16} />
             <span className="hidden sm:inline">Post to Discord</span>

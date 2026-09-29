@@ -10,9 +10,9 @@ requires: [config, update]
 ---
 
 <objective>
-Manage the runtime skill surface without reinstall. Reads/writes `/Users/alexander.mayes/Code/loot-list-plus/.claude/.gsd-surface.json`
-(sibling to `/Users/alexander.mayes/Code/loot-list-plus/.claude/.gsd-profile`) and re-stages the active skills directory in place.
-Skill dirs live at `/Users/alexander.mayes/Code/loot-list-plus/.claude/skills/gsd-*/`.
+Manage the runtime skill surface without reinstall. Reads/writes `/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/.gsd-surface.json`
+(sibling to `/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/.gsd-profile`) and re-stages the active skills directory in place.
+Skill dirs live at `/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/skills/gsd-*/`.
 
 Sub-commands: list · status · profile · disable · enable · reset
 </objective>
@@ -123,11 +123,11 @@ Valid cluster names: `core_loop`, `audit_review`, `milestone`, `research_ideate`
 ## runtimeConfigDir resolution
 
 The `runtimeConfigDir` for `applySurface` is the **base Claude config directory**
-(`~/.claude`), NOT the skills sub-directory (`/Users/alexander.mayes/Code/loot-list-plus/.claude/skills`).
+(`~/.claude`), NOT the skills sub-directory (`/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/skills`).
 
 This matches `installRuntimeArtifacts` and `uninstallRuntimeArtifacts`, which also
 receive `~/.claude` as `configDir`. The skill dirs themselves live at
-`/Users/alexander.mayes/Code/loot-list-plus/.claude/skills/gsd-*/` because the `claude global` layout has `destSubpath =
+`/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/skills/gsd-*/` because the `claude global` layout has `destSubpath =
 'skills'` — they are derived from `configDir`, not the root for it.
 
 ```bash
@@ -141,7 +141,7 @@ SCOPE="global"
 ```
 
 Surface state is stored at `${RUNTIME_CONFIG_DIR}/.gsd-surface.json`
-(i.e. `/Users/alexander.mayes/Code/loot-list-plus/.claude/.gsd-surface.json`).
+(i.e. `/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/.gsd-surface.json`).
 
 All paths can be overridden by reading the `CLAUDE_CONFIG_DIR` env var if set.
 
@@ -154,9 +154,9 @@ All paths can be overridden by reading the `CLAUDE_CONFIG_DIR` env var if set.
 - Missing `surface.cjs` → prompt: "Run `npm i -g @opengsd/gsd-core` to reinstall GSD."
 
 <execution_context>
-Surface state file: `/Users/alexander.mayes/Code/loot-list-plus/.claude/.gsd-surface.json`
-Install profile marker: `/Users/alexander.mayes/Code/loot-list-plus/.claude/.gsd-profile`
-Skill dirs: `/Users/alexander.mayes/Code/loot-list-plus/.claude/skills/gsd-*/`
-Engine module: `/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/bin/lib/surface.cjs`
-Cluster definitions: `/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/bin/lib/clusters.cjs`
+Surface state file: `/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/.gsd-surface.json`
+Install profile marker: `/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/.gsd-profile`
+Skill dirs: `/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/skills/gsd-*/`
+Engine module: `/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/bin/lib/surface.cjs`
+Cluster definitions: `/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/bin/lib/clusters.cjs`
 </execution_context>

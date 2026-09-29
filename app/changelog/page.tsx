@@ -87,8 +87,8 @@ export default function PublicUpdatesPage() {
       <div className="max-w-2xl mx-auto px-6 pt-32 pb-20">
         {/* Header */}
         <div className="mb-10">
-          <h1 className="font-poppins font-bold text-[32px] text-white mb-2">Updates</h1>
-          <p className="font-poppins text-[16px] text-[#bababa]">What&apos;s new in LootList+</p>
+          <h1 className="font-poppins font-bold text-32 text-white mb-2">Updates</h1>
+          <p className="font-poppins text-16 text-[#bababa]">What&apos;s new in LootList+</p>
         </div>
 
         {/* Updates timeline */}

@@ -9,6 +9,7 @@ import { Heading } from '@/components/ui/typography'
 import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 
 export default function ImportPage() {
   const [loading, setLoading] = useState(false)
@@ -288,8 +289,8 @@ export default function ImportPage() {
           <p className="text-muted-foreground mt-1 text-base">Import raid tracking data from CSV files</p>
         </div>
 
-        <div className="bg-background-elevated border border-border rounded-xl p-6">
-          <h2 className="text-[24px] font-semibold text-foreground mb-4">Import data from CSV</h2>
+        <Card className="p-6">
+          <h2 className="text-24 font-semibold text-foreground mb-4">Import data from CSV</h2>
 
           <div className="space-y-4">
             <div>
@@ -307,19 +308,19 @@ export default function ImportPage() {
             </div>
 
             <div>
-              <label className="block text-[13px] font-medium text-foreground mb-2">CSV file</label>
+              <label className="block text-13 font-medium text-foreground mb-2">CSV file</label>
               <input
                 type="file"
                 accept=".csv"
                 onChange={handleFileChange}
-                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] focus:outline-none focus:border-accent"
+                className="w-full px-5 py-3 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-13 focus:outline-none focus:border-accent"
               />
             </div>
 
             <div className="bg-background-elevated rounded-xl p-4">
-              <h3 className="text-foreground font-medium mb-2 text-[14px]">Expected CSV format:</h3>
+              <h3 className="text-foreground font-medium mb-2 text-14">Expected CSV format:</h3>
               {importType === 'attendance' && (
-                <div className="text-muted-foreground text-[13px] space-y-1">
+                <div className="text-muted-foreground text-13 space-y-1">
                   <p><strong className="text-foreground">Headers:</strong> date, character_name, signed_up, attended, no_call_no_show</p>
                   <p><strong className="text-foreground">Example:</strong></p>
                   <pre className="bg-background-subtle p-2 rounded text-xs mt-2">
@@ -329,7 +330,7 @@ export default function ImportPage() {
                 </div>
               )}
               {importType === 'loot_items' && (
-                <div className="text-muted-foreground text-[13px] space-y-1">
+                <div className="text-muted-foreground text-13 space-y-1">
                   <p><strong className="text-foreground">Headers:</strong> name, boss_name, item_slot, wowhead_id</p>
                   <p><strong className="text-foreground">Example:</strong></p>
                   <pre className="bg-background-subtle p-2 rounded text-xs mt-2">
@@ -350,7 +351,7 @@ Thunderfury,Prince,Weapon,19019`}
               Import data
             </Button>
           </div>
-        </div>
+        </Card>
       </div>
   )
 }

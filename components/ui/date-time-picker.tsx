@@ -16,9 +16,9 @@ import { cn } from "@/lib/utils"
  * - rounded: Rounded corners - used in cards/compact areas
  *
  * Sizes:
- * - sm: Compact (h-9, text-[12px])
- * - default: Standard (h-11, text-[13px])
- * - lg: Large (h-12, text-[14px])
+ * - sm: Compact (h-9, text-12)
+ * - default: Standard (h-11, text-13)
+ * - lg: Large (h-12, text-14)
  */
 const dateTimePickerVariants = cva(
   [
@@ -35,9 +35,9 @@ const dateTimePickerVariants = cva(
         rounded: "rounded-xl border-border",
       },
       size: {
-        sm: "h-9 px-3 text-[12px]",
-        default: "h-11 px-4 text-[13px]",
-        lg: "h-12 px-5 text-[14px]",
+        sm: "h-9 px-3 text-12",
+        default: "h-11 px-4 text-13",
+        lg: "h-12 px-5 text-14",
       },
     },
     defaultVariants: {
@@ -83,9 +83,9 @@ const DateTimePicker = React.forwardRef<HTMLInputElement, DateTimePickerProps>(
             "flex-1 bg-transparent outline-none cursor-pointer",
             "text-foreground",
             "[&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer",
-            size === 'sm' && "text-[12px]",
-            size === 'default' && "text-[13px]",
-            size === 'lg' && "text-[14px]",
+            size === 'sm' && "text-12",
+            size === 'default' && "text-13",
+            size === 'lg' && "text-14",
           )}
           {...props}
         />

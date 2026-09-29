@@ -10,6 +10,7 @@ import { Heading } from '@/components/ui/typography'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeletons'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { Card } from '@/components/ui/card'
 
 // Lazy load modals to reduce initial bundle size
 const CreateCharacterModal = dynamic(() => import('@/app/components/CreateCharacterModal').then(mod => ({ default: mod.CreateCharacterModal })), {
@@ -49,7 +50,7 @@ export default function ManageCharactersPage() {
           <Skeleton className="h-6 w-36 mb-4 ml-2" />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {Array.from({ length: 2 }).map((_, i) => (
-              <div key={i} className="bg-background-elevated border border-border rounded-xl p-5">
+              <Card key={i} className="p-5">
                 <div className="flex items-center gap-4">
                   <Skeleton className="w-12 h-12 rounded-full" />
                   <div className="flex-1 space-y-2">
@@ -57,7 +58,7 @@ export default function ManageCharactersPage() {
                     <Skeleton className="h-4 w-24" />
                   </div>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
@@ -88,15 +89,15 @@ export default function ManageCharactersPage() {
 
       {/* Characters List */}
       {userCharacters.length === 0 ? (
-        <div className="bg-background-elevated border border-border rounded-xl p-12 text-center">
+        <Card className="p-12 text-center">
           <div className="max-w-md mx-auto">
             <div className="w-16 h-16 bg-background-elevated rounded-full flex items-center justify-center mx-auto mb-4">
               <HugeiconsIcon icon={Add01Icon} size={32} className="text-foreground-muted" />
             </div>
-            <h3 className="text-[24px] font-bold text-foreground mb-2">
+            <h3 className="text-24 font-bold text-foreground mb-2">
               No characters yet
             </h3>
-            <p className="text-[14px] text-foreground-muted mb-6">
+            <p className="text-14 text-foreground-muted mb-6">
               Create your first character to start managing loot lists and joining guilds
             </p>
             <Button
@@ -107,7 +108,7 @@ export default function ManageCharactersPage() {
               Create your first character
             </Button>
           </div>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-4">
           {/* Main Characters */}
@@ -158,18 +159,18 @@ export default function ManageCharactersPage() {
 
       {/* Info Box */}
       {userCharacters.length > 0 && (
-        <div className="bg-background-elevated border border-border rounded-xl p-6">
-          <h3 className="text-[16px] font-semibold text-foreground mb-3">
+        <Card className="p-6">
+          <h3 className="text-16 font-semibold text-foreground mb-3">
             Character management tips
           </h3>
-          <ul className="space-y-2 text-[14px] text-foreground-muted">
+          <ul className="space-y-2 text-14 text-foreground-muted">
             <li>• Click on a character to view and edit details</li>
             <li>• Each character can join multiple guilds</li>
             <li>• Each character has separate loot lists per raid tier</li>
             <li>• Main characters are prioritized in character selection</li>
             <li>• Battle.net integration for automatic character import coming soon</li>
           </ul>
-        </div>
+        </Card>
       )}
 
       {/* Modals */}

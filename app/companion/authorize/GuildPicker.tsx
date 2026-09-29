@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Heading, Text, LabelText } from '@/components/ui/typography'
+import { Heading, Text } from '@/components/ui/typography'
 import { SYNC_TOKEN_DEFAULT_DAYS } from '@/lib/addon/sync-tokens'
 
 /**
@@ -52,7 +52,7 @@ function BodyContent({ state }: { state: GuildPickerState }) {
   return (
     <div className="flex flex-col gap-4">
       <Text color="muted">{COMPANION_AUTHORIZE_COPY.chooseGuildIntro}</Text>
-      <LabelText>{COMPANION_AUTHORIZE_COPY.officerGuildsLabel}</LabelText>
+      <Text size="sm" weight="semibold" color="secondary" as="span">{COMPANION_AUTHORIZE_COPY.officerGuildsLabel}</Text>
       <form method="post" action={state.formAction}>
         <ul className="flex flex-col gap-2">
           {state.guilds.map((guild) => (

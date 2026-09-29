@@ -16,6 +16,7 @@ import { Select } from '@/components/ui/select'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { GiftIcon, Edit01Icon, Delete01Icon } from '@hugeicons/core-free-icons'
 import LogDonationModal, { type DonationRecord, type DonationKind } from './LogDonationModal'
+import { Card } from '@/components/ui/card'
 
 interface Member {
   character_id: string
@@ -263,10 +264,10 @@ export default function DonationsTab({ onOpenSettings }: DonationsTabProps = {})
       <div className="space-y-6">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-background-elevated border border-border rounded-xl p-4">
+            <Card key={i} className="p-4">
               <Skeleton className="h-4 w-20" />
               <Skeleton className="h-7 w-12 mt-1" />
-            </div>
+            </Card>
           ))}
         </div>
         <Skeleton className="h-9 w-full rounded-xl" />
@@ -296,22 +297,22 @@ export default function DonationsTab({ onOpenSettings }: DonationsTabProps = {})
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-        <div className="bg-background-elevated border border-border rounded-xl p-4">
+        <Card className="p-4">
           <Text size="sm" color="muted">Total donations</Text>
           <p className="text-2xl font-bold text-foreground tabular-nums">{total}</p>
-        </div>
-        <div className="bg-background-elevated border border-border rounded-xl p-4">
+        </Card>
+        <Card className="p-4">
           <Text size="sm" color="muted">Points in view</Text>
           <p className="text-2xl font-bold text-accent tabular-nums">{formatPoints(totalPoints)}</p>
-        </div>
-        <div className="bg-background-elevated border border-border rounded-xl p-4 col-span-2 sm:col-span-1">
+        </Card>
+        <Card className="p-4 col-span-2 sm:col-span-1">
           <Text size="sm" color="muted">This week</Text>
           <p className="text-2xl font-bold text-foreground tabular-nums">{thisWeekCount}</p>
-        </div>
+        </Card>
       </div>
 
       {/* Filters + Log button */}
-      <div className="bg-background-elevated border border-border rounded-xl p-4">
+      <Card className="p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <Label className="mb-2">Search player</Label>
@@ -365,7 +366,7 @@ export default function DonationsTab({ onOpenSettings }: DonationsTabProps = {})
             </Button>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Table */}
       {donations.length === 0 ? (
@@ -381,7 +382,7 @@ export default function DonationsTab({ onOpenSettings }: DonationsTabProps = {})
           variant="card"
         />
       ) : (
-        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+        <Card className="overflow-hidden">
           {/* Mobile cards */}
           <div className="sm:hidden divide-y divide-border">
             {donations.map(row => {
@@ -396,13 +397,13 @@ export default function DonationsTab({ onOpenSettings }: DonationsTabProps = {})
                       {formatPoints(row.points)}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                  <div className="flex items-center gap-2 text-12 text-muted-foreground">
                     <span>{KIND_LABELS[row.kind]}</span>
                     {row.amount_text && <><span>·</span><span>{row.amount_text}</span></>}
                     <span>·</span>
                     <span>{formatDate(row.awarded_at)}</span>
                   </div>
-                  {row.note && <p className="text-[11px] text-muted-foreground truncate">{row.note}</p>}
+                  {row.note && <p className="text-11 text-muted-foreground truncate">{row.note}</p>}
                   <div className="flex gap-2 pt-1">
                     <Button variant="ghost" size="sm" onClick={() => { setEditing(row); setModalOpen(true) }}>
                       Edit
@@ -498,7 +499,7 @@ export default function DonationsTab({ onOpenSettings }: DonationsTabProps = {})
               </Button>
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       <LogDonationModal

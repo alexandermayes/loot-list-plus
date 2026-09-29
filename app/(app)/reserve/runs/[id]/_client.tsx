@@ -12,7 +12,7 @@ import { Select } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
-import { Heading, Text, LabelText } from '@/components/ui/typography'
+import { Heading, Text } from '@/components/ui/typography'
 import ItemLink from '@/app/components/ItemLink'
 import {
   encodeGargulExport,
@@ -643,7 +643,7 @@ export default function ReserveRunPage() {
                     {statusStyle.label}
                   </Badge>
                 </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-13 text-muted-foreground">
                   {run.raid_tier_name && <span>{run.raid_tier_name}</span>}
                 <span className="flex items-center gap-1.5">
                   <HugeiconsIcon icon={Calendar03Icon} size={14} />
@@ -711,13 +711,13 @@ export default function ReserveRunPage() {
 
         {/* Share link + Export */}
         <Card variant="unified">
-          <LabelText size="sm" className="mb-3">Share link</LabelText>
+          <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">Share link</Text>
           <div className="flex items-center gap-2 mb-3">
             <a
               href={`/reserve/join/${run.share_token}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 min-w-0 h-11 px-5 rounded-xl border border-border-strong bg-background-elevated flex items-center text-[13px] text-muted-foreground hover:text-accent hover:border-accent/40 transition-colors truncate"
+              className="flex-1 min-w-0 h-11 px-5 rounded-xl border border-border-strong bg-background-elevated flex items-center text-13 text-muted-foreground hover:text-accent hover:border-accent/40 transition-colors truncate"
               title="Open join page in a new tab"
             >
               {typeof window !== 'undefined' ? `${window.location.origin}/reserve/join/${run.share_token}` : `/reserve/join/${run.share_token}`}
@@ -737,7 +737,7 @@ export default function ReserveRunPage() {
           </div>
           {run.submissions.length > 0 && (
             <div className="pt-3 border-t border-border space-y-2">
-              <LabelText size="xs">Export reserves</LabelText>
+              <Text size="sm" weight="semibold" color="secondary" as="span">Export reserves</Text>
               <div className="flex flex-wrap items-center gap-2">
                 <Button variant="outline" size="sm" onClick={exportGargul}>
                   <HugeiconsIcon icon={Copy01Icon} size={14} />
@@ -761,7 +761,7 @@ export default function ReserveRunPage() {
         {canManage && run.raid_leader_token && (
           <Card variant="unified">
             <div className="flex items-center justify-between mb-3">
-              <LabelText size="sm">Raid leader access</LabelText>
+              <Text size="sm" weight="semibold" color="secondary" as="span">Raid leader access</Text>
               {leaderToken && (
                 <Button variant="ghost" size="sm" onClick={clearLeaderToken}>
                   Sign out of leader access
@@ -776,7 +776,7 @@ export default function ReserveRunPage() {
                 variant="rounded"
                 readOnly
                 value={`${typeof window !== 'undefined' ? window.location.origin : ''}/reserve/runs/${run.id}?leader_token=${run.raid_leader_token}`}
-                className="text-[13px] text-muted-foreground"
+                className="text-13 text-muted-foreground"
                 onFocus={(e) => e.currentTarget.select()}
               />
               <Button
@@ -801,7 +801,7 @@ export default function ReserveRunPage() {
         {/* Rules */}
         <Card variant="unified">
           <div className="flex items-center justify-between mb-3">
-            <LabelText size="sm">Rules</LabelText>
+            <Text size="sm" weight="semibold" color="secondary" as="span">Rules</Text>
             {canManage && !editingNote && (
               <Button
                 variant="ghost"
@@ -816,7 +816,7 @@ export default function ReserveRunPage() {
               </Button>
             )}
           </div>
-          <div className="space-y-3 text-[13px] text-foreground-secondary">
+          <div className="space-y-3 text-13 text-foreground-secondary">
             <div className="flex flex-wrap gap-x-6 gap-y-1">
               <span><span className="tabular-nums">{run.max_reserves}</span> reserve{run.max_reserves !== 1 ? 's' : ''} per player</span>
               {run.max_reserves_per_item && (
@@ -851,7 +851,7 @@ export default function ReserveRunPage() {
 
             {run.hard_reserves.length > 0 && (
               <div className="pt-1">
-                <LabelText size="xs" className="mb-2">Hard reserves</LabelText>
+                <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-2">Hard reserves</Text>
                 <div className="flex flex-wrap gap-2">
                   {run.hard_reserves.map((hr) => {
                     const item = itemMap.get(hr.loot_item_id)
@@ -876,7 +876,7 @@ export default function ReserveRunPage() {
         {(run.discord_invite_url || canManage) && (
           <Card variant="unified">
             <div className="flex items-center justify-between mb-3">
-              <LabelText size="sm">Discord</LabelText>
+              <Text size="sm" weight="semibold" color="secondary" as="span">Discord</Text>
               {canManage && !editingDiscord && (
                 <Button
                   variant="ghost"
@@ -912,7 +912,7 @@ export default function ReserveRunPage() {
                 href={run.discord_invite_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-accent hover:underline text-[13px]"
+                className="inline-flex items-center gap-2 text-accent hover:underline text-13"
               >
                 <HugeiconsIcon icon={DiscordIcon} size={16} />
                 {run.discord_invite_url}
@@ -927,9 +927,9 @@ export default function ReserveRunPage() {
         <Card className="overflow-hidden">
           <div className="px-5 py-4 border-b border-border space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <LabelText size="sm">
+              <Text size="sm" weight="semibold" color="secondary" as="span">
                 Participants (<span className="tabular-nums">{run.submissions.length}</span>)
-              </LabelText>
+              </Text>
             </div>
             {run.submissions.length > 0 && (
               <div className="flex flex-col sm:flex-row gap-2">
@@ -974,11 +974,11 @@ export default function ReserveRunPage() {
               {visibleSubmissions.map((sub) => (
                 <div key={sub.id} className="px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 group">
                   <div className="flex items-center gap-2 min-w-[140px]">
-                    <span className="font-semibold text-[14px]" style={{ color: getClassColor(sub.character_class) }}>
+                    <span className="font-semibold text-14" style={{ color: getClassColor(sub.character_class) }}>
                       {sub.character_name}
                     </span>
                     {sub.character_spec && (
-                      <span className="text-[11px] text-muted-foreground">({sub.character_spec})</span>
+                      <span className="text-11 text-muted-foreground">({sub.character_spec})</span>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-1.5 flex-1">
@@ -986,13 +986,13 @@ export default function ReserveRunPage() {
                       sub.items.map((itemId) => {
                         const item = itemMap.get(itemId)
                         return item ? (
-                          <span key={itemId} className="inline-flex items-center px-2 py-0.5 bg-background-subtle rounded text-[12px]">
+                          <span key={itemId} className="inline-flex items-center px-2 py-0.5 bg-background-subtle rounded text-12">
                             <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />
                           </span>
                         ) : null
                       })
                     ) : (
-                      <span className="text-[12px] text-muted-foreground italic">
+                      <span className="text-12 text-muted-foreground italic">
                         {sub.items.length} item{sub.items.length !== 1 ? 's' : ''} reserved (hidden until locked)
                       </span>
                     )}
@@ -1017,22 +1017,22 @@ export default function ReserveRunPage() {
         {contestedItems.length > 0 && (run.status !== 'open' || run.visibility === 'public_live') && (
           <Card className="overflow-hidden">
             <div className="px-5 py-4 border-b border-border">
-              <LabelText size="sm">
+              <Text size="sm" weight="semibold" color="secondary" as="span">
                 Contested items (<span className="tabular-nums">{contestedItems.length}</span>)
-              </LabelText>
+              </Text>
             </div>
             <div className="divide-y divide-border">
               {contestedItems.map(({ item, reservers }) => (
                 <div key={item.id} className="px-5 py-3">
                   <div className="flex items-center justify-between mb-1.5">
                     <ItemLink name={item.name} wowheadId={item.wowhead_id} />
-                    <span className="text-[12px] text-warning font-medium">{reservers.length} reservers</span>
+                    <span className="text-12 text-warning font-medium">{reservers.length} reservers</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {reservers.map((sub) => (
                       <span
                         key={sub.id}
-                        className="text-[12px] font-medium"
+                        className="text-12 font-medium"
                         style={{ color: getClassColor(sub.character_class) }}
                       >
                         {sub.character_name}
@@ -1048,7 +1048,7 @@ export default function ReserveRunPage() {
         {/* Eligibility lookup */}
         {(run.status === 'locked' || run.status === 'completed') && (
           <Card variant="unified">
-            <LabelText size="sm" className="mb-3">Item eligibility</LabelText>
+            <Text size="sm" weight="semibold" color="secondary" as="span" className="mb-3">Item eligibility</Text>
             <div className="relative mb-4">
               <HugeiconsIcon
                 icon={Search01Icon}
@@ -1076,16 +1076,16 @@ export default function ReserveRunPage() {
                       <div className="flex items-center gap-2">
                         <ItemLink name={item.name} wowheadId={item.wowhead_id} />
                         {isHardReserved && (
-                          <span className="text-[10px] font-semibold uppercase text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">HR</span>
+                          <span className="text-11 font-semibold uppercase text-destructive bg-destructive/10 px-1.5 py-0.5 rounded">HR</span>
                         )}
                       </div>
-                      <span className="text-[12px] text-muted-foreground">{item.boss_name}</span>
+                      <span className="text-12 text-muted-foreground">{item.boss_name}</span>
                     </div>
 
                     {awarded.length > 0 && (
                       <div className="mb-2">
                         {awarded.map(a => (
-                          <div key={a.id} className="flex items-center gap-2 text-[12px]">
+                          <div key={a.id} className="flex items-center gap-2 text-12">
                             <HugeiconsIcon icon={CheckmarkCircle01Icon} size={14} className="text-success" />
                             <span className="text-success font-medium">Awarded to {a.character_name}</span>
                             {canManage && (
@@ -1112,7 +1112,7 @@ export default function ReserveRunPage() {
                               key={sub.id}
                               onClick={() => canManage && !alreadyAwarded && handleAward(item.id, sub.character_name, sub.id)}
                               disabled={!canManage || alreadyAwarded || actionLoading}
-                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-medium border transition-colors ${
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-12 font-medium border transition-colors ${
                                 alreadyAwarded
                                   ? 'bg-success/10 border-success/20 text-success cursor-default'
                                   : canManage
@@ -1141,9 +1141,9 @@ export default function ReserveRunPage() {
         {run.awards.length > 0 && (
           <Card className="overflow-hidden">
             <div className="px-5 py-4 border-b border-border">
-              <LabelText size="sm">
+              <Text size="sm" weight="semibold" color="secondary" as="span">
                 Winner log (<span className="tabular-nums">{run.awards.length}</span>)
-              </LabelText>
+              </Text>
             </div>
             <div className="divide-y divide-border">
               {run.awards.map((award) => {
@@ -1152,11 +1152,11 @@ export default function ReserveRunPage() {
                   <div key={award.id} className="px-5 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {item && <ItemLink name={item.name} wowheadId={item.wowhead_id} clickable={false} />}
-                      <span className="text-[13px] text-muted-foreground">→</span>
-                      <span className="text-[13px] font-medium text-foreground">{award.character_name}</span>
+                      <span className="text-13 text-muted-foreground">→</span>
+                      <span className="text-13 font-medium text-foreground">{award.character_name}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-muted-foreground">
+                      <span className="text-11 text-muted-foreground">
                         {new Date(award.awarded_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                       </span>
                       {canManage && (
@@ -1183,11 +1183,11 @@ export default function ReserveRunPage() {
             onClick={toggleAudit}
             className="w-full px-5 py-4 border-b border-border flex items-center justify-between hover:bg-muted/30 transition-colors"
           >
-            <LabelText size="sm" className="flex items-center gap-2">
+            <Text size="sm" weight="semibold" color="secondary" as="span" className="flex items-center gap-2">
               <HugeiconsIcon icon={Clock01Icon} size={14} />
               Audit log
-            </LabelText>
-            <span className="text-[12px] text-muted-foreground">
+            </Text>
+            <span className="text-12 text-muted-foreground">
               {auditOpen ? 'Hide' : 'Show'}
             </span>
           </button>
@@ -1219,7 +1219,7 @@ export default function ReserveRunPage() {
                           .join(' • ')
                       : ''
                     return (
-                      <div key={entry.id} className="px-5 py-2.5 text-[12px]">
+                      <div key={entry.id} className="px-5 py-2.5 text-12">
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="font-medium text-foreground">{who}</span>
@@ -1243,7 +1243,7 @@ export default function ReserveRunPage() {
         {canManage && (
           <Card variant="unified" className="border-destructive/30">
             <div className="flex items-center justify-between mb-3">
-              <LabelText size="sm" className="!text-destructive">Danger zone</LabelText>
+              <Text size="sm" weight="semibold" color="secondary" as="span" className="!text-destructive">Danger zone</Text>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="min-w-0">

@@ -29,8 +29,8 @@ Clarify phase requirements through structured Socratic questioning with quantita
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/spec-phase.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/templates/spec.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/spec-phase.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/templates/spec.md
 </execution_context>
 
 <runtime_note>

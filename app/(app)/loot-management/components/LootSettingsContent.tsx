@@ -25,6 +25,7 @@ import { ErrorState } from '@/components/ui/error-state'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { ItemRow } from './ItemRow'
 import { Skeleton } from '@/components/ui/skeletons'
+import { Card } from '@/components/ui/card'
 
 // Modals are lazy-loaded so their JS doesn't ship in the initial bundle.
 // Combined with conditional render below, each chunk fetches on first open.
@@ -1386,38 +1387,38 @@ export default function LootSettingsContent({
           <>
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              <div className="bg-background-elevated border border-border rounded-xl p-4">
+              <Card className="p-4">
                 <p className="text-foreground-muted text-sm">Total items</p>
                 <p className="text-2xl font-bold text-foreground tabular-nums">{filteredItems.length}</p>
-              </div>
-              <div className="bg-background-elevated border border-border rounded-xl p-4">
+              </Card>
+              <Card className="p-4">
                 <p className="text-foreground-muted text-sm">Available</p>
                 <p className="text-2xl font-bold text-success tabular-nums">
                   {filteredItems.filter(i => i.is_available).length}
                 </p>
-              </div>
-              <div className="bg-background-elevated border border-border rounded-xl p-4">
+              </Card>
+              <Card className="p-4">
                 <p className="text-foreground-muted text-sm">Reserved</p>
                 <p className="text-2xl font-bold text-destructive tabular-nums">
                   {filteredItems.filter(i => i.classification === 'Reserved').length}
                 </p>
-              </div>
-              <div className="bg-background-elevated border border-border rounded-xl p-4">
+              </Card>
+              <Card className="p-4">
                 <p className="text-foreground-muted text-sm">Limited</p>
                 <p className="text-2xl font-bold text-warning tabular-nums">
                   {filteredItems.filter(i => i.classification === 'Limited').length}
                 </p>
-              </div>
-              <div className="bg-background-elevated border border-border rounded-xl p-4">
+              </Card>
+              <Card className="p-4">
                 <p className="text-foreground-muted text-sm">Loot Council</p>
                 <p className="text-2xl font-bold text-accent tabular-nums">
                   {filteredItems.filter(i => i.is_loot_council).length}
                 </p>
-              </div>
+              </Card>
             </div>
 
             {/* Filters */}
-            <div className="bg-background-elevated border border-border rounded-xl p-4">
+            <Card className="p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                 <div>
                   <Label size="sm" className="block text-foreground-muted mb-2">Search items</Label>
@@ -1520,10 +1521,10 @@ export default function LootSettingsContent({
                   </Select>
                 </div>
               </div>
-            </div>
+            </Card>
 
         {/* Items Table */}
-        <div className="bg-background-elevated border border-border rounded-xl overflow-hidden">
+        <Card className="overflow-hidden">
           <div ref={tableContainerRef} className="-mx-4 sm:mx-0 overflow-x-auto max-h-[calc(100vh-200px)] overflow-y-auto">
             <table className="w-full table-fixed" style={{ minWidth: '1100px' }}>
               <colgroup>
@@ -1540,16 +1541,16 @@ export default function LootSettingsContent({
               </colgroup>
               <thead className="sticky top-14 sm:top-0 z-10">
                 <tr className="bg-background-subtle border-b border-border">
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">On</th>
-                  <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted bg-background-subtle"><span className="inline-flex items-center gap-1">LC <InfoTooltip content="Loot Council. When enabled, officers decide the winner instead of using Loot Score. Use for progression-critical items." iconSize={11} /></span></th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Item name</th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Boss</th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Slot</th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Raid</th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle whitespace-nowrap"><span className="inline-flex items-center gap-1">Classification <InfoTooltip content="Item demand tier. Reserved and Limited cost 1 allocation point each. Unlimited costs 0 points." iconSize={11} /></span></th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Primary</th>
-                  <th className="px-4 py-2.5 text-left text-[12px] font-medium text-foreground-muted bg-background-subtle">Secondary</th>
-                  <th className="px-2 py-2.5 text-center text-[12px] font-medium text-foreground-muted sm:static sticky right-0 z-20 bg-background-subtle shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.3)] sm:shadow-none">Notes</th>
+                  <th className="px-4 py-2.5 text-left text-12 font-medium text-foreground-muted bg-background-subtle">On</th>
+                  <th className="px-2 py-2.5 text-center text-12 font-medium text-foreground-muted bg-background-subtle"><span className="inline-flex items-center gap-1">LC <InfoTooltip content="Loot Council. When enabled, officers decide the winner instead of using Loot Score. Use for progression-critical items." iconSize={11} /></span></th>
+                  <th className="px-4 py-2.5 text-left text-12 font-medium text-foreground-muted bg-background-subtle">Item name</th>
+                  <th className="px-4 py-2.5 text-left text-12 font-medium text-foreground-muted bg-background-subtle">Boss</th>
+                  <th className="px-4 py-2.5 text-left text-12 font-medium text-foreground-muted bg-background-subtle">Slot</th>
+                  <th className="px-4 py-2.5 text-left text-12 font-medium text-foreground-muted bg-background-subtle">Raid</th>
+                  <th className="px-4 py-2.5 text-left text-12 font-medium text-foreground-muted bg-background-subtle whitespace-nowrap"><span className="inline-flex items-center gap-1">Classification <InfoTooltip content="Item demand tier. Reserved and Limited cost 1 allocation point each. Unlimited costs 0 points." iconSize={11} /></span></th>
+                  <th className="px-4 py-2.5 text-left text-12 font-medium text-foreground-muted bg-background-subtle">Primary</th>
+                  <th className="px-4 py-2.5 text-left text-12 font-medium text-foreground-muted bg-background-subtle">Secondary</th>
+                  <th className="px-2 py-2.5 text-center text-12 font-medium text-foreground-muted sm:static sticky right-0 z-20 bg-background-subtle shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.3)] sm:shadow-none">Notes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -1581,7 +1582,7 @@ export default function LootSettingsContent({
           {filteredItems.length > 0 && (
             <div className="flex items-center justify-between px-4 py-3 bg-background-subtle border-t border-border">
               {/* Left: Results display */}
-              <div className="text-[12px] text-foreground-muted">
+              <div className="text-12 text-foreground-muted">
                 Showing {startIndex + 1} to {Math.min(endIndex, filteredItems.length)} of {filteredItems.length} results
               </div>
 
@@ -1703,7 +1704,7 @@ export default function LootSettingsContent({
               </div>
             </div>
           )}
-        </div>
+        </Card>
 
         {filteredItems.length === 0 && (
           <EmptyState

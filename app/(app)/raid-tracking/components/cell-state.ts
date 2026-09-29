@@ -19,7 +19,7 @@ export function getCellStyle(state: CellState): string {
     case 'late':
       return 'bg-background-elevated border border-border border-l-2 border-l-warning'
     case 'standby':
-      return 'bg-background-elevated border border-border border-l-2 border-l-orange-500'
+      return 'bg-background-elevated border border-border border-l-2 border-l-standby'
     case 'no-show':
       return 'bg-background-elevated border border-border border-l-2 border-l-destructive'
     case 'excused':

@@ -18,6 +18,7 @@
 
 import { memo, useContext, useState, useEffect } from 'react'
 import { ExpansionDataContext } from '@/app/contexts/ExpansionContext'
+import { QUALITY_COLORS } from '@/lib/design-system/quality-colors'
 
 // Lazy-load the 190KB item-icons module. Cache the getter once loaded.
 let _getItemIconUrl: ((id: number, size: 'small' | 'medium' | 'large') => string | null) | null = null
@@ -122,7 +123,7 @@ const ItemLink = memo(function ItemLink({ name, wowheadId, className = '', click
       rel={clickable ? "noopener noreferrer" : undefined}
       className={`inline-flex items-center gap-1 min-w-0 max-w-full align-middle ${className}`}
       style={{
-        color: '#a335ee'
+        color: QUALITY_COLORS.epic
       }}
       data-wowhead={`item=${wowheadId}&domain=${domain}`}
       onClick={handleClick}

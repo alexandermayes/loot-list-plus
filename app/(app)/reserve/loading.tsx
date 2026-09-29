@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeletons'
+import { Card } from '@/components/ui/card'
 
 export default function ReserveLoading() {
   return (
@@ -22,7 +23,7 @@ export default function ReserveLoading() {
       {/* Run cards */}
       <div className="space-y-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-background-elevated border border-border rounded-xl p-5">
+          <Card key={i} className="p-5">
             <div className="flex items-center justify-between">
               <div className="space-y-2">
                 <Skeleton className="h-5 w-56" />
@@ -36,7 +37,7 @@ export default function ReserveLoading() {
                 <Skeleton className="h-8 w-8 rounded-lg" />
               </div>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
     </div>

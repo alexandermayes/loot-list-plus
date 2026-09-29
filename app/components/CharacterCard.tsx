@@ -1,6 +1,7 @@
 'use client'
 
 import { Character } from '@/app/contexts/GuildContext'
+import { Card } from '@/components/ui/card'
 
 // Get WoWhead class icon URL
 function getClassIconUrl(className: string | undefined): string {
@@ -29,14 +30,8 @@ export function CharacterCard({
   const classColor = character.class?.color_hex || '#808080'
 
   return (
-    <div
-      className={`
-        bg-background-elevated border border-border rounded-xl p-4
-        transition-colors duration-200
-        ${onClick ? 'cursor-pointer hover:bg-background-elevated hover:border-border-strong' : ''}
-        ${isActive ? 'ring-2 ring-accent' : ''}
-        ${className}
-      `}
+    <Card
+      className={`p-4 transition-colors duration-200 ${onClick ? 'cursor-pointer hover:bg-background-elevated hover:border-border-strong' : ''} ${isActive ? 'ring-2 ring-accent' : ''} ${className}`}
       onClick={onClick}
     >
       <div className="flex items-center gap-3">
@@ -66,13 +61,13 @@ export function CharacterCard({
               {character.name}
             </h3>
             {character.is_main && (
-              <span className="px-2 py-0.5 bg-accent/20 border border-accent rounded-full text-accent text-[11px] font-medium">
+              <span className="px-2 py-0.5 bg-accent/20 border border-accent rounded-full text-accent text-11 font-medium">
                 Main
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-2 mt-1 text-[13px] text-muted-foreground">
+          <div className="flex items-center gap-2 mt-1 text-13 text-muted-foreground">
             <span>
               {character.spec?.name && character.class?.name && character.spec.name !== character.class.name
                 ? `${character.spec.name} ${character.class.name}`
@@ -81,7 +76,7 @@ export function CharacterCard({
           </div>
 
           {showGuildCount && (
-            <div className="mt-1 text-[12px] text-muted-foreground">
+            <div className="mt-1 text-12 text-muted-foreground">
               {guildCount === 0 && 'No guilds'}
               {guildCount === 1 && '1 guild'}
               {guildCount > 1 && `${guildCount} guilds`}
@@ -94,6 +89,6 @@ export function CharacterCard({
           <div className="w-2 h-2 rounded-full bg-accent" />
         )}
       </div>
-    </div>
+    </Card>
   )
 }

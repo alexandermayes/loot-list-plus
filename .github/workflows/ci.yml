@@ -18,6 +18,12 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # puppeteer is a devDependency for the Phase 07 visual baseline script
+      # and the future Phase 12 visual CI job. Without this flag, npm ci here
+      # would download a Chromium binary on every pull request even though
+      # this job never runs the baseline script itself.
+      PUPPETEER_SKIP_DOWNLOAD: 1
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

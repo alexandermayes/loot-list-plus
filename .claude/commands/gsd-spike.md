@@ -30,9 +30,9 @@ Does not require prior new-project setup — auto-creates `.planning/spikes/` if
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/spike.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/spike-wrap-up.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/references/ui-brand.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/spike.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/spike-wrap-up.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/ui-brand.md
 </execution_context>
 
 <runtime_note>

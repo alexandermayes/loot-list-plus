@@ -39,14 +39,14 @@ export default function LandingLootDecision() {
         >
           <motion.h2
             variants={fadeInUp}
-            className="font-poppins font-bold text-[28px] md:text-[40px] leading-[1.1] text-white"
+            className="font-poppins font-bold text-28 md:text-40 leading-[1.1] text-white"
           >
             When an item drops, the decision is already{' '}
-            <span className="font-wow text-shimmer-purple text-[32px] md:text-[44px]">explainable</span>.
+            <span className="font-wow text-shimmer-purple text-32 md:text-44">explainable</span>.
           </motion.h2>
           <motion.p
             variants={fadeInUp}
-            className="font-poppins font-medium text-[16px] text-[#bababa] mt-4 max-w-[560px] mx-auto"
+            className="font-poppins font-medium text-16 text-[#bababa] mt-4 max-w-[560px] mx-auto"
           >
             Every candidate&apos;s list rank, attendance, and bad-luck protection roll into one
             Loot Score anyone can inspect. See the real numbers:{' '}
@@ -69,10 +69,10 @@ export default function LandingLootDecision() {
         >
           {/* Item header */}
           <div className="px-6 py-4 border-b border-[#383838]">
-            <p className="font-poppins font-bold text-[17px] text-[#a335ee] leading-tight">
+            <p className="font-poppins font-bold text-18 text-quality-epic leading-tight">
               Ashkandi, Greatsword of the Brotherhood
             </p>
-            <p className="font-poppins text-[12px] text-[#bababa] mt-0.5">
+            <p className="font-poppins text-12 text-[#bababa] mt-0.5">
               Blackwing Lair · Two-Hand Sword · 3 candidates
             </p>
           </div>
@@ -80,7 +80,7 @@ export default function LandingLootDecision() {
           {/* Column labels */}
           <div className="hidden sm:grid grid-cols-[1fr_repeat(4,minmax(70px,auto))] gap-4 px-6 py-2 border-b border-[#383838]/60">
             {['Candidate', 'List rank', 'Attendance', 'BLP', 'Loot Score'].map((label) => (
-              <p key={label} className="font-poppins font-semibold text-[11px] uppercase tracking-wide text-[#bababa]/60 last:text-right">
+              <p key={label} className="font-poppins font-semibold text-11 uppercase tracking-wide text-[#bababa]/60 last:text-right">
                 {label}
               </p>
             ))}
@@ -95,20 +95,20 @@ export default function LandingLootDecision() {
               }`}
             >
               <div className="col-span-2 sm:col-span-1">
-                <p className="font-poppins font-semibold text-[14px] leading-tight" style={{ color: CLASS_COLORS[c.wowClass] }}>
+                <p className="font-poppins font-semibold text-14 leading-tight" style={{ color: CLASS_COLORS[c.wowClass] }}>
                   {c.name}
                   {c.winner && (
-                    <span className="ml-2 px-1.5 py-0.5 bg-[#9940ec] rounded-[60px] font-semibold text-[9px] uppercase tracking-wide text-white align-middle">
+                    <span className="ml-2 px-1.5 py-0.5 bg-[#9940ec] rounded-[60px] font-semibold text-11 uppercase tracking-wide text-white align-middle">
                       Next in line
                     </span>
                   )}
                 </p>
-                <p className="font-poppins text-[11px] text-[#bababa]">{c.wowClass} · {c.spec}</p>
+                <p className="font-poppins text-11 text-[#bababa]">{c.wowClass} · {c.spec}</p>
               </div>
-              <p className="font-poppins text-[13px] text-white"><span className="sm:hidden text-[#bababa]/60">Rank </span>#{c.rank}</p>
-              <p className="font-poppins text-[13px] text-white"><span className="sm:hidden text-[#bababa]/60">Att </span>{c.attendance}</p>
-              <p className="font-poppins text-[13px] text-white"><span className="sm:hidden text-[#bababa]/60">BLP </span>{c.blp}</p>
-              <p className={`font-poppins font-bold text-[15px] sm:text-right ${c.winner ? 'text-[#9940ec]' : 'text-white'}`}>
+              <p className="font-poppins text-13 text-white"><span className="sm:hidden text-[#bababa]/60">Rank </span>#{c.rank}</p>
+              <p className="font-poppins text-13 text-white"><span className="sm:hidden text-[#bababa]/60">Att </span>{c.attendance}</p>
+              <p className="font-poppins text-13 text-white"><span className="sm:hidden text-[#bababa]/60">BLP </span>{c.blp}</p>
+              <p className={`font-poppins font-bold text-15 sm:text-right ${c.winner ? 'text-[#9940ec]' : 'text-white'}`}>
                 {c.score.toFixed(1)}
               </p>
             </div>
@@ -116,7 +116,7 @@ export default function LandingLootDecision() {
 
           {/* Caption */}
           <div className="px-6 py-3 bg-[#080808]/40">
-            <p className="font-poppins text-[12px] text-[#bababa]/60">
+            <p className="font-poppins text-12 text-[#bababa]/60">
               Anonymized example. In the app, every score opens into its full calculation.
             </p>
           </div>

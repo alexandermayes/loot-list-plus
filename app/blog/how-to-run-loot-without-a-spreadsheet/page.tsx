@@ -119,7 +119,7 @@ export default function BlogPost() {
       {/* Article */}
       <article className="relative pt-32 pb-20 px-6 md:px-12 lg:px-20">
         <BlogTracker slug="how-to-run-loot-without-a-spreadsheet" title="How to Run Loot in World of Warcraft Without a Spreadsheet" />
-        <div className="max-w-3xl mx-auto">
+        <div className="prose-measure mx-auto">
           {/* Breadcrumb */}
           <nav className="mb-8 text-sm text-foreground-secondary">
             <a

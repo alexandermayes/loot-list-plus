@@ -117,7 +117,7 @@ export default function BlogPost() {
       {/* Article */}
       <article className="relative pt-32 pb-20 px-6 md:px-12 lg:px-20">
         <BlogTracker slug="why-attendance-tracking-matters-more-than-loot-rules" title="Why Attendance Tracking Matters More Than Loot Rules" />
-        <div className="max-w-3xl mx-auto">
+        <div className="prose-measure mx-auto">
           {/* Breadcrumb */}
           <nav className="mb-8 text-sm text-foreground-secondary">
             <a

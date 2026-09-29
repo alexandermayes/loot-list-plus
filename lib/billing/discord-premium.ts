@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { discordFetch } from '@/lib/discord'
+import { resolvePurchaser } from '@/lib/billing/purchaser'
 
 /**
  * Premium perks in the LootList+ community Discord: subscribers get the
@@ -32,23 +33,9 @@ export async function syncPremiumDiscordRole(
 
     // Prefer the recorded purchaser; fall back to the guild creator for
     // subscriptions from before purchaser metadata existed.
-    let userId = purchaserUserId
-    if (!userId) {
-      const { data: guild } = await serviceSupabase
-        .from('guilds')
-        .select('created_by')
-        .eq('id', guildId)
-        .maybeSingle()
-      userId = guild?.created_by ?? null
-    }
-    if (!userId) return
-
-    const { data: prefs } = await serviceSupabase
-      .from('user_preferences')
-      .select('discord_id')
-      .eq('user_id', userId)
-      .maybeSingle()
-    if (!prefs?.discord_id) return
+    const purchaser = await resolvePurchaser(serviceSupabase, guildId, purchaserUserId)
+    if (!purchaser) return
+    const { userId, discordId } = purchaser
 
     if (!isPro) {
       // Multi-guild guard: if the purchaser still owns another guild at the
@@ -67,7 +54,7 @@ export async function syncPremiumDiscordRole(
       if (otherProGuild) return
     }
 
-    const url = `https://discord.com/api/v10/guilds/${communityGuildId}/members/${prefs.discord_id}/roles/${premiumRoleId}`
+    const url = `https://discord.com/api/v10/guilds/${communityGuildId}/members/${discordId}/roles/${premiumRoleId}`
     const res = await discordFetch(url, {
       method: isPro ? 'PUT' : 'DELETE',
       headers: {

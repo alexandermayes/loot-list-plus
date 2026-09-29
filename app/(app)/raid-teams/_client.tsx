@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Heading, Text, LabelText } from '@/components/ui/typography'
+import { Heading, Text } from '@/components/ui/typography'
 import { Modal, ModalHeader, ModalTitle, ModalDescription, ModalBody, ModalFooter } from '@/components/ui/modal'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Badge } from '@/components/ui/badge'
@@ -19,6 +19,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Delete02Icon, PencilEdit01Icon, UserAdd01Icon, Calendar01Icon, StarIcon, UserMultipleIcon } from '@hugeicons/core-free-icons'
 import type { RaidTeam, RaidDaysOverride } from '@/domain/raid-team/types'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { Card } from '@/components/ui/card'
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
@@ -445,7 +446,7 @@ export default function RaidTeamsPage() {
           {teams.map(team => {
             const members = teamMembers[team.id] || []
             return (
-              <div key={team.id} className="bg-background-elevated border border-border rounded-xl p-6">
+              <Card key={team.id} className="p-6">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: team.color_hex }} />
@@ -517,7 +518,7 @@ export default function RaidTeamsPage() {
                 ) : (
                   <Text size="base" color="muted">No members assigned yet</Text>
                 )}
-              </div>
+              </Card>
             )
           })}
         </div>
@@ -573,7 +574,7 @@ export default function RaidTeamsPage() {
               ))}
             </div>
           )}
-          <p className="text-[12px] text-muted-foreground mt-3">
+          <p className="text-12 text-muted-foreground mt-3">
             Leave blank to follow the guild schedule. You can change this later
             under Edit team.
           </p>
@@ -597,7 +598,7 @@ export default function RaidTeamsPage() {
             {/* Name + Color */}
             <div className="grid grid-cols-[1fr,auto] gap-4">
               <div>
-                <LabelText size="xs">Name</LabelText>
+                <Text size="sm" weight="semibold" color="secondary" as="span">Name</Text>
                 <Input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
@@ -606,7 +607,7 @@ export default function RaidTeamsPage() {
                 />
               </div>
               <div>
-                <LabelText size="xs">Color</LabelText>
+                <Text size="sm" weight="semibold" color="secondary" as="span">Color</Text>
                 <div className="flex items-center gap-2 mt-1.5">
                   <label className="relative w-10 h-10 rounded-lg border border-border cursor-pointer overflow-hidden hover:border-foreground/30 transition-colors">
                     <input
@@ -623,7 +624,7 @@ export default function RaidTeamsPage() {
 
             {/* Schedule Overrides */}
             <div className="border-t border-border pt-4">
-              <LabelText size="xs">Schedule overrides</LabelText>
+              <Text size="sm" weight="semibold" color="secondary" as="span">Schedule overrides</Text>
               <Text size="sm" color="muted" className="mt-0.5 mb-3">
                 Leave empty to inherit from guild settings
               </Text>

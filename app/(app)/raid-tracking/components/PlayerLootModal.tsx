@@ -184,12 +184,12 @@ export default function PlayerLootModal({
                     <div key={item.id} className="flex items-center justify-between gap-3 px-3 py-2">
                       <div className="min-w-0">
                         <ItemLink name={item.item_name} wowheadId={item.wowhead_id} />
-                        <div className="text-[11px] text-muted-foreground truncate">
+                        <div className="text-11 text-muted-foreground truncate">
                           {item.boss_name}
                           {item.notes ? ` · ${item.notes}` : ''}
                         </div>
                       </div>
-                      <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                      <span className="text-11 text-muted-foreground whitespace-nowrap">
                         {formatDate(item.awarded_date)}
                       </span>
                     </div>

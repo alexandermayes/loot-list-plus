@@ -31,8 +31,8 @@ Create executable phase prompts (PLAN.md files) for a roadmap phase with integra
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/plan-phase.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/references/ui-brand.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/plan-phase.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/ui-brand.md
 </execution_context>
 
 <runtime_note>

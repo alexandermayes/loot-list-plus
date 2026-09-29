@@ -1,0 +1,54 @@
+-- metric-id: traffic-smoke
+-- label: Pageviews and unique visitors per period, to tell an empty PostHog project apart from missing funnel instrumentation
+-- columns: period,pageviews,visitors
+-- window: 2026-08-24..2026-09-24
+--
+-- D-10: before drawing any conclusion about a funnel step that shows
+-- zero events, this query answers a prior question -- is PostHog
+-- receiving events at all for this project, in this window? If this
+-- query itself returns zero pageviews, the gap is a receiving problem
+-- (missing or wrong credentials, a project with no traffic reaching it),
+-- not a missing-instrumentation problem, and the review must report it
+-- as one open question rather than guess at a step-by-step cause.
+--
+-- Counts only: no output column carries a raw distinct id or URL; both
+-- appear only inside a count or uniq aggregate. No identifying event
+-- properties are read.
+
+SELECT
+    'sprint_window' AS period,
+    count() AS pageviews,
+    uniq(person_id) AS visitors
+FROM events
+WHERE event = '$pageview'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT
+    'baseline_week' AS period,
+    count() AS pageviews,
+    uniq(person_id) AS visitors
+FROM events
+WHERE event = '$pageview'
+  AND timestamp >= toDateTime('2026-08-24 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-08-30 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+UNION ALL
+
+SELECT
+    'week4' AS period,
+    count() AS pageviews,
+    uniq(person_id) AS visitors
+FROM events
+WHERE event = '$pageview'
+  AND timestamp >= toDateTime('2026-09-18 00:00:00', 'UTC')
+  AND timestamp < toDateTime('2026-09-24 00:00:00', 'UTC') + INTERVAL 1 DAY
+
+ORDER BY
+    CASE period
+        WHEN 'sprint_window' THEN 0
+        WHEN 'baseline_week' THEN 1
+        WHEN 'week4' THEN 2
+    END

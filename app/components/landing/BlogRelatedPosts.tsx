@@ -1,3 +1,4 @@
+import { Card } from '@/components/ui/card'
 type RelatedPost = {
   slug: string
   title: string
@@ -107,7 +108,7 @@ export default function BlogRelatedPosts({ currentSlug }: { currentSlug: string 
                 href={`/blog/${post.slug}`}
                 className="block group"
               >
-                <article className="h-full p-5 rounded-xl border border-border bg-background-elevated hover:border-accent/40 transition-colors">
+                <Card className="h-full p-5 hover:border-accent/40 transition-colors">
                   <p className="text-xs font-medium text-accent mb-2">
                     {post.tag}
                   </p>
@@ -120,7 +121,7 @@ export default function BlogRelatedPosts({ currentSlug }: { currentSlug: string 
                   <span className="text-xs text-foreground-muted">
                     {post.readTime}
                   </span>
-                </article>
+                </Card>
               </a>
             ))}
           </div>

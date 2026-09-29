@@ -14,7 +14,7 @@ export default function StyledSelect({
   const baseClasses = 'bg-background-elevated border border-border-strong rounded-[52px] text-foreground focus:outline-none focus:border-accent transition-colors cursor-pointer'
 
   const variantClasses = {
-    default: 'w-full pl-4 pr-12 py-2 text-[13px] select-custom-sm',
+    default: 'w-full pl-4 pr-12 py-2 text-13 select-custom-sm',
     small: 'px-3 py-1.5 text-sm select-custom-sm',
     xs: 'w-full px-3 py-1 text-xs select-custom-xs'
   }

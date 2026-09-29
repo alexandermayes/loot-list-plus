@@ -75,6 +75,12 @@ export async function POST(request: NextRequest) {
       // own UI. Deliberately disabled: LootList+ is the merchant of record
       // and Checkout renders with the account's branding.
       managed_payments: { enabled: false },
+      // Stripe defaults this to 'always', which puts a card-number field on
+      // every session regardless of what's due today. That's what makes a
+      // 100%-off gift redemption and a $0 trial start both demand a card for
+      // nothing. Removing this line silently reintroduces that card prompt
+      // on the gift path.
+      payment_method_collection: 'if_required',
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
       customer: existingSub?.stripe_customer_id || undefined,
@@ -84,7 +90,18 @@ export async function POST(request: NextRequest) {
       subscription_data: {
         // user_id identifies the purchaser for Discord premium-role sync
         metadata: { guild_id, user_id: user.id },
-        ...(trialEligible ? { trial_period_days: 14 } : {}),
+        ...(trialEligible
+          ? {
+              trial_period_days: 14,
+              // Stripe's default trial end behavior is 'create_invoice', which
+              // would bill a card that, per payment_method_collection above,
+              // may not exist. 'pause' instead moves the subscription to
+              // status 'paused' when a trial ends with no payment method on
+              // file. tierForStatus's default branch already maps 'paused' to
+              // 'free', so no other file needs to change for this to work.
+              trial_settings: { end_behavior: { missing_payment_method: 'pause' } },
+            }
+          : {}),
       },
       success_url: `${origin}/guild-settings?billing=success`,
       cancel_url: `${origin}/premium?billing=cancelled`,

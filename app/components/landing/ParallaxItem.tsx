@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { motion, useScroll, useTransform, useAnimation, AnimatePresence } from 'framer-motion'
 import { useMouseParallax } from './useMouseParallax'
 import { ClickEffect, ClickEffectType } from './ClickEffects'
+import { QUALITY_COLORS } from '@/lib/design-system/quality-colors'
 
 interface ParallaxItemProps {
   children: React.ReactNode
@@ -30,9 +31,9 @@ interface ParallaxItemProps {
 
 const qualityColors = {
   legendary: '#ff8000',
-  epic: '#a335ee',
+  epic: QUALITY_COLORS.epic,
   rare: '#0070dd',
-  uncommon: '#1eff00',
+  uncommon: QUALITY_COLORS.uncommon,
 }
 
 export default function ParallaxItem({
@@ -181,16 +182,16 @@ export default function ParallaxItem({
               >
                 <div className="bg-[#1a1a2e]/95 border border-[#4a4a6a] rounded px-3 py-2 shadow-xl backdrop-blur-sm">
                   <p
-                    className="font-poppins font-bold text-[14px] leading-tight"
+                    className="font-poppins font-bold text-14 leading-tight"
                     style={{ color: qualityColors[tooltip.quality] }}
                   >
                     {tooltip.name}
                   </p>
-                  <p className="font-poppins text-[11px] text-[#bababa] mt-0.5">
+                  <p className="font-poppins text-11 text-[#bababa] mt-0.5">
                     {tooltip.type}
                   </p>
                   {tooltip.flavor && (
-                    <p className="font-poppins text-[11px] text-[#ffd100] mt-1 italic">
+                    <p className="font-poppins text-11 text-[#ffd100] mt-1 italic">
                       &quot;{tooltip.flavor}&quot;
                     </p>
                   )}

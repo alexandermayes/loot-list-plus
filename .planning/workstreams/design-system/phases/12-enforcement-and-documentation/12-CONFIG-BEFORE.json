@@ -1,0 +1,53 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/(app)/raid-tracking/_client.tsx"
+        ],
+        "createdAt": "2026-09-16T19:29:12.456Z",
+        "reason": "Sanctioned exception per 2026-09-15 UI audit (UI-AUDIT-2026-09-15.md) and 07-05-PLAN.md prohibition: raid-tracking legend rails intentionally mirror the 2px cell-state left border; 07-05 changed only the colour token (orange literal -> --standby), not the rail"
+      },
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          "app/components/OnboardingModal.tsx"
+        ],
+        "createdAt": "2026-09-17T20:39:50.271Z",
+        "reason": "Pre-existing purple/cyan gradient predates this session's edit (08-02 only added a ModalTitle, no color changes). ROADMAP.md Phase 10 (COLOR-05) explicitly names 'the onboarding modal gradients and animated borders' as its own scoped, checkpoint-gated visual-proposal change; Phase 08 (primitive-contracts) is tokens/primitives only, no color literals."
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "components/ui/__tests__/skeletons.test.tsx"
+        ],
+        "createdAt": "2026-09-17T23:24:56.307Z",
+        "reason": "False positive: line 25 is expect(...).not.toContain('border-l-4') asserting the anti-pattern's absence after 08-04 removed it from LootListBracketSkeleton, not a usage of the pattern."
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "app/(app)/loot-list/components/LootListContent.tsx"
+        ],
+        "createdAt": "2026-09-17T23:38:30.060Z",
+        "reason": "Pre-existing dynamic rank/quality-tier border color coding (borderColorClass variable), unrelated to 08-05's LabelText->Text component swap at different line numbers. Domain-meaningful color coding is Phase 10 (COLOR-04) scope, not Phase 08 primitives-only work."
+      },
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          "app/reserve/join/[token]/page.tsx"
+        ],
+        "createdAt": "2026-09-17T23:38:30.098Z",
+        "reason": "Pre-existing avatar-fallback gradient (no Discord avatar case), unrelated to 08-05's LabelText->Text swap at different lines. ROADMAP.md Phase 10 explicitly names 'the sidebar and layout avatar fallback' gradients as its own scoped migration, not Phase 08's."
+      }
+    ]
+  }
+}

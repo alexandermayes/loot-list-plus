@@ -138,8 +138,8 @@ describe('getCellStyle', () => {
     expect(getCellStyle('late')).toContain('border-l-warning')
   })
 
-  it('standby uses an orange border accent', () => {
-    expect(getCellStyle('standby')).toContain('border-l-orange-500')
+  it('standby uses the standby border accent', () => {
+    expect(getCellStyle('standby')).toContain('border-l-standby')
   })
 
   it('no-show uses the destructive border accent', () => {
@@ -148,6 +148,18 @@ describe('getCellStyle', () => {
 
   it('excused uses a muted-foreground border accent', () => {
     expect(getCellStyle('excused')).toContain('border-l-muted-foreground')
+  })
+
+  it('the five non-empty states each return a distinct left-border colour utility, so no two attendance states collapse onto the same colour', () => {
+    const states: Exclude<CellState, 'empty'>[] = ['attended', 'late', 'standby', 'no-show', 'excused']
+    // border-l-2 is the shared width utility on every non-empty state, not a
+    // colour, so the lookahead skips digits and matches the colour name.
+    const borderUtilities = states.map((state) => {
+      const match = getCellStyle(state).match(/border-l-(?!\d)[\w-]+/)
+      return match?.[0]
+    })
+    expect(borderUtilities.every(Boolean), `every state must return a border-l-<colour> utility: ${JSON.stringify(borderUtilities)}`).toBe(true)
+    expect(new Set(borderUtilities).size).toBe(states.length)
   })
 
   it('empty has no left-color accent (neutral default)', () => {

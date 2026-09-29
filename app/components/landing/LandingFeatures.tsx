@@ -146,7 +146,7 @@ export default function LandingFeatures() {
               height={24}
               className={`relative z-10 w-6 h-6 flex-shrink-0 transition-opacity duration-300 ${isActive ? 'opacity-100' : 'opacity-30'}`}
             />
-            <p className={`relative z-10 font-poppins text-[16px] leading-8 transition-all duration-300 ${
+            <p className={`relative z-10 font-poppins text-16 leading-8 transition-all duration-300 ${
               isActive
                 ? 'font-semibold text-white'
                 : 'font-normal text-[#bababa]/50'
@@ -205,10 +205,10 @@ export default function LandingFeatures() {
         >
           <motion.h2
             variants={fadeInUp}
-            className="font-poppins font-bold text-[28px] md:text-[40px] leading-[1.1] text-white mb-6"
+            className="font-poppins font-bold text-28 md:text-40 leading-[1.1] text-white mb-6"
           >
             Everything your guild<br />
-            <span className="font-wow text-shimmer-purple text-[32px] md:text-[44px]">needs/greeds</span>
+            <span className="font-wow text-shimmer-purple text-32 md:text-44">needs/greeds</span>
             {' '}and more
           </motion.h2>
         </motion.div>
@@ -226,7 +226,7 @@ export default function LandingFeatures() {
                 setActiveTab('leaders')
                 trackClientEvent('landing_nav_clicked', { target: 'features_tab_leaders', source: 'features' })
               }}
-              className={`flex items-center justify-center w-[150px] md:w-[200px] rounded-[40px] font-poppins font-medium text-[14px] md:text-[16px] leading-[40px] md:leading-[45px] cursor-pointer transition-colors ${
+              className={`flex items-center justify-center w-[150px] md:w-[200px] rounded-[40px] font-poppins font-medium text-14 md:text-16 leading-[40px] md:leading-[45px] cursor-pointer transition-colors ${
                 activeTab === 'leaders'
                   ? 'bg-white text-black'
                   : 'bg-transparent text-white hover:text-white/80'
@@ -240,7 +240,7 @@ export default function LandingFeatures() {
                 setActiveTab('raiders')
                 trackClientEvent('landing_nav_clicked', { target: 'features_tab_raiders', source: 'features' })
               }}
-              className={`flex items-center justify-center w-[150px] md:w-[200px] rounded-[40px] font-poppins font-medium text-[14px] md:text-[16px] leading-[40px] md:leading-[45px] cursor-pointer transition-colors ${
+              className={`flex items-center justify-center w-[150px] md:w-[200px] rounded-[40px] font-poppins font-medium text-14 md:text-16 leading-[40px] md:leading-[45px] cursor-pointer transition-colors ${
                 activeTab === 'raiders'
                   ? 'bg-white text-black'
                   : 'bg-transparent text-white hover:text-white/80'

@@ -167,7 +167,7 @@ function MiniBarChart({ data, dataKey, color, label }: { data: WeekBucket[]; dat
                   className="w-full rounded-sm transition-all"
                   style={{ height: `${height}%`, minHeight: height > 0 ? '4px' : '0', backgroundColor: color }}
                 />
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-background-elevated border border-border rounded text-[10px] text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-background-elevated border border-border rounded text-11 text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                   {val} &middot; {d.label}
                 </div>
               </div>
@@ -179,7 +179,7 @@ function MiniBarChart({ data, dataKey, color, label }: { data: WeekBucket[]; dat
         {data.map((d, i) => (
           <div key={i} className="flex-1 text-center">
             {i === 0 || i === data.length - 1 ? (
-              <Text size="xs" color="muted" className="text-[9px]">{d.label}</Text>
+              <Text size="xs" color="muted" className="text-11">{d.label}</Text>
             ) : null}
           </div>
         ))}
@@ -202,7 +202,7 @@ function FunnelStep({ label, count, total, isFirst }: { label: string; count: nu
             backgroundColor: isFirst ? 'hsl(var(--accent))' : `hsl(var(--accent) / ${0.3 + (pct / 100) * 0.5})`,
           }}
         >
-          <span className="text-[11px] font-medium text-accent-foreground">{count}</span>
+          <span className="text-11 font-medium text-accent-foreground">{count}</span>
         </div>
         {!isFirst && (
           <Text size="xs" color="muted">{pct}%</Text>
@@ -254,7 +254,7 @@ function DistributionRow({ label, entries }: { label: string; entries: Record<st
                 backgroundColor: colors[i] || colors[colors.length - 1],
               }}
             >
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-background-elevated border border-border rounded text-[10px] text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-background-elevated border border-border rounded text-11 text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                 {name}: {count} ({Math.round(pct)}%)
               </div>
             </div>
@@ -342,18 +342,18 @@ function LoadingSkeleton() {
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="bg-background-elevated border border-border rounded-xl p-4">
+          <Card key={i} className="p-4">
             <Skeleton className="h-4 w-16" />
             <Skeleton className="h-7 w-10 mt-1" />
-          </div>
+          </Card>
         ))}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-background-elevated border border-border rounded-xl p-6 space-y-3">
+          <Card key={i} className="p-6 space-y-3">
             <Skeleton className="h-6 w-44" />
             <Skeleton className="h-16 w-full rounded" />
-          </div>
+          </Card>
         ))}
       </div>
     </div>
@@ -420,7 +420,7 @@ function BlogSection() {
                 return (
                   <div key={i} className="flex-1 h-full flex items-end group relative">
                     <div className="w-full rounded-sm bg-accent/80" style={{ height: `${height}%`, minHeight: height > 0 ? '4px' : '0' }} />
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-background-elevated border border-border rounded text-[10px] text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-background-elevated border border-border rounded text-11 text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                       {w.views} views &middot; {w.week}
                     </div>
                   </div>
@@ -526,7 +526,7 @@ function FunnelSection() {
                 return (
                   <div key={i} className="flex-1 h-full flex items-end group relative">
                     <div className="w-full rounded-sm bg-success/80" style={{ height: `${height}%`, minHeight: height > 0 ? '4px' : '0' }} />
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-background-elevated border border-border rounded text-[10px] text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-background-elevated border border-border rounded text-11 text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                       {w.signups} &middot; {w.week}
                     </div>
                   </div>
@@ -609,7 +609,7 @@ function TrafficSection() {
                 return (
                   <div key={i} className="flex-1 h-full flex items-end group relative">
                     <div className="w-full rounded-sm bg-accent/80" style={{ height: `${height}%`, minHeight: height > 0 ? '4px' : '0' }} />
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-background-elevated border border-border rounded text-[10px] text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 bg-background-elevated border border-border rounded text-11 text-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
                       {w.views.toLocaleString()} &middot; {w.uniques} uniq &middot; {w.week}
                     </div>
                   </div>
@@ -993,10 +993,10 @@ export default function AnalyticsPage() {
                   </td>
                   <td className="py-3">
                     <div className="flex gap-1 flex-wrap">
-                      {g.features_used.attendance && <Badge variant="secondary" className="text-[10px]">ATT</Badge>}
-                      {g.features_used.submissions && <Badge variant="secondary" className="text-[10px]">SUB</Badge>}
-                      {g.features_used.loot_tracking && <Badge variant="secondary" className="text-[10px]">LOOT</Badge>}
-                      {g.features_used.customized_settings && <Badge variant="secondary" className="text-[10px]">CFG</Badge>}
+                      {g.features_used.attendance && <Badge variant="secondary" className="text-11">ATT</Badge>}
+                      {g.features_used.submissions && <Badge variant="secondary" className="text-11">SUB</Badge>}
+                      {g.features_used.loot_tracking && <Badge variant="secondary" className="text-11">LOOT</Badge>}
+                      {g.features_used.customized_settings && <Badge variant="secondary" className="text-11">CFG</Badge>}
                       {featureCount(g) === 0 && <Text size="xs" color="muted">none</Text>}
                     </div>
                   </td>

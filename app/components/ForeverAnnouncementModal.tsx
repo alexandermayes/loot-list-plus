@@ -30,6 +30,9 @@ const DISMISS_LABEL = 'Not now'
 function getFocusableElements(container: HTMLElement): HTMLElement[] {
   const nodes = container.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]')
   return Array.from(nodes).filter((el) => {
+    if (el === container) {
+      return false
+    }
     const tabindex = el.getAttribute('tabindex')
     return tabindex === null || parseInt(tabindex, 10) >= 0
   })
@@ -140,7 +143,13 @@ export default function ForeverAnnouncementModal({ delayMs = 800 }: ForeverAnnou
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={bodyId}
-        tabIndex={-1}
+        // tabIndex 0, not -1: the shared Modal's topmost focus trap focuses
+        // its first focusable descendant on open, and it skips tabindex="-1".
+        // With 0 this container is that first descendant, so focus lands on
+        // the dialog itself (as intended here) instead of on "Not now".
+        // getFocusableElements excludes the container, so the Tab wrap is
+        // unchanged.
+        tabIndex={0}
         className="outline-none flex flex-col min-h-0"
         onKeyDown={handleKeyDown}
       >
@@ -156,7 +165,7 @@ export default function ForeverAnnouncementModal({ delayMs = 800 }: ForeverAnnou
             <ModalTitle id={titleId}>{TITLE}</ModalTitle>
           </div>
         </ModalHeader>
-        <ModalBody id={bodyId} className="text-[13px] text-foreground-secondary space-y-3">
+        <ModalBody id={bodyId} className="text-13 text-foreground-secondary space-y-3">
           <p>{PARAGRAPH_1}</p>
           <p>{PARAGRAPH_2}</p>
         </ModalBody>

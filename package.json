@@ -32,10 +32,13 @@
     "loadtest:auth:stress": "k6 run --env SCENARIO=stress loadtest/k6-loadtest-auth.js",
     "test:users:create": "tsx scripts/create-test-users.ts",
     "test:users:clean": "tsx scripts/create-test-users.ts --clean",
+    "visual:baseline": "node scripts/visual/baseline.mjs",
+    "visual:numerals": "node scripts/visual/numeral-probe.mjs",
     "seed:test:multi": "tsx scripts/seed-test-data-multiuser.ts",
     "seed:test:multi:clean": "tsx scripts/seed-test-data-multiuser.ts --clean",
     "sync:feedback": "tsx scripts/sync-feedback-inbox.ts",
-    "seed:help": "tsx scripts/seed-help-articles.ts"
+    "seed:help": "tsx scripts/seed-help-articles.ts",
+    "gift:code": "tsx scripts/create-gift-code.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -85,6 +88,7 @@
     "jsdom": "^29.1.1",
     "postcss": "^8.5.18",
     "postgres": "^3.4.8",
+    "puppeteer": "24.43.1",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^3.4.19",
     "tailwindcss-animate": "^1.0.7",

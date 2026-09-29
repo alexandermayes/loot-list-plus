@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo, useCallback, memo } from 'react'
 import { createPortal } from 'react-dom'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
 
 interface Option {
   id: string
@@ -189,7 +190,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
         type="button"
         variant="outline"
         onClick={handleToggleDropdown}
-        className="w-full px-4 py-2 h-11 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-[13px] text-left focus:outline-none focus:border-accent flex items-center justify-between gap-2 transition-colors"
+        className="w-full px-4 py-2 h-11 bg-background-elevated border border-border-strong rounded-[52px] text-foreground text-13 text-left focus:outline-none focus:border-accent flex items-center justify-between gap-2 transition-colors"
       >
         <span className="truncate flex-1 min-w-0 overflow-hidden whitespace-nowrap">{renderButtonContent()}</span>
         <svg
@@ -203,9 +204,9 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
       </Button>
 
       {isOpen && dropdownPosition && typeof document !== 'undefined' && createPortal(
-        <div
+        <Card
           ref={panelRef}
-          className="fixed z-[9999] bg-background-elevated border border-border-strong rounded-lg shadow-xl overflow-hidden"
+          className="fixed z-[9999] border-border-strong shadow-xl overflow-hidden"
           style={{
             top: dropdownPosition.openUpwards ? 'auto' : `${dropdownPosition.top + 4}px`,
             bottom: dropdownPosition.openUpwards ? `${window.innerHeight - dropdownPosition.top + 4}px` : 'auto',
@@ -235,7 +236,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
                 e.stopPropagation()
                 onClear()
               }}
-              className="w-full px-3 py-2 h-auto text-left justify-start rounded-none text-muted-foreground text-[13px] border-b border-border"
+              className="w-full px-3 py-2 h-auto text-left justify-start rounded-none text-muted-foreground text-13 border-b border-border"
             >
               -- Clear All --
             </Button>
@@ -251,7 +252,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
 
               if (allFilteredOptions.length === 0) {
                 return (
-                  <div className="px-3 py-4 text-center text-muted-foreground text-[13px]">
+                  <div className="px-3 py-4 text-center text-muted-foreground text-13">
                     No results found
                   </div>
                 )
@@ -266,7 +267,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
                     <div key={groupIndex}>
                       {group.label && (
                         <div className="px-3 py-2 bg-muted border-b border-border">
-                          <p className="text-[11px] font-semibold text-foreground uppercase tracking-wide">
+                          <p className="text-11 font-semibold text-foreground uppercase tracking-wide">
                             {group.label}
                           </p>
                         </div>
@@ -291,7 +292,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
                             className="w-3.5 h-3.5 rounded border-gray-600 bg-background text-accent focus:ring-2 focus:ring-accent/30 focus:ring-offset-0"
                           />
                           <span
-                            className="ml-2.5 text-[13px]"
+                            className="ml-2.5 text-13"
                             style={{ color: color || '#ffffff' }}
                           >
                             {option.label}
@@ -323,7 +324,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
                       className="w-3.5 h-3.5 rounded border-gray-600 bg-background text-accent focus:ring-2 focus:ring-accent/30 focus:ring-offset-0"
                     />
                     <span
-                      className="ml-2.5 text-[13px]"
+                      className="ml-2.5 text-13"
                       style={{ color: color || '#ffffff' }}
                     >
                       {option.label}
@@ -334,7 +335,7 @@ const MultiSelectDropdown = memo(function MultiSelectDropdown({
             )
             })()}
           </div>
-        </div>,
+        </Card>,
         document.body
       )}
     </div>

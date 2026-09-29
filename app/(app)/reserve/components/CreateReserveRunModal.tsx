@@ -286,19 +286,19 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
         {/* Step indicator */}
         <div className="flex items-center gap-3 mb-6">
           <div className="flex items-center gap-2">
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-11 font-bold ${
               step === 1 ? 'bg-accent text-accent-foreground' : 'bg-accent/20 text-accent'
             }`}>1</div>
-            <span className={`text-[13px] font-medium ${step === 1 ? 'text-foreground' : 'text-muted-foreground'}`}>
+            <span className={`text-13 font-medium ${step === 1 ? 'text-foreground' : 'text-muted-foreground'}`}>
               Choose raid
             </span>
           </div>
           <div className="flex-1 h-px bg-border" />
           <div className="flex items-center gap-2">
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold ${
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-11 font-bold ${
               step === 2 ? 'bg-accent text-accent-foreground' : 'bg-muted text-muted-foreground'
             }`}>2</div>
-            <span className={`text-[13px] font-medium ${step === 2 ? 'text-foreground' : 'text-muted-foreground'}`}>
+            <span className={`text-13 font-medium ${step === 2 ? 'text-foreground' : 'text-muted-foreground'}`}>
               Settings
             </span>
           </div>
@@ -332,7 +332,7 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
                             className="w-8 h-8 rounded-lg border border-border/50 flex-shrink-0"
                           />
                         )}
-                        <span className={`text-[13px] font-medium leading-tight ${isSelected ? 'text-accent' : 'text-foreground'}`}>
+                        <span className={`text-13 font-medium leading-tight ${isSelected ? 'text-accent' : 'text-foreground'}`}>
                           {visuals?.shortName || exp}
                         </span>
                       </button>
@@ -381,15 +381,15 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
                             />
                           )}
                           <div className="flex-1 min-w-0">
-                            <span className={`text-[14px] font-medium ${isSelected ? 'text-accent' : 'text-foreground'}`}>
+                            <span className={`text-14 font-medium ${isSelected ? 'text-accent' : 'text-foreground'}`}>
                               {tier.name}
                             </span>
                             {tier.phase && (
-                              <span className="text-[11px] text-muted-foreground ml-2">Phase {tier.phase}</span>
+                              <span className="text-11 text-muted-foreground ml-2">Phase {tier.phase}</span>
                             )}
                           </div>
                           {isSelected && items.length > 0 && (
-                            <span className="text-[11px] text-muted-foreground">{items.length} items</span>
+                            <span className="text-11 text-muted-foreground">{items.length} items</span>
                           )}
                         </button>
                       )
@@ -414,15 +414,15 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
                   />
                 )}
                 <div className="flex-1 min-w-0">
-                  <span className="text-[14px] font-medium text-foreground">{selectedTier.name}</span>
+                  <span className="text-14 font-medium text-foreground">{selectedTier.name}</span>
                   {selectedTier.phase && (
-                    <span className="text-[11px] text-muted-foreground ml-2">Phase {selectedTier.phase}</span>
+                    <span className="text-11 text-muted-foreground ml-2">Phase {selectedTier.phase}</span>
                   )}
                 </div>
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="text-[12px] text-accent hover:underline"
+                  className="text-12 text-accent hover:underline"
                 >
                   Change
                 </button>

@@ -146,14 +146,10 @@ describe('react-server client-directive contract', () => {
   })
 
   // --- Differential control: the sibling primitive that was already correct.
-  // On origin/main (GH #300 branch) modal.tsx uses useState/useRef/useEffect
-  // but not createContext; the design-system workstream's version also calls
-  // createContext. Either way it uses client-only React, so the control
-  // asserts that plus the directive, which holds on both lines of history.
-  it('components/ui/modal.tsx stays a client module (it uses client-only React too)', () => {
+  it('components/ui/modal.tsx stays a client module (it calls React.createContext too)', () => {
     const modal = scanned.find((f) => f.file === 'components/ui/modal.tsx')
     expect(modal, 'components/ui/modal.tsx should be scanned').toBeDefined()
-    expect(modal!.unsafe.length).toBeGreaterThan(0)
+    expect(modal!.unsafe).toContain('createContext')
     expect(modal!.isClient).toBe(true)
   })
 

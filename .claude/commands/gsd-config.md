@@ -32,9 +32,9 @@ Mode routing:
 </routing>
 
 <execution_context>
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/settings.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/settings-advanced.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/settings-integrations.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/settings.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/settings-advanced.md
+@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/settings-integrations.md
 </execution_context>
 
 <context>
