@@ -5377,6 +5377,31 @@ export const ITEM_ICONS: Record<number, string> = {
   20886: 'inv_qiraj_hiltspiked',
   20890: 'inv_qiraj_hiltornate',
   18705: 'spell_holy_dispelmagic',
+  // Manually added for GH-284: Classic raid profession recipes. Icon names
+  // from the wow-classic-items package. One entry per id, although 7 AQ
+  // formulas are listed in both Ahn'Qiraj raids. Preserved on next
+  // fetch-item-icons run.
+  18252: 'inv_scroll_05',
+  18257: 'inv_scroll_05',
+  18259: 'inv_misc_note_01',
+  18260: 'inv_misc_note_01',
+  18264: 'inv_scroll_05',
+  18265: 'inv_scroll_05',
+  18290: 'inv_scroll_05',
+  18291: 'inv_scroll_05',
+  18292: 'inv_scroll_05',
+  20726: 'inv_misc_note_01',
+  20727: 'inv_misc_note_01',
+  20728: 'inv_misc_note_01',
+  20729: 'inv_misc_note_01',
+  20730: 'inv_misc_note_01',
+  20731: 'inv_misc_note_01',
+  20734: 'inv_misc_note_01',
+  20735: 'inv_misc_note_01',
+  20736: 'inv_misc_note_01',
+  21371: 'inv_scroll_05',
+  22220: 'inv_scroll_05',
+  22222: 'inv_scroll_05',
 }
 
 /**
