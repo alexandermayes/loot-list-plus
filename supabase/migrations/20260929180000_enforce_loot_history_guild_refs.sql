@@ -76,7 +76,8 @@
 -- errors from the #294 schema contract are unchanged.
 --
 -- Error contract: a violation raises SQLSTATE 23514 (check_violation), which
--- PostgREST returns as 400. Each message is a fixed string with no ids. The
+-- PostgREST returns as 400. Each message is a fixed string with no ids,
+-- passed with RAISE USING MESSAGE so it is never a format string. The
 -- caller-supplied id and the row's own guild_id go in DETAIL only. A
 -- nonexistent id and another guild's id get the same message, and because
 -- this is a BEFORE trigger it runs before the foreign key checks, so an
@@ -85,17 +86,18 @@
 --
 -- No oracle for callers RLS refuses: PostgreSQL runs BEFORE ROW triggers
 -- before the RLS WITH CHECK. Left alone, an anon caller or a signed-in
--- non-officer could send a row for any guild and read the reference checks'
--- 23514 (and which column failed) before RLS refused it with 42501, which
--- would tell them whether a raid event, raider or item belongs to that guild.
--- So when the effective role is anon or authenticated and the caller is not
--- an officer of the row's guild, the function first raises the same 42501
--- and message RLS would, whatever the row points at. This mirrors the
--- current INSERT and UPDATE policies (both is_guild_officer(guild_id)). It
--- fails closed: if those policies are ever loosened, this check must be
--- loosened with them, or the newly allowed writers stay refused.
--- service_role, postgres and migrations are not anon or authenticated, so
--- their rows always get the full reference checks.
+-- non-officer could send a row for any guild and read our 23514 (and which
+-- column failed) before RLS refused it with 42501, which would tell them
+-- whether a raid event, raider or item belongs to that guild. So when a check
+-- fails and the effective role is anon or authenticated and the caller is not
+-- an officer of the row's guild, the function raises the same 42501 and
+-- message RLS gives instead. A row that passes every check is always handed
+-- on, so RLS alone decides who may write it, and the officer lookup only runs
+-- on the failure path. This mirrors the current INSERT and UPDATE policies
+-- (both is_guild_officer(guild_id)). If those policies are ever loosened, a
+-- newly allowed writer still gets a rejection for a bad reference, just with
+-- the RLS message rather than 23514. service_role, postgres and migrations
+-- are not anon or authenticated, so they always get the 23514.
 --
 -- Existing rows are not validated or changed by this migration.
 --
@@ -118,19 +120,11 @@ DECLARE
   v_item_tier uuid;
   v_tier_expansion uuid;
   v_item_guild uuid;
+  v_error text;
+  v_detail text;
 BEGIN
   IF NEW.guild_id IS NULL THEN
     RETURN NEW;
-  END IF;
-
-  -- A BEFORE trigger runs before the RLS WITH CHECK, so without this a caller
-  -- RLS would refuse could read which reference is wrong from our 23514.
-  -- Refuse them here with the error RLS gives, whatever the row points at.
-  IF current_setting('role', true) IN ('anon', 'authenticated') THEN
-    IF NOT public.is_guild_officer(NEW.guild_id) THEN
-      RAISE EXCEPTION 'new row violates row-level security policy for table "loot_history"'
-        USING ERRCODE = 'insufficient_privilege';
-    END IF;
   END IF;
 
   IF TG_OP = 'UPDATE' THEN
@@ -147,25 +141,23 @@ BEGIN
     SELECT 1 FROM public.raid_events re
     WHERE re.id = NEW.raid_event_id AND re.guild_id = NEW.guild_id
   ) THEN
-    RAISE EXCEPTION 'loot_history.raid_event_id is not a raid event of this guild'
-      USING ERRCODE = 'check_violation',
-            DETAIL = format('raid_event_id %s, guild_id %s', NEW.raid_event_id, NEW.guild_id);
+    v_error := 'loot_history.raid_event_id is not a raid event of this guild';
+    v_detail := format('raid_event_id %s, guild_id %s', NEW.raid_event_id, NEW.guild_id);
   END IF;
 
-  IF v_check_character AND NEW.character_id IS NOT NULL AND NOT EXISTS (
+  IF v_error IS NULL AND v_check_character AND NEW.character_id IS NOT NULL AND NOT EXISTS (
     SELECT 1 FROM public.character_guild_memberships cgm
     WHERE cgm.character_id = NEW.character_id
       AND cgm.guild_id = NEW.guild_id
       AND cgm.is_active = true
   ) THEN
-    RAISE EXCEPTION 'loot_history.character_id is not an active member of this guild'
-      USING ERRCODE = 'check_violation',
-            DETAIL = format('character_id %s, guild_id %s', NEW.character_id, NEW.guild_id);
+    v_error := 'loot_history.character_id is not an active member of this guild';
+    v_detail := format('character_id %s, guild_id %s', NEW.character_id, NEW.guild_id);
   END IF;
 
   -- The item, its tier and the tier's expansion are resolved in one lookup.
   -- A NULL loot_item_id or raid_tier_id is left to the NOT NULL constraint.
-  IF v_check_item AND NEW.loot_item_id IS NOT NULL THEN
+  IF v_error IS NULL AND v_check_item AND NEW.loot_item_id IS NOT NULL THEN
     SELECT li.raid_tier_id, rt.expansion_id, e.guild_id
       INTO v_item_tier, v_tier_expansion, v_item_guild
       FROM public.loot_items li
@@ -174,29 +166,36 @@ BEGIN
      WHERE li.id = NEW.loot_item_id;
 
     IF NOT FOUND OR v_item_guild IS DISTINCT FROM NEW.guild_id THEN
-      RAISE EXCEPTION 'loot_history.loot_item_id is not a loot item of this guild'
-        USING ERRCODE = 'check_violation',
-              DETAIL = format('loot_item_id %s, guild_id %s', NEW.loot_item_id, NEW.guild_id);
-    END IF;
-
-    IF NEW.raid_tier_id IS NOT NULL AND NEW.raid_tier_id IS DISTINCT FROM v_item_tier THEN
-      RAISE EXCEPTION 'loot_history.raid_tier_id is not the raid tier of its loot item'
-        USING ERRCODE = 'check_violation',
-              DETAIL = format('raid_tier_id %s, guild_id %s', NEW.raid_tier_id, NEW.guild_id);
-    END IF;
-
-    IF NEW.expansion_id IS NOT NULL AND NEW.expansion_id IS DISTINCT FROM v_tier_expansion THEN
-      RAISE EXCEPTION 'loot_history.expansion_id is not the expansion of its loot item'
-        USING ERRCODE = 'check_violation',
-              DETAIL = format('expansion_id %s, guild_id %s', NEW.expansion_id, NEW.guild_id);
+      v_error := 'loot_history.loot_item_id is not a loot item of this guild';
+      v_detail := format('loot_item_id %s, guild_id %s', NEW.loot_item_id, NEW.guild_id);
+    ELSIF NEW.raid_tier_id IS NOT NULL AND NEW.raid_tier_id IS DISTINCT FROM v_item_tier THEN
+      v_error := 'loot_history.raid_tier_id is not the raid tier of its loot item';
+      v_detail := format('raid_tier_id %s, guild_id %s', NEW.raid_tier_id, NEW.guild_id);
+    ELSIF NEW.expansion_id IS NOT NULL AND NEW.expansion_id IS DISTINCT FROM v_tier_expansion THEN
+      v_error := 'loot_history.expansion_id is not the expansion of its loot item';
+      v_detail := format('expansion_id %s, guild_id %s', NEW.expansion_id, NEW.guild_id);
     END IF;
   END IF;
 
-  RETURN NEW;
+  IF v_error IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  -- A BEFORE trigger runs before the RLS WITH CHECK. A caller RLS will refuse
+  -- anyway gets the error RLS gives, so our message cannot tell them which
+  -- reference is wrong.
+  IF current_setting('role', true) IN ('anon', 'authenticated')
+     AND NOT public.is_guild_officer(NEW.guild_id) THEN
+    RAISE EXCEPTION USING
+      MESSAGE = 'new row violates row-level security policy for table "loot_history"',
+      ERRCODE = 'insufficient_privilege';
+  END IF;
+
+  RAISE EXCEPTION USING MESSAGE = v_error, ERRCODE = 'check_violation', DETAIL = v_detail;
 END;
 $$;
 
-COMMENT ON FUNCTION "public"."enforce_loot_history_guild_refs"() IS 'GH #313. Rejects a loot_history row whose raid_event_id, character_id or loot item points outside the row''s own guild_id, for every role including service_role. On UPDATE only references the write changes are checked, so existing rows stay editable. An anon or authenticated caller who is not an officer of the row''s guild gets the RLS error first, so the checks reveal nothing to them. SECURITY DEFINER with EXECUTE revoked from PUBLIC, anon and authenticated.';
+COMMENT ON FUNCTION "public"."enforce_loot_history_guild_refs"() IS 'GH #313. Rejects a loot_history row whose raid_event_id, character_id or loot item points outside the row''s own guild_id, for every role including service_role. On UPDATE only references the write changes are checked, so existing rows stay editable. When a check fails for an anon or authenticated caller who is not an officer of the row''s guild, the RLS error is raised instead, so the checks reveal nothing to them. SECURITY DEFINER with EXECUTE revoked from PUBLIC, anon and authenticated.';
 
 REVOKE ALL ON FUNCTION "public"."enforce_loot_history_guild_refs"() FROM PUBLIC, "anon", "authenticated";
 

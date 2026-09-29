@@ -184,35 +184,50 @@ describe('loot_history guild references migration shape (GH-313)', () => {
       /FROM\s+public\.raid_events\s+(\w+)\s+WHERE\s+\1\.id\s*=\s*NEW\.raid_event_id\s+AND\s+\1\.guild_id\s*=\s*NEW\.guild_id/i,
     )
 
-    const raises = [...body.matchAll(/RAISE EXCEPTION\s+'((?:[^']|'')*)'([^;]*);/gi)]
-    const raiseCount = (body.match(/\bRAISE EXCEPTION\b/gi) ?? []).length
-    expect(raises.length).toBe(raiseCount)
-    // RLS gate, then raid event, raider, item, tier, expansion
-    expect(raiseCount).toBe(6)
-    for (const [, message] of raises) {
-      expect(message, 'RAISE message must not be a format string').not.toContain('%')
+    // One fixed message per rule, never a format string.
+    const messages = [...body.matchAll(/\bv_error\s*:=\s*'((?:[^']|'')*)'\s*;/gi)].map(m => m[1])
+    expect(messages).toEqual([
+      'loot_history.raid_event_id is not a raid event of this guild',
+      'loot_history.character_id is not an active member of this guild',
+      'loot_history.loot_item_id is not a loot item of this guild',
+      'loot_history.raid_tier_id is not the raid tier of its loot item',
+      'loot_history.expansion_id is not the expansion of its loot item',
+    ])
+    for (const message of messages) {
+      expect(message).not.toContain('%')
     }
-    const [gate, ...checks] = raises
-    expect(gate[2]).toMatch(/\bUSING\s+ERRCODE\s*=\s*'insufficient_privilege'/i)
-    for (const [, , rest] of checks) {
-      expect(rest).toMatch(/\bUSING\s+ERRCODE\s*=\s*'check_violation'/i)
-    }
+
+    // Exactly two RAISEs, both in the USING form (no format string at all):
+    // the RLS-equivalent refusal, then the check_violation for v_error.
+    const raises = body.match(/\bRAISE\b[^;]*;/gi) ?? []
+    expect(raises).toHaveLength(2)
+    expect(body).not.toMatch(/\bRAISE\s+(EXCEPTION\s+)?'/i)
+    expect(raises[1]).toMatch(
+      /^RAISE EXCEPTION USING MESSAGE\s*=\s*v_error,\s*ERRCODE\s*=\s*'check_violation',\s*DETAIL\s*=\s*v_detail\s*;$/i,
+    )
   })
 
-  // PostgreSQL runs BEFORE ROW triggers before the RLS WITH CHECK, so a caller
-  // RLS refuses must get RLS's own error before any reference lookup, or the
-  // 23514 would tell them whether a raid event, raider or item is the guild's.
-  it('anon and authenticated non-officers get the RLS error before any reference lookup', () => {
+  // PostgreSQL runs BEFORE ROW triggers before the RLS WITH CHECK, so when a
+  // check fails for a caller RLS would refuse anyway, they must get RLS's own
+  // error, or the 23514 would tell them whether a raid event, raider or item
+  // is the guild's. A row that passes is always handed on, so the gate can
+  // never block a write (the ON DELETE SET NULL cascade included).
+  it('a failed check gives anon and authenticated non-officers the RLS error, and a passing row is always handed on', () => {
     const { body } = functionParts()
 
+    const passThrough = body.search(/IF\s+v_error\s+IS\s+NULL\s+THEN\s+RETURN NEW\s*;\s*END IF\s*;/i)
     const gate = body.search(
-      /IF\s+current_setting\('role',\s*true\)\s+IN\s+\('anon',\s*'authenticated'\)\s+THEN\s+IF\s+NOT\s+public\.is_guild_officer\(NEW\.guild_id\)\s+THEN\s+RAISE EXCEPTION\s+'new row violates row-level security policy for table "loot_history"'\s+USING\s+ERRCODE\s*=\s*'insufficient_privilege'\s*;/i,
+      /IF\s+current_setting\('role',\s*true\)\s+IN\s+\('anon',\s*'authenticated'\)\s+AND\s+NOT\s+public\.is_guild_officer\(NEW\.guild_id\)\s+THEN\s+RAISE EXCEPTION USING\s+MESSAGE\s*=\s*'new row violates row-level security policy for table "loot_history"',\s*ERRCODE\s*=\s*'insufficient_privilege'\s*;\s*END IF\s*;/i,
     )
-    expect(gate).toBeGreaterThanOrEqual(0)
+    const checkRaise = body.search(/RAISE EXCEPTION USING MESSAGE\s*=\s*v_error\b/i)
+    const lastLookup = Math.max(
+      ...['raid_events', 'character_guild_memberships', 'loot_items'].map(t => body.search(new RegExp(`\\bFROM\\s+public\\.${t}\\b`, 'i'))),
+    )
 
-    const firstLookup = body.search(/\bFROM\s+public\.(raid_events|character_guild_memberships|loot_items)\b/i)
-    expect(firstLookup).toBeGreaterThan(gate)
-    expect(body.search(/\bTG_OP\b/)).toBeGreaterThan(gate)
+    expect(passThrough).toBeGreaterThan(lastLookup)
+    expect(gate).toBeGreaterThan(passThrough)
+    expect(checkRaise).toBeGreaterThan(gate)
+    expect(body.match(/\bis_guild_officer\b/gi) ?? []).toHaveLength(1)
   })
 
   it('the body checks active membership and the item, tier and expansion chain', () => {
