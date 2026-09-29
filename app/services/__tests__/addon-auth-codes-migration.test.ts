@@ -40,19 +40,20 @@ function chunksOf(raw: string): string[] {
 }
 
 describe('addon_auth_codes migration shape (GH-300-R1)', () => {
-  it('the file exists, timestamped later than every other migration and later than pending PR #298 (20260928120000)', () => {
+  // Anchored to the migrations that existed when this one was written
+  // (latest: 20260927120000), not to a live directory scan: a scan asserting
+  // "newer than every other migration" fails as soon as any later migration
+  // lands (it did with #284's backfill). What must hold is that this file
+  // sorted after everything already applied, and that its timestamp is unique.
+  it('the file exists, sorts after every migration that preceded it, and has a unique timestamp', () => {
     expect(fs.existsSync(MIGRATION_FILE)).toBe(true)
+    expect(Number(MIGRATION_TIMESTAMP)).toBeGreaterThan(20260927120000)
 
-    const otherTimestamps = fs
+    const sameTimestamp = fs
       .readdirSync(MIGRATIONS_DIR)
       .filter(name => name.endsWith('.sql') && name !== path.basename(MIGRATION_FILE))
-      .map(name => name.slice(0, 14))
-      .filter(ts => /^\d{14}$/.test(ts))
-
-    for (const ts of otherTimestamps) {
-      expect(Number(MIGRATION_TIMESTAMP)).toBeGreaterThan(Number(ts))
-    }
-    expect(Number(MIGRATION_TIMESTAMP)).toBeGreaterThan(20260928120000)
+      .filter(name => name.slice(0, 14) === MIGRATION_TIMESTAMP)
+    expect(sameTimestamp).toEqual([])
   })
 
   it('is exactly 6 statements, in the required order', () => {
