@@ -1,0 +1,628 @@
+[
+  {
+    "wowhead_id": 18252,
+    "name": "Pattern: Core Armor Kit",
+    "raid": "Molten Core",
+    "boss_or_trash": "Lucifron, Magmadar, Gehennas, Garr, Shazzrah, Baron Geddon, Golemagg the Incinerator",
+    "bosses": [
+      "Lucifron",
+      "Magmadar",
+      "Gehennas",
+      "Garr",
+      "Shazzrah",
+      "Baron Geddon",
+      "Golemagg the Incinerator"
+    ],
+    "quality": "Rare",
+    "profession": "Leatherworking",
+    "sources": [
+      "package",
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.8-1.2% per kill from each of 7 boss encounters; no trash drops recorded. Not recorded from Sulfuron Harbinger, Majordomo Executus (Cache of the Firelord) or Ragnaros in Era data, although AtlasLoot labels its table \"All bosses\". Contradiction: package labels it \"Zone Drop\" in Molten Core (0.99%), implying zone-wide/trash; Wowhead and AtlasLoot both show boss-only drops."
+  },
+  {
+    "wowhead_id": 18257,
+    "name": "Recipe: Major Rejuvenation Potion",
+    "raid": "Molten Core",
+    "boss_or_trash": "Lucifron, Magmadar, Gehennas, Garr, Shazzrah, Baron Geddon, Golemagg the Incinerator",
+    "bosses": [
+      "Lucifron",
+      "Magmadar",
+      "Gehennas",
+      "Garr",
+      "Shazzrah",
+      "Baron Geddon",
+      "Golemagg the Incinerator"
+    ],
+    "quality": "Rare",
+    "profession": "Alchemy",
+    "sources": [
+      "package",
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.7-1.3% per kill from each of 7 boss encounters; no trash drops recorded. Not recorded from Sulfuron Harbinger, Majordomo Executus (Cache of the Firelord) or Ragnaros in Era data, although AtlasLoot labels its table \"All bosses\". Contradiction: package labels it \"Zone Drop\" in Molten Core (1.02%), implying zone-wide/trash; Wowhead and AtlasLoot both show boss-only drops."
+  },
+  {
+    "wowhead_id": 18259,
+    "name": "Formula: Enchant Weapon - Spell Power",
+    "raid": "Molten Core",
+    "boss_or_trash": "Lucifron, Magmadar, Gehennas, Garr, Shazzrah, Baron Geddon, Golemagg the Incinerator",
+    "bosses": [
+      "Lucifron",
+      "Magmadar",
+      "Gehennas",
+      "Garr",
+      "Shazzrah",
+      "Baron Geddon",
+      "Golemagg the Incinerator"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "package",
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.7-1.2% per kill from each of 7 boss encounters; no trash drops recorded. Not recorded from Sulfuron Harbinger, Majordomo Executus (Cache of the Firelord) or Ragnaros in Era data, although AtlasLoot labels its table \"All bosses\". Contradiction: package labels it \"Zone Drop\" in Molten Core (1.03%), implying zone-wide/trash; Wowhead and AtlasLoot both show boss-only drops. Package spells the name \"Formula: Enchant Weapon - Spellpower\"."
+  },
+  {
+    "wowhead_id": 18260,
+    "name": "Formula: Enchant Weapon - Healing Power",
+    "raid": "Molten Core",
+    "boss_or_trash": "Lucifron, Magmadar, Gehennas, Garr, Shazzrah, Baron Geddon, Golemagg the Incinerator",
+    "bosses": [
+      "Lucifron",
+      "Magmadar",
+      "Gehennas",
+      "Garr",
+      "Shazzrah",
+      "Baron Geddon",
+      "Golemagg the Incinerator"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "package",
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.8-1.3% per kill from each of 7 boss encounters; no trash drops recorded. Not recorded from Sulfuron Harbinger, Majordomo Executus (Cache of the Firelord) or Ragnaros in Era data, although AtlasLoot labels its table \"All bosses\". Contradiction: package labels it \"Zone Drop\" in Molten Core (1.04%), implying zone-wide/trash; Wowhead and AtlasLoot both show boss-only drops."
+  },
+  {
+    "wowhead_id": 18264,
+    "name": "Plans: Elemental Sharpening Stone",
+    "raid": "Molten Core",
+    "boss_or_trash": "Lucifron, Magmadar, Gehennas, Garr, Shazzrah, Baron Geddon, Golemagg the Incinerator",
+    "bosses": [
+      "Lucifron",
+      "Magmadar",
+      "Gehennas",
+      "Garr",
+      "Shazzrah",
+      "Baron Geddon",
+      "Golemagg the Incinerator"
+    ],
+    "quality": "Rare",
+    "profession": "Blacksmithing",
+    "sources": [
+      "package",
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.7-1.3% per kill from each of 7 boss encounters; no trash drops recorded. Not recorded from Sulfuron Harbinger, Majordomo Executus (Cache of the Firelord) or Ragnaros in Era data, although AtlasLoot labels its table \"All bosses\". Contradiction: package labels it \"Zone Drop\" in Molten Core (1.00%), implying zone-wide/trash; Wowhead and AtlasLoot both show boss-only drops."
+  },
+  {
+    "wowhead_id": 18265,
+    "name": "Pattern: Flarecore Wraps",
+    "raid": "Molten Core",
+    "boss_or_trash": "Lucifron, Magmadar, Gehennas, Garr, Shazzrah, Baron Geddon, Golemagg the Incinerator",
+    "bosses": [
+      "Lucifron",
+      "Magmadar",
+      "Gehennas",
+      "Garr",
+      "Shazzrah",
+      "Baron Geddon",
+      "Golemagg the Incinerator"
+    ],
+    "quality": "Rare",
+    "profession": "Tailoring",
+    "sources": [
+      "package",
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.8-1.2% per kill from each of 7 boss encounters; no trash drops recorded. Not recorded from Sulfuron Harbinger, Majordomo Executus (Cache of the Firelord) or Ragnaros in Era data, although AtlasLoot labels its table \"All bosses\". Contradiction: package labels it \"Zone Drop\" in Molten Core (1.04%), implying zone-wide/trash; Wowhead and AtlasLoot both show boss-only drops."
+  },
+  {
+    "wowhead_id": 18290,
+    "name": "Schematic: Biznicks 247x128 Accurascope",
+    "raid": "Molten Core",
+    "boss_or_trash": "Lucifron, Magmadar, Gehennas, Garr, Shazzrah, Baron Geddon, Golemagg the Incinerator",
+    "bosses": [
+      "Lucifron",
+      "Magmadar",
+      "Gehennas",
+      "Garr",
+      "Shazzrah",
+      "Baron Geddon",
+      "Golemagg the Incinerator"
+    ],
+    "quality": "Rare",
+    "profession": "Engineering",
+    "sources": [
+      "package",
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.8-1.2% per kill from each of 7 boss encounters; no trash drops recorded. Not recorded from Sulfuron Harbinger, Majordomo Executus (Cache of the Firelord) or Ragnaros in Era data, although AtlasLoot labels its table \"All bosses\". Contradiction: package labels it \"Zone Drop\" in Molten Core (1.01%), implying zone-wide/trash; Wowhead and AtlasLoot both show boss-only drops."
+  },
+  {
+    "wowhead_id": 18291,
+    "name": "Schematic: Force Reactive Disk",
+    "raid": "Molten Core",
+    "boss_or_trash": "Lucifron, Magmadar, Gehennas, Garr, Shazzrah, Baron Geddon, Golemagg the Incinerator",
+    "bosses": [
+      "Lucifron",
+      "Magmadar",
+      "Gehennas",
+      "Garr",
+      "Shazzrah",
+      "Baron Geddon",
+      "Golemagg the Incinerator"
+    ],
+    "quality": "Rare",
+    "profession": "Engineering",
+    "sources": [
+      "package",
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.7-1.3% per kill from each of 7 boss encounters; no trash drops recorded. Not recorded from Sulfuron Harbinger, Majordomo Executus (Cache of the Firelord) or Ragnaros in Era data, although AtlasLoot labels its table \"All bosses\". Contradiction: package labels it \"Zone Drop\" in Molten Core (1.00%), implying zone-wide/trash; Wowhead and AtlasLoot both show boss-only drops."
+  },
+  {
+    "wowhead_id": 18292,
+    "name": "Schematic: Core Marksman Rifle",
+    "raid": "Molten Core",
+    "boss_or_trash": "Lucifron, Magmadar, Gehennas, Garr, Shazzrah, Baron Geddon, Golemagg the Incinerator",
+    "bosses": [
+      "Lucifron",
+      "Magmadar",
+      "Gehennas",
+      "Garr",
+      "Shazzrah",
+      "Baron Geddon",
+      "Golemagg the Incinerator"
+    ],
+    "quality": "Rare",
+    "profession": "Engineering",
+    "sources": [
+      "package",
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.7-1.2% per kill from each of 7 boss encounters; no trash drops recorded. Not recorded from Sulfuron Harbinger, Majordomo Executus (Cache of the Firelord) or Ragnaros in Era data, although AtlasLoot labels its table \"All bosses\". Contradiction: package labels it \"Zone Drop\" in Molten Core (0.99%), implying zone-wide/trash; Wowhead and AtlasLoot both show boss-only drops."
+  },
+  {
+    "wowhead_id": 21371,
+    "name": "Pattern: Core Felcloth Bag",
+    "raid": "Molten Core",
+    "boss_or_trash": "Lucifron, Magmadar, Gehennas, Garr, Shazzrah, Baron Geddon, Golemagg the Incinerator",
+    "bosses": [
+      "Lucifron",
+      "Magmadar",
+      "Gehennas",
+      "Garr",
+      "Shazzrah",
+      "Baron Geddon",
+      "Golemagg the Incinerator"
+    ],
+    "quality": "Rare",
+    "profession": "Tailoring",
+    "sources": [
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.8-1.2% per kill from each of 7 boss encounters; no trash drops recorded. Not recorded from Sulfuron Harbinger, Majordomo Executus (Cache of the Firelord) or Ragnaros in Era data, although AtlasLoot labels its table \"All bosses\". Package has no raid zone for it (source category \"Rare Drop\", 9.09%, which looks like the Lord Kazzak rate). Also drops outside raids: Lord Kazzak, Blasted Lands world boss (21.4%, 363/1693)."
+  },
+  {
+    "wowhead_id": 20727,
+    "name": "Formula: Enchant Gloves - Shadow Power",
+    "raid": "Ruins of Ahn'Qiraj",
+    "boss_or_trash": "Kurinnaxx, General Rajaxx, Moam, Buru the Gorger, Ayamiss the Hunter, Ossirian the Unscarred",
+    "bosses": [
+      "Kurinnaxx",
+      "General Rajaxx",
+      "Moam",
+      "Buru the Gorger",
+      "Ayamiss the Hunter",
+      "Ossirian the Unscarred"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.6-0.8% per kill from each of 6 boss encounters; no trash drops recorded. Same formula also drops from Temple of Ahn'Qiraj bosses (see the AQ40 entry). AtlasLoot lists it in the shared \"Ahn'Qiraj enchants\" table for both raids. AtlasLoot table: Ahn'Qiraj enchants (shared AQ20/AQ40 table). Package has no raid zone for it (source category \"Rare Drop\", 0.99%)."
+  },
+  {
+    "wowhead_id": 20728,
+    "name": "Formula: Enchant Gloves - Frost Power",
+    "raid": "Ruins of Ahn'Qiraj",
+    "boss_or_trash": "Kurinnaxx, General Rajaxx, Moam, Buru the Gorger, Ayamiss the Hunter, Ossirian the Unscarred",
+    "bosses": [
+      "Kurinnaxx",
+      "General Rajaxx",
+      "Moam",
+      "Buru the Gorger",
+      "Ayamiss the Hunter",
+      "Ossirian the Unscarred"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.5-0.9% per kill from each of 6 boss encounters; no trash drops recorded. Same formula also drops from Temple of Ahn'Qiraj bosses (see the AQ40 entry). AtlasLoot lists it in the shared \"Ahn'Qiraj enchants\" table for both raids. AtlasLoot table: Ahn'Qiraj enchants (shared AQ20/AQ40 table). Package has no raid zone for it (source category \"Rare Drop\", 1.00%)."
+  },
+  {
+    "wowhead_id": 20729,
+    "name": "Formula: Enchant Gloves - Fire Power",
+    "raid": "Ruins of Ahn'Qiraj",
+    "boss_or_trash": "Kurinnaxx, General Rajaxx, Moam, Buru the Gorger, Ayamiss the Hunter, Ossirian the Unscarred",
+    "bosses": [
+      "Kurinnaxx",
+      "General Rajaxx",
+      "Moam",
+      "Buru the Gorger",
+      "Ayamiss the Hunter",
+      "Ossirian the Unscarred"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.6-0.9% per kill from each of 6 boss encounters; no trash drops recorded. Same formula also drops from Temple of Ahn'Qiraj bosses (see the AQ40 entry). AtlasLoot lists it in the shared \"Ahn'Qiraj enchants\" table for both raids. AtlasLoot table: Ahn'Qiraj enchants (shared AQ20/AQ40 table). Package has no raid zone for it (source category \"Rare Drop\", 1.04%)."
+  },
+  {
+    "wowhead_id": 20730,
+    "name": "Formula: Enchant Gloves - Healing Power",
+    "raid": "Ruins of Ahn'Qiraj",
+    "boss_or_trash": "Kurinnaxx, General Rajaxx, Moam, Buru the Gorger, Ayamiss the Hunter, Ossirian the Unscarred",
+    "bosses": [
+      "Kurinnaxx",
+      "General Rajaxx",
+      "Moam",
+      "Buru the Gorger",
+      "Ayamiss the Hunter",
+      "Ossirian the Unscarred"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.6-0.8% per kill from each of 6 boss encounters; no trash drops recorded. Same formula also drops from Temple of Ahn'Qiraj bosses (see the AQ40 entry). AtlasLoot lists it in the shared \"Ahn'Qiraj enchants\" table for both raids. AtlasLoot table: Ahn'Qiraj enchants (shared AQ20/AQ40 table). Package has no raid zone for it (source category \"Rare Drop\", 1.03%)."
+  },
+  {
+    "wowhead_id": 20731,
+    "name": "Formula: Enchant Gloves - Superior Agility",
+    "raid": "Ruins of Ahn'Qiraj",
+    "boss_or_trash": "Kurinnaxx, General Rajaxx, Moam, Buru the Gorger, Ayamiss the Hunter, Ossirian the Unscarred",
+    "bosses": [
+      "Kurinnaxx",
+      "General Rajaxx",
+      "Moam",
+      "Buru the Gorger",
+      "Ayamiss the Hunter",
+      "Ossirian the Unscarred"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.5-0.8% per kill from each of 6 boss encounters; no trash drops recorded. Same formula also drops from Temple of Ahn'Qiraj bosses (see the AQ40 entry). AtlasLoot lists it in the shared \"Ahn'Qiraj enchants\" table for both raids. AtlasLoot table: Ahn'Qiraj enchants (shared AQ20/AQ40 table). Package has no raid zone for it (source category \"Rare Drop\", 1.05%)."
+  },
+  {
+    "wowhead_id": 20734,
+    "name": "Formula: Enchant Cloak - Stealth",
+    "raid": "Ruins of Ahn'Qiraj",
+    "boss_or_trash": "Kurinnaxx, General Rajaxx, Moam, Buru the Gorger, Ayamiss the Hunter, Ossirian the Unscarred",
+    "bosses": [
+      "Kurinnaxx",
+      "General Rajaxx",
+      "Moam",
+      "Buru the Gorger",
+      "Ayamiss the Hunter",
+      "Ossirian the Unscarred"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.6-0.8% per kill from each of 6 boss encounters; no trash drops recorded. Same formula also drops from Temple of Ahn'Qiraj bosses (see the AQ40 entry). AtlasLoot lists it in the shared \"Ahn'Qiraj enchants\" table for both raids. AtlasLoot table: Ahn'Qiraj enchants (shared AQ20/AQ40 table). Package has no raid zone for it (source category \"Rare Drop\", 1.03%)."
+  },
+  {
+    "wowhead_id": 20736,
+    "name": "Formula: Enchant Cloak - Dodge",
+    "raid": "Ruins of Ahn'Qiraj",
+    "boss_or_trash": "Kurinnaxx, General Rajaxx, Moam, Buru the Gorger, Ayamiss the Hunter, Ossirian the Unscarred",
+    "bosses": [
+      "Kurinnaxx",
+      "General Rajaxx",
+      "Moam",
+      "Buru the Gorger",
+      "Ayamiss the Hunter",
+      "Ossirian the Unscarred"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.6-1.1% per kill from each of 6 boss encounters; no trash drops recorded. Same formula also drops from Temple of Ahn'Qiraj bosses (see the AQ40 entry). AtlasLoot lists it in the shared \"Ahn'Qiraj enchants\" table for both raids. AtlasLoot table: Ahn'Qiraj enchants (shared AQ20/AQ40 table). Package has no raid zone for it (source category \"Rare Drop\", 1.02%)."
+  },
+  {
+    "wowhead_id": 22220,
+    "name": "Plans: Black Grasp of the Destroyer",
+    "raid": "Ruins of Ahn'Qiraj",
+    "boss_or_trash": "Moam",
+    "bosses": [
+      "Moam"
+    ],
+    "quality": "Rare",
+    "profession": "Blacksmithing",
+    "sources": [
+      "package",
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Wowhead Classic Era data: 14.0% per kill (1280/9128). AtlasLoot table: Moam. Package: Boss Drop, Moam, 13.98%. Season of Discovery copy (item 234085) excluded."
+  },
+  {
+    "wowhead_id": 20726,
+    "name": "Formula: Enchant Gloves - Threat",
+    "raid": "Temple of Ahn'Qiraj",
+    "boss_or_trash": "Emperor Vek'nilash (Twin Emperors)",
+    "bosses": [
+      "Emperor Vek'nilash"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "package",
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Wowhead Classic Era data: 8.6% per kill (1307/15284). AtlasLoot table: Twin Emperors. Package: Boss Drop, Emperor Vek'nilash, 8.51%."
+  },
+  {
+    "wowhead_id": 20727,
+    "name": "Formula: Enchant Gloves - Shadow Power",
+    "raid": "Temple of Ahn'Qiraj",
+    "boss_or_trash": "The Prophet Skeram, Bug Trio (Lord Kri, Princess Yauj, Vem), Battleguard Sartura, Fankriss the Unyielding, Viscidus, Princess Huhuran, Ouro",
+    "bosses": [
+      "The Prophet Skeram",
+      "Bug Trio (Lord Kri, Princess Yauj, Vem)",
+      "Battleguard Sartura",
+      "Fankriss the Unyielding",
+      "Viscidus",
+      "Princess Huhuran",
+      "Ouro"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.7-1.4% per kill from each of 7 boss encounters (9 NPCs); no trash drops recorded. Not recorded from the Twin Emperors or C'Thun. Same formula also drops from every Ruins of Ahn'Qiraj boss. AtlasLoot table: Ahn'Qiraj enchants (shared AQ20/AQ40 table). Package has no raid zone for it (source category \"Rare Drop\", 0.99%). Bug Trio loot comes from whichever of Lord Kri, Princess Yauj and Vem dies last."
+  },
+  {
+    "wowhead_id": 20728,
+    "name": "Formula: Enchant Gloves - Frost Power",
+    "raid": "Temple of Ahn'Qiraj",
+    "boss_or_trash": "The Prophet Skeram, Bug Trio (Lord Kri, Princess Yauj, Vem), Battleguard Sartura, Fankriss the Unyielding, Viscidus, Princess Huhuran, Ouro",
+    "bosses": [
+      "The Prophet Skeram",
+      "Bug Trio (Lord Kri, Princess Yauj, Vem)",
+      "Battleguard Sartura",
+      "Fankriss the Unyielding",
+      "Viscidus",
+      "Princess Huhuran",
+      "Ouro"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.9-1.4% per kill from each of 7 boss encounters (9 NPCs); no trash drops recorded. Not recorded from the Twin Emperors or C'Thun. Same formula also drops from every Ruins of Ahn'Qiraj boss. AtlasLoot table: Ahn'Qiraj enchants (shared AQ20/AQ40 table). Package has no raid zone for it (source category \"Rare Drop\", 1.00%). Bug Trio loot comes from whichever of Lord Kri, Princess Yauj and Vem dies last."
+  },
+  {
+    "wowhead_id": 20729,
+    "name": "Formula: Enchant Gloves - Fire Power",
+    "raid": "Temple of Ahn'Qiraj",
+    "boss_or_trash": "The Prophet Skeram, Bug Trio (Lord Kri, Princess Yauj, Vem), Battleguard Sartura, Fankriss the Unyielding, Viscidus, Princess Huhuran, Ouro",
+    "bosses": [
+      "The Prophet Skeram",
+      "Bug Trio (Lord Kri, Princess Yauj, Vem)",
+      "Battleguard Sartura",
+      "Fankriss the Unyielding",
+      "Viscidus",
+      "Princess Huhuran",
+      "Ouro"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.8-1.6% per kill from each of 7 boss encounters (9 NPCs); no trash drops recorded. Not recorded from the Twin Emperors or C'Thun. Same formula also drops from every Ruins of Ahn'Qiraj boss. AtlasLoot table: Ahn'Qiraj enchants (shared AQ20/AQ40 table). Package has no raid zone for it (source category \"Rare Drop\", 1.04%). Bug Trio loot comes from whichever of Lord Kri, Princess Yauj and Vem dies last."
+  },
+  {
+    "wowhead_id": 20730,
+    "name": "Formula: Enchant Gloves - Healing Power",
+    "raid": "Temple of Ahn'Qiraj",
+    "boss_or_trash": "The Prophet Skeram, Bug Trio (Lord Kri, Princess Yauj, Vem), Battleguard Sartura, Fankriss the Unyielding, Viscidus, Princess Huhuran, Ouro",
+    "bosses": [
+      "The Prophet Skeram",
+      "Bug Trio (Lord Kri, Princess Yauj, Vem)",
+      "Battleguard Sartura",
+      "Fankriss the Unyielding",
+      "Viscidus",
+      "Princess Huhuran",
+      "Ouro"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 1.1-1.4% per kill from each of 7 boss encounters (9 NPCs); no trash drops recorded. Not recorded from the Twin Emperors or C'Thun. Same formula also drops from every Ruins of Ahn'Qiraj boss. AtlasLoot table: Ahn'Qiraj enchants (shared AQ20/AQ40 table). Package has no raid zone for it (source category \"Rare Drop\", 1.03%). Bug Trio loot comes from whichever of Lord Kri, Princess Yauj and Vem dies last."
+  },
+  {
+    "wowhead_id": 20731,
+    "name": "Formula: Enchant Gloves - Superior Agility",
+    "raid": "Temple of Ahn'Qiraj",
+    "boss_or_trash": "The Prophet Skeram, Bug Trio (Lord Kri, Princess Yauj, Vem), Battleguard Sartura, Fankriss the Unyielding, Viscidus, Princess Huhuran, Ouro",
+    "bosses": [
+      "The Prophet Skeram",
+      "Bug Trio (Lord Kri, Princess Yauj, Vem)",
+      "Battleguard Sartura",
+      "Fankriss the Unyielding",
+      "Viscidus",
+      "Princess Huhuran",
+      "Ouro"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 1.0-1.5% per kill from each of 7 boss encounters (9 NPCs); no trash drops recorded. Not recorded from the Twin Emperors or C'Thun. Same formula also drops from every Ruins of Ahn'Qiraj boss. AtlasLoot table: Ahn'Qiraj enchants (shared AQ20/AQ40 table). Package has no raid zone for it (source category \"Rare Drop\", 1.05%). Bug Trio loot comes from whichever of Lord Kri, Princess Yauj and Vem dies last."
+  },
+  {
+    "wowhead_id": 20734,
+    "name": "Formula: Enchant Cloak - Stealth",
+    "raid": "Temple of Ahn'Qiraj",
+    "boss_or_trash": "The Prophet Skeram, Bug Trio (Lord Kri, Princess Yauj, Vem), Battleguard Sartura, Fankriss the Unyielding, Viscidus, Princess Huhuran, Ouro",
+    "bosses": [
+      "The Prophet Skeram",
+      "Bug Trio (Lord Kri, Princess Yauj, Vem)",
+      "Battleguard Sartura",
+      "Fankriss the Unyielding",
+      "Viscidus",
+      "Princess Huhuran",
+      "Ouro"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 1.0-1.5% per kill from each of 7 boss encounters (9 NPCs); no trash drops recorded. Not recorded from the Twin Emperors or C'Thun. Same formula also drops from every Ruins of Ahn'Qiraj boss. AtlasLoot table: Ahn'Qiraj enchants (shared AQ20/AQ40 table). Package has no raid zone for it (source category \"Rare Drop\", 1.03%). Bug Trio loot comes from whichever of Lord Kri, Princess Yauj and Vem dies last."
+  },
+  {
+    "wowhead_id": 20735,
+    "name": "Formula: Enchant Cloak - Subtlety",
+    "raid": "Temple of Ahn'Qiraj",
+    "boss_or_trash": "Emperor Vek'lor (Twin Emperors)",
+    "bosses": [
+      "Emperor Vek'lor"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "package",
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Wowhead Classic Era data: 8.2% per kill (1236/15030). AtlasLoot table: Twin Emperors. Package: Boss Drop, Emperor Vek'lor, 8.27%."
+  },
+  {
+    "wowhead_id": 20736,
+    "name": "Formula: Enchant Cloak - Dodge",
+    "raid": "Temple of Ahn'Qiraj",
+    "boss_or_trash": "The Prophet Skeram, Bug Trio (Lord Kri, Princess Yauj, Vem), Battleguard Sartura, Fankriss the Unyielding, Viscidus, Princess Huhuran, Ouro",
+    "bosses": [
+      "The Prophet Skeram",
+      "Bug Trio (Lord Kri, Princess Yauj, Vem)",
+      "Battleguard Sartura",
+      "Fankriss the Unyielding",
+      "Viscidus",
+      "Princess Huhuran",
+      "Ouro"
+    ],
+    "quality": "Rare",
+    "profession": "Enchanting",
+    "sources": [
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Shared boss loot table: Wowhead Classic Era data shows 0.9-1.4% per kill from each of 7 boss encounters (9 NPCs); no trash drops recorded. Not recorded from the Twin Emperors or C'Thun. Same formula also drops from every Ruins of Ahn'Qiraj boss. AtlasLoot table: Ahn'Qiraj enchants (shared AQ20/AQ40 table). Package has no raid zone for it (source category \"Rare Drop\", 1.02%). Bug Trio loot comes from whichever of Lord Kri, Princess Yauj and Vem dies last."
+  },
+  {
+    "wowhead_id": 22222,
+    "name": "Plans: Thick Obsidian Breastplate",
+    "raid": "Temple of Ahn'Qiraj",
+    "boss_or_trash": "The Prophet Skeram",
+    "bosses": [
+      "The Prophet Skeram"
+    ],
+    "quality": "Rare",
+    "profession": "Blacksmithing",
+    "sources": [
+      "package",
+      "wowhead",
+      "atlasloot"
+    ],
+    "confidence": "confirmed",
+    "notes": "Wowhead Classic Era data: 13.7% per kill (2005/14616). AtlasLoot table: The Prophet Skeram. Package: Boss Drop, The Prophet Skeram, 13.60%. Season of Discovery copy (item 235039) excluded."
+  }
+]

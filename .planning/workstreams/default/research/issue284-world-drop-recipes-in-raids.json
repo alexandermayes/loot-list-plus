@@ -1,0 +1,4249 @@
+[
+  {
+    "wowhead_id": 3395,
+    "name": "Recipe: Limited Invulnerability Potion",
+    "quality": "Uncommon",
+    "profession": "Alchemy",
+    "non_raid_npcs": 178,
+    "non_raid_drops": 1061,
+    "top_non_raid": [
+      "Anvilrage Guardsman(8891)@1584:100/282828",
+      "Anvilrage Warden(8890)@1584:46/107666",
+      "Deep Borer(11789)@2100:40/344318"
+    ],
+    "per_raid": [
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 11226,
+    "name": "Formula: Enchant Gloves - Riding Skill",
+    "quality": "Uncommon",
+    "profession": "Enchanting",
+    "non_raid_npcs": 38,
+    "non_raid_drops": 141,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:43/1352",
+      "Lethon(14888)@10/47/331/-1:20/545",
+      "Ysondre(14887)@10/47/331/-1:16/430"
+    ],
+    "per_raid": [
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 273,
+            "outof": 37762,
+            "pct": 0.72
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 137,
+            "outof": 17318,
+            "pct": 0.79
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12682,
+    "name": "Plans: Thorium Armor",
+    "quality": "Uncommon",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 166,
+    "non_raid_drops": 843,
+    "top_non_raid": [
+      "Lord Kazzak(12397)@4:52/1693",
+      "Azuregos(6109)@16/15532:50/1352",
+      "Anvilrage Footman(8892)@1584:46/189057"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 19,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 195,
+            "outof": 37762,
+            "pct": 0.52
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 41,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 7,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 7,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12683,
+    "name": "Plans: Thorium Belt",
+    "quality": "Uncommon",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 167,
+    "non_raid_drops": 961,
+    "top_non_raid": [
+      "Whip Lasher(13022)@2557:104/3137513",
+      "Lord Kazzak(12397)@4:59/1693",
+      "Anvilrage Footman(8892)@1584:49/189057"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 12,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 198,
+            "outof": 37762,
+            "pct": 0.52
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 8,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 12,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 5,
+        "trash_npcs": 3
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12684,
+    "name": "Plans: Thorium Bracers",
+    "quality": "Uncommon",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 163,
+    "non_raid_drops": 870,
+    "top_non_raid": [
+      "Anvilrage Footman(8892)@1584:67/189057",
+      "Lord Kazzak(12397)@4:41/1693",
+      "Azuregos(6109)@16/15532:40/1352"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 24,
+        "trash_npcs": 8
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 167,
+            "outof": 37762,
+            "pct": 0.44
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 33,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 5,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 13,
+        "trash_npcs": 2
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12685,
+    "name": "Plans: Radiant Belt",
+    "quality": "Uncommon",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 37,
+    "non_raid_drops": 103,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:30/1352",
+      "Lord Kazzak(12397)@4:13/1693",
+      "Taerar(14890)@10/47/331/-1:10/562"
+    ],
+    "per_raid": [
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 209,
+            "outof": 37762,
+            "pct": 0.55
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 106,
+            "outof": 17318,
+            "pct": 0.61
+          }
+        ],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12689,
+    "name": "Plans: Radiant Breastplate",
+    "quality": "Uncommon",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 166,
+    "non_raid_drops": 809,
+    "top_non_raid": [
+      "Anvilrage Footman(8892)@1584:56/189057",
+      "Azuregos(6109)@16/15532:46/1352",
+      "Lord Kazzak(12397)@4:43/1693"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 20,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 219,
+            "outof": 37762,
+            "pct": 0.58
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 6,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 11,
+        "trash_npcs": 2
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12691,
+    "name": "Plans: Wildthorn Mail",
+    "quality": "Uncommon",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 163,
+    "non_raid_drops": 935,
+    "top_non_raid": [
+      "Anvilrage Footman(8892)@1584:59/189057",
+      "Anvilrage Guardsman(8891)@1584:53/282828",
+      "Lord Kazzak(12397)@4:48/1693"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 28,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 173,
+            "outof": 37762,
+            "pct": 0.46
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 45,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 4,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 4,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12692,
+    "name": "Plans: Thorium Shield Spike",
+    "quality": "Uncommon",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 40,
+    "non_raid_drops": 109,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:50/1352",
+      "Lord Kazzak(12397)@4:12/1693",
+      "Whip Lasher(13022)@2557:4/3144941"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 229,
+            "outof": 37762,
+            "pct": 0.61
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 129,
+            "outof": 17318,
+            "pct": 0.74
+          }
+        ],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12693,
+    "name": "Plans: Thorium Boots",
+    "quality": "Uncommon",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 139,
+    "non_raid_drops": 860,
+    "top_non_raid": [
+      "Blackhand Veteran(9819)@1583:43/82215",
+      "Thuzadin Acolyte(10399)@2017:31/86514",
+      "Lord Kazzak(12397)@4:24/1693"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 93,
+        "trash_npcs": 14
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 104,
+            "outof": 37762,
+            "pct": 0.28
+          }
+        ],
+        "trash_drops": 8,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 117,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 107,
+        "trash_npcs": 8
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 15,
+        "trash_npcs": 3
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 18,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 4,
+        "trash_npcs": 3
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12694,
+    "name": "Plans: Thorium Helm",
+    "quality": "Uncommon",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 136,
+    "non_raid_drops": 830,
+    "top_non_raid": [
+      "Plague Ghoul(10405)@2017:33/173853",
+      "Thuzadin Acolyte(10399)@2017:32/86514",
+      "Scholomance Necromancer(10477)@2057:32/122332"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 94,
+        "trash_npcs": 17
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 79,
+            "outof": 37762,
+            "pct": 0.21
+          }
+        ],
+        "trash_drops": 4,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 122,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 85,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 17,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 2
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12695,
+    "name": "Plans: Radiant Gloves",
+    "quality": "Uncommon",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 139,
+    "non_raid_drops": 816,
+    "top_non_raid": [
+      "Thuzadin Acolyte(10399)@2017:35/86514",
+      "Blackhand Veteran(9819)@1583:32/82215",
+      "Crimson Guardsman(10418)@2017:26/65314"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 117,
+        "trash_npcs": 15
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 94,
+            "outof": 37762,
+            "pct": 0.25
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 128,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 106,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 7,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 14,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 9,
+        "trash_npcs": 6
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12697,
+    "name": "Plans: Radiant Boots",
+    "quality": "Uncommon",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 145,
+    "non_raid_drops": 890,
+    "top_non_raid": [
+      "Blackhand Veteran(9819)@1583:46/82215",
+      "Thuzadin Acolyte(10399)@2017:39/86514",
+      "Scholomance Adept(10469)@2057:33/101109"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 76,
+        "trash_npcs": 10
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 86,
+            "outof": 37762,
+            "pct": 0.23
+          }
+        ],
+        "trash_drops": 9,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 108,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 99,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 24,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 9,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 6,
+        "trash_npcs": 5
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12702,
+    "name": "Plans: Radiant Circlet",
+    "quality": "Uncommon",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 42,
+    "non_raid_drops": 127,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:40/1352",
+      "Emeriss(14889)@10/47/331/-1:10/370",
+      "Taerar(14890)@10/47/331/-1:8/562"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 6,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 160,
+            "outof": 37762,
+            "pct": 0.42
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 70,
+            "outof": 17318,
+            "pct": 0.4
+          }
+        ],
+        "trash_drops": 3,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12703,
+    "name": "Plans: Storm Gauntlets",
+    "quality": "Rare",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 28,
+    "non_raid_drops": 118,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:35/1352",
+      "Lethon(14888)@10/47/331/-1:24/545",
+      "Lord Kazzak(12397)@4:11/1693"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 4,
+        "trash_npcs": 3
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 207,
+            "outof": 37762,
+            "pct": 0.55
+          }
+        ],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 78,
+            "outof": 17318,
+            "pct": 0.45
+          }
+        ],
+        "trash_drops": 8,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12704,
+    "name": "Plans: Thorium Leggings",
+    "quality": "Uncommon",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 141,
+    "non_raid_drops": 815,
+    "top_non_raid": [
+      "Blackhand Veteran(9819)@1583:39/82215",
+      "Scholomance Adept(10469)@2057:28/101109",
+      "Crimson Guardsman(10418)@2017:27/65314"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 81,
+        "trash_npcs": 12
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 85,
+            "outof": 37762,
+            "pct": 0.23
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 116,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 76,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 17,
+        "trash_npcs": 3
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 18,
+        "trash_npcs": 9
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 5,
+        "trash_npcs": 4
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12711,
+    "name": "Plans: Whitesoul Helm",
+    "quality": "Rare",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 36,
+    "non_raid_drops": 163,
+    "top_non_raid": [
+      "Lethon(14888)@10/47/331/-1:30/545",
+      "Ysondre(14887)@10/47/331/-1:29/430",
+      "Taerar(14890)@10/47/331/-1:19/562"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 8,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 153,
+            "outof": 37762,
+            "pct": 0.41
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 84,
+            "outof": 17318,
+            "pct": 0.49
+          }
+        ],
+        "trash_drops": 6,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 4,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12713,
+    "name": "Plans: Radiant Leggings",
+    "quality": "Uncommon",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 91,
+    "non_raid_drops": 784,
+    "top_non_raid": [
+      "Blackhand Veteran(9819)@1583:49/82215",
+      "Venom Belcher(10417)@2017:47/74536",
+      "Azuregos(6109)@16/15532:45/1352"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 155,
+        "trash_npcs": 9
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 161,
+            "outof": 37762,
+            "pct": 0.43
+          }
+        ],
+        "trash_drops": 29,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 358,
+        "trash_npcs": 9
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 1522,
+        "trash_npcs": 13
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 83,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 173,
+        "trash_npcs": 13
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 50,
+        "trash_npcs": 12
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12716,
+    "name": "Plans: Helm of the Great Chief",
+    "quality": "Rare",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 7,
+    "non_raid_drops": 40,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:23/1352",
+      "Lethon(14888)@10/47/331/-1:7/545",
+      "Emeriss(14889)@10/47/331/-1:4/370"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 107,
+            "outof": 37762,
+            "pct": 0.28
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 37,
+            "outof": 17318,
+            "pct": 0.21
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 28,
+        "trash_npcs": 5
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12717,
+    "name": "Plans: Lionheart Helm",
+    "quality": "Epic",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 11,
+    "non_raid_drops": 43,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:23/1352",
+      "Ysondre(14887)@10/47/331/-1:4/430",
+      "Lethon(14888)@10/47/331/-1:4/545"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 119,
+            "outof": 37762,
+            "pct": 0.32
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 59,
+            "outof": 17318,
+            "pct": 0.34
+          }
+        ],
+        "trash_drops": 3,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 25,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 5,
+        "trash_npcs": 3
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 3
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12720,
+    "name": "Plans: Stronghold Gauntlets",
+    "quality": "Epic",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 6,
+    "non_raid_drops": 39,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:28/1352",
+      "Taerar(14890)@10/47/331/-1:9/562",
+      "Ysondre(14887)@10/47/331/-1:3/430"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 5,
+        "trash_npcs": 3
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 92,
+            "outof": 37762,
+            "pct": 0.24
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 37,
+            "outof": 17318,
+            "pct": 0.21
+          }
+        ],
+        "trash_drops": 5,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 25,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 12728,
+    "name": "Plans: Invulnerable Mail",
+    "quality": "Epic",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 9,
+    "non_raid_drops": 181,
+    "top_non_raid": [
+      "Goraluk Anvilcrack(10899)@1583:133/5064",
+      "Azuregos(6109)@16/15532:21/1352",
+      "Taerar(14890)@10/47/331/-1:10/562"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 114,
+            "outof": 37762,
+            "pct": 0.3
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 48,
+            "outof": 17318,
+            "pct": 0.28
+          }
+        ],
+        "trash_drops": 2,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 36,
+        "trash_npcs": 8
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 4,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 13486,
+    "name": "Recipe: Transmute Undeath to Water",
+    "quality": "Uncommon",
+    "profession": "Alchemy",
+    "non_raid_npcs": 33,
+    "non_raid_drops": 128,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:37/1352",
+      "Taerar(14890)@10/47/331/-1:22/562",
+      "Lethon(14888)@10/47/331/-1:17/545"
+    ],
+    "per_raid": [
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 234,
+            "outof": 37762,
+            "pct": 0.62
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 113,
+            "outof": 17318,
+            "pct": 0.65
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 13487,
+    "name": "Recipe: Transmute Water to Undeath",
+    "quality": "Uncommon",
+    "profession": "Alchemy",
+    "non_raid_npcs": 7,
+    "non_raid_drops": 88,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:44/1352",
+      "Lethon(14888)@10/47/331/-1:18/545",
+      "Taerar(14890)@10/47/331/-1:13/562"
+    ],
+    "per_raid": [
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 209,
+            "outof": 37762,
+            "pct": 0.55
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 116,
+            "outof": 17318,
+            "pct": 0.67
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 13488,
+    "name": "Recipe: Transmute Life to Earth",
+    "quality": "Uncommon",
+    "profession": "Alchemy",
+    "non_raid_npcs": 40,
+    "non_raid_drops": 134,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:35/1352",
+      "Emeriss(14889)@10/47/331/-1:15/370",
+      "Whip Lasher(13022)@2557:12/3144941"
+    ],
+    "per_raid": [
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 220,
+            "outof": 37762,
+            "pct": 0.58
+          }
+        ],
+        "trash_drops": 2,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 114,
+            "outof": 17318,
+            "pct": 0.66
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 13489,
+    "name": "Recipe: Transmute Earth to Life",
+    "quality": "Uncommon",
+    "profession": "Alchemy",
+    "non_raid_npcs": 29,
+    "non_raid_drops": 118,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:33/1352",
+      "Lethon(14888)@10/47/331/-1:18/545",
+      "Lord Kazzak(12397)@4:15/1693"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 219,
+            "outof": 37762,
+            "pct": 0.58
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 101,
+            "outof": 17318,
+            "pct": 0.58
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 13490,
+    "name": "Recipe: Greater Stoneshield Potion",
+    "quality": "Uncommon",
+    "profession": "Alchemy",
+    "non_raid_npcs": 24,
+    "non_raid_drops": 98,
+    "top_non_raid": [
+      "Lord Kazzak(12397)@4:23/1693",
+      "Crimson Conjuror(10419)@2017:20/33215",
+      "Azuregos(6109)@16/15532:14/1352"
+    ],
+    "per_raid": [
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 87,
+            "outof": 37762,
+            "pct": 0.23
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 13492,
+    "name": "Recipe: Purification Potion",
+    "quality": "Uncommon",
+    "profession": "Alchemy",
+    "non_raid_npcs": 142,
+    "non_raid_drops": 848,
+    "top_non_raid": [
+      "Blackhand Veteran(9819)@1583:35/82215",
+      "Thuzadin Acolyte(10399)@2017:33/86514",
+      "Scholomance Adept(10469)@2057:28/101109"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 133,
+        "trash_npcs": 16
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 82,
+            "outof": 37762,
+            "pct": 0.22
+          }
+        ],
+        "trash_drops": 7,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 128,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 83,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 6,
+        "trash_npcs": 3
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 16,
+        "trash_npcs": 8
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 2
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 13493,
+    "name": "Recipe: Greater Arcane Elixir",
+    "quality": "Uncommon",
+    "profession": "Alchemy",
+    "non_raid_npcs": 41,
+    "non_raid_drops": 139,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:32/1352",
+      "Lord Kazzak(12397)@4:13/1693",
+      "Ysondre(14887)@10/47/331/-1:10/430"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 7,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 165,
+            "outof": 37762,
+            "pct": 0.44
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 88,
+            "outof": 17318,
+            "pct": 0.51
+          }
+        ],
+        "trash_drops": 7,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 4,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 2
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 13518,
+    "name": "Recipe: Flask of Petrification",
+    "quality": "Uncommon",
+    "profession": "Alchemy",
+    "non_raid_npcs": 53,
+    "non_raid_drops": 146,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:31/1352",
+      "Emeriss(14889)@10/47/331/-1:20/370",
+      "Lord Kazzak(12397)@4:19/1693"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 5,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 182,
+            "outof": 37762,
+            "pct": 0.48
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 96,
+            "outof": 17318,
+            "pct": 0.55
+          }
+        ],
+        "trash_drops": 11,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 14466,
+    "name": "Pattern: Frostweave Tunic",
+    "quality": "Uncommon",
+    "profession": "Tailoring",
+    "non_raid_npcs": 19,
+    "non_raid_drops": 255,
+    "top_non_raid": [
+      "Whip Lasher(13022)@2557:117/3137513",
+      "Lord Kazzak(12397)@4:51/1693",
+      "Azuregos(6109)@16/15532:35/1352"
+    ],
+    "per_raid": [
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 187,
+            "outof": 37762,
+            "pct": 0.5
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 14467,
+    "name": "Pattern: Frostweave Robe",
+    "quality": "Uncommon",
+    "profession": "Tailoring",
+    "non_raid_npcs": 172,
+    "non_raid_drops": 844,
+    "top_non_raid": [
+      "Anvilrage Guardsman(8891)@1584:54/282828",
+      "Anvilrage Footman(8892)@1584:50/189057",
+      "Scarshield Legionnaire(9097)@1583:37/97476"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 22,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 180,
+            "outof": 37762,
+            "pct": 0.48
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 48,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 2
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 14470,
+    "name": "Pattern: Runecloth Tunic",
+    "quality": "Uncommon",
+    "profession": "Tailoring",
+    "non_raid_npcs": 170,
+    "non_raid_drops": 939,
+    "top_non_raid": [
+      "Anvilrage Footman(8892)@1584:57/189057",
+      "Lord Kazzak(12397)@4:46/1693",
+      "Azuregos(6109)@16/15532:43/1352"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 24,
+        "trash_npcs": 8
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 229,
+            "outof": 37762,
+            "pct": 0.61
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 51,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 4,
+        "trash_npcs": 2
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 14474,
+    "name": "Pattern: Frostweave Gloves",
+    "quality": "Uncommon",
+    "profession": "Tailoring",
+    "non_raid_npcs": 164,
+    "non_raid_drops": 936,
+    "top_non_raid": [
+      "Anvilrage Footman(8892)@1584:63/189057",
+      "Anvilrage Guardsman(8891)@1584:54/282828",
+      "Lord Kazzak(12397)@4:46/1693"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 37,
+        "trash_npcs": 11
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 184,
+            "outof": 37762,
+            "pct": 0.49
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 41,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 14489,
+    "name": "Pattern: Frostweave Pants",
+    "quality": "Uncommon",
+    "profession": "Tailoring",
+    "non_raid_npcs": 142,
+    "non_raid_drops": 864,
+    "top_non_raid": [
+      "Blackhand Dreadweaver(9817)@1583:42/58677",
+      "Ghoul Ravener(10406)@2017:39/103431",
+      "Blackhand Veteran(9819)@1583:29/82215"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 102,
+        "trash_npcs": 15
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 89,
+            "outof": 37762,
+            "pct": 0.24
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 98,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 62,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 12,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 12,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 4,
+        "trash_npcs": 3
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 14492,
+    "name": "Pattern: Felcloth Boots",
+    "quality": "Uncommon",
+    "profession": "Tailoring",
+    "non_raid_npcs": 146,
+    "non_raid_drops": 959,
+    "top_non_raid": [
+      "Blackhand Veteran(9819)@1583:40/82215",
+      "Thuzadin Acolyte(10399)@2017:39/86514",
+      "Anvilrage Footman(8892)@1584:32/189057"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 101,
+        "trash_npcs": 15
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 111,
+            "outof": 37762,
+            "pct": 0.29
+          }
+        ],
+        "trash_drops": 11,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 138,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 96,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 9,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 7,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 2
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 14494,
+    "name": "Pattern: Brightcloth Pants",
+    "quality": "Uncommon",
+    "profession": "Tailoring",
+    "non_raid_npcs": 140,
+    "non_raid_drops": 830,
+    "top_non_raid": [
+      "Blackhand Veteran(9819)@1583:38/82215",
+      "Blackhand Dreadweaver(9817)@1583:34/58677",
+      "Thuzadin Acolyte(10399)@2017:34/86514"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 87,
+        "trash_npcs": 14
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 89,
+            "outof": 37762,
+            "pct": 0.24
+          }
+        ],
+        "trash_drops": 9,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 156,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 117,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 7,
+        "trash_npcs": 3
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 5,
+        "trash_npcs": 3
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 2
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 14496,
+    "name": "Pattern: Felcloth Hood",
+    "quality": "Uncommon",
+    "profession": "Tailoring",
+    "non_raid_npcs": 149,
+    "non_raid_drops": 953,
+    "top_non_raid": [
+      "Blackhand Veteran(9819)@1583:38/82215",
+      "Crypt Crawler(10412)@2017:35/59960",
+      "Blackhand Dreadweaver(9817)@1583:33/58677"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 152,
+        "trash_npcs": 14
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 100,
+            "outof": 37762,
+            "pct": 0.26
+          }
+        ],
+        "trash_drops": 3,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 108,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 50,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 13,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 3
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 14497,
+    "name": "Pattern: Mooncloth Leggings",
+    "quality": "Rare",
+    "profession": "Tailoring",
+    "non_raid_npcs": 30,
+    "non_raid_drops": 148,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:36/1352",
+      "Taerar(14890)@10/47/331/-1:20/562",
+      "Lethon(14888)@10/47/331/-1:11/545"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 9,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 168,
+            "outof": 37762,
+            "pct": 0.44
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 81,
+            "outof": 17318,
+            "pct": 0.47
+          }
+        ],
+        "trash_drops": 3,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 12,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 14499,
+    "name": "Pattern: Mooncloth Bag",
+    "quality": "Uncommon",
+    "profession": "Tailoring",
+    "non_raid_npcs": 139,
+    "non_raid_drops": 910,
+    "top_non_raid": [
+      "Chromatic Dragonspawn(10447)@1583:73/28319",
+      "Thuzadin Acolyte(10399)@2017:38/86514",
+      "Blackhand Veteran(9819)@1583:30/82215"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 87,
+        "trash_npcs": 11
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 101,
+            "outof": 37762,
+            "pct": 0.27
+          }
+        ],
+        "trash_drops": 5,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 112,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 59,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 11,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 9,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 8,
+        "trash_npcs": 6
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 14501,
+    "name": "Pattern: Mooncloth Vest",
+    "quality": "Rare",
+    "profession": "Tailoring",
+    "non_raid_npcs": 25,
+    "non_raid_drops": 134,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:43/1352",
+      "Lethon(14888)@10/47/331/-1:16/545",
+      "Taerar(14890)@10/47/331/-1:14/562"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 6,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 186,
+            "outof": 37762,
+            "pct": 0.49
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 80,
+            "outof": 17318,
+            "pct": 0.46
+          }
+        ],
+        "trash_drops": 11,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 12,
+        "trash_npcs": 5
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 14506,
+    "name": "Pattern: Felcloth Robe",
+    "quality": "Uncommon",
+    "profession": "Tailoring",
+    "non_raid_npcs": 95,
+    "non_raid_drops": 674,
+    "top_non_raid": [
+      "Lord Kazzak(12397)@4:46/1693",
+      "Blackhand Iron Guard(10319)@1583:45/33020",
+      "Thuzadin Necromancer(10400)@2017:40/58519"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 105,
+        "trash_npcs": 10
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 145,
+            "outof": 37762,
+            "pct": 0.38
+          }
+        ],
+        "trash_drops": 33,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 408,
+        "trash_npcs": 9
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 1430,
+        "trash_npcs": 14
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 107,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 134,
+        "trash_npcs": 13
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 60,
+        "trash_npcs": 8
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 14507,
+    "name": "Pattern: Mooncloth Shoulders",
+    "quality": "Rare",
+    "profession": "Tailoring",
+    "non_raid_npcs": 44,
+    "non_raid_drops": 114,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:30/1352",
+      "Lethon(14888)@10/47/331/-1:18/545",
+      "Blackhand Veteran(9819)@1583:7/82215"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 10,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 216,
+            "outof": 37762,
+            "pct": 0.57
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 75,
+            "outof": 17318,
+            "pct": 0.43
+          }
+        ],
+        "trash_drops": 9,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 7,
+        "trash_npcs": 3
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 4,
+        "trash_npcs": 3
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 14508,
+    "name": "Pattern: Felcloth Shoulders",
+    "quality": "Uncommon",
+    "profession": "Tailoring",
+    "non_raid_npcs": 96,
+    "non_raid_drops": 875,
+    "top_non_raid": [
+      "Blackhand Veteran(9819)@1583:60/82215",
+      "Venom Belcher(10417)@2017:54/74536",
+      "Lord Kazzak(12397)@4:50/1693"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 119,
+        "trash_npcs": 10
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 147,
+            "outof": 37762,
+            "pct": 0.39
+          }
+        ],
+        "trash_drops": 43,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 386,
+        "trash_npcs": 9
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 1643,
+        "trash_npcs": 14
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 155,
+        "trash_npcs": 8
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 175,
+        "trash_npcs": 10
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 38,
+        "trash_npcs": 9
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 14509,
+    "name": "Pattern: Mooncloth Circlet",
+    "quality": "Rare",
+    "profession": "Tailoring",
+    "non_raid_npcs": 6,
+    "non_raid_drops": 58,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:30/1352",
+      "Ysondre(14887)@10/47/331/-1:10/430",
+      "Taerar(14890)@10/47/331/-1:9/562"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 4,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 92,
+            "outof": 37762,
+            "pct": 0.24
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 40,
+            "outof": 17318,
+            "pct": 0.23
+          }
+        ],
+        "trash_drops": 6,
+        "trash_npcs": 3
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 12,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 14510,
+    "name": "Pattern: Bottomless Bag",
+    "quality": "Rare",
+    "profession": "Tailoring",
+    "non_raid_npcs": 8,
+    "non_raid_drops": 56,
+    "top_non_raid": [
+      "Taerar(14890)@10/47/331/-1:26/562",
+      "Azuregos(6109)@16/15532:11/1352",
+      "Ysondre(14887)@10/47/331/-1:6/430"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 5,
+        "trash_npcs": 3
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 126,
+            "outof": 37762,
+            "pct": 0.33
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 50,
+            "outof": 17318,
+            "pct": 0.29
+          }
+        ],
+        "trash_drops": 5,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 20,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 14511,
+    "name": "Pattern: Gloves of Spell Mastery",
+    "quality": "Epic",
+    "profession": "Tailoring",
+    "non_raid_npcs": 9,
+    "non_raid_drops": 38,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:12/1352",
+      "Lethon(14888)@10/47/331/-1:9/545",
+      "Taerar(14890)@10/47/331/-1:5/562"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 60,
+            "outof": 37762,
+            "pct": 0.16
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 42,
+            "outof": 17318,
+            "pct": 0.24
+          }
+        ],
+        "trash_drops": 3,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 4,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 15731,
+    "name": "Pattern: Runic Leather Gauntlets",
+    "quality": "Uncommon",
+    "profession": "Leatherworking",
+    "non_raid_npcs": 166,
+    "non_raid_drops": 846,
+    "top_non_raid": [
+      "Lord Kazzak(12397)@4:63/1693",
+      "Anvilrage Guardsman(8891)@1584:55/282828",
+      "Scarshield Legionnaire(9097)@1583:44/97476"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 24,
+        "trash_npcs": 9
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 193,
+            "outof": 37762,
+            "pct": 0.51
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 43,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 5,
+        "trash_npcs": 2
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 15737,
+    "name": "Pattern: Chimeric Boots",
+    "quality": "Uncommon",
+    "profession": "Leatherworking",
+    "non_raid_npcs": 163,
+    "non_raid_drops": 820,
+    "top_non_raid": [
+      "Anvilrage Footman(8892)@1584:70/189057",
+      "Lord Kazzak(12397)@4:45/1693",
+      "Scarshield Legionnaire(9097)@1583:38/97476"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 18,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 170,
+            "outof": 37762,
+            "pct": 0.45
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 26,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 9,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 15742,
+    "name": "Pattern: Warbear Harness",
+    "quality": "Common",
+    "profession": "Leatherworking",
+    "non_raid_npcs": 16,
+    "non_raid_drops": 32,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:5/1352",
+      "Jadefire Betrayer(7108)@361:4/106107",
+      "Whip Lasher(13022)@2557:3/3144941"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 8,
+            "outof": 37762,
+            "pct": 0.02
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 11,
+            "outof": 17318,
+            "pct": 0.06
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 15743,
+    "name": "Pattern: Heavy Scorpid Belt",
+    "quality": "Uncommon",
+    "profession": "Leatherworking",
+    "non_raid_npcs": 138,
+    "non_raid_drops": 771,
+    "top_non_raid": [
+      "Blackhand Veteran(9819)@1583:37/82215",
+      "Scholomance Adept(10469)@2057:31/101109",
+      "Lord Kazzak(12397)@4:30/1693"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 116,
+        "trash_npcs": 12
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 108,
+            "outof": 37762,
+            "pct": 0.29
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 110,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 81,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 11,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 8,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 9,
+        "trash_npcs": 7
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 15745,
+    "name": "Pattern: Runic Leather Belt",
+    "quality": "Uncommon",
+    "profession": "Leatherworking",
+    "non_raid_npcs": 146,
+    "non_raid_drops": 837,
+    "top_non_raid": [
+      "Blackhand Veteran(9819)@1583:34/82215",
+      "Plague Ghoul(10405)@2017:34/173853",
+      "Blackhand Dreadweaver(9817)@1583:32/58677"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 72,
+        "trash_npcs": 12
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 85,
+            "outof": 37762,
+            "pct": 0.23
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 22,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 78,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 7,
+        "trash_npcs": 3
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 10,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 4,
+        "trash_npcs": 4
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 15746,
+    "name": "Pattern: Chimeric Leggings",
+    "quality": "Uncommon",
+    "profession": "Leatherworking",
+    "non_raid_npcs": 141,
+    "non_raid_drops": 854,
+    "top_non_raid": [
+      "Blackhand Veteran(9819)@1583:48/82215",
+      "Plague Ghoul(10405)@2017:31/173853",
+      "Mangled Cadaver(10382)@2017:27/131900"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 99,
+        "trash_npcs": 13
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 68,
+            "outof": 37762,
+            "pct": 0.18
+          }
+        ],
+        "trash_drops": 7,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 120,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 106,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 12,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 4,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 5,
+        "trash_npcs": 4
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 15755,
+    "name": "Pattern: Chimeric Vest",
+    "quality": "Uncommon",
+    "profession": "Leatherworking",
+    "non_raid_npcs": 140,
+    "non_raid_drops": 889,
+    "top_non_raid": [
+      "Blackhand Veteran(9819)@1583:50/82215",
+      "Crimson Guardsman(10418)@2017:34/65314",
+      "Plague Ghoul(10405)@2017:31/173853"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 109,
+        "trash_npcs": 15
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 102,
+            "outof": 37762,
+            "pct": 0.27
+          }
+        ],
+        "trash_drops": 2,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 123,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 61,
+        "trash_npcs": 3
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 5,
+        "trash_npcs": 3
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 15,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 15757,
+    "name": "Pattern: Wicked Leather Pants",
+    "quality": "Uncommon",
+    "profession": "Leatherworking",
+    "non_raid_npcs": 132,
+    "non_raid_drops": 835,
+    "top_non_raid": [
+      "Blackhand Veteran(9819)@1583:43/82215",
+      "Plague Ghoul(10405)@2017:34/173853",
+      "Blackhand Summoner(9818)@1583:29/46613"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 99,
+        "trash_npcs": 17
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 89,
+            "outof": 37762,
+            "pct": 0.24
+          }
+        ],
+        "trash_drops": 12,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 125,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 65,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 10,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 14,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 7,
+        "trash_npcs": 4
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 15765,
+    "name": "Pattern: Runic Leather Pants",
+    "quality": "Uncommon",
+    "profession": "Leatherworking",
+    "non_raid_npcs": 100,
+    "non_raid_drops": 831,
+    "top_non_raid": [
+      "Blackhand Veteran(9819)@1583:59/82215",
+      "Azuregos(6109)@16/15532:40/1352",
+      "Blackhand Dreadweaver(9817)@1583:40/58677"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 132,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 165,
+            "outof": 37762,
+            "pct": 0.44
+          }
+        ],
+        "trash_drops": 47,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 398,
+        "trash_npcs": 9
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 1602,
+        "trash_npcs": 14
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 165,
+        "trash_npcs": 9
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 181,
+        "trash_npcs": 11
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 40,
+        "trash_npcs": 9
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 16043,
+    "name": "Schematic: Thorium Rifle",
+    "quality": "Uncommon",
+    "profession": "Engineering",
+    "non_raid_npcs": 167,
+    "non_raid_drops": 937,
+    "top_non_raid": [
+      "Whip Lasher(13022)@2557:111/3137513",
+      "Anvilrage Footman(8892)@1584:60/189057",
+      "Anvilrage Guardsman(8891)@1584:55/282828"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 15,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 209,
+            "outof": 37762,
+            "pct": 0.55
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 36,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 4,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 7,
+        "trash_npcs": 3
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 16044,
+    "name": "Schematic: Lifelike Mechanical Toad",
+    "quality": "Uncommon",
+    "profession": "Engineering",
+    "non_raid_npcs": 27,
+    "non_raid_drops": 116,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:33/1352",
+      "Taerar(14890)@10/47/331/-1:13/562",
+      "Emeriss(14889)@10/47/331/-1:12/370"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 195,
+            "outof": 37762,
+            "pct": 0.52
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 117,
+            "outof": 17318,
+            "pct": 0.68
+          }
+        ],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 2
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 16051,
+    "name": "Schematic: Thorium Shells",
+    "quality": "Uncommon",
+    "profession": "Engineering",
+    "non_raid_npcs": 136,
+    "non_raid_drops": 887,
+    "top_non_raid": [
+      "Blackhand Veteran(9819)@1583:72/82215",
+      "Blackhand Dreadweaver(9817)@1583:35/58677",
+      "Thuzadin Acolyte(10399)@2017:30/86514"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 102,
+        "trash_npcs": 16
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 87,
+            "outof": 37762,
+            "pct": 0.23
+          }
+        ],
+        "trash_drops": 4,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 41,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 69,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 5,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 10,
+        "trash_npcs": 3
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 6,
+        "trash_npcs": 4
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 16055,
+    "name": "Schematic: Arcane Bomb",
+    "quality": "Uncommon",
+    "profession": "Engineering",
+    "non_raid_npcs": 6,
+    "non_raid_drops": 70,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:43/1352",
+      "Ysondre(14887)@10/47/331/-1:14/430",
+      "Taerar(14890)@10/47/331/-1:9/562"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 181,
+            "outof": 37762,
+            "pct": 0.48
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 66,
+            "outof": 17318,
+            "pct": 0.38
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 16215,
+    "name": "Formula: Enchant Boots - Greater Stamina",
+    "quality": "Uncommon",
+    "profession": "Enchanting",
+    "non_raid_npcs": 160,
+    "non_raid_drops": 870,
+    "top_non_raid": [
+      "Lord Kazzak(12397)@4:52/1693",
+      "Anvilrage Guardsman(8891)@1584:50/282828",
+      "Anvilrage Footman(8892)@1584:46/189057"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 36,
+        "trash_npcs": 10
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 217,
+            "outof": 37762,
+            "pct": 0.57
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 7,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 5,
+        "trash_npcs": 4
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 16218,
+    "name": "Formula: Enchant Bracer - Superior Spirit",
+    "quality": "Uncommon",
+    "profession": "Enchanting",
+    "non_raid_npcs": 162,
+    "non_raid_drops": 810,
+    "top_non_raid": [
+      "Anvilrage Guardsman(8891)@1584:53/282828",
+      "Scarshield Legionnaire(9097)@1583:44/97476",
+      "Anvilrage Footman(8892)@1584:43/189057"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 21,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 235,
+            "outof": 37762,
+            "pct": 0.62
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 45,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 5,
+        "trash_npcs": 2
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 16220,
+    "name": "Formula: Enchant Boots - Spirit",
+    "quality": "Uncommon",
+    "profession": "Enchanting",
+    "non_raid_npcs": 168,
+    "non_raid_drops": 810,
+    "top_non_raid": [
+      "Anvilrage Guardsman(8891)@1584:71/282828",
+      "Anvilrage Footman(8892)@1584:48/189057",
+      "Scarshield Legionnaire(9097)@1583:45/97476"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 29,
+        "trash_npcs": 11
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 200,
+            "outof": 37762,
+            "pct": 0.53
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 40,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 16245,
+    "name": "Formula: Enchant Boots - Greater Agility",
+    "quality": "Uncommon",
+    "profession": "Enchanting",
+    "non_raid_npcs": 139,
+    "non_raid_drops": 923,
+    "top_non_raid": [
+      "Blackhand Veteran(9819)@1583:50/82215",
+      "Blackhand Dreadweaver(9817)@1583:33/58677",
+      "Lord Kazzak(12397)@4:31/1693"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 83,
+        "trash_npcs": 12
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 99,
+            "outof": 37762,
+            "pct": 0.26
+          }
+        ],
+        "trash_drops": 10,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 113,
+        "trash_npcs": 5
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 112,
+        "trash_npcs": 9
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 16,
+        "trash_npcs": 4
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 16,
+        "trash_npcs": 7
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 9,
+        "trash_npcs": 7
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 16251,
+    "name": "Formula: Enchant Bracer - Superior Stamina",
+    "quality": "Uncommon",
+    "profession": "Enchanting",
+    "non_raid_npcs": 102,
+    "non_raid_drops": 836,
+    "top_non_raid": [
+      "Blackhand Iron Guard(10319)@1583:50/33020",
+      "Lord Kazzak(12397)@4:42/1693",
+      "Blackhand Dreadweaver(9817)@1583:37/58677"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 81,
+        "trash_npcs": 8
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 171,
+            "outof": 37762,
+            "pct": 0.45
+          }
+        ],
+        "trash_drops": 50,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 375,
+        "trash_npcs": 9
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 1684,
+        "trash_npcs": 13
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 135,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 113,
+        "trash_npcs": 9
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 37,
+        "trash_npcs": 7
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 16253,
+    "name": "Formula: Enchant Chest - Greater Stats",
+    "quality": "Uncommon",
+    "profession": "Enchanting",
+    "non_raid_npcs": 9,
+    "non_raid_drops": 48,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:28/1352",
+      "Lord Kazzak(12397)@4:8/1693",
+      "Ysondre(14887)@10/47/331/-1:5/430"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 128,
+            "outof": 37762,
+            "pct": 0.34
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 51,
+            "outof": 17318,
+            "pct": 0.29
+          }
+        ],
+        "trash_drops": 5,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 22,
+        "trash_npcs": 6
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Ruins of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 4,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 2
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 22388,
+    "name": "Plans: Titanic Leggings",
+    "quality": "Epic",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 8,
+    "non_raid_drops": 39,
+    "top_non_raid": [
+      "Taerar(14890)@10/47/331/-1:14/562",
+      "Ysondre(14887)@10/47/331/-1:9/430",
+      "Lethon(14888)@10/47/331/-1:6/545"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 20,
+            "outof": 17318,
+            "pct": 0.12
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 22389,
+    "name": "Plans: Sageblade",
+    "quality": "Epic",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 5,
+    "non_raid_drops": 37,
+    "top_non_raid": [
+      "Azuregos(6109)@16/15532:14/1352",
+      "Taerar(14890)@10/47/331/-1:9/562",
+      "Ysondre(14887)@10/47/331/-1:8/430"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 12,
+            "outof": 37762,
+            "pct": 0.03
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 5,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 4,
+        "trash_npcs": 2
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  },
+  {
+    "wowhead_id": 22390,
+    "name": "Plans: Persuader",
+    "quality": "Epic",
+    "profession": "Blacksmithing",
+    "non_raid_npcs": 5,
+    "non_raid_drops": 15,
+    "top_non_raid": [
+      "Lethon(14888)@10/47/331/-1:5/545",
+      "Azuregos(6109)@16/15532:3/1352",
+      "Taerar(14890)@10/47/331/-1:3/562"
+    ],
+    "per_raid": [
+      {
+        "raid": "Zul'Gurub",
+        "bosses": [],
+        "trash_drops": 2,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Onyxia's Lair",
+        "bosses": [
+          {
+            "name": "Onyxia",
+            "count": 15,
+            "outof": 37762,
+            "pct": 0.04
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Blackwing Lair",
+        "bosses": [
+          {
+            "name": "Nefarian",
+            "count": 24,
+            "outof": 17324,
+            "pct": 0.14
+          }
+        ],
+        "trash_drops": 0,
+        "trash_npcs": 0
+      },
+      {
+        "raid": "Molten Core",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      },
+      {
+        "raid": "Temple of Ahn'Qiraj",
+        "bosses": [],
+        "trash_drops": 3,
+        "trash_npcs": 2
+      },
+      {
+        "raid": "Naxxramas",
+        "bosses": [],
+        "trash_drops": 1,
+        "trash_npcs": 1
+      }
+    ],
+    "sources": [
+      "wowhead"
+    ],
+    "confidence": "single-source",
+    "notes": "World drop (generic level-60 loot table). Wowhead records it from raid NPCs at world-drop rates; neither AtlasLoot nor the package ties it to a raid."
+  }
+]
