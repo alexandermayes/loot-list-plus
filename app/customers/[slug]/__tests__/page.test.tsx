@@ -234,7 +234,7 @@ describe('app/customers/[slug]/page.tsx', () => {
     })
 
     it('requireCaseStudy throws for a percent-encoded form of the fixture slug', () => {
-      const percentEncoded = FIXTURE_SLUG.replace('-', '%2D')
+      const percentEncoded = FIXTURE_SLUG.replace(/-/g, '%2D')
       expect(percentEncoded).not.toBe(FIXTURE_SLUG)
       expect(() => requireCaseStudy(percentEncoded)).toThrow()
     })
@@ -244,7 +244,7 @@ describe('app/customers/[slug]/page.tsx', () => {
         'not-a-real-guild',
         '',
         FIXTURE_SLUG.replace(/^./, (c) => c.toUpperCase()),
-        FIXTURE_SLUG.replace('-', '%2D'),
+        FIXTURE_SLUG.replace(/-/g, '%2D'),
       ]
       for (const slug of cases) {
         expect(() => requireCaseStudy(slug)).toThrowError(new RegExp(slug.length > 0 ? slug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') : '.*'))
