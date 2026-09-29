@@ -476,6 +476,11 @@ export async function DELETE(request: NextRequest) {
  * Uses service role to bypass RLS after verifying officer permissions.
  *
  * Body: { guild_id, id, updates: { character_id?, character_name?, notes? } }
+ *
+ * GH #296: updates.character_id, when present and non-null, is checked
+ * against the calling guild the same way POST checks it (an active
+ * character_guild_memberships row) before the before-read and update; a
+ * mismatch returns 400 with invalid_character_ids and does no write.
  */
 export async function PATCH(request: NextRequest) {
   try {
@@ -502,6 +507,25 @@ export async function PATCH(request: NextRequest) {
     const sanitized: Record<string, unknown> = {}
     for (const key of allowedFields) {
       if (key in updates) sanitized[key] = updates[key]
+    }
+
+    // GH #296: a reassigned character_id must have an active membership in
+    // this guild. Null stays allowed (unlinking, as today).
+    if ('character_id' in sanitized) {
+      sanitized.character_id = normalizeRefId(sanitized.character_id)
+      const characterId = sanitized.character_id as string | null
+      if (characterId !== null) {
+        const invalidCharacterIds = await findInvalidCharacterIds(serviceSupabase, guild_id, [characterId])
+        if (invalidCharacterIds.length > 0) {
+          return NextResponse.json(
+            {
+              error: formatInvalidAwardRefsError([], invalidCharacterIds),
+              invalid_character_ids: invalidCharacterIds,
+            },
+            { status: 400 }
+          )
+        }
+      }
     }
 
     // Read current state for audit log

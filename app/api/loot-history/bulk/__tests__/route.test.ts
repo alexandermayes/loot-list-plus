@@ -2,12 +2,13 @@
 // jsdom (the global vitest.config.ts environment) does not provide the web
 // Response/Request globals that next/server relies on.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { POST } from '../route'
+import { POST, PATCH } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyPermission } from '@/utils/server-roles'
 import { recomputeBlpForItems } from '@/utils/blp/recompute'
 import { routeRecordsToTeamEvents } from '@/utils/raid-events/team-routing'
+import { logAudit } from '@/utils/audit/log'
 
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
@@ -74,7 +75,7 @@ function makeClient(fixture: Fixture) {
       const builder: any = {
         select: () => builder,
         insert: (payload: Record<string, unknown>) => { call.insertPayload = payload; return builder },
-        update: () => builder,
+        update: (payload: Record<string, unknown>) => { call.updatePayload = payload; return builder },
         delete: () => builder,
         eq: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         in: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
@@ -83,12 +84,19 @@ function makeClient(fixture: Fixture) {
             return Promise.resolve({ data: { blp_enabled: fixture.blpEnabled ?? false }, error: null })
           }
           if (table === 'loot_history') {
-            const payload = call.insertPayload as { loot_item_id: string }
-            if (fixture.duplicateLootItemIds?.has(payload.loot_item_id)) {
-              return Promise.resolve({ data: null, error: { code: '23505', message: 'duplicate key value' } })
+            if (call.insertPayload) {
+              const payload = call.insertPayload as { loot_item_id: string }
+              if (fixture.duplicateLootItemIds?.has(payload.loot_item_id)) {
+                return Promise.resolve({ data: null, error: { code: '23505', message: 'duplicate key value' } })
+              }
+              insertCounter += 1
+              return Promise.resolve({ data: { id: `hist-${insertCounter}` }, error: null })
             }
-            insertCounter += 1
-            return Promise.resolve({ data: { id: `hist-${insertCounter}` }, error: null })
+            // PATCH's before-read (no insert payload on this call).
+            return Promise.resolve({
+              data: fixture.patchBefore ?? { character_id: CHARACTER_ID, character_name: 'Thrall', notes: null },
+              error: null,
+            })
           }
           return Promise.resolve({ data: null, error: null })
         },
@@ -155,7 +163,15 @@ function request(body: unknown) {
   }) as unknown as Parameters<typeof POST>[0]
 }
 
+function patchRequest(body: unknown) {
+  return new Request('http://localhost/api/loot-history/bulk', {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  }) as unknown as Parameters<typeof PATCH>[0]
+}
+
 const lootHistoryInserts = (calls: Call[]) => calls.filter(c => c.table === 'loot_history' && c.insertPayload)
+const lootHistoryUpdates = (calls: Call[]) => calls.filter(c => c.table === 'loot_history' && c.updatePayload)
 const lootItemsLookups = (calls: Call[]) => calls.filter(c => c.table === 'loot_items')
 
 describe('POST /api/loot-history/bulk', () => {
@@ -473,5 +489,117 @@ describe('POST /api/loot-history/bulk', () => {
       expect(membershipCall?.filters).toContainEqual(['guild_id', GUILD_ID])
       expect(membershipCall?.filters).toContainEqual(['is_active', true])
     })
+  })
+})
+
+describe('PATCH /api/loot-history/bulk', () => {
+  const RECORD_ID = 'aaaaaaaa-0000-0000-0000-000000000010'
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: USER_ID }, error: null } as never)
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: true } as never)
+  })
+
+  it('a character_id of an active member of this guild returns 200, and the update payload carries that character_id', async () => {
+    const { client, calls } = makeClient(singleItemFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await PATCH(patchRequest({
+      guild_id: GUILD_ID,
+      id: RECORD_ID,
+      updates: { character_id: CHARACTER_ID, character_name: 'Thrall' },
+    }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.success).toBe(true)
+    const update = lootHistoryUpdates(calls)[0]
+    expect(update?.updatePayload?.character_id).toBe(CHARACTER_ID)
+  })
+
+  it('a character_id whose only membership is in another guild returns 400 C-2, with no update and no audit call', async () => {
+    const fixture = singleItemFixture()
+    fixture.memberships = [{ character_id: FOREIGN_CHARACTER_ID, guild_id: OTHER_GUILD_ID, is_active: true }]
+    const { client, calls } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await PATCH(patchRequest({
+      guild_id: GUILD_ID,
+      id: RECORD_ID,
+      updates: { character_id: FOREIGN_CHARACTER_ID },
+    }))
+    const body = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(body.error).toBe("Some raiders aren't active members of this guild. Check the roster, then try again.")
+    expect(body.invalid_character_ids).toEqual([FOREIGN_CHARACTER_ID])
+    expect(lootHistoryUpdates(calls)).toHaveLength(0)
+    expect(logAudit).not.toHaveBeenCalled()
+  })
+
+  it('an inactive member of this guild returns 400', async () => {
+    const fixture = singleItemFixture()
+    fixture.memberships = [{ character_id: INACTIVE_CHARACTER_ID, guild_id: GUILD_ID, is_active: false }]
+    const { client } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await PATCH(patchRequest({
+      guild_id: GUILD_ID,
+      id: RECORD_ID,
+      updates: { character_id: INACTIVE_CHARACTER_ID },
+    }))
+    const body = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(body.invalid_character_ids).toEqual([INACTIVE_CHARACTER_ID])
+  })
+
+  it('character_id null returns 200, makes no membership query, and the update payload has character_id null', async () => {
+    const { client, calls } = makeClient(singleItemFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await PATCH(patchRequest({
+      guild_id: GUILD_ID,
+      id: RECORD_ID,
+      updates: { character_id: null },
+    }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.success).toBe(true)
+    expect(calls.filter(c => c.table === 'character_guild_memberships')).toHaveLength(0)
+    const update = lootHistoryUpdates(calls)[0]
+    expect(update?.updatePayload?.character_id).toBeNull()
+  })
+
+  it('only notes and character_name makes no membership query and returns 200', async () => {
+    const { client, calls } = makeClient(singleItemFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await PATCH(patchRequest({
+      guild_id: GUILD_ID,
+      id: RECORD_ID,
+      updates: { notes: 'Updated note', character_name: 'Jaina' },
+    }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.success).toBe(true)
+    expect(calls.filter(c => c.table === 'character_guild_memberships')).toHaveLength(0)
+  })
+
+  it('without manage_loot gets 403 before any membership query', async () => {
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: false, error: 'Insufficient permissions' } as never)
+    const { client, calls } = makeClient(singleItemFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await PATCH(patchRequest({
+      guild_id: GUILD_ID,
+      id: RECORD_ID,
+      updates: { character_id: CHARACTER_ID },
+    }))
+    expect(res.status).toBe(403)
+    expect(calls.filter(c => c.table === 'character_guild_memberships')).toHaveLength(0)
   })
 })
