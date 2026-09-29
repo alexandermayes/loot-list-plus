@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button'
 import { useNotification } from '@/app/contexts/NotificationContext'
 
 interface ImportResults {
-  awards: { processed: number; errors: number }
+  /** already_recorded: awards already on their raid night, counted in
+   * processed (GH #295). Absent from older responses. */
+  awards: { processed: number; errors: number; already_recorded?: number }
   attendance: { processed: number; errors: number }
 }
 
@@ -62,6 +64,8 @@ export function AddonImportDialog({ open, onClose, onImportComplete }: AddonImpo
     }
   }
 
+  const alreadyRecorded = results?.awards.already_recorded ?? 0
+
   const handleClose = () => {
     setImportString('')
     setResults(null)
@@ -95,7 +99,10 @@ export function AddonImportDialog({ open, onClose, onImportComplete }: AddonImpo
               <div className="flex items-center justify-between">
                 <span className="text-sm text-foreground-secondary">Loot awards</span>
                 <span className="text-sm">
-                  <span className="text-success">{results.awards.processed} imported</span>
+                  <span className="text-success">{results.awards.processed - alreadyRecorded} imported</span>
+                  {alreadyRecorded > 0 && (
+                    <span className="text-muted-foreground">, {alreadyRecorded} already recorded</span>
+                  )}
                   {results.awards.errors > 0 && (
                     <span className="text-destructive ml-2">{results.awards.errors} failed</span>
                   )}
