@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 Phase: 06 (Week-4 Review & Next Bet) — EXECUTING
 Plan: 6 of 9
 Status: Ready to execute
-Last activity: 2026-09-29 - Completed quick task 260929-j7t: loot_history guild-reference trigger (GH #313), PR #317 merged and applied; one post-deploy PostgREST check open
+Last activity: 2026-09-29 - Completed quick task 260929-l3a: addon awards link to raid nights and pick the right tier (GH #295, refs #307), PR #322 merged
 
 Progress: [████████████████████] 23/23 plans ([███████░░░] 67%)
 
@@ -207,6 +207,7 @@ Recent decisions affecting current work:
 | 260928-x7o | Fix GH #284: 21 verified Classic raid profession recipes (28 raid entries: MC 10, AQ20 8, AQ40 10; all boss drops, Wowhead + AtlasLoot confirmed) added as slot Recipe, Unlimited, cost 0, all classes, shared-table drops in a Shared Boss Loot group per raid. PR #308 (catalog, merged) and PR #309 (backfill migration, plus a fix to #302's brittle migration-ordering test). Follow-up #307 (multi-tier award resolution) | 2026-09-29 | 77b9aa59 |  | [260928-x7o-fix-gh-284-add-classic-raid-profession-r](./quick/260928-x7o-fix-gh-284-add-classic-raid-profession-r/) |
 | 260929-fz0 | Fix GH #296 and #297: bulk award route and reassign now check raid_event_id and character_id belong to the calling guild (active membership), with user-approved copy; remove-item builds a typed history row with expansion_id and scopes its item lookups to the guild. Follow-ups #313 (RLS gap) and #314 (master sheet lists departed raiders). Also switched GSD quick tasks to their own gsd/quick-* branches and a docs PR per task. PR #315 | 2026-09-29 | 2b1f2b76 |  | [260929-fz0-fix-gh-296-and-297-harden-remaining-loot](./quick/260929-fz0-fix-gh-296-and-297-harden-remaining-loot/) |
 | 260929-j7t | Fix GH #313: BEFORE INSERT/UPDATE trigger on loot_history rejects rows whose raid event, raider (active member) or loot item, tier and expansion belong to another guild, for every role including the service role; UPDATE checks only changed references so legacy rows stay editable; non-officers get the RLS error so nothing is revealed. PGlite 85/85. PR #317 merged, migration applied | 2026-09-29 | f43de43d | Needs Review | [260929-j7t-fix-gh-313-loot-history-rls-checks-refer](./quick/260929-j7t-fix-gh-313-loot-history-rls-checks-refer/) |
+| 260929-l3a | Fix GH #295 (and part of #307): addon and companion awards now link to their raid night using the raid-tracking team rules (read-only, never creates a night; unlinked when none matches), re-sends return already recorded instead of duplicating, linked awards count for BLP, import strings use the session's live boss and instance to pick the tier, companion sends attendance before awards (needs a companion release), import dialog shows 'N already recorded' (user-approved). Follow-ups #319, #320, #321. PR #322 | 2026-09-29 | 2a727361 |  | [260929-l3a-fix-gh-307-and-295-addon-awards-pick-the](./quick/260929-l3a-fix-gh-307-and-295-addon-awards-pick-the/) |
 
 ## Deferred Items
 
