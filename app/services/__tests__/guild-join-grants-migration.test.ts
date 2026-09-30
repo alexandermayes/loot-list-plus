@@ -177,7 +177,7 @@ describe('guild_join_grants migration shape (quick task 260930-f0m)', () => {
 
   it('has no em dash and no string literal with two consecutive hyphens', () => {
     const raw = readMigrationRaw()
-    expect(raw).not.toContain('—')
+    expect(raw).not.toContain(String.fromCharCode(0x2014))
     const literals = stripComments(raw).match(/'[^']*'/g) ?? []
     for (const literal of literals) {
       expect(literal).not.toContain('--')
