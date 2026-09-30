@@ -150,10 +150,11 @@ export async function POST(
           { status: 409 }
         )
       } else {
-        // Reactivate membership
+        // Reactivate membership. Reactivation assigns the same role a new
+        // membership gets, as the invite and Discord join routes do.
         const { data: membership, error } = await serviceSupabase
           .from('character_guild_memberships')
-          .update({ is_active: true })
+          .update({ is_active: true, role })
           .eq('id', existingMembership.id)
           .select(`
             id,

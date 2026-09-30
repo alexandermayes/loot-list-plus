@@ -3,7 +3,13 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 
-// PUT - Update a guild role (name, permissions) with membership propagation
+/**
+ * PUT - Update a guild role (name, permissions) with membership propagation.
+ *
+ * A rename moves the role's holders from the role's stored name to the new
+ * one, so it changes no one's position. The request body's old_name is not
+ * used.
+ */
 export async function PUT(request: NextRequest) {
   const { user, error: authError } = await getAuthenticatedUser()
   if (authError || !user) {
@@ -11,7 +17,7 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { role_id, guild_id, name, permissions, old_name } = body
+  const { role_id, guild_id, name, permissions } = body
 
   if (!role_id || !guild_id || !name) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -25,10 +31,25 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
   }
 
+  // Read the role's stored name, so the rename propagates from it
+  const { data: storedRole, error: lookupError } = await serviceSupabase
+    .from('guild_roles')
+    .select('name')
+    .eq('id', role_id)
+    .eq('guild_id', guild_id)
+    .maybeSingle()
+
+  if (lookupError) {
+    console.error('[ROLE RENAME] Failed to read the stored role:', lookupError)
+    return NextResponse.json({ success: false }, { status: 500 })
+  }
+
+  const newName = name.trim()
+
   // Update the role
   const { error: updateError } = await serviceSupabase
     .from('guild_roles')
-    .update({ name: name.trim(), permissions: permissions || [] })
+    .update({ name: newName, permissions: permissions || [] })
     .eq('id', role_id)
     .eq('guild_id', guild_id)
 
@@ -36,13 +57,13 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: updateError.message }, { status: 500 })
   }
 
-  // Propagate name change to all memberships with the old name
-  if (old_name && old_name !== name.trim()) {
+  // Propagate the rename to the memberships that hold the stored name
+  if (storedRole && storedRole.name !== newName) {
     const { error: propagateError } = await serviceSupabase
       .from('character_guild_memberships')
-      .update({ role: name.trim() })
+      .update({ role: newName })
       .eq('guild_id', guild_id)
-      .eq('role', old_name)
+      .eq('role', storedRole.name)
       .eq('is_active', true)
 
     if (propagateError) {
