@@ -125,6 +125,11 @@ async function filterItemsToEarnedPhases(
  * creator). All returned rows are server-scoped to that guild + approved
  * submissions, so we can't be tricked into leaking other guilds' data.
  *
+ * Candidates are then limited to raiders with an active membership in this
+ * guild, decided by `findInvalidCharacterIds` — the same check the bulk
+ * award routes and the loot_history trigger use — so the sheet never offers
+ * a raider the award will reject (GH #314).
+ *
  * The requested items are then gated per phase (GH #202): a raider only gets
  * rankings for a phase whose tiers are `master_sheet_visible` AND for which
  * they already have an approved submission, so nobody can scout the field

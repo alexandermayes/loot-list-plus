@@ -737,11 +737,13 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
         const itemIds = itemsData.map((i: { id: string }) => i.id)
 
         // PERFORMANCE: Parallelize independent queries that only need itemIds.
-        // Query 1 (visibility) routes through a service-role API because RLS on
-        // `loot_submission_items` / `loot_submissions` / `characters` silently
-        // drops rows when a CGM is inactive — that's caused master sheet
-        // raiders to vanish multiple times. The API returns rankings +
-        // approved submissions + characters + memberships in one trip.
+        // Query 1 (visibility) routes through a service-role API so RLS on
+        // `loot_submission_items` / `loot_submissions` / `characters` never
+        // drops an ACTIVE member's rows — that's caused master sheet raiders
+        // to vanish multiple times. The API returns rankings + approved
+        // submissions + characters + memberships in one trip, and, on
+        // purpose, leaves out raiders who no longer have an active
+        // membership in this guild (GH #314).
         const visibilityPromise = (async (): Promise<{
           rankings: { rank: number; slot: number; submission_id: string; loot_item_id: string }[]
           submissions: { id: string; status: string; character_id: string | null }[]
@@ -854,12 +856,12 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
         const membershipsData = visibility.memberships
 
         // Team filter: when a team is selected, scope the master sheet to that
-        // team's members. The RLS-bypassing visibility API above returns every
-        // approved-list raider in the guild; this narrows the visible set
-        // without re-introducing the silent-drop bug (anyone in the team shows
-        // up even with inactive CGM). Unassigned raiders (on no team) are kept
-        // so new members who haven't been rostered yet don't vanish — see
-        // buildTeamVisibility and issue #165.
+        // team's members. The RLS-bypassing visibility API above already left
+        // out raiders without an active membership (GH #314); this narrows the
+        // remaining active-member set further, without re-introducing the
+        // silent-drop bug for anyone still on the team. Unassigned raiders (on
+        // no team) are kept so new members who haven't been rostered yet don't
+        // vanish — see buildTeamVisibility and issue #165.
         if (activeTeamId && charactersData.length > 0) {
           const { data: teamMembers } = await supabase
             .from('raid_team_members')
@@ -1414,8 +1416,9 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
     // Fetch ranking submissions AND independent data (priorities, loot history, BLP) in parallel
     // These only depend on itemIds/tierId, not on each other. Rankings/subs/
     // chars/memberships go through the service-role visibility API so RLS on
-    // loot_submission_items / loot_submissions / characters can't silently
-    // hide CGM-orphaned raiders. See the matching block in loadAllRankings.
+    // loot_submission_items / loot_submissions / characters never drops an
+    // ACTIVE member's rows; raiders without an active membership are left
+    // out on purpose (GH #314). See the matching block in loadAllRankings.
     type TierRankingData = { rank: number; slot: number; submission_id: string; loot_item_id: string }
     type TierSubmissionData = { id: string; status: string; character_id: string | null }
 
