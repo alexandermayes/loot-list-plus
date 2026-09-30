@@ -6,6 +6,11 @@ import { logStatusChange } from '@/utils/audit/log'
 import { trackEvent } from '@/utils/analytics/server'
 import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { revalidatePendingSubmissions } from '@/lib/cache/submission-tag'
+import { findInvalidCharacterIds } from '@/lib/loot/guild-award-refs'
+
+// Shown to the officer when approving a list whose character is not an
+// active member of the list's guild.
+const NOT_ACTIVE_MEMBER_ERROR = "This raider isn't an active member of this guild. Check the roster, then try again."
 
 /**
  * POST /api/loot-submissions/review
@@ -13,6 +18,12 @@ import { revalidatePendingSubmissions } from '@/lib/cache/submission-tag'
  * Approve or reject a loot submission. Officer-only.
  *
  * Body: { submission_id, status: 'approved' | 'rejected', review_notes?: string }
+ *
+ * Approving needs the list's character to be an active member of the list's
+ * guild: checked before the snapshot or status is written (400 if not). The
+ * database applies the same rule to every pending or approved list, so a
+ * 23514 from the status update (membership lost after the check) gets the
+ * same 400. Rejecting is never blocked.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -58,6 +69,16 @@ export async function POST(request: NextRequest) {
 
     if (submission.status !== 'pending') {
       return NextResponse.json({ error: 'Can only review pending submissions' }, { status: 400 })
+    }
+
+    // An approved list needs an active membership. Checked before any write.
+    // A lookup error throws and returns 500.
+    if (status === 'approved') {
+      const notActiveMember = !submission.character_id
+        || (await findInvalidCharacterIds(serviceSupabase, submission.guild_id, [submission.character_id])).length > 0
+      if (notActiveMember) {
+        return NextResponse.json({ error: NOT_ACTIVE_MEMBER_ERROR }, { status: 400 })
+      }
     }
 
     // When approving, snapshot the current items so we can diff against
@@ -115,6 +136,10 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', submission_id)
       .select()
+
+    if (updateError?.code === '23514') {
+      return NextResponse.json({ error: NOT_ACTIVE_MEMBER_ERROR }, { status: 400 })
+    }
 
     if (updateError) {
       console.error('Error reviewing submission:', updateError)

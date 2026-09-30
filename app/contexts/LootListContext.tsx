@@ -883,6 +883,20 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     setIsSaving(true)
 
     try {
+      // Verify membership, the same check auto-save runs. Throwing (not
+      // returning) lets the catch below show the message and still clears the
+      // saving state after it.
+      const { data: membership, error: membershipError } = await supabase
+        .from('character_guild_memberships')
+        .select('id, is_active')
+        .eq('character_id', activeCharacter.id)
+        .eq('guild_id', activeGuild.id)
+        .maybeSingle()
+
+      if (membershipError || !membership?.is_active) {
+        throw new Error('Your character needs to rejoin this guild.')
+      }
+
       let submissionId = submissionData?.submission?.id
 
       // Always save items as draft first (validation happens server-side on submit)
