@@ -126,8 +126,8 @@ async function filterItemsToEarnedPhases(
  * submissions, so we can't be tricked into leaking other guilds' data.
  *
  * Candidates are then limited to raiders with an active membership in this
- * guild, decided by `findInvalidCharacterIds` — the same check the bulk
- * award routes and the loot_history trigger use — so the sheet never offers
+ * guild, decided by `findInvalidCharacterIds`, the same check the bulk
+ * award routes and the loot_history trigger use, so the sheet never offers
  * a raider the award will reject (GH #314).
  *
  * The requested items are then gated per phase (GH #202): a raider only gets
@@ -304,7 +304,7 @@ export async function POST(request: NextRequest) {
     // Leave out raiders who no longer have an active membership in this
     // guild, using the same definition the award routes and the
     // loot_history trigger use, so the sheet never offers a candidate the
-    // award will reject (GH #314). Errors are not caught here — they fall
+    // award will reject (GH #314). Errors are not caught here; they fall
     // through to the route's own catch, which returns a 500 rather than
     // silently showing an unfiltered or empty list.
     const inactiveCharacterIds = await findInvalidCharacterIds(serviceSupabase, guild_id, candidateCharacterIds)

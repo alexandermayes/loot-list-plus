@@ -138,7 +138,7 @@ function request(body: unknown) {
  * Base fixture: GUILD's caller is its creator and owns CALLER_CHAR with an
  * active membership. ACTIVE_CHAR has an approved list ranking ITEM with an
  * active membership; DEPARTED_CHAR has an approved list ranking ITEM but its
- * membership is inactive (GH #314 — must be left out of every array).
+ * membership is inactive (GH #314: must be left out of every array).
  */
 function baseTables(overrides: Partial<Record<string, Row[]>> = {}): Record<string, Row[]> {
   return {

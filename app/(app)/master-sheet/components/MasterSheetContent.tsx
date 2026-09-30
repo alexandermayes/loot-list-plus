@@ -739,7 +739,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
         // PERFORMANCE: Parallelize independent queries that only need itemIds.
         // Query 1 (visibility) routes through a service-role API so RLS on
         // `loot_submission_items` / `loot_submissions` / `characters` never
-        // drops an ACTIVE member's rows — that's caused master sheet raiders
+        // drops an ACTIVE member's rows; that's caused master sheet raiders
         // to vanish multiple times. The API returns rankings + approved
         // submissions + characters + memberships in one trip, and, on
         // purpose, leaves out raiders who no longer have an active
@@ -861,7 +861,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
         // remaining active-member set further, without re-introducing the
         // silent-drop bug for anyone still on the team. Unassigned raiders (on
         // no team) are kept so new members who haven't been rostered yet don't
-        // vanish — see buildTeamVisibility and issue #165.
+        // vanish; see buildTeamVisibility and issue #165.
         if (activeTeamId && charactersData.length > 0) {
           const { data: teamMembers } = await supabase
             .from('raid_team_members')

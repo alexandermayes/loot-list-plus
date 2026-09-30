@@ -11,7 +11,7 @@
  * (GH #314).
  *
  * `departedCharacterIds` is returned (not just discarded) so a future
- * greyed-out display of departed raiders needs no change to this helper —
+ * greyed-out display of departed raiders needs no change to this helper,
  * only a change to what the caller does with the two arrays.
  *
  * Inputs are never mutated.
