@@ -5,6 +5,11 @@ import { validateBracketRules, type BracketItem, type BracketLimits } from '@/do
 import { logStatusChange } from '@/utils/audit/log'
 import { trackEvent, setUserMilestone } from '@/utils/analytics/server'
 import { revalidatePendingSubmissions } from '@/lib/cache/submission-tag'
+import { findInvalidCharacterIds } from '@/lib/loot/guild-award-refs'
+
+// Shown to the raider when the list's character is not an active member of
+// the list's guild (the same text auto-save shows).
+const NOT_ACTIVE_MEMBER_ERROR = 'Your character needs to rejoin this guild.'
 
 /**
  * POST /api/loot-submissions/submit
@@ -17,11 +22,15 @@ import { revalidatePendingSubmissions } from '@/lib/cache/submission-tag'
  *
  * Flow:
  * 1. Verify the user owns the character on this submission
- * 2. Read current items + item metadata from DB
- * 3. Read guild enforce_slot_restrictions setting
- * 4. Validate bracket rules
- * 5. If valid: snapshot previous items, set status to 'pending'
- * 6. If invalid: return violations, status stays as-is
+ * 2. Verify the character is an active member of the list's guild (403 if
+ *    not, before any write). The database applies the same rule to every
+ *    pending or approved list, so a 23514 from the status update (membership
+ *    lost after the check) gets the same 403.
+ * 3. Read current items + item metadata from DB
+ * 4. Read guild enforce_slot_restrictions setting
+ * 5. Validate bracket rules
+ * 6. If valid: snapshot previous items, set status to 'pending'
+ * 7. If invalid: return violations, status stays as-is
  */
 export async function POST(request: NextRequest) {
   try {
@@ -58,6 +67,15 @@ export async function POST(request: NextRequest) {
 
     if (!character || character.user_id !== user.id) {
       return NextResponse.json({ error: 'You can only submit your own lists' }, { status: 403 })
+    }
+
+    // A pending list needs an active membership. Checked before any write, so
+    // resubmission_count is not incremented for a list that cannot be
+    // submitted. A lookup error throws and returns 500.
+    const notActiveMember = !submission.character_id
+      || (await findInvalidCharacterIds(serviceSupabase, submission.guild_id, [submission.character_id])).length > 0
+    if (notActiveMember) {
+      return NextResponse.json({ error: NOT_ACTIVE_MEMBER_ERROR }, { status: 403 })
     }
 
     // Get current submission items with item metadata
@@ -153,6 +171,10 @@ export async function POST(request: NextRequest) {
         resubmit_reminder_count: 0,
       })
       .eq('id', submission_id)
+
+    if (updateError?.code === '23514') {
+      return NextResponse.json({ error: NOT_ACTIVE_MEMBER_ERROR }, { status: 403 })
+    }
 
     if (updateError) {
       console.error('Error promoting submission:', updateError)

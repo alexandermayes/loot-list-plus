@@ -4,8 +4,19 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
 import { logStatusChange } from '@/utils/audit/log'
 import { revalidatePendingSubmissions } from '@/lib/cache/submission-tag'
+import { findInvalidCharacterIds } from '@/lib/loot/guild-award-refs'
 
-// POST - Revert a resubmitted list to its previously approved snapshot
+// Shown to the officer when restoring a list whose character is not an
+// active member of the list's guild.
+const NOT_ACTIVE_MEMBER_ERROR = "This raider isn't an active member of this guild. Check the roster, then try again."
+
+// POST - Revert a resubmitted list to its previously approved snapshot.
+// Without a snapshot this falls back to a rejection, which is never blocked.
+// Restoring the snapshot sets the list back to approved, so it needs the
+// list's character to be an active member of the list's guild: checked
+// before any item is written (400 if not). The database applies the same
+// rule to every pending or approved list, so a 23514 from the final status
+// update gets the same 400.
 export async function POST(request: NextRequest) {
   try {
     const { user, error: authError } = await getAuthenticatedUser()
@@ -94,6 +105,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, fallback: 'rejected' })
     }
 
+    // Restoring means approved again, which needs an active membership.
+    // Checked before any write. A lookup error throws and returns 500.
+    const notActiveMember = !submission.character_id
+      || (await findInvalidCharacterIds(serviceSupabase, submission.guild_id, [submission.character_id])).length > 0
+    if (notActiveMember) {
+      return NextResponse.json({ error: NOT_ACTIVE_MEMBER_ERROR }, { status: 400 })
+    }
+
     const snapshotItems = snapshot.items as Array<{
       rank: number
       slot: number
@@ -148,6 +167,10 @@ export async function POST(request: NextRequest) {
         resubmit_reminder_count: 0,
       })
       .eq('id', submission_id)
+
+    if (updateError?.code === '23514') {
+      return NextResponse.json({ error: NOT_ACTIVE_MEMBER_ERROR }, { status: 400 })
+    }
 
     if (updateError) {
       console.error('Error updating submission status:', updateError)
