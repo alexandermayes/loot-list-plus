@@ -31,8 +31,8 @@
 --
 -- This file changes no existing row and is safe to re-run.
 --
--- Rollback
---   Revert the route changes first, then:
+-- Rollback (revert the route changes first; with the table gone and the new
+-- routes live, the access check fails closed with a 500)
 --   DROP TABLE IF EXISTS "public"."guild_join_grants";
 
 CREATE TABLE IF NOT EXISTS "public"."guild_join_grants" (
