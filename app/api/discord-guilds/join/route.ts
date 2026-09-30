@@ -3,6 +3,7 @@ import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 import { getDefaultRoleName } from '@/domain/guild/default-role'
+import { recordGuildJoinGrant, consumeGuildJoinGrant } from '@/domain/guild/join-grants'
 
 /** Partial shape of a guild object from the Discord API (GET /users/@me/guilds) */
 interface DiscordGuild {
@@ -151,6 +152,21 @@ export async function POST(request: NextRequest) {
     // If user has no properly set up characters, join them to the guild anyway
     // but mark that they need to create a character
     if (!existingCharacters || existingCharacters.length === 0) {
+      // Record the join on the server first, so the character added later
+      // can join this guild.
+      const { error: grantError } = await recordGuildJoinGrant(serviceSupabase, {
+        userId: user.id,
+        guildId: guild_id,
+        source: 'discord_verify',
+      })
+      if (grantError) {
+        console.error('[DISCORD JOIN] Error recording guild join:', grantError)
+        return NextResponse.json(
+          { error: 'Couldn\'t join guild. Try again or contact an officer.' },
+          { status: 500 }
+        )
+      }
+
       // Set the guild as their active guild even without a character
       // This allows the sidebar to show the guild while prompting for character creation
       await serviceSupabase
@@ -230,6 +246,8 @@ export async function POST(request: NextRequest) {
         )
       }
 
+      await consumeGuildJoinGrant(serviceSupabase, { userId: user.id, guildId: guild_id })
+
       // Set as active character and guild for user
       await serviceSupabase
         .from('user_active_characters')
@@ -268,6 +286,8 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+
+    await consumeGuildJoinGrant(serviceSupabase, { userId: user.id, guildId: guild_id })
 
     // Set as active character and guild for user
     await serviceSupabase

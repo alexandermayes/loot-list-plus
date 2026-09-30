@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 import { getDefaultRoleName } from '@/domain/guild/default-role'
+import { resolveGuildJoinAccess, consumeGuildJoinGrant, type GuildJoinAccess } from '@/domain/guild/join-grants'
 import {
   getBattlenetAccount,
   battlenetFetch,
@@ -94,7 +95,11 @@ interface CharacterProfileResponse {
  * - name: Character name
  * - realmSlug: Realm slug (e.g., 'faerlina')
  * - version: 'cata-classic' | 'classic-era'
- * - guildId?: Guild ID to add character to
+ * - guildId?: Guild ID to add the character to. Accepted only for the
+ *   guild's creator, a user with another active character in the guild, or
+ *   a user with a join the server recorded (an invite or Discord join made
+ *   before they had a character); anyone else gets 403 before any
+ *   Battle.net request or write.
  * - isMain?: Whether to set as main character
  * - importGear?: Whether to import equipped gear (default: true)
  */
@@ -138,6 +143,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const supabase = createServiceRoleClient()
+
+    // A guild is accepted only for its creator, an existing member or a user
+    // with a recorded join. A lookup error throws and falls through to the
+    // 500 below with no Battle.net request and no write.
+    let guildAccess: GuildJoinAccess | null = null
+    if (guildId) {
+      guildAccess = await resolveGuildJoinAccess(supabase, { userId: user.id, guildId })
+      if (!guildAccess.allowed) {
+        return NextResponse.json(
+          { error: 'You are not a member of this guild' },
+          { status: 403 }
+        )
+      }
+    }
+
     const gameVersion = version as GameVersion
     const namespaces = getWowProfileNamespaces(gameVersion, account.region)
     const charNameLower = name.toLowerCase()
@@ -173,8 +194,6 @@ export async function POST(request: NextRequest) {
     }
 
     const profile: CharacterProfileResponse = await profileResponse.json()
-
-    const supabase = createServiceRoleClient()
 
     // Map Battle.net class name to local wow_classes row
     const className = resolveLocalized(profile.character_class.name)
@@ -318,6 +337,21 @@ export async function POST(request: NextRequest) {
     // Add to guild if provided
     if (guildId) {
       const defaultRole = await getDefaultRoleName(guildId)
+
+      // A member added through a join record starts as trial when the guild
+      // starts new members as trial, as the invite and Discord joins do.
+      let trialFields: { membership_status?: 'trial'; trial_started_at?: string } = {}
+      if (guildAccess?.allowed && guildAccess.via === 'grant') {
+        const { data: joinSettings } = await supabase
+          .from('guild_settings')
+          .select('new_members_start_as_trial')
+          .eq('guild_id', guildId)
+          .maybeSingle()
+        if (joinSettings?.new_members_start_as_trial === true) {
+          trialFields = { membership_status: 'trial', trial_started_at: new Date().toISOString() }
+        }
+      }
+
       const { error: guildError } = await supabase
         .from('character_guild_memberships')
         .upsert(
@@ -327,6 +361,7 @@ export async function POST(request: NextRequest) {
             role: defaultRole,
             is_active: true,
             joined_via: 'battlenet_import',
+            ...trialFields,
           },
           { onConflict: 'character_id,guild_id' }
         )
@@ -335,6 +370,7 @@ export async function POST(request: NextRequest) {
         console.error('Error adding character to guild:', guildError)
         // Non-critical, continue
       } else {
+        await consumeGuildJoinGrant(supabase, { userId: user.id, guildId })
         evaluateGuildFunnel(supabase, guildId)
       }
 
