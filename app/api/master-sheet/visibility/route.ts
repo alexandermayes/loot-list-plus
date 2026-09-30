@@ -4,6 +4,8 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { roleHasPermission } from '@/domain/guild/roles'
 import { allowedMasterSheetTierIds, type GateExpansion } from '@/domain/loot/master-sheet-gate'
 import { paginatedSelect } from '@/utils/supabase/paginate'
+import { findInvalidCharacterIds } from '@/lib/loot/guild-award-refs'
+import { splitCandidatesByMembership } from '@/domain/loot/master-sheet-candidates'
 
 type ServiceClient = ReturnType<typeof createServiceRoleClient>
 
@@ -122,6 +124,11 @@ async function filterItemsToEarnedPhases(
  * The caller is verified as an active member of `guild_id` (or the guild
  * creator). All returned rows are server-scoped to that guild + approved
  * submissions, so we can't be tricked into leaking other guilds' data.
+ *
+ * Candidates are then limited to raiders with an active membership in this
+ * guild, decided by `findInvalidCharacterIds`, the same check the bulk
+ * award routes and the loot_history trigger use, so the sheet never offers
+ * a raider the award will reject (GH #314).
  *
  * The requested items are then gated per phase (GH #202): a raider only gets
  * rankings for a phase whose tiers are `master_sheet_visible` AND for which
@@ -282,7 +289,7 @@ export async function POST(request: NextRequest) {
     const approvedSubIds = new Set(submissions.map((s: { id: string }) => s.id))
     const visibleRankings = rankings.filter((r: { submission_id: string }) => approvedSubIds.has(r.submission_id))
 
-    const characterIds = [
+    const candidateCharacterIds = [
       ...new Set(
         submissions
           .map((s: { character_id: string | null }) => s.character_id)
@@ -290,8 +297,37 @@ export async function POST(request: NextRequest) {
       ),
     ]
 
+    if (candidateCharacterIds.length === 0) {
+      return NextResponse.json({ rankings: [], submissions: [], characters: [], memberships: [] })
+    }
+
+    // Leave out raiders who no longer have an active membership in this
+    // guild, using the same definition the award routes and the
+    // loot_history trigger use, so the sheet never offers a candidate the
+    // award will reject (GH #314). Errors are not caught here; they fall
+    // through to the route's own catch, which returns a 500 rather than
+    // silently showing an unfiltered or empty list.
+    const inactiveCharacterIds = await findInvalidCharacterIds(serviceSupabase, guild_id, candidateCharacterIds)
+    const {
+      submissions: activeSubmissions,
+      rankings: activeRankings,
+      characterIds,
+      departedCharacterIds,
+    } = splitCandidatesByMembership({
+      submissions,
+      rankings: visibleRankings,
+      inactiveCharacterIds,
+    })
+
+    if (departedCharacterIds.length > 0) {
+      console.warn(
+        '[master-sheet/visibility] left out approved lists whose raider is not an active member (GH #314)',
+        { guild_id, departed: departedCharacterIds.length },
+      )
+    }
+
     if (characterIds.length === 0) {
-      return NextResponse.json({ rankings: visibleRankings, submissions, characters: [], memberships: [] })
+      return NextResponse.json({ rankings: [], submissions: [], characters: [], memberships: [] })
     }
 
     const [{ data: characters }, { data: memberships }] = await Promise.all([
@@ -314,8 +350,8 @@ export async function POST(request: NextRequest) {
     ])
 
     return NextResponse.json({
-      rankings: visibleRankings,
-      submissions,
+      rankings: activeRankings,
+      submissions: activeSubmissions,
       characters: characters || [],
       memberships: memberships || [],
     })
