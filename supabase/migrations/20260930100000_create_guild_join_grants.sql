@@ -27,9 +27,22 @@
 --   table. No function, trigger or policy is created.
 --
 -- Backfill
---   Added with the backfill statement.
+--   The last statement records a join for every user who, when this runs,
+--   joined a guild before they had a character and has not added one yet:
+--   an active guild is set in user_active_characters, no active character
+--   is set, the user did not create that guild, the user has no character
+--   with a class set, and none of the user's characters is an active member
+--   of that guild. These are the conditions the invite and Discord join
+--   routes use for their no-character branch (they only pick characters with
+--   a class set) and the pending guild state the app shows. Each row expires
+--   30 days after this runs and allows one first character with the default
+--   role. user_active_characters is read once, here, at migration time;
+--   nothing reads it to decide access afterwards.
 --
--- This file changes no existing row and is safe to re-run.
+-- This file changes no existing row and is safe to re-run: every statement
+-- is IF NOT EXISTS or idempotent, and the backfill uses ON CONFLICT DO
+-- NOTHING, so a re-run inserts nothing twice and never reopens a used
+-- record.
 --
 -- Rollback (revert the route changes first; with the table gone and the new
 -- routes live, the access check fails closed with a 500)
@@ -62,3 +75,24 @@ REVOKE ALL ON TABLE "public"."guild_join_grants" FROM PUBLIC, "anon", "authentic
 GRANT ALL ON TABLE "public"."guild_join_grants" TO "service_role";
 
 COMMENT ON TABLE "public"."guild_join_grants" IS 'Server record that a user joined a guild by invite code or Discord before they had a character. Valid for 30 days, used once by the first membership write. Service role only.';
+
+-- One-time backfill for users waiting to add their first character.
+INSERT INTO "public"."guild_join_grants" ("user_id", "guild_id", "source", "created_at", "expires_at")
+SELECT "uac"."user_id", "uac"."active_guild_id", 'backfill', now(), now() + interval '30 days'
+FROM "public"."user_active_characters" "uac"
+JOIN "public"."guilds" "g" ON "g"."id" = "uac"."active_guild_id"
+WHERE "uac"."active_character_id" IS NULL
+  AND "g"."created_by" IS DISTINCT FROM "uac"."user_id"
+  AND NOT EXISTS (
+    SELECT 1 FROM "public"."characters" "c"
+    WHERE "c"."user_id" = "uac"."user_id"
+      AND "c"."class_id" IS NOT NULL
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM "public"."character_guild_memberships" "m"
+    JOIN "public"."characters" "c" ON "c"."id" = "m"."character_id"
+    WHERE "c"."user_id" = "uac"."user_id"
+      AND "m"."guild_id" = "uac"."active_guild_id"
+      AND "m"."is_active" = true
+  )
+ON CONFLICT ("user_id", "guild_id") DO NOTHING;
