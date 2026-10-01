@@ -11,7 +11,8 @@
 
 import type { ScoreResult, ScoreExplanation, ScoreLine, ScoringConfig, ScoreInput } from '../types'
 import { withDefaults } from './defaults'
-import { getRoleModifierWithLabel } from './modifiers'
+import { getRoleModifierWithLabel, getActiveRaiderBonusEntries } from './modifiers'
+import { describeRaiderBonusEntries } from './raider-bonus'
 
 /**
  * Generate a human-readable explanation of a score result.
@@ -85,10 +86,14 @@ export function explainScore(
   }
 
   if (s.raiderBonus !== 0) {
+    // With the full input, list each active entry's reason and end date (#329).
+    const entries = input
+      ? getActiveRaiderBonusEntries(input.character.characterId, input.config, input.asOfDate)
+      : []
     lines.push({
       label: 'Raider bonus',
       value: s.raiderBonus,
-      detail: 'Officer-assigned modifier for this raider',
+      detail: entries.length > 0 ? describeRaiderBonusEntries(entries) : 'Officer-assigned modifier for this raider',
       key: 'raiderBonus',
     })
   }

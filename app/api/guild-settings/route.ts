@@ -6,6 +6,7 @@ import { logAudit } from '@/utils/audit/log'
 import { trackEvent, trackApiError } from '@/utils/analytics/server'
 import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { toDateString } from '@/utils/date'
+import { validateRaiderModifiers } from '@/domain/scoring/raider-bonus'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -309,6 +310,17 @@ export async function PUT(request: Request) {
 
     if (Object.keys(sanitizedSettings).length === 0) {
       return NextResponse.json({ error: 'No valid settings fields provided' }, { status: 400 })
+    }
+
+    // Raider bonuses are read by every member's score and the addon export, so
+    // reject malformed shapes (for example a string amount) before writing, and
+    // store only the sanitised copy (#329).
+    if ('single_raider_modifiers' in sanitizedSettings) {
+      const checked = validateRaiderModifiers(sanitizedSettings.single_raider_modifiers)
+      if (!checked.ok) {
+        return NextResponse.json({ error: checked.error }, { status: 400 })
+      }
+      sanitizedSettings.single_raider_modifiers = checked.value
     }
 
     let result

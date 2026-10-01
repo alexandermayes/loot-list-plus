@@ -11,9 +11,10 @@ import { Search01Icon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { allRoles, getRoleDisplayName, type Role } from '@/domain/loot/spec-role-mapping'
+import { getRoleDisplayName, type Role } from '@/domain/loot/spec-role-mapping'
 import { useNotification } from '@/app/contexts/NotificationContext'
-import { getCurrentResetWeekEnd, type RaiderBonusEntry } from '@/domain/scoring'
+import { getCurrentResetWeekEnd, normalizeRaiderModifiers, type RaiderBonusEntry, type RaiderBonusMap } from '@/domain/scoring'
+import { persistRaiderModifiers } from './raider-bonus-save'
 import { parseDate, toDateString } from '@/utils/date'
 import { Card } from '@/components/ui/card'
 import { getGuildGame } from '@/domain/expansion/game'
@@ -119,27 +120,6 @@ const getRaidTierOrder = (tierName: string): number => {
   return order[tierName] || 999
 }
 
-/**
- * Coerce the stored single_raider_modifiers value into the canonical
- * Record<charId, RaiderBonusEntry[]> shape. Tolerates a missing value and a
- * legacy flat number map ({ charId: 20 }) from the first iteration of this feature.
- */
-function normalizeRaiderMods(raw: unknown): Record<string, RaiderBonusEntry[]> {
-  if (!raw || typeof raw !== 'object') return {}
-  const out: Record<string, RaiderBonusEntry[]> = {}
-  for (const [charId, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (Array.isArray(value)) {
-      const entries = value
-        .filter((e): e is RaiderBonusEntry => !!e && typeof (e as RaiderBonusEntry).amount === 'number')
-        .map((e) => ({ amount: e.amount, expires_at: e.expires_at ?? null }))
-      if (entries.length) out[charId] = entries
-    } else if (typeof value === 'number' && value !== 0) {
-      out[charId] = [{ amount: value, expires_at: null }]
-    }
-  }
-  return out
-}
-
 export default function PriorityListTab() {
   const [lootItems, setLootItems] = useState<LootItem[]>([])
   const [priorities, setPriorities] = useState<Record<string, ItemPriority>>({})
@@ -159,7 +139,7 @@ export default function PriorityListTab() {
   // Raider bonuses (permanent / per-week per-character modifiers)
   const [raiderBonusEnabled, setRaiderBonusEnabled] = useState(false)
   const [weekResetDay, setWeekResetDay] = useState<number | null>(null)
-  const [raiderMods, setRaiderMods] = useState<Record<string, RaiderBonusEntry[]>>({})
+  const [raiderMods, setRaiderMods] = useState<RaiderBonusMap>({})
   const [savingRaiderMods, setSavingRaiderMods] = useState(false)
   const [addRaiderId, setAddRaiderId] = useState('')
   const [addAmount, setAddAmount] = useState('')
@@ -203,30 +183,24 @@ export default function PriorityListTab() {
     })
   }, [raiderMods, charactersById])
 
+  // Local calendar date; ended raider bonuses are tidied away on every save.
+  const today = useMemo(() => toDateString(new Date()), [])
+
   const thisWeekExpiry = useMemo(
-    () => getCurrentResetWeekEnd(toDateString(new Date()), weekResetDay),
-    [weekResetDay],
+    () => getCurrentResetWeekEnd(today, weekResetDay),
+    [today, weekResetDay],
   )
 
-  const persistRaiderMods = async (next: Record<string, RaiderBonusEntry[]>) => {
-    if (!activeGuild) return
-    const previous = raiderMods
-    setRaiderMods(next) // optimistic
-    setSavingRaiderMods(true)
-    try {
-      const response = await fetch('/api/guild-settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guild_id: activeGuild.id, settings: { single_raider_modifiers: next } }),
-      })
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    } catch (error) {
-      console.error('Error saving raider bonuses:', error)
-      setRaiderMods(previous) // roll back
-      showNotification('error', "Couldn't save the raider bonus. Check your connection and try again.")
-    } finally {
-      setSavingRaiderMods(false)
-    }
+  const persistRaiderMods = async (next: RaiderBonusMap): Promise<boolean> => {
+    if (!activeGuild) return false
+    return persistRaiderModifiers(next, {
+      guildId: activeGuild.id,
+      previous: raiderMods,
+      today,
+      setMods: setRaiderMods,
+      setSaving: setSavingRaiderMods,
+      notify: showNotification,
+    })
   }
 
   const handleAddRaiderBonus = () => {
@@ -334,7 +308,7 @@ export default function PriorityListTab() {
           const s = settingsData?.settings || {}
           setRaiderBonusEnabled(!!s.single_raider_overall_bonus)
           setWeekResetDay(typeof s.week_reset_day === 'number' ? s.week_reset_day : null)
-          setRaiderMods(normalizeRaiderMods(s.single_raider_modifiers))
+          setRaiderMods(normalizeRaiderModifiers(s.single_raider_modifiers))
         }
 
       } catch (error) {
@@ -346,6 +320,8 @@ export default function PriorityListTab() {
     }
 
     loadData()
+    // supabase and showNotification are stable in practice; listing them would refetch on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guildLoading, activeGuild])
 
   // Load items and priorities when phase changes
@@ -413,6 +389,7 @@ export default function PriorityListTab() {
     }
 
     loadItemsAndPriorities()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPhase, activeGuild, phaseTiers])
 
   // Refresh Wowhead tooltips
@@ -565,7 +542,7 @@ export default function PriorityListTab() {
 
     // Role priorities
     const rolePrios = Object.entries(priority.role_priorities || {})
-      .filter(([_, rank]) => rank !== null)
+      .filter(([, rank]) => rank !== null)
       .sort(([, a], [, b]) => (a as number) - (b as number))
 
     if (rolePrios.length > 0) {
@@ -574,7 +551,7 @@ export default function PriorityListTab() {
 
     // Class priorities
     const classPrios = Object.entries(priority.class_priorities || {})
-      .filter(([_, rank]) => rank !== null)
+      .filter(([, rank]) => rank !== null)
       .sort(([, a], [, b]) => (a as number) - (b as number))
 
     if (classPrios.length > 0) {
@@ -583,7 +560,7 @@ export default function PriorityListTab() {
 
     // Character priorities
     const charPrios = Object.entries(priority.character_priorities || {})
-      .filter(([_, rank]) => rank !== null)
+      .filter(([, rank]) => rank !== null)
       .sort(([, a], [, b]) => (a as number) - (b as number))
 
     if (charPrios.length > 0) {
@@ -1036,6 +1013,7 @@ export default function PriorityListTab() {
                                 >
                                   <div className="flex items-center gap-3">
                                     {getBossImage(boss) && (
+                                      // eslint-disable-next-line @next/next/no-img-element
                                       <img
                                         src={getBossImage(boss)!}
                                         alt={boss}

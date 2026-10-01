@@ -65,13 +65,58 @@ export function getRoleModifierWithLabel(roles: string | string[] | null, settin
 }
 
 /**
+ * Whether one raider-bonus entry counts on `asOfDate` (YYYY-MM-DD).
+ * An entry counts when it has no start date or `asOfDate` is on or after it,
+ * and it has no end date or `asOfDate` is on or before it. Both ends are
+ * inclusive. Dates are compared as YYYY-MM-DD strings.
+ *
+ * When `asOfDate` is omitted, an entry with either date set is inactive, so a
+ * caller that forgets to pass the date fails toward not granting a timed bonus.
+ * This is the one rule shared by the score engine and the addon export.
+ */
+export function isRaiderBonusEntryActive(entry: RaiderBonusEntry, asOfDate?: string): boolean {
+  const startsAt = entry.starts_at ?? null
+  const expiresAt = entry.expires_at ?? null
+  if (asOfDate == null) return startsAt == null && expiresAt == null
+  if (startsAt != null && asOfDate < startsAt) return false
+  if (expiresAt != null && asOfDate > expiresAt) return false
+  return true
+}
+
+/**
+ * The raider-bonus entries that count for one raider on `asOfDate`.
+ * Returns [] when the single_raider_overall_bonus toggle is off, when there is
+ * no character, or when the stored value is not an entry list (a legacy flat
+ * number would otherwise break the loop).
+ */
+export function getActiveRaiderBonusEntries(
+  characterId: string | null,
+  settings: Partial<ScoringConfig> = {},
+  asOfDate?: string,
+): RaiderBonusEntry[] {
+  const config = { ...DEFAULT_SETTINGS, ...settings } as ScoringConfig
+
+  if (!config.single_raider_overall_bonus || !characterId) {
+    return []
+  }
+
+  const entries: unknown = config.single_raider_modifiers?.[characterId]
+  if (!Array.isArray(entries)) return []
+
+  return (entries as (RaiderBonusEntry | null | undefined)[]).filter(
+    (entry): entry is RaiderBonusEntry => !!entry && isRaiderBonusEntryActive(entry, asOfDate),
+  )
+}
+
+/**
  * Sum the active per-character score modifiers for one raider.
  * Officers can stack entries (e.g. a permanent +20 plus a -2 penalty for the
- * week). Permanent entries (expires_at null) always count; dated entries count
- * only while `asOfDate` is on or before their expiry. Returns 0 when the
+ * week). Permanent entries (no start or end date) always count; dated entries
+ * count only while `asOfDate` is inside their start and end dates (see
+ * {@link isRaiderBonusEntryActive}). Returns 0 when the
  * single_raider_overall_bonus toggle is off or the raider has no active entries.
  *
- * When `asOfDate` is omitted, dated entries are treated as expired so a caller
+ * When `asOfDate` is omitted, dated entries are treated as inactive so a caller
  * that forgets to pass the date fails toward not granting a temporary boost.
  */
 export function getRaiderBonus(
@@ -79,29 +124,17 @@ export function getRaiderBonus(
   settings: Partial<ScoringConfig> = {},
   asOfDate?: string,
 ): number {
-  const config = { ...DEFAULT_SETTINGS, ...settings } as ScoringConfig
-
-  if (!config.single_raider_overall_bonus || !characterId) {
-    return 0
-  }
-
-  const entries = config.single_raider_modifiers?.[characterId]
-  if (!entries || entries.length === 0) {
-    return 0
-  }
-
   let sum = 0
-  for (const entry of entries) {
-    if (!entry) continue
-    const active = entry.expires_at == null || (asOfDate != null && asOfDate <= entry.expires_at)
-    if (active) sum += entry.amount || 0
+  for (const entry of getActiveRaiderBonusEntries(characterId, settings, asOfDate)) {
+    sum += entry.amount || 0
   }
   return sum
 }
 
 /**
  * Collapse the per-raider entry map into a flat { characterId: activeSum } map,
- * dropping entries that have expired as of `asOfDate` and raiders whose net is 0.
+ * dropping entries that are not active on `asOfDate` (not started yet or
+ * ended) and raiders whose net is 0. Uses the same rule as the score engine.
  * Used by the addon export so the Lua engine can read a simple number map and
  * stay free of date logic.
  */
@@ -116,7 +149,7 @@ export function resolveActiveRaiderModifiers(
     let sum = 0
     for (const entry of entries) {
       if (!entry) continue
-      if (entry.expires_at == null || asOfDate <= entry.expires_at) sum += entry.amount || 0
+      if (isRaiderBonusEntryActive(entry, asOfDate)) sum += entry.amount || 0
     }
     if (sum !== 0) out[characterId] = sum
   }

@@ -34,8 +34,9 @@ export interface ScoringConfig {
   single_raider_overall_bonus: boolean
   /**
    * Per-character score modifiers, keyed by character id. Each raider can stack
-   * multiple entries; the engine sums all currently-active ones. Applied to
-   * every item's score. See {@link RaiderBonusEntry}.
+   * multiple entries; the engine sums all currently-active ones. Entries can
+   * have a start date and an end date, so a bonus can begin next week. Applied
+   * to every item's score. See {@link RaiderBonusEntry}.
    */
   single_raider_modifiers: Record<string, RaiderBonusEntry[]>
   minimum_raid_days_enabled: boolean
@@ -72,12 +73,19 @@ export type GuildSettings = ScoringConfig
  * One per-raider score modifier. Positive = bonus, negative = penalty.
  * `expires_at` null means permanent; a YYYY-MM-DD date means the entry only
  * applies while the evaluation date is on or before it (used for "this week"
- * boosts/penalties that fall off at the next reset).
+ * boosts/penalties that fall off at the next reset). `starts_at` delays the
+ * entry until that date (used for "next week" rewards). Both ends are inclusive.
  */
 export interface RaiderBonusEntry {
   amount: number
-  /** YYYY-MM-DD, or null for a permanent entry. */
+  /** YYYY-MM-DD last day the entry counts, or null for no end. */
   expires_at: string | null
+  /** YYYY-MM-DD first day the entry counts. Null or absent means it counts now. */
+  starts_at?: string | null
+  /** Officer-written reason, shown to raiders in their score breakdown. Max 60 characters. */
+  label?: string | null
+  /** Shared by every entry added from one pasted list, so the list can be removed together. */
+  batch_id?: string | null
 }
 
 // ─── Attendance ──────────────────────────────────────────────
