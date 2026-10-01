@@ -14,13 +14,18 @@ import { Input } from '@/components/ui/input'
 import { getRoleDisplayName, type Role } from '@/domain/loot/spec-role-mapping'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { getCurrentResetWeekEnd, normalizeRaiderModifiers, type RaiderBonusEntry, type RaiderBonusMap } from '@/domain/scoring'
-import { persistRaiderModifiers } from './raider-bonus-save'
+import { persistRaiderModifiers, saveRaiderBonusBatch } from './raider-bonus-save'
+import type { BulkRaiderBonusDraft } from './BulkRaiderBonusModal'
+import type { RosterAlias } from '@/domain/guild/roster-name-match'
 import { parseDate, toDateString } from '@/utils/date'
 import { Card } from '@/components/ui/card'
 import { getGuildGame } from '@/domain/expansion/game'
 
 // Lazy load the modal to reduce initial bundle size
 const PrioListItemModal = dynamic(() => import('@/app/components/PrioListItemModal').then(mod => ({ default: mod.PrioListItemModal })), {
+  loading: () => null
+})
+const BulkRaiderBonusModal = dynamic(() => import('./BulkRaiderBonusModal').then(mod => ({ default: mod.BulkRaiderBonusModal })), {
   loading: () => null
 })
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
@@ -144,6 +149,8 @@ export default function PriorityListTab() {
   const [addRaiderId, setAddRaiderId] = useState('')
   const [addAmount, setAddAmount] = useState('')
   const [addDuration, setAddDuration] = useState<'permanent' | 'week'>('permanent')
+  const [characterAliases, setCharacterAliases] = useState<RosterAlias[]>([])
+  const [bulkOpen, setBulkOpen] = useState(false)
 
   const supabase = createClient()
   const { activeGuild, loading: guildLoading } = useGuildContext()
@@ -199,6 +206,31 @@ export default function PriorityListTab() {
       today,
       setMods: setRaiderMods,
       setSaving: setSavingRaiderMods,
+      notify: showNotification,
+    })
+  }
+
+  // Roster for the bulk modal: guild characters with their class colour.
+  const bulkRoster = useMemo(
+    () => characters.map((c) => ({ id: c.id, name: c.name, classColor: c.class?.color_hex ?? null })),
+    [characters],
+  )
+
+  const handleSaveBatch = async (draft: BulkRaiderBonusDraft) => {
+    if (!activeGuild) return
+    await saveRaiderBonusBatch(draft, {
+      guildId: activeGuild.id,
+      mods: raiderMods,
+      batchId: crypto.randomUUID(),
+      persist: persistRaiderMods,
+      onSaved: () => setBulkOpen(false),
+      onAliasesSaved: (saved) => {
+        setCharacterAliases((prev) => {
+          const byName = new Map(prev.map((a) => [a.alias_name, a]))
+          for (const a of saved) byName.set(a.alias_name, { alias_name: a.alias_name, character_id: a.character_id })
+          return Array.from(byName.values())
+        })
+      },
       notify: showNotification,
     })
   }
@@ -310,6 +342,17 @@ export default function PriorityListTab() {
           setWeekResetDay(typeof s.week_reset_day === 'number' ? s.week_reset_day : null)
           setRaiderMods(normalizeRaiderModifiers(s.single_raider_modifiers))
         }
+
+        // Saved name matches, so pasted names in the bulk raider bonus modal
+        // match the same raiders as the raid import.
+        const { data: aliasData, error: aliasError } = await supabase
+          .from('character_aliases')
+          .select('alias_name, character_id')
+          .eq('guild_id', activeGuild.id)
+        if (aliasError) {
+          console.error('Error loading character aliases:', aliasError)
+        }
+        setCharacterAliases(aliasData || [])
 
       } catch (error) {
         console.error('Error loading data:', error)
@@ -708,6 +751,19 @@ export default function PriorityListTab() {
         </Card>
       </div>
 
+      {bulkOpen && (
+        <BulkRaiderBonusModal
+          open={bulkOpen}
+          onClose={() => setBulkOpen(false)}
+          roster={bulkRoster}
+          aliases={characterAliases}
+          today={today}
+          weekResetDay={weekResetDay}
+          saving={savingRaiderMods}
+          onSave={handleSaveBatch}
+        />
+      )}
+
       {/* Raider bonuses (permanent / per-week per-character modifiers) */}
       {raiderBonusEnabled && (
         <Card className="p-4 space-y-4">
@@ -718,7 +774,12 @@ export default function PriorityListTab() {
                 Give a specific raider a bonus or penalty on every item&apos;s Loot Score. Make it permanent, or have it fall off at the next weekly reset.
               </p>
             </div>
-            {savingRaiderMods && <span className="text-12 text-muted-foreground shrink-0">Saving...</span>}
+            <div className="flex items-center gap-3 shrink-0">
+              {savingRaiderMods && <span className="text-12 text-muted-foreground">Saving...</span>}
+              <Button variant="outline" size="sm" onClick={() => setBulkOpen(true)}>
+                Add for many raiders
+              </Button>
+            </div>
           </div>
 
           {/* Add row */}

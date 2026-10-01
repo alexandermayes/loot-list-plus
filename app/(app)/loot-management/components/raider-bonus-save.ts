@@ -1,13 +1,21 @@
 // Raider bonus save wiring for the Priorities tab (#329).
 //
 // Kept out of PriorityListTab so the save rules (tidy before saving, show the
-// server's 400 message, roll back on failure) can be tested with a mocked
-// fetch instead of rendering the whole tab.
+// server's 400 message, roll back on failure, and the pasted-list flow with
+// its alias save) can be tested with a mocked fetch instead of rendering the
+// whole tab.
 
-import { tidyRaiderModifiers, type RaiderBonusMap } from '@/domain/scoring'
+import { addRaiderBonusBatch, tidyRaiderModifiers, type RaiderBonusMap } from '@/domain/scoring'
+import type { RosterAlias } from '@/domain/guild/roster-name-match'
 import type { NotificationType } from '@/app/contexts/NotificationContext'
 
 export const RAIDER_BONUS_SAVE_FAILED = "Couldn't save the raider bonus. Check your connection and try again."
+export const RAIDER_BONUS_ALIAS_FAILED = "Bonus saved. The name matches couldn't be remembered, so pick them again next time."
+
+/** Success toast after a pasted-list bonus is saved. */
+export function bonusAddedMessage(count: number): string {
+  return count === 1 ? 'Bonus added for 1 raider.' : `Bonus added for ${count} raiders.`
+}
 
 type FetchFn = typeof fetch
 
@@ -79,4 +87,72 @@ export async function persistRaiderModifiers(
   } finally {
     deps.setSaving(false)
   }
+}
+
+/** What the bulk modal hands back to save. */
+export interface RaiderBonusBatchDraft {
+  characterIds: string[]
+  amount: number
+  label: string | null
+  starts_at: string | null
+  expires_at: string
+  aliasesToSave: RosterAlias[]
+}
+
+export interface SaveRaiderBonusBatchDeps {
+  guildId: string
+  mods: RaiderBonusMap
+  /** Shared by every entry from this paste. */
+  batchId: string
+  /** Saves the new map; resolves false after it has already shown the error. */
+  persist: (next: RaiderBonusMap) => Promise<boolean>
+  /** Called once the bonus is saved (closes the modal). */
+  onSaved: () => void
+  /** Receives the aliases the server stored. */
+  onAliasesSaved: (aliases: (RosterAlias & { id?: string })[]) => void
+  notify: (type: NotificationType, message: string) => void
+  fetchFn?: FetchFn
+}
+
+/**
+ * Save one bonus for every raider in a pasted list, all under one batch id.
+ * On success: close, show the success toast, then save any remembered name
+ * matches. A failed alias save (including a 403 for officers who cannot
+ * manage members) keeps the bonus and shows a notice instead. On a failed
+ * bonus save the modal stays open; `persist` has already shown the error.
+ * Resolves true when the bonus was saved.
+ */
+export async function saveRaiderBonusBatch(
+  draft: RaiderBonusBatchDraft,
+  deps: SaveRaiderBonusBatchDeps,
+): Promise<boolean> {
+  const next = addRaiderBonusBatch(
+    deps.mods,
+    draft.characterIds,
+    { amount: draft.amount, starts_at: draft.starts_at, expires_at: draft.expires_at, label: draft.label },
+    deps.batchId,
+  )
+  const ok = await deps.persist(next)
+  if (!ok) return false
+
+  deps.onSaved()
+  deps.notify('success', bonusAddedMessage(new Set(draft.characterIds).size))
+
+  if (draft.aliasesToSave.length > 0) {
+    const fetchFn = deps.fetchFn ?? fetch
+    try {
+      const response = await fetchFn('/api/character-aliases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guild_id: deps.guildId, aliases: draft.aliasesToSave }),
+      })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const body = await response.json()
+      deps.onAliasesSaved(Array.isArray(body?.aliases) ? body.aliases : [])
+    } catch (error) {
+      console.error('Error saving character aliases:', error)
+      deps.notify('warning', RAIDER_BONUS_ALIAS_FAILED)
+    }
+  }
+  return true
 }
