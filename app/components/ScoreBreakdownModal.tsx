@@ -15,7 +15,8 @@ import {
   SparklesIcon,
   Award01Icon,
   ShuffleIcon,
-  Time01Icon
+  Time01Icon,
+  GiftIcon
 } from '@hugeicons/core-free-icons'
 
 interface GuildSettings {
@@ -30,6 +31,8 @@ interface GuildSettings {
   // Trial system
   trial_penalty_enabled?: boolean
   trial_penalty_value?: number
+  // Per-raider bonuses set by officers (free for every guild)
+  single_raider_overall_bonus?: boolean | null
 }
 
 interface ScoreBreakdownModalProps {
@@ -50,6 +53,7 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
   const blbMax = guildSettings?.bad_luck_bonus_max ?? 5
   const trialPenaltyEnabled = guildSettings?.trial_penalty_enabled ?? false
   const trialPenaltyValue = guildSettings?.trial_penalty_value ?? -2
+  const raiderBonusEnabled = guildSettings?.single_raider_overall_bonus === true
 
   return (
     <Modal open={open} onClose={onClose} size="lg">
@@ -61,7 +65,7 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
         {/* Formula Overview */}
         <div className="bg-accent/10 border border-accent/30 rounded-lg p-4">
           <p className="text-foreground font-medium text-center text-14">
-            Score = Item Rank + Attendance + Role Modifier + Bad Luck + Priority{trialPenaltyEnabled ? ' + Trial Penalty' : ''}
+            Score = Item Rank + Attendance + Role Modifier + Bad Luck + Priority{trialPenaltyEnabled ? ' + Trial Penalty' : ''}{raiderBonusEnabled ? ' + Raider Bonus' : ''}
           </p>
         </div>
 
@@ -186,6 +190,24 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
               </p>
             </div>
           </div>
+
+          {/* Raider Bonus */}
+          {raiderBonusEnabled && (
+            <div className="bg-background-subtle border border-border rounded-lg p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center">
+                  <HugeiconsIcon icon={GiftIcon} size={18} className="text-success" />
+                </div>
+                <div>
+                  <h3 className="text-foreground font-medium text-14">Raider bonus</h3>
+                  <p className="text-muted-foreground text-12">Set by officers</p>
+                </div>
+              </div>
+              <p className="text-foreground-secondary text-13">
+                Officers can give a raider a bonus or penalty on every item, either permanent or for set dates, like a reward for full enchants next week. Your dashboard shows each bonus, its reason and when it ends.
+              </p>
+            </div>
+          )}
 
           {/* Trial Penalty */}
           {trialPenaltyEnabled && (

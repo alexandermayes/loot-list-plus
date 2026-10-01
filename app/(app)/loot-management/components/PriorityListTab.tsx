@@ -13,11 +13,12 @@ import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { getRoleDisplayName, type Role } from '@/domain/loot/spec-role-mapping'
 import { useNotification } from '@/app/contexts/NotificationContext'
-import { getCurrentResetWeekEnd, normalizeRaiderModifiers, type RaiderBonusEntry, type RaiderBonusMap } from '@/domain/scoring'
+import { normalizeRaiderModifiers, type RaiderBonusMap } from '@/domain/scoring'
 import { persistRaiderModifiers, saveRaiderBonusBatch } from './raider-bonus-save'
+import { RaiderBonusesCard } from './RaiderBonusesCard'
 import type { BulkRaiderBonusDraft } from './BulkRaiderBonusModal'
 import type { RosterAlias } from '@/domain/guild/roster-name-match'
-import { parseDate, toDateString } from '@/utils/date'
+import { toDateString } from '@/utils/date'
 import { Card } from '@/components/ui/card'
 import { getGuildGame } from '@/domain/expansion/game'
 
@@ -146,9 +147,6 @@ export default function PriorityListTab() {
   const [weekResetDay, setWeekResetDay] = useState<number | null>(null)
   const [raiderMods, setRaiderMods] = useState<RaiderBonusMap>({})
   const [savingRaiderMods, setSavingRaiderMods] = useState(false)
-  const [addRaiderId, setAddRaiderId] = useState('')
-  const [addAmount, setAddAmount] = useState('')
-  const [addDuration, setAddDuration] = useState<'permanent' | 'week'>('permanent')
   const [characterAliases, setCharacterAliases] = useState<RosterAlias[]>([])
   const [bulkOpen, setBulkOpen] = useState(false)
 
@@ -172,31 +170,8 @@ export default function PriorityListTab() {
   }, [raidTiers, selectedPhase])
 
   // ── Raider bonuses ──────────────────────────────────────────
-  const charactersById = useMemo(
-    () => new Map(characters.map((c) => [c.id, c])),
-    [characters],
-  )
-
-  // Flatten the per-raider map into one row per entry, for rendering.
-  const raiderBonusRows = useMemo(() => {
-    const rows: { charId: string; index: number; entry: RaiderBonusEntry }[] = []
-    for (const [charId, entries] of Object.entries(raiderMods)) {
-      entries.forEach((entry, index) => rows.push({ charId, index, entry }))
-    }
-    return rows.sort((a, b) => {
-      const an = charactersById.get(a.charId)?.name || ''
-      const bn = charactersById.get(b.charId)?.name || ''
-      return an.localeCompare(bn)
-    })
-  }, [raiderMods, charactersById])
-
   // Local calendar date; ended raider bonuses are tidied away on every save.
   const today = useMemo(() => toDateString(new Date()), [])
-
-  const thisWeekExpiry = useMemo(
-    () => getCurrentResetWeekEnd(today, weekResetDay),
-    [today, weekResetDay],
-  )
 
   const persistRaiderMods = async (next: RaiderBonusMap): Promise<boolean> => {
     if (!activeGuild) return false
@@ -233,26 +208,6 @@ export default function PriorityListTab() {
       },
       notify: showNotification,
     })
-  }
-
-  const handleAddRaiderBonus = () => {
-    const amount = Number(addAmount)
-    if (!addRaiderId || addAmount.trim() === '' || Number.isNaN(amount) || amount === 0) return
-    const expires_at = addDuration === 'week' ? thisWeekExpiry : null
-    const entry: RaiderBonusEntry = { amount, expires_at }
-    const next = { ...raiderMods, [addRaiderId]: [...(raiderMods[addRaiderId] || []), entry] }
-    setAddRaiderId('')
-    setAddAmount('')
-    setAddDuration('permanent')
-    persistRaiderMods(next)
-  }
-
-  const handleRemoveRaiderBonus = (charId: string, index: number) => {
-    const entries = (raiderMods[charId] || []).filter((_, i) => i !== index)
-    const next = { ...raiderMods }
-    if (entries.length) next[charId] = entries
-    else delete next[charId]
-    persistRaiderMods(next)
   }
 
   // Load all data
@@ -764,113 +719,17 @@ export default function PriorityListTab() {
         />
       )}
 
-      {/* Raider bonuses (permanent / per-week per-character modifiers) */}
+      {/* Raider bonuses (permanent, weekly and pasted-list bonuses per raider) */}
       {raiderBonusEnabled && (
-        <Card className="p-4 space-y-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-15 font-semibold text-foreground">Raider bonuses</p>
-              <p className="text-12 text-muted-foreground text-pretty">
-                Give a specific raider a bonus or penalty on every item&apos;s Loot Score. Make it permanent, or have it fall off at the next weekly reset.
-              </p>
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              {savingRaiderMods && <span className="text-12 text-muted-foreground">Saving...</span>}
-              <Button variant="outline" size="sm" onClick={() => setBulkOpen(true)}>
-                Add for many raiders
-              </Button>
-            </div>
-          </div>
-
-          {/* Add row */}
-          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-            <Select
-              variant="rounded"
-              size="sm"
-              value={addRaiderId}
-              onChange={(e) => setAddRaiderId(e.target.value)}
-              className="sm:flex-1"
-              aria-label="Raider"
-            >
-              <option value="">Select a raider...</option>
-              {characters.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </Select>
-            <Input
-              variant="rounded"
-              size="sm"
-              type="number"
-              inputMode="numeric"
-              step="0.1"
-              value={addAmount}
-              onChange={(e) => setAddAmount(e.target.value)}
-              placeholder="+5 or -2"
-              className="sm:w-32"
-              aria-label="Amount"
-            />
-            <Select
-              variant="rounded"
-              size="sm"
-              value={addDuration}
-              onChange={(e) => setAddDuration(e.target.value as 'permanent' | 'week')}
-              className="sm:w-56"
-              aria-label="Duration"
-            >
-              <option value="permanent">Permanent</option>
-              <option value="week">This week (until {parseDate(thisWeekExpiry).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })})</option>
-            </Select>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleAddRaiderBonus}
-              disabled={!addRaiderId || addAmount.trim() === '' || Number(addAmount) === 0}
-            >
-              Add
-            </Button>
-          </div>
-
-          {/* Configured list */}
-          {raiderBonusRows.length === 0 ? (
-            <p className="text-12 text-muted-foreground">No raider bonuses yet. Add one above.</p>
-          ) : (
-            <div className="space-y-2">
-              {raiderBonusRows.map(({ charId, index, entry }) => {
-                const char = charactersById.get(charId)
-                const positive = entry.amount > 0
-                return (
-                  <div key={`${charId}-${index}`} className="flex items-center gap-3 bg-background border border-border rounded-lg px-3 py-2">
-                    <span
-                      className="flex-1 text-13 font-medium truncate"
-                      style={{ color: char?.class?.color_hex || '#888888' }}
-                    >
-                      {char?.name || 'Unknown raider'}
-                    </span>
-                    <span className={`text-13 font-semibold tabular-nums ${positive ? 'text-success' : 'text-destructive'}`}>
-                      {positive ? '+' : ''}{entry.amount}
-                    </span>
-                    {entry.expires_at ? (
-                      <span className="text-11 text-warning whitespace-nowrap">
-                        until {parseDate(entry.expires_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                      </span>
-                    ) : (
-                      <span className="text-11 text-muted-foreground whitespace-nowrap">permanent</span>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveRaiderBonus(charId, index)}
-                      className="!px-2"
-                      aria-label={`Remove ${entry.amount > 0 ? 'bonus' : 'penalty'} for ${char?.name || 'raider'}`}
-                    >
-                      ✕
-                    </Button>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </Card>
+        <RaiderBonusesCard
+          characters={characters}
+          raiderMods={raiderMods}
+          today={today}
+          weekResetDay={weekResetDay}
+          saving={savingRaiderMods}
+          onPersist={persistRaiderMods}
+          onAddForMany={() => setBulkOpen(true)}
+        />
       )}
 
       {/* Boss Quick Navigation */}
