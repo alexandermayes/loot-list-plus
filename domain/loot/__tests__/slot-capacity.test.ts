@@ -30,7 +30,7 @@ describe('maxCopiesForSlot', () => {
     }
   })
 
-  it('caps tokens at one copy (per-bracket rules are enforced separately)', () => {
+  it('caps tokens at one copy by slot alone (token counts come from maxCopiesForItem)', () => {
     expect(maxCopiesForSlot('Token')).toBe(1)
   })
 
@@ -101,5 +101,19 @@ describe('maxCopiesForItem', () => {
     expect(maxCopiesForItem({ item_slot: 'Finger', wowhead_id: UNKNOWN_ID })).toBe(1)
     expect(maxCopiesForItem({ item_slot: 'Trinket', wowhead_id: null })).toBe(1)
     expect(maxCopiesForItem({ item_slot: 'Finger' })).toBe(1)
+  })
+
+  // GH #331: a token may be listed once per gear slot it turns into (the
+  // count applies per spec group; see domain/loot/item-copies.ts).
+  it('gives tokens one copy per gear slot they turn into', () => {
+    expect(maxCopiesForItem({ item_slot: 'Token', wowhead_id: 20928 })).toBe(2) // Qiraji Bindings of Command
+    expect(maxCopiesForItem({ item_slot: 'Token', wowhead_id: 47242 })).toBe(5) // Trophy of the Crusade
+    expect(maxCopiesForItem({ item_slot: 'Token', wowhead_id: 105858 })).toBe(5) // Essence of the Cursed Conqueror
+  })
+
+  it('gives single-slot, unknown and id-less tokens one copy', () => {
+    expect(maxCopiesForItem({ item_slot: 'Token', wowhead_id: 22349 })).toBe(1) // Desecrated Breastplate
+    expect(maxCopiesForItem({ item_slot: 'Token', wowhead_id: UNKNOWN_ID })).toBe(1)
+    expect(maxCopiesForItem({ item_slot: 'Token', wowhead_id: null })).toBe(1)
   })
 })

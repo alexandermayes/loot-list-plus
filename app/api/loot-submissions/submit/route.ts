@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { validateBracketRules, type BracketItem, type BracketLimits } from '@/domain/loot/bracket-validation'
+import { validateItemCopyLimits } from '@/domain/loot/item-copies'
 import { logStatusChange } from '@/utils/audit/log'
 import { trackEvent, setUserMilestone } from '@/utils/analytics/server'
 import { revalidatePendingSubmissions } from '@/lib/cache/submission-tag'
@@ -28,7 +29,8 @@ const NOT_ACTIVE_MEMBER_ERROR = 'Your character needs to rejoin this guild.'
  *    lost after the check) gets the same 403.
  * 3. Read current items + item metadata from DB
  * 4. Read guild enforce_slot_restrictions setting
- * 5. Validate bracket rules
+ * 5. Validate bracket rules and item copy limits (the same per-item rule the
+ *    loot list applies; see domain/loot/item-copies.ts)
  * 6. If valid: snapshot previous items, set status to 'pending'
  * 7. If invalid: return violations, status stays as-is
  */
@@ -85,7 +87,7 @@ export async function POST(request: NextRequest) {
         rank,
         slot,
         loot_item_id,
-        loot_item:loot_items(id, name, classification, item_type, item_slot, allocation_cost)
+        loot_item:loot_items(id, name, classification, item_type, item_slot, wowhead_id, allocation_cost)
       `)
       .eq('submission_id', submission_id)
       .is('removed_at', null)
@@ -114,13 +116,16 @@ export async function POST(request: NextRequest) {
       slot: string
       loot_item_id: string
       loot_item?: {
+        name?: string | null
+        wowhead_id?: number | null
         classification?: string | null
         item_type?: string | null
         item_slot?: string | null
         allocation_cost?: number | null
       } | null
     }
-    const validationItems = ((submissionItems || []) as unknown as SubmissionItemRow[]).map((si) => ({
+    const itemRows = (submissionItems || []) as unknown as SubmissionItemRow[]
+    const validationItems = itemRows.map((si) => ({
       rank: si.rank,
       slot: si.slot,
       item: {
@@ -132,12 +137,23 @@ export async function POST(request: NextRequest) {
       } as BracketItem,
     }))
 
-    // Validate bracket rules
-    const violations = validateBracketRules(
-      validationItems as unknown as Parameters<typeof validateBracketRules>[0],
-      enforceSlotRestrictions,
-      bracketLimits
-    )
+    // Validate bracket rules, then copies per item (GH #293, #331)
+    const violations = [
+      ...validateBracketRules(
+        validationItems as unknown as Parameters<typeof validateBracketRules>[0],
+        enforceSlotRestrictions,
+        bracketLimits
+      ),
+      ...validateItemCopyLimits(itemRows.map((si) => ({
+        rank: si.rank,
+        item: {
+          id: si.loot_item_id,
+          name: si.loot_item?.name,
+          item_slot: si.loot_item?.item_slot,
+          wowhead_id: si.loot_item?.wowhead_id,
+        },
+      }))),
+    ]
 
     if (violations.length > 0) {
       return NextResponse.json({

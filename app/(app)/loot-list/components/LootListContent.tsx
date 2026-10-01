@@ -38,8 +38,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { InformationCircleIcon } from '@hugeicons/core-free-icons'
 import { useLootList, type LootItem } from '@/app/contexts/LootListContext'
 import { getPhaseGroupShortLabel } from '@/domain/expansion/phase-groups'
-import { isTokenSlot } from '@/data/token-class-mapping'
-import { maxCopiesForItem } from '@/domain/loot/slot-capacity'
+import { copyLimitState } from '@/domain/loot/item-copies'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent, usePagePerf } from '@/utils/analytics/client'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
@@ -975,116 +974,33 @@ export default function LootListContent({
     return 'Item #2'
   }, [rankings])
 
-  // Create bracket-specific disabled sets for tokens
-  // Tokens can be selected once per bracket section (Brackets 1-4, No Bracket, Off-spec)
-  // Non-tokens are disabled everywhere once selected, except paired slots
-  // (one-handers, rings, trinkets) which can be listed twice.
-  const { bracket14DisabledItems, noBracketDisabledItems, offSpecDisabledItems } = useMemo(() => {
-    // Create a map of itemId -> item_slot for checking if an item is a token
-    const itemSlotMap = new Map(lootItems.map(item => [item.id, item.item_slot]))
-    // Per-item copy cap: paired slot AND not Unique-Equipped means two copies.
-    const maxCopiesMap = new Map(lootItems.map(item => [item.id, maxCopiesForItem(item)]))
-
-    // Separate items by bracket section based on rank
+  // Copies are counted by the real item (wowhead_id), so one item dropped by
+  // two bosses counts once (GH #293). Non-token items are counted across the
+  // whole list; non-unique rings, trinkets and one-handers may appear twice
+  // (see maxCopiesForItem). Tokens are counted separately in main spec
+  // (Brackets 1-4 plus No Bracket, ranks 50-25) and in off-spec (ranks 24-1),
+  // each up to the number of gear slots the token turns into (GH #331). The
+  // submit route applies the same rule (domain/loot/item-copies.ts).
+  const copyLimits = useMemo(() => {
     // Rankings key format: "{rank}-{slot}" e.g., "50-1", "38-2"
-    const bracket14Tokens = new Set<string>()   // Tokens selected in ranks 39-50
-    const noBracketTokens = new Set<string>()   // Tokens selected in ranks 25-38
-    const offSpecTokens = new Set<string>()     // Tokens selected in ranks 1-24
-    const nonTokenCounts = new Map<string, number>() // count per non-token itemId
-
-    Object.entries(rankings).forEach(([key, itemId]) => {
-      const rank = parseInt(key.split('-')[0])
-      const slot = itemSlotMap.get(itemId)
-      const isToken = slot ? isTokenSlot(slot) : false
-
-      if (isToken) {
-        // Tokens go into their bracket-specific set
-        if (rank >= 39) {
-          bracket14Tokens.add(itemId)
-        } else if (rank >= 25) {
-          noBracketTokens.add(itemId)
-        } else {
-          offSpecTokens.add(itemId)
-        }
-      } else {
-        // Non-tokens: track how many times they appear.
-        // Paired, non-unique items allow up to 2 occurrences (see maxCopiesForItem).
-        nonTokenCounts.set(itemId, (nonTokenCounts.get(itemId) || 0) + 1)
-      }
-    })
-
-    // A non-token item is fully used (disabled) once it hits its copy cap.
-    const nonTokenItems = new Set<string>()
-    nonTokenCounts.forEach((count, itemId) => {
-      if (count >= (maxCopiesMap.get(itemId) ?? 1)) nonTokenItems.add(itemId)
-    })
-
-    // Build disabled sets for each section
-    // Non-tokens are always disabled, tokens only disabled within their section
-    return {
-      bracket14DisabledItems: new Set([...nonTokenItems, ...bracket14Tokens]),
-      noBracketDisabledItems: new Set([...nonTokenItems, ...noBracketTokens]),
-      offSpecDisabledItems: new Set([...nonTokenItems, ...offSpecTokens]),
-    }
+    const listed = Object.entries(rankings).map(([key, itemId]) => ({
+      rank: parseInt(key.split('-')[0]),
+      itemId,
+    }))
+    return copyLimitState(listed, lootItems)
   }, [rankings, lootItems])
 
-  // Token-aware duplicate detection:
-  // - Non-token items are duplicates if they appear more than once globally,
-  //   except non-unique paired-slot items (one-handers, rings, trinkets),
-  //   which can appear twice because you equip two of them.
-  // - Token items are duplicates if they appear more than once in the SAME bracket section.
+  // Picker disabled sets: Brackets 1-4 and No Bracket share main spec's set.
+  const mainSpecDisabledItems = copyLimits.mainSpecAtLimit
+  const offSpecDisabledItems = copyLimits.offSpecAtLimit
+
+  // Listed items above their copy limit (shown as duplicates, block submit).
   const duplicateItems = useMemo(() => {
-    // If loot items haven't loaded yet, we can't determine token vs non-token.
+    // If loot items haven't loaded yet, we can't tell tokens from other items.
     // Skip duplicate detection entirely to avoid false positives.
     if (lootItems.length === 0) return []
-
-    const itemSlotMap = new Map(lootItems.map(item => [item.id, item.item_slot]))
-    const maxCopiesMap = new Map(lootItems.map(item => [item.id, maxCopiesForItem(item)]))
-
-    // Track token appearances per bracket section
-    const bracket14Tokens: string[] = []
-    const noBracketTokens: string[] = []
-    const offSpecTokens: string[] = []
-    const nonTokenItemIds: string[] = []
-
-    Object.entries(rankings).forEach(([key, itemId]) => {
-      const rank = parseInt(key.split('-')[0])
-      const slot = itemSlotMap.get(itemId)
-
-      // If we can't resolve the item's slot (e.g. item not in current tier data),
-      // skip it rather than misclassifying it as a non-token
-      if (!slot) return
-
-      if (isTokenSlot(slot)) {
-        if (rank >= 39) bracket14Tokens.push(itemId)
-        else if (rank >= 25) noBracketTokens.push(itemId)
-        else offSpecTokens.push(itemId)
-      } else {
-        nonTokenItemIds.push(itemId)
-      }
-    })
-
-    const dupes: string[] = []
-
-    // Non-token items: count occurrences and flag when exceeding the copy cap.
-    // Non-unique paired-slot items allow up to 2; everything else caps at 1.
-    const nonTokenCounts = new Map<string, number>()
-    nonTokenItemIds.forEach(itemId => {
-      nonTokenCounts.set(itemId, (nonTokenCounts.get(itemId) || 0) + 1)
-    })
-    nonTokenCounts.forEach((count, itemId) => {
-      if (count > (maxCopiesMap.get(itemId) ?? 1)) dupes.push(itemId)
-    })
-
-    // Token items: only flag duplicates within the same bracket section
-    ;[bracket14Tokens, noBracketTokens, offSpecTokens].forEach(sectionTokens => {
-      sectionTokens.forEach((itemId, index, arr) => {
-        if (arr.indexOf(itemId) !== index) dupes.push(itemId)
-      })
-    })
-
-    return dupes
-  }, [rankings, lootItems])
+    return [...copyLimits.overLimit]
+  }, [copyLimits, lootItems])
 
   // Filter items by spec type for different bracket sections
   // Items CASCADE down: Brackets 1-4 ⊆ No Bracket ⊆ Off-spec
@@ -1136,19 +1052,16 @@ export default function LootListContent({
 
   // Compute unranked items (all spec items not yet on the list, excluding LC items)
   // unrankedItemsAll is the full unfiltered set, used to derive stable filter options.
-  // Items that can be listed twice stay draggable until they hit their cap, so
-  // a second copy can be dragged in rather than only picked from the dropdown.
+  // Items that can be listed again stay draggable until they hit their limit
+  // in both spec groups, so a token with room in either group, or a second
+  // copy of a ring, can be dragged in rather than only picked from the dropdown.
   const unrankedItemsAll = useMemo(() => {
-    const rankedCounts = new Map<string, number>()
-    Object.values(rankings).forEach(itemId => {
-      rankedCounts.set(itemId, (rankedCounts.get(itemId) || 0) + 1)
-    })
     return lootItems.filter(
       item =>
-        (rankedCounts.get(item.id) || 0) < maxCopiesForItem(item) &&
+        !(copyLimits.mainSpecAtLimit.has(item.id) && copyLimits.offSpecAtLimit.has(item.id)) &&
         !item.is_loot_council
     )
-  }, [lootItems, rankings])
+  }, [lootItems, copyLimits])
 
   // Slot order matches gear-layout convention (head down to weapons).
   const SLOT_ORDER = [
@@ -2037,7 +1950,7 @@ export default function LootListContent({
             showAllocationPoints: true,
             ranks: bracket1,
             lootItems: bracket14Items,
-            disabledItems: bracket14DisabledItems,
+            disabledItems: mainSpecDisabledItems,
           },
           {
             name: 'Bracket 2 (47-45)',
@@ -2048,7 +1961,7 @@ export default function LootListContent({
             showAllocationPoints: true,
             ranks: bracket2,
             lootItems: bracket14Items,
-            disabledItems: bracket14DisabledItems,
+            disabledItems: mainSpecDisabledItems,
           },
           {
             name: 'Bracket 3 (44-42)',
@@ -2059,7 +1972,7 @@ export default function LootListContent({
             showAllocationPoints: true,
             ranks: bracket3,
             lootItems: bracket14Items,
-            disabledItems: bracket14DisabledItems,
+            disabledItems: mainSpecDisabledItems,
           },
           {
             name: 'Bracket 4 (41-39)',
@@ -2070,7 +1983,7 @@ export default function LootListContent({
             showAllocationPoints: true,
             ranks: bracket4,
             lootItems: bracket14Items,
-            disabledItems: bracket14DisabledItems,
+            disabledItems: mainSpecDisabledItems,
           },
           {
             name: 'No bracket (38-25) - Main-spec',
@@ -2081,7 +1994,7 @@ export default function LootListContent({
             subtitle: 'Still considered main-spec priority',
             ranks: noBracket,
             lootItems: noBracketItems,
-            disabledItems: noBracketDisabledItems,
+            disabledItems: mainSpecDisabledItems,
           },
           {
             name: 'Off-spec (24-1)',

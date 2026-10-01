@@ -28,6 +28,22 @@ interface Fixture {
   activeMemberships: Array<{ character_id: string; guild_id: string }>
   membershipError?: { message: string } | null
   statusUpdateError?: { code?: string; message: string } | null
+  items?: SubmissionItem[]
+}
+
+interface SubmissionItem {
+  rank: number
+  slot: number
+  loot_item_id: string
+  loot_item: {
+    id: string
+    name: string
+    classification: string | null
+    item_type: string | null
+    item_slot: string | null
+    wowhead_id: number | null
+    allocation_cost: number | null
+  }
 }
 
 /**
@@ -76,7 +92,7 @@ function makeClient(fixture: Fixture) {
             return Promise.resolve({ data: rows, error: null }).then(resolve)
           }
           if (table === 'loot_submission_items') {
-            return Promise.resolve({ data: [], error: null }).then(resolve)
+            return Promise.resolve({ data: fixture.items ?? [], error: null }).then(resolve)
           }
           if (table === 'loot_submissions' && call.updatePayload) {
             const isStatusUpdate = 'status' in call.updatePayload
@@ -114,6 +130,30 @@ function request(body: unknown) {
     body: JSON.stringify(body),
   }) as unknown as Parameters<typeof POST>[0]
 }
+
+// Two loot_items rows of one real item (GH #293), and a single-slot token.
+const BINDINGS_IDS = ['bbbbbbbb-0000-0000-0000-0000000000b1', 'bbbbbbbb-0000-0000-0000-0000000000b2']
+const DESECRATED_IDS = ['bbbbbbbb-0000-0000-0000-0000000000d1', 'bbbbbbbb-0000-0000-0000-0000000000d2']
+
+function tokenRow(rank: number, lootItemId: string, name: string, wowheadId: number): SubmissionItem {
+  return {
+    rank,
+    slot: 1,
+    loot_item_id: lootItemId,
+    loot_item: {
+      id: lootItemId,
+      name,
+      classification: null,
+      item_type: 'Token',
+      item_slot: 'Token',
+      wowhead_id: wowheadId,
+      allocation_cost: 0,
+    },
+  }
+}
+
+const bindings = (rank: number, idx: number) => tokenRow(rank, BINDINGS_IDS[idx], 'Qiraji Bindings of Command', 20928)
+const desecrated = (rank: number, idx: number) => tokenRow(rank, DESECRATED_IDS[idx], 'Desecrated Breastplate', 22349)
 
 const submissionUpdates = (calls: Call[]) => calls.filter(c => c.table === 'loot_submissions' && c.updatePayload)
 
@@ -186,5 +226,40 @@ describe('POST /api/loot-submissions/submit', () => {
     expect(body.error).toBe('You can only submit your own lists')
     expect(submissionUpdates(calls)).toHaveLength(0)
     expect(calls.some(c => c.table === 'character_guild_memberships')).toBe(false)
+  })
+
+  describe('item copy limits (GH #293, #331)', () => {
+    const statusUpdates = (calls: Call[]) =>
+      submissionUpdates(calls).filter(u => u.updatePayload && 'status' in u.updatePayload)
+
+    it('returns 422 for three Qiraji Bindings in main spec and leaves the status alone', async () => {
+      const fixture = { ...baseFixture(), items: [bindings(50, 0), bindings(40, 1), bindings(30, 0)] }
+      const { res, body, calls } = await run(fixture)
+      expect(res.status).toBe(422)
+      expect(body.violations).toContainEqual({
+        bracket: 'Main spec',
+        rule: 'item_copy_limit',
+        detail: '"Qiraji Bindings of Command" is listed 3 times (max 2)',
+      })
+      expect(statusUpdates(calls)).toHaveLength(0)
+    })
+
+    it('submits two Bindings in main spec plus two in off-spec', async () => {
+      const fixture = { ...baseFixture(), items: [bindings(50, 0), bindings(30, 1), bindings(20, 0), bindings(5, 1)] }
+      const { res, calls } = await run(fixture)
+      expect(res.status).toBe(200)
+      expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+    })
+
+    it('counts one token from two bosses as one item within main spec', async () => {
+      const over = await run({ ...baseFixture(), items: [desecrated(45, 0), desecrated(30, 1)] })
+      expect(over.res.status).toBe(422)
+      expect(over.body.violations.map((v: { rule: string }) => v.rule)).toContain('item_copy_limit')
+      expect(statusUpdates(over.calls)).toHaveLength(0)
+
+      const ok = await run({ ...baseFixture(), items: [desecrated(45, 0), desecrated(10, 1)] })
+      expect(ok.res.status).toBe(200)
+      expect(statusUpdates(ok.calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+    })
   })
 })
