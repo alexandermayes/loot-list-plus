@@ -56,6 +56,13 @@ describe('RaiderBonusesCard', () => {
     expect(onPersist).toHaveBeenCalledWith({ [ZEV]: [{ amount: 5, expires_at: null }], [DENY]: [b1] })
   })
 
+  it('titles an unlabelled one-raider batch in the singular', () => {
+    const batch = { amount: 1, expires_at: '2026-10-12', batch_id: 'b3-00000' }
+    setup({ [ZEV]: [batch] })
+
+    expect(screen.getByText('Bonus for 1 raider')).toBeInTheDocument()
+  })
+
   it('titles an unlabelled batch by its raider count', () => {
     const batch = { amount: 1, expires_at: '2026-10-12', batch_id: 'b2-00000' }
     setup({ [ZEV]: [batch], [DENY]: [batch], [CHECK]: [batch] })

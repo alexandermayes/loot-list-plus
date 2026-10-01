@@ -197,7 +197,7 @@ export function RaiderBonusesCard({
               <div key={batch.batchId} className="bg-background border border-border rounded-lg px-3 py-2 space-y-2">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   <span className={`flex-1 min-w-0 text-13 font-medium truncate ${ended ? 'text-muted-foreground' : 'text-foreground'}`}>
-                    {batch.label || `Bonus for ${n} raiders`}
+                    {batch.label || (n === 1 ? 'Bonus for 1 raider' : `Bonus for ${n} raiders`)}
                   </span>
                   <Amount amount={batch.amount} ended={ended} />
                   <StatusText status={batch.status} starts_at={batch.starts_at} expires_at={batch.expires_at} />
