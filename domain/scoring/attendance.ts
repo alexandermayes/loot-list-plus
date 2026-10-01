@@ -22,7 +22,6 @@ import type {
   AttendanceRecord,
   AttendanceStatus,
   RaidEvent,
-  ScoringConfig,
 } from '../types'
 import { calculateAttendanceScore } from './attendance-score'
 import { withDefaults } from './defaults'
@@ -95,6 +94,25 @@ export function getCurrentResetWeekEnd(asOfDate: string | undefined, weekResetDa
   const asOf = asOfDate ? parseDateLocal(asOfDate) : new Date()
   const resetDay = weekResetDay ?? DEFAULT_WEEK_RESET_DAY
   return formatDate(currentResetWeekEnd(asOf, resetDay))
+}
+
+/**
+ * The next full reset week after the current one, relative to `asOfDate`, as
+ * YYYY-MM-DD first and last days. Used to date a "next week" raider bonus so
+ * it starts at the next reset and lasts one reset week. Steps by whole local
+ * days (setDate), so daylight-saving changes never shift it.
+ */
+export function getNextResetWeek(
+  asOfDate: string | undefined,
+  weekResetDay?: number | null,
+): { starts_at: string; expires_at: string } {
+  const asOf = asOfDate ? parseDateLocal(asOfDate) : new Date()
+  const resetDay = weekResetDay ?? DEFAULT_WEEK_RESET_DAY
+  const start = currentResetWeekEnd(asOf, resetDay)
+  start.setDate(start.getDate() + 1)
+  const end = new Date(start)
+  end.setDate(start.getDate() + 6)
+  return { starts_at: formatDate(start), expires_at: formatDate(end) }
 }
 
 /**

@@ -161,6 +161,59 @@ describe('computeScore', () => {
     expect(result.components.raiderBonus).toBe(5)
   })
 
+  // #329: entries can start on a later date (for example "next week").
+  describe('start-dated raider bonus entries', () => {
+    const char = { characterId: 'char-1', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'full' }
+    const windowed = (asOfDate?: string) => computeScore(makeInput({
+      character: char,
+      ...(asOfDate ? { asOfDate } : {}),
+      config: {
+        single_raider_overall_bonus: true,
+        single_raider_modifiers: { 'char-1': [{ amount: 3, starts_at: '2026-10-06', expires_at: '2026-10-12' }] },
+      },
+    })).components.raiderBonus
+
+    it('counts only inside the inclusive start and end dates', () => {
+      expect(windowed('2026-10-05')).toBe(0)
+      expect(windowed('2026-10-06')).toBe(3)
+      expect(windowed('2026-10-12')).toBe(3)
+      expect(windowed('2026-10-13')).toBe(0)
+    })
+
+    it('treats a start-dated entry as inactive when no asOfDate is supplied', () => {
+      expect(windowed(undefined)).toBe(0)
+    })
+
+    it('stacks permanent, active and upcoming entries as each becomes active', () => {
+      const modifiers = { 'char-1': [
+        { amount: 20, expires_at: null },
+        { amount: 3, starts_at: '2026-10-06', expires_at: '2026-10-12' },
+        { amount: 5, starts_at: '2026-10-07', expires_at: '2026-10-13' },
+      ] }
+      const at = (asOfDate: string) => computeScore(makeInput({
+        character: char,
+        asOfDate,
+        config: { single_raider_overall_bonus: true, single_raider_modifiers: modifiers },
+      })).components.raiderBonus
+      expect(at('2026-10-06')).toBe(23)
+      expect(at('2026-10-07')).toBe(28)
+    })
+
+    it('counts an entry with only a start date from that date onward', () => {
+      const at = (asOfDate: string) => computeScore(makeInput({
+        character: char,
+        asOfDate,
+        config: {
+          single_raider_overall_bonus: true,
+          single_raider_modifiers: { 'char-1': [{ amount: 4, starts_at: '2026-10-06', expires_at: null }] },
+        },
+      })).components.raiderBonus
+      expect(at('2026-10-05')).toBe(0)
+      expect(at('2026-10-06')).toBe(4)
+      expect(at('2027-03-01')).toBe(4)
+    })
+  })
+
   it('computes BLP bonus', () => {
     const result = computeScore(makeInput({
       timesPassed: 3,
@@ -363,6 +416,47 @@ describe('explainScore', () => {
     const line = explainScore(result, config).lines.find(l => l.label === 'Raider bonus')
     expect(line?.value).toBe(20)
     expect(line?.key).toBe('raiderBonus')
+  })
+
+  describe('raider bonus detail (#329)', () => {
+    const char = { characterId: 'char-1', specId: null, specRoles: [], guildRank: 'Member', membershipStatus: 'full' }
+    const explainFor = (entries: Record<string, unknown>[], asOfDate = '2026-10-06') => {
+      const input = makeInput({
+        character: char,
+        asOfDate,
+        config: { single_raider_overall_bonus: true, single_raider_modifiers: { 'char-1': entries as never } },
+      })
+      return explainScore(computeScore(input), input).lines.find(l => l.label === 'Raider bonus')
+    }
+
+    it('lists each active entry with its reason, signed amount and end date', () => {
+      const line = explainFor([
+        { amount: 2, label: 'Full enchants', starts_at: '2026-10-06', expires_at: '2026-10-12' },
+        { amount: 5, expires_at: null },
+      ])
+      expect(line?.value).toBe(7)
+      expect(line?.detail).toBe('Full enchants: +2 until Oct 12. Officer bonus: +5')
+    })
+
+    it('names an unlabelled negative entry an officer penalty', () => {
+      const line = explainFor([{ amount: -2, expires_at: null }])
+      expect(line?.detail).toBe('Officer penalty: -2')
+    })
+
+    it('leaves out entries that have not started yet', () => {
+      const line = explainFor([
+        { amount: 5, expires_at: null },
+        { amount: 3, label: 'World buffs', starts_at: '2026-10-13', expires_at: '2026-10-19' },
+      ])
+      expect(line?.detail).toBe('Officer bonus: +5')
+    })
+
+    it('keeps the generic detail for config-only callers', () => {
+      const config = { single_raider_overall_bonus: true, single_raider_modifiers: { 'char-1': [{ amount: 5, label: 'Full enchants', expires_at: null }] } }
+      const result = computeScore(makeInput({ character: char, config }))
+      const line = explainScore(result, config).lines.find(l => l.label === 'Raider bonus')
+      expect(line?.detail).toBe('Officer-assigned modifier for this raider')
+    })
   })
 
   it('includes donation line when donationBonus is non-zero', () => {

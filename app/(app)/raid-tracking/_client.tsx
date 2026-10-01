@@ -32,6 +32,7 @@ import { RaidTrackingPageSkeleton } from '@/components/ui/skeletons'
 import { Heading, Text } from '@/components/ui/typography'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useGuildContext } from '@/app/contexts/GuildContext'
+import { parseRosterNames, createRosterMatcher, countRosterMatches, nameSimilarity } from '@/domain/guild/roster-name-match'
 import type { GuildExpansion } from '@/app/contexts/ExpansionContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
@@ -1252,70 +1253,26 @@ export default function RaidTrackingPage() {
     return []
   }, [supabase])
 
+  // Name and alias matching shared with the bulk raider bonus modal (#329).
+  const rosterMatcher = useMemo(
+    () => createRosterMatcher(members, characterAliases, m => m.character_id, m => m.character_name),
+    [members, characterAliases],
+  )
+
   // Preview functions to show match counts
-  // Parse MRT/attendance data - handles formats like:
-  // "21/01/2026 01:58:11 - Throne of Thunder6" (header - skipped)
-  // "Alphafold    x" -> "Alphafold"
-  // "Brewenjoyer    x" -> "Brewenjoyer"
-  const parseMRTNames = (data: string): string[] => {
-    return data
-      .trim()
-      .split(/[\n,;]+/)
-      .map(entry => {
-        const line = entry.trim()
-        // Skip header lines (contain date pattern or " - ")
-        if (line.match(/\d{2}\/\d{2}\/\d{4}/) || line.includes(' - ')) {
-          return ''
-        }
-        // Strip the "x" marker and any surrounding whitespace
-        // Handle formats: "Name    x", "Name"
-        return line
-          .replace(/\s+x\s*$/i, '')  // Remove trailing "x" with whitespace
-          .trim()
-      })
-      .filter(name => name.length > 0 && name.length <= 50)
-  }
+  // Parse MRT/attendance data (see parseRosterNames for the formats handled)
+  const parseMRTNames = (data: string): string[] => parseRosterNames(data)
 
   // Resolve a character name to a member via direct match or alias
   const resolveCharacterName = (name: string): Member | null => {
-    const nameLower = name.toLowerCase()
-    // Direct name match
-    const direct = members.find(m => m.character_name.toLowerCase() === nameLower)
-    if (direct) return direct
-    // Alias match
-    const alias = characterAliases.find(a => a.alias_name === nameLower)
-    if (alias) {
-      const aliasedMember = members.find(m => m.character_id === alias.character_id)
-      if (aliasedMember) return aliasedMember
-    }
-    return null
+    return rosterMatcher.resolve(name)?.member ?? null
   }
 
   const parseAttendancePreview = (data: string) => {
     if (!data.trim()) return { total: 0, matched: 0, aliasMatched: 0, unmatched: 0 }
 
-    const names = parseMRTNames(data)
-
-    let matched = 0
-    let aliasMatched = 0
-    let unmatched = 0
-
-    names.forEach(name => {
-      const nameLower = name.toLowerCase()
-      const directMatch = members.find(m => m.character_name.toLowerCase() === nameLower)
-      if (directMatch) {
-        matched++
-      } else {
-        const alias = characterAliases.find(a => a.alias_name === nameLower)
-        if (alias && members.find(m => m.character_id === alias.character_id)) {
-          aliasMatched++
-        } else {
-          unmatched++
-        }
-      }
-    })
-
-    return { total: names.length, matched, aliasMatched, unmatched }
+    // Counts every pasted name (no dedupe), so total stays names.length
+    return countRosterMatches(parseMRTNames(data), rosterMatcher)
   }
 
   const parseLootPreview = (data: string) => {
@@ -2272,22 +2229,6 @@ export default function RaidTrackingPage() {
     setResolvedAttendees(new Map())
     setPendingImportData(null)
     setUnmatchedAttendeeNames([])
-  }
-
-  // Simple string similarity: longest common substring ratio
-  const nameSimilarity = (a: string, b: string): number => {
-    const al = a.toLowerCase()
-    const bl = b.toLowerCase()
-    if (al === bl) return 1
-    let longest = 0
-    for (let i = 0; i < al.length; i++) {
-      for (let j = 0; j < bl.length; j++) {
-        let k = 0
-        while (i + k < al.length && j + k < bl.length && al[i + k] === bl[j + k]) k++
-        if (k > longest) longest = k
-      }
-    }
-    return longest / Math.max(al.length, bl.length)
   }
 
   const getAttendanceCount = useCallback((raidId: string) => {

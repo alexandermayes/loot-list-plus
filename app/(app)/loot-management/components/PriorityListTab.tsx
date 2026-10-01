@@ -11,15 +11,22 @@ import { Search01Icon } from '@hugeicons/core-free-icons'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { allRoles, getRoleDisplayName, type Role } from '@/domain/loot/spec-role-mapping'
+import { getRoleDisplayName, type Role } from '@/domain/loot/spec-role-mapping'
 import { useNotification } from '@/app/contexts/NotificationContext'
-import { getCurrentResetWeekEnd, type RaiderBonusEntry } from '@/domain/scoring'
-import { parseDate, toDateString } from '@/utils/date'
+import { normalizeRaiderModifiers, type RaiderBonusMap } from '@/domain/scoring'
+import { persistRaiderModifiers, saveRaiderBonusBatch } from './raider-bonus-save'
+import { RaiderBonusesCard } from './RaiderBonusesCard'
+import type { BulkRaiderBonusDraft } from './BulkRaiderBonusModal'
+import type { RosterAlias } from '@/domain/guild/roster-name-match'
+import { toDateString } from '@/utils/date'
 import { Card } from '@/components/ui/card'
 import { getGuildGame } from '@/domain/expansion/game'
 
 // Lazy load the modal to reduce initial bundle size
 const PrioListItemModal = dynamic(() => import('@/app/components/PrioListItemModal').then(mod => ({ default: mod.PrioListItemModal })), {
+  loading: () => null
+})
+const BulkRaiderBonusModal = dynamic(() => import('./BulkRaiderBonusModal').then(mod => ({ default: mod.BulkRaiderBonusModal })), {
   loading: () => null
 })
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
@@ -119,27 +126,6 @@ const getRaidTierOrder = (tierName: string): number => {
   return order[tierName] || 999
 }
 
-/**
- * Coerce the stored single_raider_modifiers value into the canonical
- * Record<charId, RaiderBonusEntry[]> shape. Tolerates a missing value and a
- * legacy flat number map ({ charId: 20 }) from the first iteration of this feature.
- */
-function normalizeRaiderMods(raw: unknown): Record<string, RaiderBonusEntry[]> {
-  if (!raw || typeof raw !== 'object') return {}
-  const out: Record<string, RaiderBonusEntry[]> = {}
-  for (const [charId, value] of Object.entries(raw as Record<string, unknown>)) {
-    if (Array.isArray(value)) {
-      const entries = value
-        .filter((e): e is RaiderBonusEntry => !!e && typeof (e as RaiderBonusEntry).amount === 'number')
-        .map((e) => ({ amount: e.amount, expires_at: e.expires_at ?? null }))
-      if (entries.length) out[charId] = entries
-    } else if (typeof value === 'number' && value !== 0) {
-      out[charId] = [{ amount: value, expires_at: null }]
-    }
-  }
-  return out
-}
-
 export default function PriorityListTab() {
   const [lootItems, setLootItems] = useState<LootItem[]>([])
   const [priorities, setPriorities] = useState<Record<string, ItemPriority>>({})
@@ -159,11 +145,10 @@ export default function PriorityListTab() {
   // Raider bonuses (permanent / per-week per-character modifiers)
   const [raiderBonusEnabled, setRaiderBonusEnabled] = useState(false)
   const [weekResetDay, setWeekResetDay] = useState<number | null>(null)
-  const [raiderMods, setRaiderMods] = useState<Record<string, RaiderBonusEntry[]>>({})
+  const [raiderMods, setRaiderMods] = useState<RaiderBonusMap>({})
   const [savingRaiderMods, setSavingRaiderMods] = useState(false)
-  const [addRaiderId, setAddRaiderId] = useState('')
-  const [addAmount, setAddAmount] = useState('')
-  const [addDuration, setAddDuration] = useState<'permanent' | 'week'>('permanent')
+  const [characterAliases, setCharacterAliases] = useState<RosterAlias[]>([])
+  const [bulkOpen, setBulkOpen] = useState(false)
 
   const supabase = createClient()
   const { activeGuild, loading: guildLoading } = useGuildContext()
@@ -185,68 +170,44 @@ export default function PriorityListTab() {
   }, [raidTiers, selectedPhase])
 
   // ── Raider bonuses ──────────────────────────────────────────
-  const charactersById = useMemo(
-    () => new Map(characters.map((c) => [c.id, c])),
+  // Local calendar date; ended raider bonuses are tidied away on every save.
+  const today = useMemo(() => toDateString(new Date()), [])
+
+  const persistRaiderMods = async (next: RaiderBonusMap): Promise<boolean> => {
+    if (!activeGuild) return false
+    return persistRaiderModifiers(next, {
+      guildId: activeGuild.id,
+      previous: raiderMods,
+      today,
+      setMods: setRaiderMods,
+      setSaving: setSavingRaiderMods,
+      notify: showNotification,
+    })
+  }
+
+  // Roster for the bulk modal: guild characters with their class colour.
+  const bulkRoster = useMemo(
+    () => characters.map((c) => ({ id: c.id, name: c.name, classColor: c.class?.color_hex ?? null })),
     [characters],
   )
 
-  // Flatten the per-raider map into one row per entry, for rendering.
-  const raiderBonusRows = useMemo(() => {
-    const rows: { charId: string; index: number; entry: RaiderBonusEntry }[] = []
-    for (const [charId, entries] of Object.entries(raiderMods)) {
-      entries.forEach((entry, index) => rows.push({ charId, index, entry }))
-    }
-    return rows.sort((a, b) => {
-      const an = charactersById.get(a.charId)?.name || ''
-      const bn = charactersById.get(b.charId)?.name || ''
-      return an.localeCompare(bn)
-    })
-  }, [raiderMods, charactersById])
-
-  const thisWeekExpiry = useMemo(
-    () => getCurrentResetWeekEnd(toDateString(new Date()), weekResetDay),
-    [weekResetDay],
-  )
-
-  const persistRaiderMods = async (next: Record<string, RaiderBonusEntry[]>) => {
+  const handleSaveBatch = async (draft: BulkRaiderBonusDraft) => {
     if (!activeGuild) return
-    const previous = raiderMods
-    setRaiderMods(next) // optimistic
-    setSavingRaiderMods(true)
-    try {
-      const response = await fetch('/api/guild-settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guild_id: activeGuild.id, settings: { single_raider_modifiers: next } }),
-      })
-      if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    } catch (error) {
-      console.error('Error saving raider bonuses:', error)
-      setRaiderMods(previous) // roll back
-      showNotification('error', "Couldn't save the raider bonus. Check your connection and try again.")
-    } finally {
-      setSavingRaiderMods(false)
-    }
-  }
-
-  const handleAddRaiderBonus = () => {
-    const amount = Number(addAmount)
-    if (!addRaiderId || addAmount.trim() === '' || Number.isNaN(amount) || amount === 0) return
-    const expires_at = addDuration === 'week' ? thisWeekExpiry : null
-    const entry: RaiderBonusEntry = { amount, expires_at }
-    const next = { ...raiderMods, [addRaiderId]: [...(raiderMods[addRaiderId] || []), entry] }
-    setAddRaiderId('')
-    setAddAmount('')
-    setAddDuration('permanent')
-    persistRaiderMods(next)
-  }
-
-  const handleRemoveRaiderBonus = (charId: string, index: number) => {
-    const entries = (raiderMods[charId] || []).filter((_, i) => i !== index)
-    const next = { ...raiderMods }
-    if (entries.length) next[charId] = entries
-    else delete next[charId]
-    persistRaiderMods(next)
+    await saveRaiderBonusBatch(draft, {
+      guildId: activeGuild.id,
+      mods: raiderMods,
+      batchId: crypto.randomUUID(),
+      persist: persistRaiderMods,
+      onSaved: () => setBulkOpen(false),
+      onAliasesSaved: (saved) => {
+        setCharacterAliases((prev) => {
+          const byName = new Map(prev.map((a) => [a.alias_name, a]))
+          for (const a of saved) byName.set(a.alias_name, { alias_name: a.alias_name, character_id: a.character_id })
+          return Array.from(byName.values())
+        })
+      },
+      notify: showNotification,
+    })
   }
 
   // Load all data
@@ -334,8 +295,19 @@ export default function PriorityListTab() {
           const s = settingsData?.settings || {}
           setRaiderBonusEnabled(!!s.single_raider_overall_bonus)
           setWeekResetDay(typeof s.week_reset_day === 'number' ? s.week_reset_day : null)
-          setRaiderMods(normalizeRaiderMods(s.single_raider_modifiers))
+          setRaiderMods(normalizeRaiderModifiers(s.single_raider_modifiers))
         }
+
+        // Saved name matches, so pasted names in the bulk raider bonus modal
+        // match the same raiders as the raid import.
+        const { data: aliasData, error: aliasError } = await supabase
+          .from('character_aliases')
+          .select('alias_name, character_id')
+          .eq('guild_id', activeGuild.id)
+        if (aliasError) {
+          console.error('Error loading character aliases:', aliasError)
+        }
+        setCharacterAliases(aliasData || [])
 
       } catch (error) {
         console.error('Error loading data:', error)
@@ -346,6 +318,8 @@ export default function PriorityListTab() {
     }
 
     loadData()
+    // supabase and showNotification are stable in practice; listing them would refetch on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guildLoading, activeGuild])
 
   // Load items and priorities when phase changes
@@ -413,6 +387,7 @@ export default function PriorityListTab() {
     }
 
     loadItemsAndPriorities()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPhase, activeGuild, phaseTiers])
 
   // Refresh Wowhead tooltips
@@ -565,7 +540,7 @@ export default function PriorityListTab() {
 
     // Role priorities
     const rolePrios = Object.entries(priority.role_priorities || {})
-      .filter(([_, rank]) => rank !== null)
+      .filter(([, rank]) => rank !== null)
       .sort(([, a], [, b]) => (a as number) - (b as number))
 
     if (rolePrios.length > 0) {
@@ -574,7 +549,7 @@ export default function PriorityListTab() {
 
     // Class priorities
     const classPrios = Object.entries(priority.class_priorities || {})
-      .filter(([_, rank]) => rank !== null)
+      .filter(([, rank]) => rank !== null)
       .sort(([, a], [, b]) => (a as number) - (b as number))
 
     if (classPrios.length > 0) {
@@ -583,7 +558,7 @@ export default function PriorityListTab() {
 
     // Character priorities
     const charPrios = Object.entries(priority.character_priorities || {})
-      .filter(([_, rank]) => rank !== null)
+      .filter(([, rank]) => rank !== null)
       .sort(([, a], [, b]) => (a as number) - (b as number))
 
     if (charPrios.length > 0) {
@@ -731,108 +706,30 @@ export default function PriorityListTab() {
         </Card>
       </div>
 
-      {/* Raider bonuses (permanent / per-week per-character modifiers) */}
+      {bulkOpen && (
+        <BulkRaiderBonusModal
+          open={bulkOpen}
+          onClose={() => setBulkOpen(false)}
+          roster={bulkRoster}
+          aliases={characterAliases}
+          today={today}
+          weekResetDay={weekResetDay}
+          saving={savingRaiderMods}
+          onSave={handleSaveBatch}
+        />
+      )}
+
+      {/* Raider bonuses (permanent, weekly and pasted-list bonuses per raider) */}
       {raiderBonusEnabled && (
-        <Card className="p-4 space-y-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-15 font-semibold text-foreground">Raider bonuses</p>
-              <p className="text-12 text-muted-foreground text-pretty">
-                Give a specific raider a bonus or penalty on every item&apos;s Loot Score. Make it permanent, or have it fall off at the next weekly reset.
-              </p>
-            </div>
-            {savingRaiderMods && <span className="text-12 text-muted-foreground shrink-0">Saving...</span>}
-          </div>
-
-          {/* Add row */}
-          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-            <Select
-              variant="rounded"
-              size="sm"
-              value={addRaiderId}
-              onChange={(e) => setAddRaiderId(e.target.value)}
-              className="sm:flex-1"
-              aria-label="Raider"
-            >
-              <option value="">Select a raider...</option>
-              {characters.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </Select>
-            <Input
-              variant="rounded"
-              size="sm"
-              type="number"
-              inputMode="numeric"
-              step="0.1"
-              value={addAmount}
-              onChange={(e) => setAddAmount(e.target.value)}
-              placeholder="+5 or -2"
-              className="sm:w-32"
-              aria-label="Amount"
-            />
-            <Select
-              variant="rounded"
-              size="sm"
-              value={addDuration}
-              onChange={(e) => setAddDuration(e.target.value as 'permanent' | 'week')}
-              className="sm:w-56"
-              aria-label="Duration"
-            >
-              <option value="permanent">Permanent</option>
-              <option value="week">This week (until {parseDate(thisWeekExpiry).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })})</option>
-            </Select>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleAddRaiderBonus}
-              disabled={!addRaiderId || addAmount.trim() === '' || Number(addAmount) === 0}
-            >
-              Add
-            </Button>
-          </div>
-
-          {/* Configured list */}
-          {raiderBonusRows.length === 0 ? (
-            <p className="text-12 text-muted-foreground">No raider bonuses yet. Add one above.</p>
-          ) : (
-            <div className="space-y-2">
-              {raiderBonusRows.map(({ charId, index, entry }) => {
-                const char = charactersById.get(charId)
-                const positive = entry.amount > 0
-                return (
-                  <div key={`${charId}-${index}`} className="flex items-center gap-3 bg-background border border-border rounded-lg px-3 py-2">
-                    <span
-                      className="flex-1 text-13 font-medium truncate"
-                      style={{ color: char?.class?.color_hex || '#888888' }}
-                    >
-                      {char?.name || 'Unknown raider'}
-                    </span>
-                    <span className={`text-13 font-semibold tabular-nums ${positive ? 'text-success' : 'text-destructive'}`}>
-                      {positive ? '+' : ''}{entry.amount}
-                    </span>
-                    {entry.expires_at ? (
-                      <span className="text-11 text-warning whitespace-nowrap">
-                        until {parseDate(entry.expires_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                      </span>
-                    ) : (
-                      <span className="text-11 text-muted-foreground whitespace-nowrap">permanent</span>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveRaiderBonus(charId, index)}
-                      className="!px-2"
-                      aria-label={`Remove ${entry.amount > 0 ? 'bonus' : 'penalty'} for ${char?.name || 'raider'}`}
-                    >
-                      ✕
-                    </Button>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </Card>
+        <RaiderBonusesCard
+          characters={characters}
+          raiderMods={raiderMods}
+          today={today}
+          weekResetDay={weekResetDay}
+          saving={savingRaiderMods}
+          onPersist={persistRaiderMods}
+          onAddForMany={() => setBulkOpen(true)}
+        />
       )}
 
       {/* Boss Quick Navigation */}
@@ -1036,6 +933,7 @@ export default function PriorityListTab() {
                                 >
                                   <div className="flex items-center gap-3">
                                     {getBossImage(boss) && (
+                                      // eslint-disable-next-line @next/next/no-img-element
                                       <img
                                         src={getBossImage(boss)!}
                                         alt={boss}

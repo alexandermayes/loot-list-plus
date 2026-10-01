@@ -30,13 +30,22 @@
 // ─── Public API ──────────────────────────────────────────────
 export { computeScore } from './engine'
 export { explainScore } from './explain'
-export { computeAttendance, resolveStatus, getAttendanceWindowEnd, getAttendanceWindowStart, getCurrentResetWeekEnd, resolveOwnedEvents } from './attendance'
+export { computeAttendance, resolveStatus, getAttendanceWindowEnd, getAttendanceWindowStart, getCurrentResetWeekEnd, getNextResetWeek, resolveOwnedEvents } from './attendance'
 export { resolveAttendanceWindow } from './attendance-window'
 export type { AttendanceWindow } from './attendance-window'
 export { withDefaults, getDefaultSettings } from './defaults'
 
 // ─── Utility (display helpers, not scoring) ──────────────────
-export { calculateBadLuckBonus, getRoleModifierWithLabel, getRankModifier, getRaiderBonus, resolveActiveRaiderModifiers } from './modifiers'
+export { calculateBadLuckBonus, getRoleModifierWithLabel, getRankModifier, getRaiderBonus, resolveActiveRaiderModifiers, isRaiderBonusEntryActive, getActiveRaiderBonusEntries } from './modifiers'
+
+// ─── Raider bonuses (pure map helpers for officers and raiders, #329) ────
+export {
+  RAIDER_BONUS_LABEL_MAX, RAIDER_BONUS_MAX_RAIDERS, RAIDER_BONUS_MAX_ENTRIES_PER_RAIDER,
+  normalizeRaiderModifiers, tidyRaiderModifiers, validateRaiderModifiers,
+  addRaiderBonusBatch, removeRaiderBonusBatch, removeRaiderBonusEntry,
+  raiderBonusStatus, groupRaiderBonuses, resolveBonusWindow, formatBonusDate,
+  describeRaiderBonusEntries,
+} from './raider-bonus'
 
 // ─── Donations (pure; not yet wired into computeScore — see PR3) ────────
 export { calculateDonationBonus } from './donations'
@@ -55,6 +64,9 @@ export { DEFAULT_SETTINGS } from './defaults'
 
 // ─── Types ───────────────────────────────────────────────────
 export type { ItemPriority } from './priority'
+export type {
+  RaiderBonusMap, RaiderBonusStatus, BonusWindowMode, RaiderBonusBatchView, RaiderBonusSingleView,
+} from './raider-bonus'
 export type {
   ScoringConfig, GuildSettings, RaiderBonusEntry, AttendanceRecord,
   CharacterContext, ScoreInput, ScoreResult, ScoreComponents,
