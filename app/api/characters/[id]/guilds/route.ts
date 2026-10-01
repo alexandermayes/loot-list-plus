@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getDefaultRoleName } from '@/domain/guild/default-role'
+import { resolveGuildJoinAccess, consumeGuildJoinGrant } from '@/domain/guild/join-grants'
 
 /**
  * GET /api/characters/[id]/guilds
@@ -77,7 +78,13 @@ export async function GET(
 
 /**
  * POST /api/characters/[id]/guilds
- * Add a character to a guild
+ * Add a character to a guild.
+ *
+ * A character is added (or its inactive membership reactivated) only for the
+ * guild's creator, a user with another active character in the guild, or a
+ * user with a join the server recorded (an invite or Discord join made before
+ * they had a character). Anyone else gets 403. A join record is used up by
+ * the membership write it allows.
  */
 export async function POST(
   request: Request,
@@ -143,43 +150,74 @@ export async function POST(
       .eq('guild_id', guild_id)
       .maybeSingle()
 
-    if (existingMembership) {
-      if (existingMembership.is_active) {
-        return NextResponse.json(
-          { error: 'Character is already a member of this guild' },
-          { status: 409 }
-        )
-      } else {
-        // Reactivate membership. Reactivation assigns the same role a new
-        // membership gets, as the invite and Discord join routes do.
-        const { data: membership, error } = await serviceSupabase
-          .from('character_guild_memberships')
-          .update({ is_active: true, role })
-          .eq('id', existingMembership.id)
-          .select(`
-            id,
-            role,
-            is_active,
-            joined_at,
-            joined_via,
-            guild:guilds(
-              id,
-              name,
-              icon_url
-            )
-          `)
-          .single()
+    if (existingMembership?.is_active) {
+      return NextResponse.json(
+        { error: 'Character is already a member of this guild' },
+        { status: 409 }
+      )
+    }
 
-        if (error) {
-          console.error('Error reactivating membership:', error)
-          return NextResponse.json(
-            { error: 'Failed to reactivate guild membership' },
-            { status: 500 }
-          )
-        }
+    // Only the creator, an existing member (alts) or a user with a recorded
+    // join may add a character. A lookup error throws and falls through to
+    // the 500 below with no write.
+    const access = await resolveGuildJoinAccess(serviceSupabase, {
+      userId: user.id,
+      guildId: guild_id,
+      excludeCharacterId: id,
+    })
+    if (!access.allowed) {
+      return NextResponse.json(
+        { error: 'You are not a member of this guild' },
+        { status: 403 }
+      )
+    }
 
-        return NextResponse.json({ membership }, { status: 200 })
+    // A member added through a join record starts as trial when the guild
+    // starts new members as trial, as the invite and Discord joins do.
+    let trialFields: { membership_status?: 'trial'; trial_started_at?: string } = {}
+    if (access.via === 'grant') {
+      const { data: joinSettings } = await serviceSupabase
+        .from('guild_settings')
+        .select('new_members_start_as_trial')
+        .eq('guild_id', guild_id)
+        .maybeSingle()
+      if (joinSettings?.new_members_start_as_trial === true) {
+        trialFields = { membership_status: 'trial', trial_started_at: new Date().toISOString() }
       }
+    }
+
+    if (existingMembership) {
+      // Reactivate membership. Reactivation assigns the same role a new
+      // membership gets, as the invite and Discord join routes do.
+      const { data: membership, error } = await serviceSupabase
+        .from('character_guild_memberships')
+        .update({ is_active: true, role, ...trialFields })
+        .eq('id', existingMembership.id)
+        .select(`
+          id,
+          role,
+          is_active,
+          joined_at,
+          joined_via,
+          guild:guilds(
+            id,
+            name,
+            icon_url
+          )
+        `)
+        .single()
+
+      if (error) {
+        console.error('Error reactivating membership:', error)
+        return NextResponse.json(
+          { error: 'Failed to reactivate guild membership' },
+          { status: 500 }
+        )
+      }
+
+      await consumeGuildJoinGrant(serviceSupabase, { userId: user.id, guildId: guild_id })
+
+      return NextResponse.json({ membership }, { status: 200 })
     }
 
     // Create new character membership
@@ -190,6 +228,7 @@ export async function POST(
         guild_id,
         role,
         joined_via,
+        ...trialFields,
       })
       .select(`
         id,
@@ -212,6 +251,8 @@ export async function POST(
         { status: 500 }
       )
     }
+
+    await consumeGuildJoinGrant(serviceSupabase, { userId: user.id, guildId: guild_id })
 
     return NextResponse.json({ membership }, { status: 201 })
   } catch (error) {

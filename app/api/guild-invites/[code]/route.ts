@@ -5,6 +5,7 @@ import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 import { setUserMilestone, trackEvent } from '@/utils/analytics/server'
 import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { getDefaultRoleName } from '@/domain/guild/default-role'
+import { recordGuildJoinGrant, consumeGuildJoinGrant } from '@/domain/guild/join-grants'
 
 // GET - Validate invite code and get guild info (works without auth for invite preview)
 export async function GET(
@@ -160,13 +161,6 @@ export async function POST(
     // Resolve the guild's default role name (lowest-position role)
     const defaultRole = await getDefaultRoleName(guildId)
 
-    // Get the guild details for realm
-    const { data: guildData } = await supabase
-      .from('guilds')
-      .select('realm')
-      .eq('id', guildId)
-      .single()
-
     // Check if user has a properly configured character (with class set)
     const { data: existingCharacters } = await serviceSupabase
       .from('characters')
@@ -177,7 +171,22 @@ export async function POST(
       .limit(1)
 
     if (!existingCharacters || existingCharacters.length === 0) {
-      // No valid character - set guild as active and prompt character creation
+      // No valid character. Record the join on the server first, so the
+      // character added later can join this guild, then set the guild as
+      // active and prompt character creation.
+      const { error: grantError } = await recordGuildJoinGrant(serviceSupabase, {
+        userId: user.id,
+        guildId,
+        source: 'invite_code',
+      })
+      if (grantError) {
+        console.error('[INVITE JOIN] Error recording guild join:', grantError)
+        return NextResponse.json(
+          { error: 'Couldn\'t join guild. Try again or contact an officer.' },
+          { status: 500 }
+        )
+      }
+
       await serviceSupabase
         .from('user_active_characters')
         .upsert({
@@ -247,6 +256,8 @@ export async function POST(
         )
       }
 
+      await consumeGuildJoinGrant(serviceSupabase, { userId: user.id, guildId })
+
       // Set as active character and guild for user
       await serviceSupabase
         .from('user_active_characters')
@@ -288,6 +299,8 @@ export async function POST(
         { status: 500 }
       )
     }
+
+    await consumeGuildJoinGrant(serviceSupabase, { userId: user.id, guildId })
 
     // Set as active character and guild for user
     await serviceSupabase
