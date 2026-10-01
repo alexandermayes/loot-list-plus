@@ -1,4 +1,4 @@
-import { ITEM_UNIQUE } from '../../data/item-unique'
+import { ITEM_UNIQUE, ONE_HAND_WEAPON_IDS } from '../../data/item-unique'
 import { TOKEN_MAX_COPIES } from '../../data/token-copies'
 import { isTokenSlot } from '../../data/token-class-mapping'
 
@@ -25,6 +25,14 @@ export const MAX_COPIES_PER_SLOT: Record<string, number> = {
 }
 
 export const DEFAULT_MAX_COPIES = 1
+
+/**
+ * Classic raid data files every weapon under one 'Weapon' slot. Only the ones
+ * the wow-classic-items package calls One-Hand can be dual-wielded, so only
+ * those are treated as One-Hand; any other 'Weapon' caps at one copy.
+ */
+const CLASSIC_WEAPON_SLOT = 'Weapon'
+const ONE_HAND_WEAPONS = new Set(ONE_HAND_WEAPON_IDS)
 
 /** Slots a raider can equip two of, and so may list twice. */
 export const PAIRED_SLOTS = Object.keys(MAX_COPIES_PER_SLOT)
@@ -72,7 +80,8 @@ const MAX_COPIES_WHEN_UNIQUE_UNKNOWN: Record<string, number> = {
  * Max copies of a specific item a raider may put on one loot list.
  *
  * Tokens get TOKEN_MAX_COPIES (absent means 1), counted per spec group by
- * domain/loot/item-copies.ts. Other unpaired slots always cap at one. Paired
+ * domain/loot/item-copies.ts. A Classic 'Weapon' counts as One-Hand only when
+ * it is in ONE_HAND_WEAPON_IDS. Other unpaired slots always cap at one. Paired
  * slots cap at one when the item is Unique and at two when it verifiably
  * isn't; see MAX_COPIES_WHEN_UNIQUE_UNKNOWN for the unflagged case.
  */
@@ -85,12 +94,18 @@ export function maxCopiesForItem(item: {
     return TOKEN_MAX_COPIES[item.wowhead_id] ?? DEFAULT_MAX_COPIES
   }
 
-  const slotMax = maxCopiesForSlot(item.item_slot)
+  let slot = item.item_slot
+  if (slot === CLASSIC_WEAPON_SLOT) {
+    if (item.wowhead_id == null || !ONE_HAND_WEAPONS.has(item.wowhead_id)) return DEFAULT_MAX_COPIES
+    slot = 'One-Hand'
+  }
+
+  const slotMax = maxCopiesForSlot(slot)
   if (slotMax === DEFAULT_MAX_COPIES) return slotMax
 
   const unique = isUniqueEquipped(item.wowhead_id)
   if (unique === undefined) {
-    return MAX_COPIES_WHEN_UNIQUE_UNKNOWN[item.item_slot as string] ?? DEFAULT_MAX_COPIES
+    return MAX_COPIES_WHEN_UNIQUE_UNKNOWN[slot as string] ?? DEFAULT_MAX_COPIES
   }
   return unique ? DEFAULT_MAX_COPIES : slotMax
 }

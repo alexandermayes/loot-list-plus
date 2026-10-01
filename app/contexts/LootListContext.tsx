@@ -24,6 +24,7 @@ import {
 } from '@/app/hooks/use-api'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { buildSlotCoverageMap, computeUpgradeTier } from '@/domain/loot/slot-normalization'
+import { removeRankingAt } from '@/domain/loot/list-row-updates'
 // preloadItemIcons is lazy-loaded (190KB module) - only imported when items are ready
 import {
   createBracketStates,
@@ -127,8 +128,10 @@ interface LootListActionsContextType {
   refreshData: () => void
   importBisItems: () => Promise<BisImportResult>
   refreshGear: () => void
-  removeApprovedItem: (lootItemId: string, itemName: string) => Promise<boolean>
-  restoreRemovedItem: (lootItemId: string) => Promise<boolean>
+  /** Removes the one copy at `position` (GH #293: a list can hold two copies of an item). */
+  removeApprovedItem: (lootItemId: string, itemName: string, position: { rank: number; slot: number }) => Promise<boolean>
+  /** Restores the one removed copy at `position`. */
+  restoreRemovedItem: (lootItemId: string, position: { rank: number; slot: number }) => Promise<boolean>
 }
 
 // Combined type for backward compatibility
@@ -1020,7 +1023,11 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   }, [mutateSubmission])
 
   // Remove a single item from an approved submission without changing its status
-  const removeApprovedItem = useCallback(async (lootItemId: string, itemName: string): Promise<boolean> => {
+  const removeApprovedItem = useCallback(async (
+    lootItemId: string,
+    _itemName: string,
+    position: { rank: number; slot: number },
+  ): Promise<boolean> => {
     const submissionId = submissionDataRef.current?.submission?.id
     if (!submissionId || !activeGuild?.id) {
       console.error('[removeApprovedItem] Missing submissionId or guildId', { submissionId, guildId: activeGuild?.id })
@@ -1035,6 +1042,8 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
           guild_id: activeGuild.id,
           submission_id: submissionId,
           loot_item_id: lootItemId,
+          rank: position.rank,
+          slot: position.slot,
         }),
       })
 
@@ -1044,16 +1053,8 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         return false
       }
 
-      // Remove from local rankings state
-      setRankings(prev => {
-        const newRankings = { ...prev }
-        for (const [key, value] of Object.entries(newRankings)) {
-          if (value === lootItemId) {
-            delete newRankings[key]
-          }
-        }
-        return newRankings
-      })
+      // Remove the one copy from local rankings state
+      setRankings(prev => removeRankingAt(prev, lootItemId, position))
 
       // Refresh from server to get clean state
       localChangesRef.current = false
@@ -1066,7 +1067,10 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   }, [activeGuild?.id, mutateSubmission])
 
   // Restore a previously removed item on an approved submission
-  const restoreRemovedItem = useCallback(async (lootItemId: string): Promise<boolean> => {
+  const restoreRemovedItem = useCallback(async (
+    lootItemId: string,
+    position: { rank: number; slot: number },
+  ): Promise<boolean> => {
     const submissionId = submissionDataRef.current?.submission?.id
     if (!submissionId || !activeGuild?.id) {
       console.error('[restoreRemovedItem] Missing submissionId or guildId', { submissionId, guildId: activeGuild?.id })
@@ -1082,6 +1086,8 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
           submission_id: submissionId,
           loot_item_id: lootItemId,
           restore: true,
+          rank: position.rank,
+          slot: position.slot,
         }),
       })
 

@@ -46,6 +46,49 @@ async function loadGuildLootItem(
   return { ...scope, name: data.name, wowhead_id: data.wowhead_id }
 }
 
+interface SubmissionItemRow {
+  id: string
+  rank: number
+  slot: number | string
+  loot_item_id: string
+  removed_at: string | null
+}
+
+type TargetPick = { row: SubmissionItemRow } | { error: string; status: number }
+
+const NOT_FOUND_ERROR = 'Item not found in this submission'
+const ALREADY_REMOVED_ERROR = 'Item already removed'
+const NOT_REMOVED_ERROR = 'Item is not removed'
+
+/**
+ * Picks the one loot_submission_items row to act on (GH #293): a list can
+ * hold two copies of an item, and removing or restoring one must leave the
+ * other alone. With a position, the row at that rank and slot; without one,
+ * the best-ranked candidate (rank descending, then slot ascending). `rows`
+ * are already filtered by submission_id and loot_item_id.
+ */
+function pickTargetRow(
+  rows: readonly SubmissionItemRow[],
+  position: { rank: number; slot: number } | null,
+  mode: 'remove' | 'restore'
+): TargetPick {
+  if (position) {
+    const row = rows.find(r => Number(r.rank) === position.rank && Number(r.slot) === position.slot)
+    if (!row) return { error: NOT_FOUND_ERROR, status: 404 }
+    if (mode === 'remove' && row.removed_at) return { error: ALREADY_REMOVED_ERROR, status: 400 }
+    if (mode === 'restore' && !row.removed_at) return { error: NOT_REMOVED_ERROR, status: 400 }
+    return { row }
+  }
+
+  const candidates = rows
+    .filter(r => (mode === 'remove' ? !r.removed_at : !!r.removed_at))
+    .sort((a, b) => Number(b.rank) - Number(a.rank) || Number(a.slot) - Number(b.slot))
+  if (candidates.length === 0) {
+    return { error: mode === 'remove' ? ALREADY_REMOVED_ERROR : NOT_REMOVED_ERROR, status: 400 }
+  }
+  return { row: candidates[0] }
+}
+
 /**
  * POST /api/loot-submissions/remove-item
  *
@@ -60,6 +103,9 @@ async function loadGuildLootItem(
  *   loot_item_id: string,
  *   reason?: string,
  *   already_obtained?: boolean  // If true, inserts into loot_history
+ *   restore?: boolean           // If true, undoes a removal
+ *   rank?: number, slot?: number  // The one row to act on (GH #293); when
+ *                                 // absent, the best-ranked matching row
  * }
  *
  * GH #297: every loot_items lookup is scoped to the calling guild via
@@ -77,7 +123,10 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { guild_id, submission_id, loot_item_id, reason, already_obtained, restore } = body
+    const { guild_id, submission_id, loot_item_id, reason, already_obtained, restore, rank, slot } = body
+    const position = rank != null || slot != null
+      ? { rank: Number(rank), slot: Number(slot) }
+      : null
 
     if (!guild_id || !submission_id || !loot_item_id) {
       return NextResponse.json(
@@ -137,22 +186,22 @@ export async function POST(request: Request) {
       .eq('loot_item_id', loot_item_id)
 
     if (!itemRows || itemRows.length === 0) {
-      return NextResponse.json({ error: 'Item not found in this submission' }, { status: 404 })
+      return NextResponse.json({ error: NOT_FOUND_ERROR }, { status: 404 })
     }
+    const rows = itemRows as SubmissionItemRow[]
 
     // Handle restore (undo removal)
     if (restore) {
-      const removedRows = itemRows.filter(r => r.removed_at)
-      console.log('[restore] itemRows:', itemRows.length, 'removedRows:', removedRows.length, 'removed_at values:', itemRows.map(r => r.removed_at))
-      if (removedRows.length === 0) {
-        return NextResponse.json({ error: 'Item is not removed' }, { status: 400 })
+      const pick = pickTargetRow(rows, position, 'restore')
+      if ('error' in pick) {
+        return NextResponse.json({ error: pick.error }, { status: pick.status })
       }
+      const target = pick.row
 
-      const itemIds = removedRows.map(r => r.id)
       const { error: restoreError } = await serviceSupabase
         .from('loot_submission_items')
         .update({ removed_at: null, removed_by: null })
-        .in('id', itemIds)
+        .eq('id', target.id)
 
       if (restoreError) {
         console.error('Error restoring item:', restoreError)
@@ -168,7 +217,7 @@ export async function POST(request: Request) {
         recordId: submission_id,
         action: 'UPDATE',
         userId: user.id,
-        oldData: { removed_at: removedRows[0].removed_at, item_name: lootItem?.name },
+        oldData: { removed_at: target.removed_at, item_name: lootItem?.name, rank: target.rank },
         newData: { removed_at: null, item_name: lootItem?.name, restored: true },
       })
 
@@ -179,10 +228,11 @@ export async function POST(request: Request) {
       })
     }
 
-    const activeRows = itemRows.filter(r => !r.removed_at)
-    if (activeRows.length === 0) {
-      return NextResponse.json({ error: 'Item already removed' }, { status: 400 })
+    const pick = pickTargetRow(rows, position, 'remove')
+    if ('error' in pick) {
+      return NextResponse.json({ error: pick.error }, { status: pick.status })
     }
+    const target = pick.row
 
     // Fetch item details for audit log and loot_history, scoped to this
     // guild (GH #297 D-07).
@@ -202,12 +252,12 @@ export async function POST(request: Request) {
       )
     }
 
-    // Mark items as removed (soft delete) instead of deleting
+    // Mark the one row as removed (soft delete) instead of deleting. The
+    // removed_at guard keeps a concurrent removal from being stamped twice.
     const { error: updateError } = await serviceSupabase
       .from('loot_submission_items')
       .update({ removed_at: new Date().toISOString(), removed_by: user.id })
-      .eq('submission_id', submission_id)
-      .eq('loot_item_id', loot_item_id)
+      .eq('id', target.id)
       .is('removed_at', null)
 
     if (updateError) {
@@ -257,7 +307,7 @@ export async function POST(request: Request) {
         wowhead_id: lootItem?.wowhead_id,
         character_name: character?.name || 'Unknown',
         character_id: submission.character_id,
-        ranks: itemRows.map(r => r.rank),
+        ranks: [target.rank],
         reason: reason || null,
         already_obtained: !!already_obtained,
         removed_by_owner: isOwner,
@@ -283,7 +333,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       item_name: lootItem?.name || 'Unknown',
-      ranks_removed: itemRows.map(r => r.rank),
+      ranks_removed: [target.rank],
       ...(already_obtained ? { history_recorded: historyRecorded ?? false } : {}),
     })
   } catch (error) {

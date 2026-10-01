@@ -36,6 +36,7 @@ import { notifySubmissionChanged } from '@/app/hooks/usePendingSubmissionCount'
 import { resolvePhaseGroups, getPhaseGroupLabel, getPhaseGroupShortLabel, getCanonicalPhase, type PhaseGroup } from '@/domain/expansion/phase-groups'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { Card } from '@/components/ui/card'
+import { detailRowKey, withoutDetailRow, restoreDetailRow } from '@/domain/loot/list-row-updates'
 
 interface Submission {
   id: string
@@ -793,7 +794,14 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
     }
   }
 
-  const handleRemoveItem = (submissionId: string, lootItemId: string, itemName: string) => {
+  // GH #293: a list can hold two copies of one item, so remove and restore
+  // act on the one copy at the row's rank and slot.
+  const handleRemoveItem = (
+    submissionId: string,
+    lootItemId: string,
+    itemName: string,
+    position: { rank: number; slot: number },
+  ) => {
     if (!guildId) return
 
     confirm({
@@ -802,7 +810,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
       confirmLabel: 'Remove item',
       variant: 'warning',
       onConfirm: async () => {
-        setRemovingItemId(lootItemId)
+        setRemovingItemId(detailRowKey(lootItemId, position.rank, position.slot))
         try {
           const response = await fetch('/api/loot-submissions/remove-item', {
             method: 'POST',
@@ -811,6 +819,8 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
               guild_id: guildId,
               submission_id: submissionId,
               loot_item_id: lootItemId,
+              rank: position.rank,
+              slot: position.slot,
             }),
           })
 
@@ -821,7 +831,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
           }
 
           showNotification('success', `${itemName} removed from list.`)
-          setSubmissionDetails(prev => prev.filter(d => d.loot_item?.id !== lootItemId))
+          setSubmissionDetails(prev => withoutDetailRow(prev, { lootItemId, ...position }))
         } catch {
           showNotification('error', 'Couldn\'t remove item. Check your connection.')
         } finally {
@@ -831,7 +841,12 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
     })
   }
 
-  const handleRestoreItem = async (submissionId: string, lootItemId: string, itemName: string) => {
+  const handleRestoreItem = async (
+    submissionId: string,
+    lootItemId: string,
+    itemName: string,
+    position: { rank: number; slot: number },
+  ) => {
     if (!guildId) return
 
     try {
@@ -843,6 +858,8 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
           submission_id: submissionId,
           loot_item_id: lootItemId,
           restore: true,
+          rank: position.rank,
+          slot: position.slot,
         }),
       })
 
@@ -854,9 +871,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
 
       showNotification('success', `${itemName} restored.`)
       // Update local state to reflect restoration
-      setSubmissionDetails(prev => prev.map(d =>
-        d.loot_item?.id === lootItemId ? { ...d, removed_at: null } : d
-      ))
+      setSubmissionDetails(prev => restoreDetailRow(prev, { lootItemId, ...position }))
     } catch {
       showNotification('error', 'Couldn\'t restore item. Check your connection.')
     }
@@ -1194,7 +1209,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    handleRestoreItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
+                    handleRestoreItem(viewingSubmission!, item.loot_item.id, item.loot_item.name, { rank: item.rank, slot: item.slot })
                   }}
                   className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0 hover:bg-accent/20 hover:text-accent transition-colors"
                   title="Restore item"
@@ -1206,9 +1221,9 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    handleRemoveItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
+                    handleRemoveItem(viewingSubmission!, item.loot_item.id, item.loot_item.name, { rank: item.rank, slot: item.slot })
                   }}
-                  disabled={removingItemId === item.loot_item.id}
+                  disabled={removingItemId === detailRowKey(item.loot_item.id, item.rank, item.slot)}
                   className="opacity-0 group-hover:opacity-100 ml-auto p-1 text-muted-foreground hover:text-destructive transition-opacity shrink-0"
                   title="Remove from list"
                 >
@@ -1238,7 +1253,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleRestoreItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
+                      handleRestoreItem(viewingSubmission!, item.loot_item.id, item.loot_item.name, { rank: item.rank, slot: item.slot })
                     }}
                     className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0 hover:bg-accent/20 hover:text-accent transition-colors"
                     title="Restore item"
@@ -1250,9 +1265,9 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleRemoveItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
+                      handleRemoveItem(viewingSubmission!, item.loot_item.id, item.loot_item.name, { rank: item.rank, slot: item.slot })
                     }}
-                    disabled={removingItemId === item.loot_item.id}
+                    disabled={removingItemId === detailRowKey(item.loot_item.id, item.rank, item.slot)}
                     className="ml-auto p-1 text-muted-foreground hover:text-destructive shrink-0"
                     title="Remove from list"
                   >

@@ -92,7 +92,8 @@ function makeClient(fixture: Fixture) {
         then: (resolve: (v: unknown) => unknown) => {
           if (table === 'loot_submission_items') {
             if (call.updatePayload) {
-              const isRemovalUpdate = call.filters.some(([col]) => col === 'submission_id')
+              // A removal sets removed_at to a timestamp; a restore clears it.
+              const isRemovalUpdate = call.updatePayload.removed_at !== null
               const error = isRemovalUpdate ? (fixture.removeUpdateError ?? null) : (fixture.restoreUpdateError ?? null)
               return Promise.resolve({ error }).then(resolve)
             }
@@ -311,6 +312,16 @@ describe('POST /api/loot-submissions/remove-item', () => {
     expect(lootHistoryInserts(calls)).toHaveLength(0)
   })
 
+  it('the soft delete targets the single row by id, guarded by removed_at null', async () => {
+    const { client, calls } = makeClient(baseFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD_ID, submission_id: SUBMISSION_ID, loot_item_id: ITEM_ID }))
+    expect(res.status).toBe(200)
+    expect((await res.json()).ranks_removed).toEqual([1])
+    expect(submissionItemUpdates(calls)[0].filters).toEqual([['id', 'row-1'], ['removed_at', null]])
+  })
+
   it('an officer (non-owner) with manage_submissions can remove the item', async () => {
     vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: OFFICER_USER_ID }, error: null } as never)
     vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: true } as never)
@@ -326,5 +337,82 @@ describe('POST /api/loot-submissions/remove-item', () => {
 
     expect(res.status).toBe(200)
     expect(body.success).toBe(true)
+  })
+
+  // GH #293: a list can hold two copies of one item; remove and restore act
+  // on one row only.
+  describe('one row of an item listed twice', () => {
+    const twoActive = (): SubmissionItemRow[] => [
+      { id: 'row-50', rank: 50, slot: '1', loot_item_id: ITEM_ID, removed_at: null },
+      { id: 'row-30', rank: 30, slot: '2', loot_item_id: ITEM_ID, removed_at: null },
+    ]
+    const twoRemoved = (): SubmissionItemRow[] => [
+      { id: 'row-50', rank: 50, slot: '1', loot_item_id: ITEM_ID, removed_at: '2026-09-20T00:00:00Z' },
+      { id: 'row-30', rank: 30, slot: '2', loot_item_id: ITEM_ID, removed_at: '2026-09-21T00:00:00Z' },
+    ]
+
+    async function post(itemRows: SubmissionItemRow[], extra: Record<string, unknown>) {
+      const fixture = { ...baseFixture(), itemRows }
+      const { client, calls } = makeClient(fixture)
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+      const res = await POST(request({ guild_id: GUILD_ID, submission_id: SUBMISSION_ID, loot_item_id: ITEM_ID, ...extra }))
+      return { res, body: await res.json(), calls }
+    }
+
+    it('removes only the row at the given rank and slot', async () => {
+      const { res, body, calls } = await post(twoActive(), { rank: 30, slot: 2 })
+      expect(res.status).toBe(200)
+      expect(body.ranks_removed).toEqual([30])
+      const updates = submissionItemUpdates(calls)
+      expect(updates).toHaveLength(1)
+      expect(updates[0].filters).toEqual([['id', 'row-30'], ['removed_at', null]])
+    })
+
+    it('removes the best-ranked row when no position is sent', async () => {
+      const { res, body, calls } = await post(twoActive(), {})
+      expect(res.status).toBe(200)
+      expect(body.ranks_removed).toEqual([50])
+      expect(submissionItemUpdates(calls)[0].filters).toEqual([['id', 'row-50'], ['removed_at', null]])
+    })
+
+    it('returns 404 and writes nothing for a position with no row of that item', async () => {
+      const { res, body, calls } = await post(twoActive(), { rank: 40, slot: 1 })
+      expect(res.status).toBe(404)
+      expect(body.error).toBe('Item not found in this submission')
+      expect(submissionItemUpdates(calls)).toHaveLength(0)
+    })
+
+    it('returns 400 when the row at the position is already removed', async () => {
+      const rows = twoActive()
+      rows[1].removed_at = '2026-09-21T00:00:00Z'
+      const { res, body, calls } = await post(rows, { rank: 30, slot: 2 })
+      expect(res.status).toBe(400)
+      expect(body.error).toBe('Item already removed')
+      expect(submissionItemUpdates(calls)).toHaveLength(0)
+    })
+
+    it('restores only the row at the given rank and slot', async () => {
+      const { res, body, calls } = await post(twoRemoved(), { restore: true, rank: 30, slot: 2 })
+      expect(res.status).toBe(200)
+      expect(body.restored).toBe(true)
+      const updates = submissionItemUpdates(calls)
+      expect(updates).toHaveLength(1)
+      expect(updates[0].filters).toEqual([['id', 'row-30']])
+    })
+
+    it('restores the best-ranked removed row when no position is sent', async () => {
+      const { res, calls } = await post(twoRemoved(), { restore: true })
+      expect(res.status).toBe(200)
+      expect(submissionItemUpdates(calls)[0].filters).toEqual([['id', 'row-50']])
+    })
+
+    it('returns 400 when the row at the restore position is not removed', async () => {
+      const rows = twoRemoved()
+      rows[1].removed_at = null
+      const { res, body, calls } = await post(rows, { restore: true, rank: 30, slot: 2 })
+      expect(res.status).toBe(400)
+      expect(body.error).toBe('Item is not removed')
+      expect(submissionItemUpdates(calls)).toHaveLength(0)
+    })
   })
 })

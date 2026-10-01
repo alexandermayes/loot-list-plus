@@ -39,6 +39,7 @@ import { InformationCircleIcon } from '@hugeicons/core-free-icons'
 import { useLootList, type LootItem } from '@/app/contexts/LootListContext'
 import { getPhaseGroupShortLabel } from '@/domain/expansion/phase-groups'
 import { copyLimitState } from '@/domain/loot/item-copies'
+import { positionKey } from '@/domain/loot/list-row-updates'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent, usePagePerf } from '@/utils/analytics/client'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
@@ -159,13 +160,13 @@ interface RankRowProps {
   /** When true, shows remove buttons instead of edit controls */
   isApproved?: boolean
   /** Called when user removes an item from an approved list */
-  onRemoveItem?: (lootItemId: string, itemName: string) => void
-  /** Item ID currently being removed */
+  onRemoveItem?: (lootItemId: string, itemName: string, position: { rank: number; slot: number }) => void
+  /** Position key ("{rank}-{slot}") of the copy currently being removed */
   removingItemId?: string | null
   /** Items that were removed from this rank (keyed by rank-slot) */
   removedRankings?: Record<string, string>
   /** Called when user restores a removed item */
-  onRestoreItem?: (lootItemId: string, itemName: string) => void
+  onRestoreItem?: (lootItemId: string, itemName: string, position: { rank: number; slot: number }) => void
   /**
    * When true (default), a Reserved item in one slot disables its sibling.
    * Brackets 1-4 enforce this — Reserved costs 1 allocation point and the
@@ -244,7 +245,7 @@ const RankRow = memo(function RankRow({
               <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success shrink-0 group-hover:hidden">Removed</span>
               {onRestoreItem && (
                 <button
-                  onClick={() => onRestoreItem(removedItem1.id, removedItem1.name)}
+                  onClick={() => onRestoreItem(removedItem1.id, removedItem1.name, { rank, slot: 1 })}
                   className="text-11 font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0 hidden group-hover:inline-block hover:bg-accent/30"
                 >
                   Undo
@@ -270,7 +271,7 @@ const RankRow = memo(function RankRow({
                     readOnly={isApproved}
                     onRemove={isApproved && onRemoveItem && selectedItemId1 ? () => {
                       const item = resolveItem(selectedItemId1)
-                      if (item) onRemoveItem(item.id, item.name)
+                      if (item) onRemoveItem(item.id, item.name, { rank, slot: 1 })
                     } : undefined}
                   />
                 </DraggableSlot>
@@ -288,7 +289,7 @@ const RankRow = memo(function RankRow({
                   readOnly={isApproved}
                   onRemove={isApproved && onRemoveItem && selectedItemId1 ? () => {
                     const item = resolveItem(selectedItemId1)
-                    if (item) onRemoveItem(item.id, item.name)
+                    if (item) onRemoveItem(item.id, item.name, { rank, slot: 1 })
                   } : undefined}
                 />
               )}
@@ -323,7 +324,7 @@ const RankRow = memo(function RankRow({
               <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success shrink-0 group-hover:hidden">Removed</span>
               {onRestoreItem && (
                 <button
-                  onClick={() => onRestoreItem(removedItem2.id, removedItem2.name)}
+                  onClick={() => onRestoreItem(removedItem2.id, removedItem2.name, { rank, slot: 2 })}
                   className="text-11 font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0 hidden group-hover:inline-block hover:bg-accent/30"
                 >
                   Undo
@@ -349,7 +350,7 @@ const RankRow = memo(function RankRow({
                     readOnly={isApproved}
                     onRemove={isApproved && onRemoveItem && selectedItemId2 ? () => {
                       const item = resolveItem(selectedItemId2)
-                      if (item) onRemoveItem(item.id, item.name)
+                      if (item) onRemoveItem(item.id, item.name, { rank, slot: 2 })
                     } : undefined}
                   />
                 </DraggableSlot>
@@ -367,7 +368,7 @@ const RankRow = memo(function RankRow({
                   readOnly={isApproved}
                   onRemove={isApproved && onRemoveItem && selectedItemId2 ? () => {
                     const item = resolveItem(selectedItemId2)
-                    if (item) onRemoveItem(item.id, item.name)
+                    if (item) onRemoveItem(item.id, item.name, { rank, slot: 2 })
                   } : undefined}
                 />
               )}
@@ -460,7 +461,7 @@ const MobileRankCard = memo(function MobileRankCard({
             <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success shrink-0 group-hover:hidden">Removed</span>
             {onRestore && (
               <button
-                onClick={() => onRestore(removedItem.id, removedItem.name)}
+                onClick={() => onRestore(removedItem.id, removedItem.name, { rank, slot: slotNum })}
                 className="text-11 font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0 hidden group-hover:inline-block hover:bg-accent/30"
               >
                 Undo
@@ -483,7 +484,7 @@ const MobileRankCard = memo(function MobileRankCard({
             readOnly={isApproved}
             onRemove={isApproved && onRemoveItem && selectedItemId ? () => {
               const item = resolveItem(selectedItemId)
-              if (item) onRemoveItem(item.id, item.name)
+              if (item) onRemoveItem(item.id, item.name, { rank, slot: slotNum })
             } : undefined}
             mobile
           />
@@ -545,10 +546,10 @@ interface BracketSectionProps {
   getSlotErrors: (rank: number, slot: 1 | 2) => ItemError[]
   ownedWowheadIds: Set<number>
   isApproved: boolean
-  onRemoveItem: (lootItemId: string, itemName: string) => void
+  onRemoveItem: (lootItemId: string, itemName: string, position: { rank: number; slot: number }) => void
   removingItemId: string | null
   removedRankings: Record<string, string>
-  onRestoreItem: (lootItemId: string, itemName: string) => void
+  onRestoreItem: (lootItemId: string, itemName: string, position: { rank: number; slot: number }) => void
   validation?: { allocationPoints: number; maxPoints: number; violations: string[] }
   maxAllocationPoints?: number
   expandedErrors: Set<string>
@@ -803,15 +804,19 @@ export default function LootListContent({
     return map
   }, [removedItems])
 
-  const handleRemoveApprovedItem = (lootItemId: string, itemName: string) => {
+  const handleRemoveApprovedItem = (
+    lootItemId: string,
+    itemName: string,
+    position: { rank: number; slot: number },
+  ) => {
     confirm({
       title: `Remove ${itemName}?`,
       description: 'This removes the item from your approved list. Your list stays approved.',
       confirmLabel: 'Remove item',
       variant: 'warning',
       onConfirm: async () => {
-        setRemovingItemId(lootItemId)
-        const success = await removeApprovedItem(lootItemId, itemName)
+        setRemovingItemId(positionKey(position.rank, position.slot))
+        const success = await removeApprovedItem(lootItemId, itemName, position)
         if (success) {
           showNotification('success', `${itemName} removed from your list.`)
         } else {
@@ -822,8 +827,12 @@ export default function LootListContent({
     })
   }
 
-  const handleRestoreItem = async (lootItemId: string, itemName: string) => {
-    const success = await restoreRemovedItem(lootItemId)
+  const handleRestoreItem = async (
+    lootItemId: string,
+    itemName: string,
+    position: { rank: number; slot: number },
+  ) => {
+    const success = await restoreRemovedItem(lootItemId, position)
     if (success) {
       showNotification('success', `${itemName} restored to your list.`)
     } else {
@@ -1911,7 +1920,7 @@ export default function LootListContent({
           <div className="overflow-hidden">
             <div className="pb-4">
               <div className="bg-red-900/50 border border-red-500 rounded-xl p-4 text-red-300">
-                <strong>Warning:</strong> You have duplicate items on your list. Most items can only appear once. Rings, trinkets and one-handed weapons can appear twice, since you equip two of them &mdash; unless they&apos;re Unique-Equipped, which most raid rings and trinkets are. Tokens can appear once per bracket section.
+                <strong>Warning:</strong> Some items are on your list too many times. Most items can appear once, even if more than one boss drops them. Rings, trinkets and one-handed weapons that aren&apos;t Unique can appear twice. A token can appear once for each gear slot it turns into (twice for Qiraji Bindings), plus the same again in Off-spec.
               </div>
             </div>
           </div>
@@ -2111,7 +2120,7 @@ export default function LootListContent({
                   { num: 2, title: 'Type restriction', desc: 'Only 1 item of a given type per bracket. No duplicate weapon types in the same bracket.' },
                   { num: 3, title: 'Reserved items', desc: 'Must be the sole entry at that desirability level. Cannot share a rank with another item.' },
                   { num: 4, title: 'Equal priority', desc: 'Both item slots at a level receive equal priority when filled.' },
-                  { num: 5, title: 'Dual weapons', desc: 'Two identical non-unique weapons are allowed if not hand-specific (e.g., two of the same dagger).' },
+                  { num: 5, title: 'Listing an item twice', desc: 'Rings, trinkets and one-handed weapons that aren\'t Unique can be listed twice. A token can be listed once for each gear slot it turns into, plus the same again in Off-spec.' },
                   { num: 6, title: 'Off-spec importance', desc: 'Completing off-spec selections enhances guild flexibility and is encouraged.' },
                 ].map((rule) => (
                   <div key={rule.num} className="flex items-start gap-3 px-4 py-3">
@@ -2134,7 +2143,7 @@ export default function LootListContent({
                 <ul className="space-y-1.5 text-sm">
                   <li className="flex items-start gap-2">
                     <span className="mt-0.5 shrink-0">&bull;</span>
-                    <span>Each item can only be selected once across all ranks</span>
+                    <span>Each item can be listed once across all ranks, even if more than one boss drops it, except the items in rule 5.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="mt-0.5 shrink-0">&bull;</span>

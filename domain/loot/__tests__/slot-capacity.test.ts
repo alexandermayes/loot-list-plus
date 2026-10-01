@@ -7,12 +7,13 @@ import {
 } from '../slot-capacity'
 
 // Real ids from data/item-unique.ts. The three rings are the ones reported in
-// GH #181 — across all five expansions they and Mar'li's Eye are the only
-// non-unique rings/trinkets in the raid data.
+// GH #181. They are not the only non-unique rings and trinkets: the refreshed
+// map (GH #293) adds Cauterizing Band, Shard of the Fallen Star and Ring of
+// Spell Power, among others.
 const BAND_OF_DEVASTATION = 32526
 const RING_OF_ANCIENT_KNOWLEDGE = 32527
 const BLESSED_BAND_OF_KARABOR = 32528
-const MARLIS_EYE = 19930 // Zul'Gurub — the only non-unique trinket in the data
+const MARLIS_EYE = 19930 // Zul'Gurub, a non-unique trinket
 const SPECTRAL_BAND_OF_INNERVATION = 28510 // unique ring
 const SKULL_OF_GULDAN = 32483 // unique trinket
 const UNKNOWN_ID = 99999999
@@ -101,6 +102,28 @@ describe('maxCopiesForItem', () => {
     expect(maxCopiesForItem({ item_slot: 'Finger', wowhead_id: UNKNOWN_ID })).toBe(1)
     expect(maxCopiesForItem({ item_slot: 'Trinket', wowhead_id: null })).toBe(1)
     expect(maxCopiesForItem({ item_slot: 'Finger' })).toBe(1)
+  })
+
+  // GH #293: Classic rings and trinkets the refreshed map flags.
+  it('allows the non-unique Classic rings and trinkets twice', () => {
+    expect(maxCopiesForItem({ item_slot: 'Finger', wowhead_id: 19140 })).toBe(2) // Cauterizing Band
+    expect(maxCopiesForItem({ item_slot: 'Trinket', wowhead_id: 21891 })).toBe(2) // Shard of the Fallen Star
+    expect(maxCopiesForItem({ item_slot: 'Finger', wowhead_id: 19147 })).toBe(2) // Ring of Spell Power
+  })
+
+  it('keeps the newly mapped unique rings at one copy', () => {
+    for (const id of [19434, 22722, 21620, 21836]) {
+      expect(maxCopiesForItem({ item_slot: 'Finger', wowhead_id: id })).toBe(1)
+    }
+  })
+
+  // Classic data files every weapon as 'Weapon'; only package One-Hand ones pair.
+  it('pairs a Classic Weapon only when it is a non-unique one-hander', () => {
+    expect(maxCopiesForItem({ item_slot: 'Weapon', wowhead_id: 17068 })).toBe(2) // Deathbringer
+    expect(maxCopiesForItem({ item_slot: 'Weapon', wowhead_id: 19351 })).toBe(1) // Maladath (Unique)
+    expect(maxCopiesForItem({ item_slot: 'Weapon', wowhead_id: 17103 })).toBe(1) // Azuresong Mageblade (Main Hand)
+    expect(maxCopiesForItem({ item_slot: 'Weapon', wowhead_id: UNKNOWN_ID })).toBe(1)
+    expect(maxCopiesForItem({ item_slot: 'Weapon', wowhead_id: null })).toBe(1)
   })
 
   // GH #331: a token may be listed once per gear slot it turns into (the
