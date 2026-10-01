@@ -9,6 +9,7 @@ import { ScrollIcon } from '@hugeicons/core-free-icons'
 import { Select } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { rankingEntryKey } from '@/domain/loot/ranking-entries'
 
 interface LootListPlayer {
   character_id: string
@@ -202,7 +203,7 @@ export default function LootListSummaryView({
                   <div className="flex flex-wrap gap-2">
                     {displayPlayers.map((player) => (
                         <div
-                          key={player.character_id}
+                          key={rankingEntryKey({ character_id: player.character_id, rank: player.item_rank, slot: player.primary_rank })}
                           className="flex items-center gap-1.5 px-2.5 py-1 bg-muted border border-border rounded-full"
                         >
                           <span

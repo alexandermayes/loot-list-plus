@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyGlobalReceiveSkip } from '../apply-receive-skip'
+import { applyGlobalReceiveSkip, pickReceivedEntries } from '../apply-receive-skip'
 
 interface R {
   character_id: string
@@ -80,5 +80,50 @@ describe('applyGlobalReceiveSkip', () => {
     ]
     const out = applyGlobalReceiveSkip(input, new Map())
     expect(out.map(g => g.item.wowhead_id)).toEqual([100, 200, 300])
+  })
+})
+
+// GH #293: the master sheet skips received copies across every row of one
+// wowhead_id, best rank first, instead of spending the skip on whichever row
+// it happens to process first.
+describe('pickReceivedEntries', () => {
+  const e = (key: string, rank: number, slot: number, row: string) => ({ key, rank, slot, row })
+
+  it('skips the best-ranked entry whatever the input order', () => {
+    const x = e('bob-19140', 30, 1, 'X')
+    const y = e('bob-19140', 50, 1, 'Y')
+    for (const entries of [[x, y], [y, x]]) {
+      const picked = pickReceivedEntries(entries, new Map([['bob-19140', 1]]))
+      expect([...picked].map(p => p.row)).toEqual(['Y'])
+    }
+  })
+
+  it('skips slot 1 before slot 2 on equal ranks', () => {
+    const slot2 = e('bob-19140', 40, 2, 'S2')
+    const slot1 = e('bob-19140', 40, 1, 'S1')
+    const picked = pickReceivedEntries([slot2, slot1], new Map([['bob-19140', 1]]))
+    expect([...picked].map(p => p.row)).toEqual(['S1'])
+  })
+
+  it('never skips more entries than exist', () => {
+    const only = e('bob-19140', 40, 1, 'only')
+    const picked = pickReceivedEntries([only], new Map([['bob-19140', 2]]))
+    expect([...picked]).toEqual([only])
+  })
+
+  it('leaves other raiders and other items alone', () => {
+    const bob = e('bob-19140', 40, 1, 'bob')
+    const alice = e('alice-19140', 50, 1, 'alice')
+    const other = e('bob-21891', 50, 1, 'other')
+    const picked = pickReceivedEntries([bob, alice, other], new Map([['bob-19140', 1]]))
+    expect([...picked].map(p => p.row)).toEqual(['bob'])
+  })
+
+  it('applyGlobalReceiveSkip removes slot 1 before slot 2 on a tie', () => {
+    const input = [
+      ir(19140, [{ character_id: 'bob', rank: 40, slot: 2, marker: 's2' } as R, { character_id: 'bob', rank: 40, slot: 1, marker: 's1' } as R]),
+    ]
+    const out = applyGlobalReceiveSkip(input, new Map([['bob-19140', 1]]))
+    expect(out[0].rankings.map(x => x.marker)).toEqual(['s2'])
   })
 })

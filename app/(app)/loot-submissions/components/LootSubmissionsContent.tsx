@@ -37,6 +37,7 @@ import { resolvePhaseGroups, getPhaseGroupLabel, getPhaseGroupShortLabel, getCan
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { Card } from '@/components/ui/card'
 import { detailRowKey, withoutDetailRow, restoreDetailRow } from '@/domain/loot/list-row-updates'
+import { diffListItems, type DiffEntry } from '@/domain/loot/list-diff'
 
 interface Submission {
   id: string
@@ -71,14 +72,6 @@ interface SnapshotItem {
   slot: number
   loot_item_id: string
   item_name: string
-}
-
-interface DiffEntry {
-  type: 'added' | 'removed' | 'moved'
-  item_name: string
-  rank?: number
-  old_rank?: number
-  new_rank?: number
 }
 
 interface Phase {
@@ -629,71 +622,13 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
     }
   }
 
+  // One entry per copy (GH #293): see domain/loot/list-diff.ts.
   const computeDiff = (currentItems: SubmissionDetailItem[], snapshotItems: SnapshotItem[]): DiffEntry[] => {
-    const diff: DiffEntry[] = []
-
-    // Build maps: loot_item_id -> rank (use lowest rank if dupes)
-    const currentByItem = new Map<string, number>()
-    for (const item of currentItems) {
-      const id = item.loot_item?.id
-      if (id && (!currentByItem.has(id) || item.rank > currentByItem.get(id)!)) {
-        currentByItem.set(id, item.rank)
-      }
-    }
-
-    const snapshotByItem = new Map<string, { rank: number; name: string }>()
-    for (const item of snapshotItems) {
-      if (!snapshotByItem.has(item.loot_item_id) || item.rank > snapshotByItem.get(item.loot_item_id)!.rank) {
-        snapshotByItem.set(item.loot_item_id, { rank: item.rank, name: item.item_name })
-      }
-    }
-
-    // Find added items (in current but not in snapshot)
-    for (const item of currentItems) {
-      const id = item.loot_item?.id
-      if (id && !snapshotByItem.has(id)) {
-        diff.push({
-          type: 'added',
-          item_name: item.loot_item?.name || 'Unknown',
-          rank: item.rank
-        })
-      }
-    }
-
-    // Find removed items (in snapshot but not in current)
-    for (const [id, snap] of snapshotByItem) {
-      if (!currentByItem.has(id)) {
-        diff.push({
-          type: 'removed',
-          item_name: snap.name,
-          old_rank: snap.rank
-        })
-      }
-    }
-
-    // Find moved items (same item, different rank)
-    for (const [id, currentRank] of currentByItem) {
-      const snap = snapshotByItem.get(id)
-      if (snap && snap.rank !== currentRank) {
-        diff.push({
-          type: 'moved',
-          item_name: snap.name,
-          old_rank: snap.rank,
-          new_rank: currentRank
-        })
-      }
-    }
-
-    // Sort: added first, then removed, then moved. Within each group, by rank desc
-    diff.sort((a, b) => {
-      const typeOrder = { added: 0, removed: 1, moved: 2 }
-      if (typeOrder[a.type] !== typeOrder[b.type]) return typeOrder[a.type] - typeOrder[b.type]
-      const rankA = a.rank ?? a.new_rank ?? a.old_rank ?? 0
-      const rankB = b.rank ?? b.new_rank ?? b.old_rank ?? 0
-      return rankB - rankA
-    })
-
-    return diff
+    const current = currentItems
+      .filter(item => item.loot_item?.id)
+      .map(item => ({ loot_item_id: item.loot_item.id, rank: item.rank, name: item.loot_item?.name || 'Unknown' }))
+    const snapshot = snapshotItems.map(item => ({ loot_item_id: item.loot_item_id, rank: item.rank, name: item.item_name }))
+    return diffListItems(current, snapshot)
   }
 
   const viewSubmissionDetails = async (submissionId: string) => {
@@ -1432,7 +1367,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                   'Both columns need to be filled out before we can approve.',
                   'Your list is looking sparse. Try to rank at least 20 items.',
                   'Some items on your list aren\'t available in this raid tier.',
-                  'Duplicate items found. Each item can only appear once.',
+                  'Some items are listed too many times. Most items can only appear once.',
                   'Looks good, approved!',
                 ].map((suggestion) => (
                   <button
