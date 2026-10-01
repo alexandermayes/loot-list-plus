@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 Phase: 06 (Week-4 Review & Next Bet) — EXECUTING
 Plan: 6 of 9
 Status: Ready to execute
-Last activity: 2026-10-01 - Completed quick task 260930-f0m: a character is added to a guild only through a recorded join, PR #332 merged and migration applied
+Last activity: 2026-10-01 - Completed quick task 260930-x3n: timed raider bonuses for a pasted list (GH #329), PR #334 merged
 
 Progress: [████████████████████] 23/23 plans ([███████░░░] 67%)
 
@@ -213,6 +213,7 @@ Recent decisions affecting current work:
 | 260929-qzn | Enforce guild membership write rules: membership rows are written by the server and a user session can only leave a guild; user-session guild roles stay below officer level; guild owner and subscription tier are server-managed (new guilds start free); unused membership insert and delete policies dropped; role renames follow the stored name and rejoin assigns the default role. Follow-up: join route accepts any guild id. PGlite 178/178 combined. PR #328 | 2026-09-30 | 86e1d6ff | Verified | [260929-qzn-enforce-guild-membership-write-rules](./quick/260929-qzn-enforce-guild-membership-write-rules/) |
 | 260929-wcr | Tighten EXECUTE grants on every public function by caller (PUBLIC default revoked; server-only, signed-in and RLS-helper classes), drop the client read policy on invite codes, pin search_path on four SECURITY DEFINER functions; plus a guarded exec_sql restriction. Confirmed live with anon probes (control 200, server-only 42501). PGlite 372/372 combined. PR #328 | 2026-09-30 | 86e1d6ff | Needs Review | [260929-wcr-tighten-database-function-execute-grants](./quick/260929-wcr-tighten-database-function-execute-grants/) |
 | 260930-f0m | Require a server-side join record before a character is added to a guild: service-role-only guild_join_grants table written by the invite and Discord join routes (single use, 30 days, renewed by a new join), required by the characters route and the Battle.net import unless the user is the creator or already has an active character in the guild; backfill for users waiting to create their first character; no new copy. PGlite 93/93. PR #332 | 2026-10-01 | 4a085a4f | Needs Review | [260930-f0m-require-a-server-side-join-record-before](./quick/260930-f0m-require-a-server-side-join-record-before/) |
+| 260930-x3n | GH #329: timed raider bonuses for a pasted list. Raider-bonus entries gain a start date, reason and batch id and count only inside their window (web score and addon export); "Add for many raiders" modal (paste names with the raid import's matcher, This week / Next week / custom dates, alias saving); batch-grouped card with remove-all and clear-ended; server validation; reasons and end dates in the raider's breakdown. All copy user-approved. No migration. PR #334 | 2026-10-01 | dcdff9c3 | Needs Review | [260930-x3n-gh-329-timed-raider-bonuses-for-a-pasted](./quick/260930-x3n-gh-329-timed-raider-bonuses-for-a-pasted/) |
 
 ## Deferred Items
 
