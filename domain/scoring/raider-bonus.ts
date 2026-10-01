@@ -1,5 +1,5 @@
 /**
- * Raider bonuses — pure helpers for the per-raider score modifier map
+ * Raider bonuses: pure helpers for the per-raider score modifier map
  * (guild_settings.single_raider_modifiers).
  *
  * Covers reading, tidying, validating and editing the map, plus the display

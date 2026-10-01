@@ -1,5 +1,5 @@
 /**
- * Roster name matching — turn pasted raid names into guild characters.
+ * Roster name matching: turn pasted raid names into guild characters.
  *
  * Shared by the raid-tracking import and the bulk raider bonus modal, so a
  * paste matches the same raiders in both places. Pure functions. No I/O.
