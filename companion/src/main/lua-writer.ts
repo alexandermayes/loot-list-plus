@@ -11,7 +11,10 @@
  * }
  */
 
-import { parseLuaTable } from './lua-parser'
+import { parseLuaTable, LUA_NUMBER_KEYS } from './lua-parser'
+
+/** A key's text that Lua can read back as the same number. */
+const LUA_NUMBER_KEY = /^-?\d+(\.\d+)?([eE][+-]?\d+)?$/
 
 export function toLuaTable(varName: string, data: unknown): string {
   return `${varName} = ${toLuaValue(data, 0)}\n`
@@ -79,17 +82,25 @@ function toLuaObject(obj: Record<string, unknown>, indent: number): string {
   const prefix = '\t'.repeat(indent + 1)
   const closePrefix = '\t'.repeat(indent)
   const parts: string[] = []
+  const numberKeys = (obj as { [LUA_NUMBER_KEYS]?: Set<string> })[LUA_NUMBER_KEYS]
 
   for (const key of keys) {
     const value = obj[key]
     if (value === undefined) continue
 
-    // Use ["key"] = value format for all keys
-    const luaKey = isValidLuaIdent(key) ? key : `[${toLuaString(key)}]`
+    // Keys marked as Lua numbers (lua-parser.ts) are written as [n]; every
+    // other key is a bare identifier or a ["key"] string key.
+    const luaKey = numberKeys?.has(key) && isLuaNumberKey(key)
+      ? `[${key}]`
+      : isValidLuaIdent(key) ? key : `[${toLuaString(key)}]`
     parts.push(`${prefix}${luaKey} = ${toLuaValue(value, indent + 1)},`)
   }
 
   return `{\n${parts.join('\n')}\n${closePrefix}}`
+}
+
+function isLuaNumberKey(str: string): boolean {
+  return LUA_NUMBER_KEY.test(str) && Number.isFinite(Number(str))
 }
 
 function isValidLuaIdent(str: string): boolean {

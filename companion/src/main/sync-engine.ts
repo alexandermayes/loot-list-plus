@@ -4,7 +4,12 @@ import path from 'path'
 import chokidar from 'chokidar'
 import { ApiClient, GuildData } from './api-client'
 import { parseLuaTable } from './lua-parser'
-import { toPendingAwardRequests, type PendingAwardRequest } from './addon-format'
+import {
+  convertItemsToLuaFormat,
+  convertMembersToLuaFormat,
+  toPendingAwardRequests,
+  type PendingAwardRequest,
+} from './addon-format'
 import { toLuaTable } from './lua-writer'
 import { WowFinder } from './wow-finder'
 
@@ -208,8 +213,8 @@ export class SyncEngine extends EventEmitter {
       expansionId: guildData.expansionId,
       phase: guildData.phase,
       settings: guildData.settings,
-      items: this.convertItemsToLuaFormat(guildData.items),
-      members: this.convertMembersToLuaFormat(guildData.members),
+      items: convertItemsToLuaFormat(guildData.items),
+      members: convertMembersToLuaFormat(guildData.members),
       priorities: guildData.priorities,
       blp: guildData.blp,
       attendance: guildData.attendance,
@@ -222,45 +227,6 @@ export class SyncEngine extends EventEmitter {
     // Write back
     const lua = toLuaTable('LootListPlusDB', db)
     fs.writeFileSync(svPath, lua, 'utf-8')
-  }
-
-  private convertItemsToLuaFormat(items: GuildData['items']): Record<number, unknown> {
-    const result: Record<number, unknown> = {}
-    for (const item of items) {
-      result[item.wowhead_id] = {
-        id: item.id,
-        name: item.name,
-        bossName: item.boss_name,
-        raidName: item.raid_name,
-        classification: item.classification,
-        slot: item.slot,
-        itemType: item.item_type,
-        wowheadId: item.wowhead_id,
-      }
-    }
-    return result
-  }
-
-  private convertMembersToLuaFormat(members: GuildData['members']): Record<string, unknown> {
-    const result: Record<string, unknown> = {}
-    for (const member of members) {
-      const items: Record<string, number> = {}
-      for (const item of member.items) {
-        items[String(item.wowhead_id)] = item.rank
-      }
-      result[member.character_id] = {
-        name: member.name,
-        class: member.class_token,
-        classColor: member.class_color,
-        spec: member.spec_name,
-        specId: member.spec_id,
-        role: member.role,
-        guildRole: member.guild_role,
-        membershipStatus: member.membership_status,
-        items,
-      }
-    }
-    return result
   }
 
   private readPendingFromSavedVars(): {
