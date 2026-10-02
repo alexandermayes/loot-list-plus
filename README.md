@@ -76,12 +76,15 @@ See [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md) for details.
 ```
 app/(app)/           # Authenticated app routes
 app/api/             # API routes (guilds, loot, auth, addon, etc.)
-addon/LootListPlus/  # WoW addon (Lua, multi-TOC)
 components/ui/       # Design system components
 data/                # Raid definitions, item data, class mappings
 lib/                 # Shared utilities (scoring, brackets, validation)
 supabase/migrations/ # Database migrations
 ```
+
+## WoW addon
+
+The LootList+ WoW addon lives in its own repository, [alexandermayes/loot-list-plus-addon](https://github.com/alexandermayes/loot-list-plus-addon). Its `Modules/ScoreEngine.lua` is the Lua port of `domain/scoring/` and is updated whenever the web scoring rules change. Its `tests/tools/gen_web_fixtures.mts` is the parity check: run from a checkout of this repo, it generates expected scores from `domain/scoring/` that the addon's luajit tests compare against (see `tests/README.md` in the addon repo).
 
 ## License
 

@@ -3,7 +3,8 @@
  *
  * These fixtures serve two purposes:
  * 1. Golden tests — lock current behavior before refactoring
- * 2. Lua parity — export as JSON to verify addon/ScoreEngine.lua matches
+ * 2. Lua parity: the addon repo (alexandermayes/loot-list-plus-addon) reads them
+ *    through tests/tools/gen_web_fixtures.mts to verify Modules/ScoreEngine.lua matches
  *
  * Each fixture defines inputs and the expected output from the current implementation.
  */

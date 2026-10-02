@@ -25,6 +25,13 @@
  * - `getRoleModifier` — raw role modifier (use computeScore)
  * - `getTrialPenalty` — raw trial penalty (use computeScore)
  * - `calculatePriorityBonus` — raw priority calc (use computeScore)
+ *
+ * ## WoW addon
+ *
+ * The addon's Modules/ScoreEngine.lua, in the alexandermayes/loot-list-plus-addon
+ * repository, is the Lua port of this module. Update it whenever these scoring
+ * rules change. Its tests/tools/gen_web_fixtures.mts is the parity check: it
+ * generates expected scores from this code for the addon's luajit tests.
  */
 
 // ─── Public API ──────────────────────────────────────────────
