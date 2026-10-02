@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 Phase: 06 (Week-4 Review & Next Bet) — EXECUTING
 Plan: 6 of 9
 Status: Ready to execute
-Last activity: 2026-10-02 - Completed quick task 260930-x3l: loot list item copy limits (GH #331, #293), PR #337 merged
+Last activity: 2026-10-02 - Completed quick task 261001-t74: fixed the flaky fetch teardown order in two component tests, PR #339 merged
 
 Progress: [████████████████████] 23/23 plans ([███████░░░] 67%)
 
@@ -215,6 +215,7 @@ Recent decisions affecting current work:
 | 260930-f0m | Require a server-side join record before a character is added to a guild: service-role-only guild_join_grants table written by the invite and Discord join routes (single use, 30 days, renewed by a new join), required by the characters route and the Battle.net import unless the user is the creator or already has an active character in the guild; backfill for users waiting to create their first character; no new copy. PGlite 93/93. PR #332 | 2026-10-01 | 4a085a4f | Needs Review | [260930-f0m-require-a-server-side-join-record-before](./quick/260930-f0m-require-a-server-side-join-record-before/) |
 | 260930-x3n | GH #329: timed raider bonuses for a pasted list. Raider-bonus entries gain a start date, reason and batch id and count only inside their window (web score and addon export); "Add for many raiders" modal (paste names with the raid import's matcher, This week / Next week / custom dates, alias saving); batch-grouped card with remove-all and clear-ended; server validation; reasons and end dates in the raider's breakdown. All copy user-approved. No migration. PR #334 | 2026-10-01 | dcdff9c3 | Needs Review | [260930-x3n-gh-329-timed-raider-bonuses-for-a-pasted](./quick/260930-x3n-gh-329-timed-raider-bonuses-for-a-pasted/) |
 | 260930-x3l | Fix GH #331 and #293: loot list copies counted by the real item across bosses and sections; limits of 1, 2 for non-unique rings, trinkets and one-handers (refreshed uniqueness map, Classic one-handers), and tokens per gear slot counted separately for main spec and off-spec (Bindings 2+2); same rule on submit with Main spec / Off-spec / Whole list labels; remove and restore one copy at a time; review diff, master sheet skip, keys and counts handle two copies. All copy user-approved. No migration. Follow-ups: same-night second award, companion ranks, addon removed rows, removed-row rank/slot. PR #337 | 2026-10-02 | 08dd6fb6 | Needs Review | [260930-x3l-fix-gh-331-and-293-loot-list-item-copy-l](./quick/260930-x3l-fix-gh-331-and-293-loot-list-item-copy-l/) |
+| 261001-t74 | Fix the intermittent CI failure seen on PR #337: CreateReserveRunModal and SetupGuide tests restored the real fetch before React cleanup, so a pending fetch effect could hit Node fetch with a relative URL. Tests now unmount first; new regression test (fails 3/3 with the old order, 32/32 clean with the fix, including under load). Test-only. PR #339 | 2026-10-02 | bfecc8fe |  | [261001-t74-fix-flaky-fetch-unstub-order-in-reserve-](./quick/261001-t74-fix-flaky-fetch-unstub-order-in-reserve-/) |
 
 ## Deferred Items
 
