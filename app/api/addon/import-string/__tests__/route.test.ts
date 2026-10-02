@@ -39,7 +39,24 @@ const FOREIGN_ITEM_ID = 'bbbbbbbb-0000-0000-0000-000000000002'
 type ExpansionRow = { id: string; guild_id: string }
 type TierRow = { id: string; expansion_id: string; name?: string }
 type ItemRow = { id: string; raid_tier_id: string; wowhead_id: number; boss_name?: string }
-type Call = { table: string; filters: Array<[string, unknown]>; insertPayload?: unknown }
+type Call = {
+  table: string
+  filters: Array<[string, unknown]>
+  insertPayload?: unknown
+  updatePayload?: unknown
+  columns?: string
+}
+/** A loot_history row in the fake's in-memory store (FU-1 of #331, #293). */
+type HistoryRow = {
+  id: string
+  guild_id: string
+  loot_item_id: string
+  character_id: string | null
+  character_name: string | null
+  raid_event_id: string | null
+  award_copy: number
+  source_award_key: string | null
+}
 
 interface Fixture {
   expansions: ExpansionRow[]
@@ -51,19 +68,53 @@ interface Fixture {
   insertError?: { code?: string; message: string }
   /** Row returned by the post-23505 existing-row lookup. */
   lookupRow?: { id: string } | null
+  /** Existing loot_history rows. The keyed addon path reads, stamps and
+   * inserts against this store, and inserts enforce both unique rules. */
+  history?: HistoryRow[]
+}
+
+function matchesFilters(row: Record<string, unknown>, filters: Array<[string, unknown]>): boolean {
+  return filters.every(([col, val]) => (col.startsWith('is:') ? row[col.slice(3)] === null : row[col] === val))
 }
 
 /** Recording fake matching the guild-scoped query sequence (expansions -> raid_tiers -> guilds -> loot_items). */
 function makeClient(fixture: Fixture) {
   const calls: Call[] = []
+  const history: HistoryRow[] = fixture.history ?? []
+
+  function insertHistory(payload: Record<string, unknown>) {
+    const next: HistoryRow = {
+      id: `hist-${history.length + 1}`,
+      guild_id: payload.guild_id as string,
+      loot_item_id: payload.loot_item_id as string,
+      character_id: (payload.character_id as string | null | undefined) ?? null,
+      character_name: (payload.character_name as string | null | undefined) ?? null,
+      raid_event_id: (payload.raid_event_id as string | null | undefined) ?? null,
+      award_copy: (payload.award_copy as number | undefined) ?? 1,
+      source_award_key: (payload.source_award_key as string | null | undefined) ?? null,
+    }
+    const clash = history.some(r =>
+      (next.source_award_key !== null && r.guild_id === next.guild_id && r.source_award_key === next.source_award_key) ||
+      (next.raid_event_id !== null && next.character_id !== null &&
+        r.guild_id === next.guild_id && r.loot_item_id === next.loot_item_id &&
+        r.character_id === next.character_id && r.raid_event_id === next.raid_event_id &&
+        r.award_copy === next.award_copy),
+    )
+    if (clash) return { data: null, error: { code: '23505', message: 'duplicate key' } }
+    history.push(next)
+    return { data: { id: next.id }, error: null }
+  }
+
   const client = {
     from(table: string) {
       const call: Call = { table, filters: [] }
       calls.push(call)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const builder: any = {
-        select: () => builder,
+        select: (columns?: string) => { if (!call.insertPayload && !call.updatePayload) call.columns = columns; return builder },
         insert: (payload: unknown) => { call.insertPayload = payload; return builder },
+        update: (payload: unknown) => { call.updatePayload = payload; return builder },
+        order: () => builder,
         eq: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         in: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         is: (col: string, val: unknown) => { call.filters.push([`is:${col}`, val]); return builder },
@@ -75,11 +126,19 @@ function makeClient(fixture: Fixture) {
           }
           if (table === 'loot_history') {
             if (fixture.insertError) return Promise.resolve({ data: null, error: fixture.insertError })
-            return Promise.resolve({ data: { id: 'hist-1' }, error: null })
+            return Promise.resolve(insertHistory(call.insertPayload as Record<string, unknown>))
           }
           return Promise.resolve({ data: null, error: null })
         },
         maybeSingle: () => {
+          if (table === 'loot_history' && call.filters.some(([col]) => col === 'source_award_key')) {
+            const found = history.find(r => matchesFilters(r, call.filters))
+            return Promise.resolve({ data: found ? { id: found.id } : null, error: null })
+          }
+          if (table === 'loot_history' && call.columns === 'award_copy') {
+            const copies = history.filter(r => matchesFilters(r, call.filters)).map(r => r.award_copy)
+            return Promise.resolve({ data: copies.length ? { award_copy: Math.max(...copies) } : null, error: null })
+          }
           if (table === 'loot_history') return Promise.resolve({ data: fixture.lookupRow ?? null, error: null })
           return Promise.resolve({ data: null, error: null })
         },
@@ -121,8 +180,14 @@ function makeClient(fixture: Fixture) {
             })
             return Promise.resolve({ data: rows.map(r => ({ ...r, name: 'item' })), error: null }).then(resolve)
           }
+          if (table === 'loot_history' && call.updatePayload) {
+            const stamped = history.filter(r => matchesFilters(r, call.filters))
+            for (const r of stamped) Object.assign(r, call.updatePayload)
+            return Promise.resolve({ data: stamped.map(r => ({ id: r.id })), error: null }).then(resolve)
+          }
           if (table === 'loot_history') {
-            return Promise.resolve({ data: [], error: null }).then(resolve)
+            const rows = history.filter(r => matchesFilters(r, call.filters)).sort((a, b) => a.award_copy - b.award_copy)
+            return Promise.resolve({ data: rows, error: null }).then(resolve)
           }
           if (table === 'character_guild_memberships') {
             return Promise.resolve({ data: fixture.characters ?? [], error: null }).then(resolve)
@@ -520,9 +585,15 @@ describe('POST /api/addon/import-string', () => {
       expect(recomputeBlpForItems).not.toHaveBeenCalled()
     })
 
-    it('a 23505 re-import counts as processed and already_recorded, not an error, and is not announced', async () => {
+    it('a re-import counts as processed and already_recorded, not an error, and is not announced', async () => {
+      // FU-1 of #331, #293: the award is matched by its key, not by a 23505.
       vi.mocked(findAwardRaidEvent).mockResolvedValueOnce({ raidEventId: 'ev-0920', outcome: 'linked' })
-      const { client } = makeClient(aqFixture({ insertError: { code: '23505', message: 'duplicate key' }, lookupRow: { id: 'hist-old' } }))
+      const { client, calls } = makeClient(aqFixture({
+        history: [{
+          id: 'hist-old', guild_id: GUILD_ID, loot_item_id: AQ40_ITEM, character_id: 'char-1', character_name: 'Thrall',
+          raid_event_id: 'ev-0920', award_copy: 1, source_award_key: 'addon:2026-09-21T01:00:00Z:20727:thrall',
+        }],
+      }))
       vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
 
       const res = await POST(request({ importString: importString(payloadWith([cachedAward], [aq40Session])) }))
@@ -530,6 +601,7 @@ describe('POST /api/addon/import-string', () => {
 
       expect(res.status).toBe(200)
       expect(body.data.awards).toEqual({ processed: 1, errors: 0, already_recorded: 1 })
+      expect(lootHistoryInserts(calls)).toHaveLength(0)
       expect(notifyLootAward).not.toHaveBeenCalled()
       expect(recomputeBlpForItems).not.toHaveBeenCalled()
     })
@@ -547,6 +619,102 @@ describe('POST /api/addon/import-string', () => {
       expect(body.data.awards).toEqual({ processed: 1, errors: 0, already_recorded: 0 })
       expect(insertPayload(calls).raid_event_id).toBeNull()
       expect(trackApiError).toHaveBeenCalledWith('unknown', 'POST /api/addon/import-string', expect.any(Error))
+    })
+
+    describe('FU-1 of #331, #293: a second award of one item to one raider on one night', () => {
+      const BINDINGS_ITEM = 'aq40-bindings'
+      const KEY_1 = 'addon:2026-09-20T20:00:00Z:20928:thrall'
+      const KEY_2 = 'addon:2026-09-20T21:30:00Z:20928:thrall'
+      const bindingsAt = (awardedAt: string) => ({
+        wowheadId: 20928,
+        characterName: 'Thrall',
+        bossName: 'Shared Boss Loot',
+        awardedAt,
+      })
+      const first = bindingsAt('2026-09-20T20:00:00Z')
+      const second = bindingsAt('2026-09-20T21:30:00Z')
+      const stored = (id: string, copy: number, key: string | null): HistoryRow => ({
+        id, guild_id: GUILD_ID, loot_item_id: BINDINGS_ITEM, character_id: 'char-1', character_name: 'Thrall',
+        raid_event_id: 'ev-0920', award_copy: copy, source_award_key: key,
+      })
+      function bindingsFixture(history: HistoryRow[] = []): Fixture {
+        const base = aqFixture()
+        return {
+          ...base,
+          items: [...base.items, { id: BINDINGS_ITEM, raid_tier_id: 'tier-b-aq40', wowhead_id: 20928, boss_name: 'Shared Boss Loot' }],
+          history,
+        }
+      }
+      const insertedRows = (calls: Call[]) =>
+        lootHistoryInserts(calls).map(c => {
+          const p = c.insertPayload as { award_copy?: number; source_award_key?: string }
+          return { award_copy: p.award_copy, source_award_key: p.source_award_key }
+        })
+
+      beforeEach(() => {
+        vi.mocked(findAwardRaidEvent).mockResolvedValue({ raidEventId: 'ev-0920', outcome: 'linked' })
+      })
+
+      it('I1 two awards at different times record copy 1 and copy 2 with their own keys', async () => {
+        const fixture = bindingsFixture()
+        const { client, calls } = makeClient(fixture)
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+        const res = await POST(request({ importString: importString(payloadWith([first, second], [])) }))
+        const body = await res.json()
+
+        expect(body.data.awards).toEqual({ processed: 2, errors: 0, already_recorded: 0 })
+        expect(insertedRows(calls)).toEqual([
+          { award_copy: 1, source_award_key: KEY_1 },
+          { award_copy: 2, source_award_key: KEY_2 },
+        ])
+        expect(fixture.history).toHaveLength(2)
+        const announced = vi.mocked(notifyLootAward).mock.calls[0][2]
+        expect(announced).toHaveLength(2)
+      })
+
+      it('I2 importing the same export again records nothing and reports both as already recorded', async () => {
+        const fixture = bindingsFixture([stored('hist-a', 1, KEY_1), stored('hist-b', 2, KEY_2)])
+        const { client, calls } = makeClient(fixture)
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+        const res = await POST(request({ importString: importString(payloadWith([first, second], [])) }))
+        const body = await res.json()
+
+        expect(body.data.awards).toEqual({ processed: 2, errors: 0, already_recorded: 2 })
+        expect(lootHistoryInserts(calls)).toHaveLength(0)
+        expect(fixture.history).toHaveLength(2)
+        expect(notifyLootAward).not.toHaveBeenCalled()
+        expect(recomputeBlpForItems).not.toHaveBeenCalled()
+      })
+
+      it('I3 an export holding only the second award, after the first was imported, records copy 2', async () => {
+        const fixture = bindingsFixture([stored('hist-a', 1, KEY_1)])
+        const { client, calls } = makeClient(fixture)
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+        const res = await POST(request({ importString: importString(payloadWith([second], [])) }))
+        const body = await res.json()
+
+        expect(body.data.awards).toEqual({ processed: 1, errors: 0, already_recorded: 0 })
+        expect(insertedRows(calls)).toEqual([{ award_copy: 2, source_award_key: KEY_2 }])
+      })
+
+      it('I4 an unkeyed row on the night absorbs the award: it is stamped with the key and nothing is inserted', async () => {
+        const fixture = bindingsFixture([stored('hist-web', 1, null)])
+        const { client, calls } = makeClient(fixture)
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+        const res = await POST(request({ importString: importString(payloadWith([first], [])) }))
+        const body = await res.json()
+
+        expect(body.data.awards).toEqual({ processed: 1, errors: 0, already_recorded: 1 })
+        expect(lootHistoryInserts(calls)).toHaveLength(0)
+        expect(fixture.history).toEqual([stored('hist-web', 1, KEY_1)])
+        const stamp = calls.find(c => c.table === 'loot_history' && c.updatePayload)
+        expect(stamp?.updatePayload).toEqual({ source_award_key: KEY_1 })
+        expect(notifyLootAward).not.toHaveBeenCalled()
+      })
     })
   })
 })

@@ -13,7 +13,7 @@ import {
   type LootItemHints,
 } from '@/lib/loot/guild-scoped-lookup'
 import { buildImportStringAwardRow, type LootItemScope } from '@/lib/loot/loot-history-rows'
-import { insertAddonAward } from '@/lib/loot/addon-award-insert'
+import { addonAwardKey, insertAddonAward } from '@/lib/loot/addon-award-insert'
 import { matchAwardSession } from '@/lib/addon/award-session'
 import { inflateRawSync } from 'zlib'
 
@@ -74,6 +74,13 @@ interface ImportPayload {
  * replaced only when those live hints decided between tiers (OD-6). A
  * re-imported award already on its night counts as processed and in
  * awards.already_recorded, not as an error, and is not announced again.
+ *
+ * FU-1 of #331, #293: each award is identified by its addonAwardKey
+ * (awardedAt, wowheadId and character name), so a re-import is matched by
+ * the award's key while a second award of the same item to the same raider
+ * on one night (a different awardedAt) is recorded as the next copy. An
+ * export that holds only the later award, after "Clear pending" in game,
+ * still records it as the next copy.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -379,6 +386,11 @@ async function processAward(
       manual: award.manual,
       awardedBy: userId,
       raidEventId,
+      sourceAwardKey: addonAwardKey({
+        awardedAt: award.awardedAt,
+        wowheadId: award.wowheadId,
+        characterName: award.characterName,
+      }),
       today,
     })
   )

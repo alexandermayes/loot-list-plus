@@ -7,6 +7,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { buildAddonAwardRow } from '@/lib/loot/loot-history-rows'
+import { addonAwardKey } from '@/lib/loot/addon-award-insert'
 import { trackEvent, trackApiError } from '@/utils/analytics/server'
 import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { notifyLootAward } from '@/lib/discord-loot-announcements'
@@ -70,6 +71,7 @@ function makeClient(fixture: Fixture) {
         eq: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         in: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         is: (col: string, val: unknown) => { call.filters.push([`is:${col}`, val]); return builder },
+        order: () => builder,
         limit: () => builder,
         single: () => {
           if (table === 'guilds') {
@@ -570,6 +572,75 @@ describe('POST /api/addon/loot-award', () => {
       expect(res.status).toBe(500)
       expect(body.error).toBe('Failed to record award')
       expect(notifyLootAward).not.toHaveBeenCalled()
+    })
+
+    describe('FU-1 of #331, #293: optional awarded_at gives the award its addon key', () => {
+      const AWARDED_AT = '2026-09-20T20:00:00Z'
+      const bindingsFixture = (extra: Partial<Fixture> = {}) =>
+        nightFixture({ items: [{ id: 'item-20928', name: 'Qiraji Bindings of Command', raid_tier_id: 'tier-1', wowhead_id: 20928 }], ...extra })
+      const fullPayload = (calls: Call[]) =>
+        lootHistoryInsert(calls)?.filters.find(([col]) => col === '__insert_payload__')?.[1] as Record<string, unknown>
+      const keyLookups = (calls: Call[]) =>
+        calls.filter(c => c.table === 'loot_history' && c.filters.some(([col]) => col === 'source_award_key'))
+
+      it('L1 a valid awarded_at writes the same key the export-string import builds for that award', async () => {
+        const { client, calls } = makeClient(bindingsFixture())
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+        const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 20928, character_name: 'Thrall', awarded_date: DATE, awarded_at: AWARDED_AT }))
+        expect(res.status).toBe(200)
+
+        const expected = addonAwardKey({ awardedAt: AWARDED_AT, wowheadId: 20928, characterName: 'Thrall' })
+        expect(expected).toBe('addon:2026-09-20T20:00:00Z:20928:thrall')
+        expect(fullPayload(calls).source_award_key).toBe(expected)
+        expect(fullPayload(calls).award_copy).toBe(1)
+      })
+
+      it('L2 an already recorded key returns 200 already_recorded with the existing id and no side effects', async () => {
+        const { client, calls } = makeClient(bindingsFixture({ lookupRow: { id: 'hist-keyed' } }))
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+        const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 20928, character_name: 'Thrall', awarded_date: DATE, awarded_at: AWARDED_AT }))
+        const body = await res.json()
+
+        expect(res.status).toBe(200)
+        expect(body.data).toMatchObject({ id: 'hist-keyed', already_recorded: true })
+        expect(lootHistoryInsert(calls)).toBeUndefined()
+        expect(keyLookups(calls)).toHaveLength(1)
+        expect(notifyLootAward).not.toHaveBeenCalled()
+        expect(trackEvent).not.toHaveBeenCalled()
+        expect(evaluateGuildFunnel).not.toHaveBeenCalled()
+        expect(recomputeBlpForItems).not.toHaveBeenCalled()
+      })
+
+      it('L3 a malformed awarded_at is ignored: no key, and a 23505 re-send is already_recorded as today', async () => {
+        for (const awarded_at of ['yesterday', 1758398400]) {
+          vi.clearAllMocks()
+          vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'user-1' }, error: null } as never)
+          vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
+          const { client, calls } = makeClient(bindingsFixture({ insertError: { code: '23505', message: 'duplicate key' }, lookupRow: { id: 'hist-old' } }))
+          vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+          const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 20928, character_name: 'Thrall', awarded_date: DATE, awarded_at }))
+          const body = await res.json()
+
+          expect(res.status).toBe(200)
+          expect(fullPayload(calls)).not.toHaveProperty('source_award_key')
+          expect(keyLookups(calls)).toHaveLength(0)
+          expect(body.data).toMatchObject({ id: 'hist-old', already_recorded: true })
+        }
+      })
+
+      it('L4 without awarded_at the payload carries no key or copy and runs no key lookup', async () => {
+        const { client, calls } = makeClient(bindingsFixture())
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+        const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 20928, character_name: 'Thrall', awarded_date: DATE }))
+        expect(res.status).toBe(200)
+        expect(fullPayload(calls)).not.toHaveProperty('source_award_key')
+        expect(fullPayload(calls)).not.toHaveProperty('award_copy')
+        expect(keyLookups(calls)).toHaveLength(0)
+      })
     })
   })
 })

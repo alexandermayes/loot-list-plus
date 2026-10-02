@@ -42,6 +42,9 @@ export interface BuildAddonAwardRowInput {
   /** The guild's raid night for this award (GH #295), or null/absent when
    * no single night matched. */
   raidEventId?: string | null
+  /** The award's addonAwardKey (FU-1 of #331, #293), or null/absent for a
+   * companion that sends no award timestamp. */
+  sourceAwardKey?: string | null
   today: string
 }
 
@@ -54,11 +57,15 @@ export interface BuildAddonAwardRowInput {
  *
  * GH #295: raid_event_id is the raid night the route found with
  * findAwardRaidEvent (always the guild's own), or null when none matched,
- * so the award counts for BLP and the per-night duplicate index applies.
+ * so the award counts for BLP and the per-night unique rule applies.
+ *
+ * FU-1 of #331, #293: source_award_key is set only when sourceAwardKey is
+ * non-null; insertAddonAward then picks award_copy itself. Without a key
+ * the row is copy 1 (the column default), exactly as before.
  */
 export function buildAddonAwardRow(input: BuildAddonAwardRowInput): LootHistoryInsert {
-  const { guildId, item, characterId, characterName, awardedDate, awardedBy, notes, bossName, raidEventId, today } = input
-  return {
+  const { guildId, item, characterId, characterName, awardedDate, awardedBy, notes, bossName, raidEventId, sourceAwardKey, today } = input
+  const row: LootHistoryInsert = {
     guild_id: guildId,
     character_id: characterId,
     character_name: characterName,
@@ -71,6 +78,8 @@ export function buildAddonAwardRow(input: BuildAddonAwardRowInput): LootHistoryI
     notes: notes || (bossName ? `Dropped from ${bossName}` : null),
     raid_event_id: raidEventId ?? null,
   }
+  if (sourceAwardKey) row.source_award_key = sourceAwardKey
+  return row
 }
 
 export interface BuildBulkAwardRowInput {
@@ -82,6 +91,9 @@ export interface BuildBulkAwardRowInput {
   characterId?: string | null
   characterName?: string | null
   notes: string | null
+  /** Which copy of the item this is for the raider on this night (FU-1 of
+   * #331, #293), from assignAwardCopies; absent means the column default 1. */
+  awardCopy?: number
 }
 
 /**
@@ -95,10 +107,11 @@ export interface BuildBulkAwardRowInput {
  * character_id/character_name only when truthy, so the DB's own
  * CURRENT_DATE default and the existing "omit when absent" behavior are
  * preserved exactly. No `source` key is set, so the DB default ('web')
- * still applies, matching today's bulk-insert behavior.
+ * still applies, matching today's bulk-insert behavior. award_copy is set
+ * only when awardCopy is given (FU-1 of #331, #293).
  */
 export function buildBulkAwardRow(input: BuildBulkAwardRowInput): LootHistoryInsert {
-  const { guildId, awardedBy, item, raidEventId, awardedDate, characterId, characterName, notes } = input
+  const { guildId, awardedBy, item, raidEventId, awardedDate, characterId, characterName, notes, awardCopy } = input
   const row: LootHistoryInsert = {
     loot_item_id: item.id,
     guild_id: guildId,
@@ -111,6 +124,7 @@ export function buildBulkAwardRow(input: BuildBulkAwardRowInput): LootHistoryIns
   if (awardedDate) row.awarded_date = awardedDate
   if (characterId) row.character_id = characterId
   if (characterName) row.character_name = characterName
+  if (awardCopy !== undefined) row.award_copy = awardCopy
   return row
 }
 
@@ -124,6 +138,9 @@ export interface BuildImportStringAwardRowInput {
   awardedBy: string
   /** The guild's raid night for this award (GH #295), or null/absent. */
   raidEventId?: string | null
+  /** The award's addonAwardKey (FU-1 of #331, #293), or null/absent when the
+   * award has no usable timestamp. */
+  sourceAwardKey?: string | null
   today: string
 }
 
@@ -137,10 +154,14 @@ export interface BuildImportStringAwardRowInput {
  *
  * GH #295: raid_event_id is the raid night the route found for the award's
  * attendance session (or its awardedAt date), or null when none matched.
+ *
+ * FU-1 of #331, #293: source_award_key is set only when sourceAwardKey is
+ * non-null, so re-imports are matched by the award's key and a second copy
+ * on one night is recorded (insertAddonAward picks award_copy).
  */
 export function buildImportStringAwardRow(input: BuildImportStringAwardRowInput): LootHistoryInsert {
-  const { guildId, item, characterId, characterName, awardedAt, manual, awardedBy, raidEventId, today } = input
-  return {
+  const { guildId, item, characterId, characterName, awardedAt, manual, awardedBy, raidEventId, sourceAwardKey, today } = input
+  const row: LootHistoryInsert = {
     guild_id: guildId,
     character_id: characterId,
     character_name: characterName,
@@ -153,6 +174,8 @@ export function buildImportStringAwardRow(input: BuildImportStringAwardRowInput)
     notes: manual ? 'Manual award from addon' : null,
     raid_event_id: raidEventId ?? null,
   }
+  if (sourceAwardKey) row.source_award_key = sourceAwardKey
+  return row
 }
 
 export interface BuildRemoveItemHistoryRowInput {

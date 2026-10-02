@@ -11,6 +11,7 @@ import { routeRecordsToTeamEvents } from '@/utils/raid-events/team-routing'
 import { resolveGuildLootItemIds, formatInvalidLootItemIdsError } from '@/lib/loot/guild-scoped-lookup'
 import { normalizeRefId, findInvalidRaidEventIds, findInvalidCharacterIds, formatInvalidAwardRefsError } from '@/lib/loot/guild-award-refs'
 import { buildBulkAwardRow } from '@/lib/loot/loot-history-rows'
+import { assignAwardCopies, isValidAwardCopy, nextAwardCopy } from '@/domain/loot/award-copies'
 import type { AwardReason, AwardOutcomeType } from '@/domain/types'
 
 const AWARD_REASON_VALUES = new Set<AwardReason>(['', 'score', 'loot_council', 'override', 'offspec', 'roll'])
@@ -24,6 +25,33 @@ const REASON_LABELS: Record<Exclude<AwardReason, '' | 'score'> | 'score', string
   roll: 'Won roll (tied scores)',
 }
 const MAX_AUDIT_PAYLOAD_BYTES = 4096
+const INVALID_AWARD_COPY_ERROR = 'Every award_copy must be a whole number from 1 to 10'
+
+/**
+ * The highest stored award_copy for one item, raider and raid night, or
+ * null when there is none. Throws on a query error so callers can decide
+ * what a failed lookup means.
+ */
+async function highestAwardCopy(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  guildId: string,
+  lootItemId: string,
+  characterId: string,
+  raidEventId: string,
+): Promise<number | null> {
+  const { data, error } = await supabase
+    .from('loot_history')
+    .select('award_copy')
+    .eq('guild_id', guildId)
+    .eq('loot_item_id', lootItemId)
+    .eq('character_id', characterId)
+    .eq('raid_event_id', raidEventId)
+    .order('award_copy', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (error) throw new Error(`Failed to read award copies: ${error.message}`)
+  return (data as { award_copy: number } | null)?.award_copy ?? null
+}
 
 function asFiniteNumber(v: unknown): number | null {
   return typeof v === 'number' && Number.isFinite(v) ? v : null
@@ -116,6 +144,17 @@ function composeNotesFromReason(reason: AwardReason | null | undefined, note: st
  * here. null and absent values on either field stay allowed exactly as
  * before. A mismatch returns 400 with invalid_raid_event_ids and
  * invalid_character_ids, so an officer sees every problem at once.
+ *
+ * FU-1 of #331, #293: a raider can receive one item more than once on one
+ * raid night. Each item may carry award_copy (a whole number from 1 to 10,
+ * else 400 with invalid_award_copy_indexes before anything is written).
+ * Items without one are numbered by assignAwardCopies after team routing,
+ * so repeats of one item, raider and night within a request (a Gargul paste
+ * with the same line twice) become copies 1, 2, 3 in request order; items
+ * with no raid night or no character are always copy 1. A unique violation
+ * on a linked item is answered with error 'duplicate' and next_award_copy,
+ * the raider's next free copy (null when 10 copies exist; omitted if that
+ * lookup failed), so the award modal can offer to record another copy.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -147,6 +186,19 @@ export async function POST(request: NextRequest) {
     if (invalidItemIndexes.length > 0) {
       return NextResponse.json(
         { error: 'Every item needs a loot_item_id', invalid_item_indexes: invalidItemIndexes },
+        { status: 400 }
+      )
+    }
+
+    // FU-1 of #331, #293: an explicit award_copy must be a whole number from
+    // 1 to 10 (the database CHECK); absent or null means "number it for me".
+    const invalidAwardCopyIndexes = items
+      .map((item: { award_copy?: unknown }, index: number) => ({ copy: item.award_copy, index }))
+      .filter(({ copy }: { copy: unknown }) => copy !== undefined && copy !== null && !isValidAwardCopy(copy))
+      .map(({ index }: { index: number }) => index)
+    if (invalidAwardCopyIndexes.length > 0) {
+      return NextResponse.json(
+        { error: INVALID_AWARD_COPY_ERROR, invalid_award_copy_indexes: invalidAwardCopyIndexes },
         { status: 400 }
       )
     }
@@ -211,7 +263,11 @@ export async function POST(request: NextRequest) {
     // no-team guilds). Mutates each item's raid_event_id in place before insert.
     await routeRecordsToTeamEvents(serviceSupabase, guild_id, items as Array<{ raid_event_id?: string | null; character_id?: string | null }>)
 
-    const results: { index: number; success: boolean; error?: string; id?: string }[] = []
+    // Numbered after routing, so two input nights routed onto one team night
+    // become distinct copies instead of a duplicate.
+    const awardCopies = assignAwardCopies(items as Array<{ loot_item_id: string; character_id: string | null; raid_event_id: string | null; award_copy?: unknown }>)
+
+    const results: { index: number; success: boolean; error?: string; id?: string; next_award_copy?: number | null }[] = []
     // Parallel array of sanitized award metadata, used by the audit-log pass below.
     const awardMeta: { reason: AwardReason | null; note: string | null; notes: string | null; decisionContext: Record<string, unknown> | null }[] = []
 
@@ -260,6 +316,7 @@ export async function POST(request: NextRequest) {
         characterId: item.character_id,
         characterName: item.character_name,
         notes: finalNotes,
+        awardCopy: awardCopies[i],
       })
 
       awardMeta.push({ reason, note, notes: finalNotes, decisionContext })
@@ -271,11 +328,21 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (error) {
-        results.push({
+        const failure: (typeof results)[number] = {
           index: i,
           success: false,
           error: error.code === '23505' ? 'duplicate' : error.message,
-        })
+        }
+        if (error.code === '23505' && item.raid_event_id && item.character_id) {
+          try {
+            failure.next_award_copy = nextAwardCopy(
+              await highestAwardCopy(serviceSupabase, guild_id, item.loot_item_id, item.character_id, item.raid_event_id)
+            )
+          } catch {
+            // Leave next_award_copy out: the caller then treats it as unknown.
+          }
+        }
+        results.push(failure)
       } else {
         results.push({ index: i, success: true, id: data?.id })
       }
@@ -481,6 +548,12 @@ export async function DELETE(request: NextRequest) {
  * against the calling guild the same way POST checks it (an active
  * character_guild_memberships row) before the before-read and update; a
  * mismatch returns 400 with invalid_character_ids and does no write.
+ *
+ * FU-1 of #331, #293: when the update moves a linked award to a different
+ * raider, award_copy is set to that raider's next free copy of the item on
+ * that night, so a raider who already has the item that night gets it as
+ * another copy instead of the update failing on the unique index (left
+ * unchanged at the 10-copy cap, where the database then decides).
  */
 export async function PATCH(request: NextRequest) {
   try {
@@ -529,12 +602,32 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Read current state for audit log
-    const { data: before } = await serviceSupabase
+    const { data: beforeRow } = await serviceSupabase
       .from('loot_history')
-      .select('character_id, character_name, notes')
+      .select('character_id, character_name, notes, loot_item_id, raid_event_id, award_copy')
       .eq('id', id)
       .eq('guild_id', guild_id)
       .single()
+    const before = beforeRow
+      ? { character_id: beforeRow.character_id, character_name: beforeRow.character_name, notes: beforeRow.notes }
+      : beforeRow
+
+    const newCharacterId = sanitized.character_id
+    if (
+      typeof newCharacterId === 'string' &&
+      beforeRow?.raid_event_id &&
+      beforeRow.loot_item_id &&
+      newCharacterId !== beforeRow.character_id
+    ) {
+      try {
+        const next = nextAwardCopy(
+          await highestAwardCopy(serviceSupabase, guild_id, beforeRow.loot_item_id, newCharacterId, beforeRow.raid_event_id)
+        )
+        if (next !== null) sanitized.award_copy = next
+      } catch {
+        // Leave award_copy unchanged; the update itself then decides.
+      }
+    }
 
     const { error } = await serviceSupabase
       .from('loot_history')

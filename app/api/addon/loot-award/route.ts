@@ -6,7 +6,7 @@ import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { notifyLootAward } from '@/lib/discord-loot-announcements'
 import { resolveGuildLootItem } from '@/lib/loot/guild-scoped-lookup'
 import { buildAddonAwardRow } from '@/lib/loot/loot-history-rows'
-import { insertAddonAward, type AddonAwardInsertResult } from '@/lib/loot/addon-award-insert'
+import { addonAwardKey, insertAddonAward, type AddonAwardInsertResult } from '@/lib/loot/addon-award-insert'
 import { findAwardRaidEvent } from '@/utils/raid-events/team-routing'
 import { recomputeBlpForItems } from '@/utils/blp/recompute'
 
@@ -16,6 +16,8 @@ interface LootAwardRequest {
   character_name: string
   boss_name?: string
   awarded_date?: string
+  /** The addon's own award timestamp (UTC ISO), optional (FU-1 of #331, #293). */
+  awarded_at?: unknown
   notes?: string
 }
 
@@ -42,6 +44,14 @@ interface LootAwardRequest {
  * unlinked, exactly as before, and never rejected. A re-sent award on the
  * same night returns 200 with already_recorded true and no side effects
  * (insertAddonAward). A newly linked award recomputes BLP for its item.
+ *
+ * FU-1 of #331, #293: an optional awarded_at (the addon's UTC ISO award
+ * timestamp) gives the award the same addonAwardKey the export-string import
+ * builds for that in-game award, so the two paths dedupe against each other
+ * and a second copy of an item on one night synced in a later batch is
+ * recorded. A missing or malformed awarded_at is never rejected; the award
+ * then takes the keyless path, exactly as before. Today's companion sends
+ * none (the follow-up companion release forwards it).
  */
 export async function POST(request: NextRequest) {
   try {
@@ -49,7 +59,7 @@ export async function POST(request: NextRequest) {
     if (!auth.ok) return auth.response
 
     const body: LootAwardRequest = await request.json()
-    const { guild_id, wowhead_id, character_name, boss_name, awarded_date, notes } = body
+    const { guild_id, wowhead_id, character_name, boss_name, awarded_date, awarded_at, notes } = body
 
     if (!guild_id || !wowhead_id || !character_name) {
       return NextResponse.json({
@@ -130,6 +140,7 @@ export async function POST(request: NextRequest) {
           notes,
           bossName: boss_name,
           raidEventId,
+          sourceAwardKey: addonAwardKey({ awardedAt: awarded_at, wowheadId: wowhead_id, characterName: character_name }),
           today,
         })
       )
