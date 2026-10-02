@@ -5,7 +5,7 @@ import { trackApiError } from '@/utils/analytics/server'
 import { getAttendanceWindowEnd, resolveOwnedEvents, resolveActiveRaiderModifiers } from '@/domain/scoring'
 import { toDateString } from '@/utils/date'
 import { withFactionVariants } from '@/domain/loot/faction-item-aliases'
-import { buildMemberRankedItems } from '@/lib/addon/member-ranked-items'
+import { buildMemberRankedItems, fetchReceivedCounts } from '@/lib/addon/member-ranked-items'
 
 /**
  * GET /api/addon/guild-data
@@ -20,7 +20,10 @@ import { buildMemberRankedItems } from '@/lib/addon/member-ranked-items'
  *
  * members[].items leave out removed list rows (FU-3 of #331, #293) and send
  * each raider's ranks best last (buildMemberRankedItems), so the companion's
- * last-wins collapse keeps the best rank.
+ * last-wins collapse keeps the best rank. One listed entry per award of the
+ * item to the raider is left out too, best rank first, as on the master
+ * sheet and in the Gargul export (FU-C of 261001-tv5). A failed loot
+ * history read sends every entry.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -49,12 +52,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Guild not found' }, { status: 404 })
     }
 
-    // Fetch all data in parallel
+    // Fetch all data in parallel. receivedCounts is null when the loot
+    // history read fails (the export then skips nothing).
     const [
       settingsResult,
       expansionResult,
       raidTiersResult,
       membershipsResult,
+      receivedCounts,
     ] = await Promise.all([
       supabase.from('guild_settings').select('*').eq('guild_id', guildId).single(),
       supabase.from('expansions').select('id, name, current_phase').eq('id', guild.active_expansion_id).single(),
@@ -63,6 +68,7 @@ export async function GET(request: NextRequest) {
         character_id, role, membership_status,
         characters (id, name, wow_classes (name, color_hex), spec:class_specs (id, name))
       `).eq('guild_id', guildId).eq('is_active', true),
+      fetchReceivedCounts(supabase, guildId),
     ])
 
     const raidTierIds = raidTiersResult.data?.map(rt => rt.id) || []
@@ -133,7 +139,7 @@ export async function GET(request: NextRequest) {
 
     // Build submission lookup: removed rows out, best rank last, faction
     // mirrors (see lib/addon/member-ranked-items.ts)
-    const submissionsByChar = buildMemberRankedItems(submissionsResult.data || [], null)
+    const submissionsByChar = buildMemberRankedItems(submissionsResult.data || [], receivedCounts)
 
     // Build members
     interface CharData { id: string; name: string; wow_classes: { name: string; color_hex: string } | { name: string; color_hex: string }[]; spec: { id: string; name: string; role: string } | { id: string; name: string; role: string }[] | null }

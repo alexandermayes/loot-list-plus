@@ -1,6 +1,6 @@
 // @vitest-environment node
-import { describe, it, expect } from 'vitest'
-import { buildMemberRankedItems, type RankedSubmission } from '../member-ranked-items'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { buildMemberRankedItems, fetchReceivedCounts, type RankedSubmission } from '../member-ranked-items'
 
 type Item = NonNullable<RankedSubmission['loot_submission_items']>[number]
 
@@ -102,5 +102,83 @@ describe('buildMemberRankedItems', () => {
     const before = JSON.parse(JSON.stringify(subs))
     buildMemberRankedItems(subs, new Map([['c1-20928', 1]]))
     expect(subs).toEqual(before)
+  })
+})
+
+type HistoryRow = { character_id: string | null; loot_item: { wowhead_id: number | null } | null }
+
+/** Recording loot_history fake: answers each range() call with the next page. */
+function historyClient(pages: Array<HistoryRow[] | 'error'>) {
+  const calls: Array<{ table: string; cols: string; filters: Array<[string, unknown]>; order?: [string, boolean]; range?: [number, number] }> = []
+  const queue = [...pages]
+  const client = {
+    from(table: string) {
+      const call: (typeof calls)[number] = { table, cols: '', filters: [] }
+      calls.push(call)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const builder: any = {
+        select: (cols: string) => { call.cols = cols; return builder },
+        eq: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
+        order: (col: string, opts: { ascending: boolean }) => { call.order = [col, opts.ascending]; return builder },
+        range: (from: number, to: number) => {
+          call.range = [from, to]
+          const page = queue.shift() ?? []
+          return Promise.resolve(page === 'error' ? { data: null, error: { message: 'history boom' } } : { data: page, error: null })
+        },
+      }
+      return builder
+    },
+  }
+  return { client, calls }
+}
+
+describe('fetchReceivedCounts', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('R1 counts per character and wowhead id across pages, filtered by guild, ordered by id', async () => {
+    const fullPage: HistoryRow[] = Array.from({ length: 1000 }, (_, i) => (
+      i < 998
+        ? { character_id: 'c1', loot_item: { wowhead_id: 20928 } }
+        : i === 998
+          ? { character_id: null, loot_item: { wowhead_id: 20928 } }
+          : { character_id: 'c2', loot_item: null }
+    ))
+    const { client, calls } = historyClient([fullPage, [{ character_id: 'c1', loot_item: { wowhead_id: 16921 } }]])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const counts = await fetchReceivedCounts(client as any, 'g1')
+
+    expect(counts).toEqual(new Map([['c1-20928', 998], ['c1-16921', 1]]))
+    expect(calls).toHaveLength(2)
+    for (const call of calls) {
+      expect(call.table).toBe('loot_history')
+      expect(call.cols).toBe('character_id, loot_item:loot_items(wowhead_id)')
+      expect(call.filters).toEqual([['guild_id', 'g1']])
+      expect(call.order).toEqual(['id', true])
+    }
+    expect(calls.map(c => c.range)).toEqual([[0, 999], [1000, 1999]])
+  })
+
+  it('R2 an error on any page returns null and logs with a constant first argument', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const fullPage: HistoryRow[] = Array.from({ length: 1000 }, () => ({ character_id: 'c1', loot_item: { wowhead_id: 20928 } }))
+    for (const pages of [['error'], [fullPage, 'error']] as Array<Array<HistoryRow[] | 'error'>>) {
+      errorSpy.mockClear()
+      const { client } = historyClient(pages)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(await fetchReceivedCounts(client as any, 'g1')).toBeNull()
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Failed to read loot history for the addon export receive skip:',
+        'history boom',
+      )
+    }
+  })
+
+  it('R2b a client that throws also returns null', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const client = { from: () => { throw new Error('no client') } }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(await fetchReceivedCounts(client as any, 'g1')).toBeNull()
   })
 })

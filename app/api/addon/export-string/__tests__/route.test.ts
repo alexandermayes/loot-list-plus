@@ -16,7 +16,7 @@ vi.mock('@/utils/server-roles', () => ({ verifyOfficerPermissions: vi.fn() }))
 vi.mock('@/utils/analytics/server', () => ({ trackEvent: vi.fn(), trackApiError: vi.fn() }))
 
 type Filter = [string, unknown]
-type Call = { table: string; cols: string; filters: Filter[] }
+type Call = { table: string; cols: string; filters: Filter[]; range?: [number, number] }
 
 interface LootItemRow {
   id: string
@@ -82,6 +82,9 @@ interface Fixture {
   item_priorities: Array<{ loot_item_id: string }>
   attendance_records: Array<{ raid_event_id: string; character_id: string }>
   raid_team_members: Array<{ guild_id: string; character_id: string; raid_team_id: string }>
+  /** FU-C of 261001-tv5: awards read for the receive skip. */
+  loot_history?: Array<{ guild_id: string; character_id: string | null; loot_item: { wowhead_id: number } | null }>
+  lootHistoryError?: boolean
 }
 
 function emptyFixture(): Fixture {
@@ -137,6 +140,8 @@ function resolveRows(table: string, filters: Filter[], fixture: Fixture): unknow
     }
     case 'raid_team_members':
       return rows.filter((r: { guild_id: string }) => r.guild_id === find('guild_id'))
+    case 'loot_history':
+      return rows.filter((r: { guild_id: string }) => r.guild_id === find('guild_id'))
     default:
       return rows
   }
@@ -157,6 +162,14 @@ function makeClient(fixture: Fixture) {
         order: () => builder,
         lte: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         limit: () => builder,
+        range: (from: number, to: number) => {
+          call.range = [from, to]
+          if (table === 'loot_history' && fixture.lootHistoryError) {
+            return Promise.resolve({ data: null, error: { message: 'history boom' } })
+          }
+          const rows = resolveRows(table, call.filters, fixture).slice(from, to + 1)
+          return Promise.resolve({ data: rows, error: null })
+        },
         single: () => {
           const rows = resolveRows(table, call.filters, fixture)
           return Promise.resolve({ data: rows[0] ?? null, error: null })
@@ -346,6 +359,51 @@ describe('FU-3 of #331, #293 and FU-C of 261001-tv5: member items', () => {
     expect(res.status).toBe(200)
     expect(items.some(i => i.wowhead_id === 16921)).toBe(false)
     expect(items.some(i => i.wowhead_id === 19003)).toBe(true)
+  })
+
+  it('E2 a raider listed for 20928 at ranks 50 and 30 with one award of it gets only the 30 entry', async () => {
+    const fixture = baseFixture()
+    fixture.loot_submissions[0].loot_submission_items.push(
+      { loot_item_id: 'li-bindings', rank: 50, slot: 1, loot_items: { wowhead_id: 20928 } },
+      { loot_item_id: 'li-bindings', rank: 30, slot: 2, loot_items: { wowhead_id: 20928 } },
+    )
+    fixture.loot_history = [{ guild_id: GUILD_ID, character_id: 'c1', loot_item: { wowhead_id: 20928 } }]
+    const { res, items } = await memberItems(fixture)
+    expect(res.status).toBe(200)
+    expect(items.filter(i => i.wowhead_id === 20928)).toEqual([{ wowhead_id: 20928, rank: 30 }])
+  })
+
+  it('E3 the loot_history read is filtered by the request guild_id', async () => {
+    const fixture = baseFixture()
+    fixture.loot_submissions[0].loot_submission_items.push(
+      { loot_item_id: 'li-bindings', rank: 50, slot: 1, loot_items: { wowhead_id: 20928 } },
+    )
+    // Another guild's award of the same item to a character with the same id is ignored.
+    fixture.loot_history = [{ guild_id: 'other-guild', character_id: 'c1', loot_item: { wowhead_id: 20928 } }]
+    const { items, calls } = await memberItems(fixture)
+    const historyCalls = calls.filter(c => c.table === 'loot_history')
+    expect(historyCalls).toHaveLength(1)
+    expect(historyCalls[0].filters).toEqual([['guild_id', GUILD_ID]])
+    expect(historyCalls[0].range).toEqual([0, 999])
+    expect(items.filter(i => i.wowhead_id === 20928)).toEqual([{ wowhead_id: 20928, rank: 50 }])
+  })
+
+  it('E4 a loot_history error still returns 200 with every entry', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const fixture = baseFixture()
+    fixture.loot_submissions[0].loot_submission_items.push(
+      { loot_item_id: 'li-bindings', rank: 50, slot: 1, loot_items: { wowhead_id: 20928 } },
+      { loot_item_id: 'li-bindings', rank: 30, slot: 2, loot_items: { wowhead_id: 20928 } },
+    )
+    fixture.loot_history = [{ guild_id: GUILD_ID, character_id: 'c1', loot_item: { wowhead_id: 20928 } }]
+    fixture.lootHistoryError = true
+    const { res, items } = await memberItems(fixture)
+    expect(res.status).toBe(200)
+    expect(items.filter(i => i.wowhead_id === 20928)).toEqual([
+      { wowhead_id: 20928, rank: 30 },
+      { wowhead_id: 20928, rank: 50 },
+    ])
+    expect(errorSpy).toHaveBeenCalledWith('Failed to read loot history for the addon export receive skip:', 'history boom')
   })
 
   it('E1b selects slot and removed_at and sends each raider\'s ranks best last', async () => {

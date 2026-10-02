@@ -7,7 +7,7 @@ import { getAttendanceWindowEnd, resolveOwnedEvents, resolveActiveRaiderModifier
 import { toDateString } from '@/utils/date'
 import { deflateRawSync } from 'zlib'
 import { withFactionVariants } from '@/domain/loot/faction-item-aliases'
-import { buildMemberRankedItems, type MemberRankedItem } from '@/lib/addon/member-ranked-items'
+import { buildMemberRankedItems, fetchReceivedCounts, type MemberRankedItem } from '@/lib/addon/member-ranked-items'
 
 /**
  * GET /api/addon/export-string
@@ -20,8 +20,11 @@ import { buildMemberRankedItems, type MemberRankedItem } from '@/lib/addon/membe
  *
  * members[].items leave out removed list rows (FU-3 of #331, #293) and send
  * each raider's ranks best last (buildMemberRankedItems), so the addon's
- * last-wins import keeps the best rank. The payload shape and the LLP1:1
- * prefix are unchanged.
+ * last-wins import keeps the best rank. One listed entry per award of the
+ * item to the raider is left out too, best rank first, as on the master
+ * sheet and in the Gargul export (FU-C of 261001-tv5); a failed loot
+ * history read sends every entry. The payload shape and the LLP1:1 prefix
+ * are unchanged.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -202,6 +205,9 @@ export async function GET(request: NextRequest) {
       .eq('guild_id', guildId)
       .eq('status', 'approved')
 
+    // Awards per raider and item, for the receive skip (null on a failed read)
+    const receivedCounts = await fetchReceivedCounts(supabase, guildId)
+
     // Fetch priority lists
     const { data: priorities } = await supabase
       .from('item_priorities')
@@ -296,7 +302,7 @@ export async function GET(request: NextRequest) {
       lootItems: lootItems || [],
       raidNameMap,
       memberships: memberships || [],
-      memberItems: buildMemberRankedItems(submissions || [], null),
+      memberItems: buildMemberRankedItems(submissions || [], receivedCounts),
       priorities: priorities || [],
       blpData: blpData || [],
       attendanceByCharacter,

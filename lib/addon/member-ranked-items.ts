@@ -17,9 +17,19 @@
  *
  * Today's behaviour is kept for raiders with more than one approved
  * submission: the last one in the query result replaces the others (N-1).
+ *
+ * fetchReceivedCounts reads the guild's loot_history in pages and checks
+ * the error on every page (paginatedSelect ignores errors). A failed read
+ * returns null, and the export then goes out without the skip, as before.
  */
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { pickReceivedEntries } from '@/domain/loot/apply-receive-skip'
 import { withFactionVariants } from '@/domain/loot/faction-item-aliases'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type QueryClient = SupabaseClient<any, any, any>
+
+const PAGE_SIZE = 1000
 
 type WowheadRef = { wowhead_id: number | null } | null
 
@@ -79,4 +89,43 @@ export function buildMemberRankedItems(
     result[characterId] = withFactionVariants(kept.map(e => ({ wowhead_id: e.wowhead_id, rank: e.rank })))
   }
   return result
+}
+
+/**
+ * Counts awards per `${character_id}-${wowhead_id}` across the guild's
+ * whole loot_history, skipping rows with no character or no wowhead id.
+ * Returns null (and logs) when any page fails, so the caller can send its
+ * export unskipped instead of failing it.
+ */
+export async function fetchReceivedCounts(
+  supabase: QueryClient,
+  guildId: string,
+): Promise<Map<string, number> | null> {
+  const counts = new Map<string, number>()
+  try {
+    for (let start = 0; ; start += PAGE_SIZE) {
+      const { data, error } = await supabase
+        .from('loot_history')
+        .select('character_id, loot_item:loot_items(wowhead_id)')
+        .eq('guild_id', guildId)
+        .order('id', { ascending: true })
+        .range(start, start + PAGE_SIZE - 1)
+      if (error) {
+        console.error('Failed to read loot history for the addon export receive skip:', error.message)
+        return null
+      }
+      const rows = (data ?? []) as Array<{ character_id: string | null; loot_item: WowheadRef | WowheadRef[] }>
+      for (const row of rows) {
+        const lootItem = Array.isArray(row.loot_item) ? row.loot_item[0] : row.loot_item
+        const wowheadId = lootItem?.wowhead_id
+        if (!row.character_id || wowheadId == null) continue
+        const key = `${row.character_id}-${wowheadId}`
+        counts.set(key, (counts.get(key) ?? 0) + 1)
+      }
+      if (rows.length < PAGE_SIZE) return counts
+    }
+  } catch (readError) {
+    console.error('Failed to read loot history for the addon export receive skip:', readError)
+    return null
+  }
 }
