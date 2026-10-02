@@ -21,6 +21,7 @@ import type {
 } from '@/domain/types'
 import type { PlayerRanking, LootItem } from './BossSection'
 import { rankingEntryKey, bestEntryPerCharacter } from '@/domain/loot/ranking-entries'
+import { readAwardResult } from '@/domain/loot/award-copies'
 
 interface ItemPriority {
   role_priorities: Record<string, number | null>
@@ -164,6 +165,17 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
   const [awardNote, setAwardNote] = useState('')
   const [awarding, setAwarding] = useState(false)
   const [undoingAwardId, setUndoingAwardId] = useState<string | null>(null)
+  // FU-1 of #331, #293: set when the server reports the candidate already
+  // has this item on this raid night; confirming then sends this copy.
+  const [extraCopy, setExtraCopy] = useState<{ entryKey: string; awardCopy: number } | null>(null)
+
+  // Choosing or clearing a candidate always drops a pending extra-copy prompt.
+  const selectCandidate = useCallback((candidate: PlayerRanking | null) => {
+    setAwardingCandidate(candidate)
+    setExtraCopy(null)
+  }, [])
+  const showExtraCopyPrompt =
+    !!extraCopy && !!awardingCandidate && extraCopy.entryKey === rankingEntryKey(awardingCandidate)
 
   // Override requires a non-empty note (trust feature: every override leaves a paper trail).
   const noteRequired = awardReason === 'override'
@@ -213,6 +225,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
       setAwardingCandidate(null)
       setAwardReason('')
       setAwardNote('')
+      setExtraCopy(null)
     }
   }, [open])
 
@@ -223,6 +236,8 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     setAwarding(true)
 
     const note = awardNote.trim() || null
+    const entryKey = rankingEntryKey(awardingCandidate)
+    const awardCopy = extraCopy && extraCopy.entryKey === entryKey ? extraCopy.awardCopy : undefined
 
     // Build a structured decision snapshot at award time. The server includes
     // this in audit_logs.new_data so we can answer "why this person won" later
@@ -271,6 +286,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
             reason: awardReason || null,
             note,
             decision_context: decisionContext,
+            ...(awardCopy !== undefined ? { award_copy: awardCopy } : {}),
           }],
         }),
       })
@@ -280,8 +296,27 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
         throw new Error(body.error || `HTTP ${res.status}`)
       }
 
+      // The route answers 200 with a per-item result, so a duplicate or a
+      // failed insert must be read from the body, not from res.ok.
+      const result = readAwardResult(await res.json().catch(() => ({})))
+      // A duplicate of an explicit copy means that copy is already recorded
+      // (a resend of the same confirm), so it counts as success below.
+      if (result.kind === 'duplicate' && awardCopy === undefined) {
+        if (typeof result.nextAwardCopy === 'number') {
+          setExtraCopy({ entryKey, awardCopy: result.nextAwardCopy })
+          return
+        }
+        if (result.nextAwardCopy === null) {
+          showNotification('error', `${awardingCandidate.player_name} already has 10 copies of ${item.name} from this raid night.`)
+          return
+        }
+        throw new Error('duplicate')
+      }
+      if (result.kind === 'failed') throw new Error(result.message)
+
       showNotification('success', `${item.name} awarded to ${awardingCandidate.player_name}`)
       setAwardingCandidate(null)
+      setExtraCopy(null)
       setAwardReason('')
       setAwardNote('')
 
@@ -298,7 +333,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     } finally {
       setAwarding(false)
     }
-  }, [awardingCandidate, item, guildId, raidTierId, mostRecentRaidEventId, awardReason, awardNote, noteMissing, bestRankings, receivedCharacterIds, showNotification, onAwardComplete])
+  }, [awardingCandidate, item, guildId, raidTierId, mostRecentRaidEventId, awardReason, awardNote, noteMissing, extraCopy, bestRankings, receivedCharacterIds, showNotification, onAwardComplete])
 
   // Keyboard shortcuts: Enter to confirm award, Escape to cancel
   useEffect(() => {
@@ -310,12 +345,12 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
       } else if (e.key === 'Escape') {
         e.preventDefault()
         e.stopPropagation()
-        setAwardingCandidate(null)
+        selectCandidate(null)
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [awardingCandidate, open, awarding, noteMissing, handleAward])
+  }, [awardingCandidate, open, awarding, noteMissing, handleAward, selectCandidate])
 
   const handleUndoAward = useCallback(async (award: LootAward) => {
     if (!guildId) return
@@ -630,7 +665,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                             variant={isConfirming ? 'outline' : 'primary'}
                             size="sm"
                             className={`text-11 h-7 px-3 ${isConfirming ? '' : 'opacity-0 group-hover:opacity-100 transition-opacity'}`}
-                            onClick={() => setAwardingCandidate(isConfirming ? null : r)}
+                            onClick={() => selectCandidate(isConfirming ? null : r)}
                           >
                             {isConfirming ? 'Cancel' : 'Award'}
                           </Button>
@@ -661,6 +696,11 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                   : `${awardingCandidate.player_name} has no BLP on this item.`
                 }
                 {' '}Other candidates&apos; BLP will increase.
+              </Text>
+            )}
+            {showExtraCopyPrompt && (
+              <Text size="xs" className="mb-2 text-warning">
+                {`${awardingCandidate.player_name} already received ${item.name} on this raid night. Award another copy?`}
               </Text>
             )}
             <div className="flex flex-wrap items-end gap-3">
@@ -699,7 +739,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                 disabled={noteMissing}
                 onClick={handleAward}
               >
-                Confirm award
+                {showExtraCopyPrompt ? 'Award another copy' : 'Confirm award'}
               </Button>
               <Text size="xs" color="muted" className="hidden sm:block">Enter to confirm, Esc to cancel</Text>
             </div>

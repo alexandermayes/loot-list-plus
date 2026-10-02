@@ -45,7 +45,13 @@ type TierRow = { id: string; expansion_id: string }
 type ItemRow = { id: string; raid_tier_id: string }
 type RaidEventRow = { id: string; guild_id: string }
 type MembershipRow = { character_id: string; guild_id: string; is_active: boolean | null }
-type Call = { table: string; filters: Array<[string, unknown]>; insertPayload?: Record<string, unknown>; updatePayload?: Record<string, unknown> }
+type Call = {
+  table: string
+  filters: Array<[string, unknown]>
+  insertPayload?: Record<string, unknown>
+  updatePayload?: Record<string, unknown>
+  order?: [string, boolean]
+}
 
 interface Fixture {
   expansions: ExpansionRow[]
@@ -56,6 +62,10 @@ interface Fixture {
   blpEnabled?: boolean
   duplicateLootItemIds?: Set<string>
   patchBefore?: Record<string, unknown>
+  /** FU-1 of #331, #293: highest stored award_copy per character_id, read
+   * by the next_award_copy and reassign lookups (absent: none stored). */
+  highestCopies?: Record<string, number>
+  highestCopyError?: boolean
 }
 
 /**
@@ -79,6 +89,17 @@ function makeClient(fixture: Fixture) {
         delete: () => builder,
         eq: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         in: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
+        order: (col: string, opts: { ascending: boolean }) => { call.order = [col, opts.ascending]; return builder },
+        limit: () => builder,
+        maybeSingle: () => {
+          if (table === 'loot_history') {
+            if (fixture.highestCopyError) return Promise.resolve({ data: null, error: { message: 'copy boom' } })
+            const charId = call.filters.find(([col]) => col === 'character_id')?.[1] as string
+            const highest = fixture.highestCopies?.[charId]
+            return Promise.resolve({ data: highest === undefined ? null : { award_copy: highest }, error: null })
+          }
+          return Promise.resolve({ data: null, error: null })
+        },
         single: () => {
           if (table === 'guild_settings') {
             return Promise.resolve({ data: { blp_enabled: fixture.blpEnabled ?? false }, error: null })
@@ -263,7 +284,7 @@ describe('POST /api/loot-history/bulk', () => {
     expect(lootHistoryInserts(calls)).toHaveLength(0)
   })
 
-  it('a 23505 insert error still yields results[i].error "duplicate"', async () => {
+  it('a 23505 insert error still yields results[i].error "duplicate" (an unlinked item gets no next_award_copy)', async () => {
     const fixture = singleItemFixture()
     fixture.duplicateLootItemIds = new Set([ITEM_ID])
     const { client } = makeClient(fixture)
@@ -492,6 +513,123 @@ describe('POST /api/loot-history/bulk', () => {
   })
 })
 
+describe('POST /api/loot-history/bulk award copies (FU-1 of #331, #293)', () => {
+  const C4 = 'Every award_copy must be a whole number from 1 to 10'
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: USER_ID }, error: null } as never)
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: true } as never)
+    vi.mocked(routeRecordsToTeamEvents).mockImplementation(async (_s, _g, records) => records)
+  })
+
+  const linked = (extra: Record<string, unknown> = {}) => ({
+    loot_item_id: ITEM_ID,
+    raid_event_id: RAID_EVENT_ID,
+    character_id: CHARACTER_ID,
+    character_name: 'Thrall',
+    ...extra,
+  })
+  const insertedCopies = (calls: Call[]) => lootHistoryInserts(calls).map(c => c.insertPayload?.award_copy)
+
+  it('B1 one item without award_copy inserts award_copy 1', async () => {
+    const { client, calls } = makeClient(singleItemFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD_ID, items: [linked()] }))
+    expect(res.status).toBe(200)
+    expect(insertedCopies(calls)).toEqual([1])
+  })
+
+  it('B2 two items with one item, raider and night insert copies 1 and 2, both successful', async () => {
+    const { client, calls } = makeClient(singleItemFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD_ID, items: [linked(), linked()] }))
+    const body = await res.json()
+    expect(insertedCopies(calls)).toEqual([1, 2])
+    expect(body.results.map((r: { success: boolean }) => r.success)).toEqual([true, true])
+  })
+
+  it('B3 an explicit award_copy 2 inserts 2', async () => {
+    const { client, calls } = makeClient(singleItemFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    await POST(request({ guild_id: GUILD_ID, items: [linked({ award_copy: 2 })] }))
+    expect(insertedCopies(calls)).toEqual([2])
+  })
+
+  it('B4 an award_copy of 0, 11, 1.5 or "2" returns 400 with C-4 and invalid_award_copy_indexes, and inserts nothing', async () => {
+    const { client, calls } = makeClient(singleItemFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({
+      guild_id: GUILD_ID,
+      items: [linked({ award_copy: 0 }), linked({ award_copy: 11 }), linked({ award_copy: 1 }), linked({ award_copy: 1.5 }), linked({ award_copy: '2' }), linked({ award_copy: null })],
+    }))
+    const body = await res.json()
+    expect(res.status).toBe(400)
+    expect(body.error).toBe(C4)
+    expect(body.invalid_award_copy_indexes).toEqual([0, 1, 3, 4])
+    expect(lootHistoryInserts(calls)).toHaveLength(0)
+    expect(lootItemsLookups(calls)).toHaveLength(0)
+  })
+
+  it('B5 a 23505 on a linked item returns next_award_copy from the highest stored copy, and null at 10', async () => {
+    const fixture = { ...singleItemFixture(), duplicateLootItemIds: new Set([ITEM_ID]), highestCopies: { [CHARACTER_ID]: 1 } }
+    const first = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(first.client as never)
+    let body = await (await POST(request({ guild_id: GUILD_ID, items: [linked()] }))).json()
+    expect(body.results[0]).toEqual({ index: 0, success: false, error: 'duplicate', next_award_copy: 2 })
+    const lookup = first.calls.find(c => c.table === 'loot_history' && c.order)
+    expect(lookup?.filters).toEqual([
+      ['guild_id', GUILD_ID],
+      ['loot_item_id', ITEM_ID],
+      ['character_id', CHARACTER_ID],
+      ['raid_event_id', RAID_EVENT_ID],
+    ])
+    expect(lookup?.order).toEqual(['award_copy', false])
+
+    const capped = makeClient({ ...fixture, highestCopies: { [CHARACTER_ID]: 10 } })
+    vi.mocked(createServiceRoleClient).mockReturnValue(capped.client as never)
+    body = await (await POST(request({ guild_id: GUILD_ID, items: [linked()] }))).json()
+    expect(body.results[0]).toEqual({ index: 0, success: false, error: 'duplicate', next_award_copy: null })
+
+    const failed = makeClient({ ...fixture, highestCopyError: true })
+    vi.mocked(createServiceRoleClient).mockReturnValue(failed.client as never)
+    body = await (await POST(request({ guild_id: GUILD_ID, items: [linked()] }))).json()
+    expect(body.results[0]).toEqual({ index: 0, success: false, error: 'duplicate' })
+  })
+
+  it('B6 an unlinked item with award_copy 3 inserts award_copy 1', async () => {
+    const { client, calls } = makeClient(singleItemFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    await POST(request({ guild_id: GUILD_ID, items: [linked({ raid_event_id: null, award_copy: 3 })] }))
+    expect(insertedCopies(calls)).toEqual([1])
+  })
+
+  it('B7 two items whose input nights are routed onto one team night are numbered 1 and 2', async () => {
+    const OTHER_EVENT_ID = 'aaaaaaaa-0000-0000-0000-00000000000d'
+    const TEAM_EVENT_ID = 'aaaaaaaa-0000-0000-0000-00000000000e'
+    vi.mocked(routeRecordsToTeamEvents).mockImplementation(async (_s, _g, records) => {
+      for (const r of records as Array<{ raid_event_id?: string | null }>) r.raid_event_id = TEAM_EVENT_ID
+      return records
+    })
+    const fixture = singleItemFixture()
+    fixture.raidEvents = [...(fixture.raidEvents ?? []), { id: OTHER_EVENT_ID, guild_id: GUILD_ID }]
+    const { client, calls } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD_ID, items: [linked(), linked({ raid_event_id: OTHER_EVENT_ID })] }))
+    expect(res.status).toBe(200)
+    expect(lootHistoryInserts(calls).map(c => [c.insertPayload?.raid_event_id, c.insertPayload?.award_copy])).toEqual([
+      [TEAM_EVENT_ID, 1],
+      [TEAM_EVENT_ID, 2],
+    ])
+  })
+})
+
 describe('PATCH /api/loot-history/bulk', () => {
   const RECORD_ID = 'aaaaaaaa-0000-0000-0000-000000000010'
 
@@ -601,5 +739,78 @@ describe('PATCH /api/loot-history/bulk', () => {
     }))
     expect(res.status).toBe(403)
     expect(calls.filter(c => c.table === 'character_guild_memberships')).toHaveLength(0)
+  })
+
+  describe('award copies on reassign (FU-1 of #331, #293)', () => {
+    const OTHER_CHARACTER_ID = 'aaaaaaaa-0000-0000-0000-000000000011'
+    const linkedBefore = { character_id: CHARACTER_ID, character_name: 'Thrall', notes: null, loot_item_id: ITEM_ID, raid_event_id: RAID_EVENT_ID, award_copy: 1 }
+    function reassignFixture(extra: Partial<Fixture> = {}): Fixture {
+      const base = singleItemFixture()
+      return {
+        ...base,
+        memberships: [...(base.memberships ?? []), { character_id: OTHER_CHARACTER_ID, guild_id: GUILD_ID, is_active: true }],
+        patchBefore: linkedBefore,
+        ...extra,
+      }
+    }
+
+    it('P1 moving a linked award to a raider with no copy that night sends award_copy 1', async () => {
+      const { client, calls } = makeClient(reassignFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await PATCH(patchRequest({ guild_id: GUILD_ID, id: RECORD_ID, updates: { character_id: OTHER_CHARACTER_ID, character_name: 'Jaina' } }))
+      expect(res.status).toBe(200)
+      expect(lootHistoryUpdates(calls)[0]?.updatePayload).toEqual({ character_id: OTHER_CHARACTER_ID, character_name: 'Jaina', award_copy: 1 })
+      const lookup = calls.find(c => c.table === 'loot_history' && c.order)
+      expect(lookup?.filters).toEqual([
+        ['guild_id', GUILD_ID],
+        ['loot_item_id', ITEM_ID],
+        ['character_id', OTHER_CHARACTER_ID],
+        ['raid_event_id', RAID_EVENT_ID],
+      ])
+    })
+
+    it('P2 moving it to a raider whose highest copy is 1 sends award_copy 2', async () => {
+      const { client, calls } = makeClient(reassignFixture({ highestCopies: { [OTHER_CHARACTER_ID]: 1 } }))
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      await PATCH(patchRequest({ guild_id: GUILD_ID, id: RECORD_ID, updates: { character_id: OTHER_CHARACTER_ID } }))
+      expect(lootHistoryUpdates(calls)[0]?.updatePayload).toEqual({ character_id: OTHER_CHARACTER_ID, award_copy: 2 })
+    })
+
+    it('P2b at the 10-copy cap, or when the lookup fails, award_copy is left out', async () => {
+      for (const extra of [{ highestCopies: { [OTHER_CHARACTER_ID]: 10 } }, { highestCopyError: true }]) {
+        const { client, calls } = makeClient(reassignFixture(extra))
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+        await PATCH(patchRequest({ guild_id: GUILD_ID, id: RECORD_ID, updates: { character_id: OTHER_CHARACTER_ID } }))
+        expect(lootHistoryUpdates(calls)[0]?.updatePayload).toEqual({ character_id: OTHER_CHARACTER_ID })
+      }
+    })
+
+    it('P3 a notes-only update and a same-character update send no award_copy', async () => {
+      for (const updates of [{ notes: 'n' }, { character_id: CHARACTER_ID, character_name: 'Thrall' }]) {
+        const { client, calls } = makeClient(reassignFixture())
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+        await PATCH(patchRequest({ guild_id: GUILD_ID, id: RECORD_ID, updates }))
+        expect(lootHistoryUpdates(calls)[0]?.updatePayload).not.toHaveProperty('award_copy')
+        expect(calls.some(c => c.table === 'loot_history' && c.order)).toBe(false)
+      }
+    })
+
+    it('P4 an unlinked row sends no award_copy', async () => {
+      const { client, calls } = makeClient(reassignFixture({ patchBefore: { ...linkedBefore, raid_event_id: null } }))
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      await PATCH(patchRequest({ guild_id: GUILD_ID, id: RECORD_ID, updates: { character_id: OTHER_CHARACTER_ID } }))
+      expect(lootHistoryUpdates(calls)[0]?.updatePayload).toEqual({ character_id: OTHER_CHARACTER_ID })
+    })
+
+    it('the audit log keeps the same before fields as today', async () => {
+      const { client } = makeClient(reassignFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      await PATCH(patchRequest({ guild_id: GUILD_ID, id: RECORD_ID, updates: { character_id: OTHER_CHARACTER_ID } }))
+      expect(vi.mocked(logAudit).mock.calls[0][0].oldData).toEqual({ character_id: CHARACTER_ID, character_name: 'Thrall', notes: null })
+    })
   })
 })
