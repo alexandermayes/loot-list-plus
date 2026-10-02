@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 Phase: 06 (Week-4 Review & Next Bet) — EXECUTING
 Plan: 6 of 9
 Status: Ready to execute
-Last activity: 2026-10-02 - Completed quick task 261001-tv5: second same-night award of an item, PRs #341 and #342 merged and migration applied
+Last activity: 2026-10-02 - Completed quick task 261002-h0v: in-game award keys and item ranks (server and companion), PRs #344 and #346 merged, companion-v1.1.0 drafted
 
 Progress: [████████████████████] 23/23 plans ([███████░░░] 67%)
 
@@ -217,6 +217,7 @@ Recent decisions affecting current work:
 | 260930-x3l | Fix GH #331 and #293: loot list copies counted by the real item across bosses and sections; limits of 1, 2 for non-unique rings, trinkets and one-handers (refreshed uniqueness map, Classic one-handers), and tokens per gear slot counted separately for main spec and off-spec (Bindings 2+2); same rule on submit with Main spec / Off-spec / Whole list labels; remove and restore one copy at a time; review diff, master sheet skip, keys and counts handle two copies. All copy user-approved. No migration. Follow-ups: same-night second award, companion ranks, addon removed rows, removed-row rank/slot. PR #337 | 2026-10-02 | 08dd6fb6 | Needs Review | [260930-x3l-fix-gh-331-and-293-loot-list-item-copy-l](./quick/260930-x3l-fix-gh-331-and-293-loot-list-item-copy-l/) |
 | 261001-t74 | Fix the intermittent CI failure seen on PR #337: CreateReserveRunModal and SetupGuide tests restored the real fetch before React cleanup, so a pending fetch effect could hit Node fetch with a relative URL. Tests now unmount first; new regression test (fails 3/3 with the old order, 32/32 clean with the fix, including under load). Test-only. PR #339 | 2026-10-02 | bfecc8fe |  | [261001-t74-fix-flaky-fetch-unstub-order-in-reserve-](./quick/261001-t74-fix-flaky-fetch-unstub-order-in-reserve-/) |
 | 261001-tv5 | Allow a second award of the same item to one raider on one raid night: loot_history gains award_copy and source_award_key (index swapped, migration shipped first as PR #341); keyed addon export awards dedupe by key and absorb one unkeyed row; the web award modal asks before a second copy (fixes the old silent-success toast); repeated Gargul lines number copies; reassign moves to the next free copy; companion accepts awarded_at. Copy user-approved. PGlite 27/27. Follow-ups: companion and addon releases. PRs #341, #342 | 2026-10-02 | 4b3f66e6 | Needs Review | [261001-tv5-allow-a-second-award-of-the-same-item-on](./quick/261001-tv5-allow-a-second-award-of-the-same-item-on/) |
+| 261002-h0v | In-game follow-ups, server and companion: the server keys addon awards by award id (old-key fallback, never double), addon exports drop removed rows, send each raider's ranks best last and hide copies already received; companion 1.1.0 forwards award time and id, keeps every rank with item keys the addon can read, sends pending data before downloading and clears only what it sent (also fixes a crash on syncs with nothing pending). Release notes user-approved. PRs #344 and #346; companion-v1.1.0 tagged as a draft release. Next: addon release (FU-B). | 2026-10-02 | 8d81b1dc | Needs Review | [261002-h0v-in-game-support-for-several-ranks-of-one](./quick/261002-h0v-in-game-support-for-several-ranks-of-one/) |
 
 ## Deferred Items
 
