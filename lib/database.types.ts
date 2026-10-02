@@ -1209,6 +1209,7 @@ export type Database = {
       }
       loot_history: {
         Row: {
+          award_copy: number
           awarded_by: string | null
           awarded_date: string
           character_id: string | null
@@ -1222,9 +1223,11 @@ export type Database = {
           raid_event_id: string | null
           raid_tier_id: string
           source: string | null
+          source_award_key: string | null
           updated_at: string | null
         }
         Insert: {
+          award_copy?: number
           awarded_by?: string | null
           awarded_date?: string
           character_id?: string | null
@@ -1238,9 +1241,11 @@ export type Database = {
           raid_event_id?: string | null
           raid_tier_id: string
           source?: string | null
+          source_award_key?: string | null
           updated_at?: string | null
         }
         Update: {
+          award_copy?: number
           awarded_by?: string | null
           awarded_date?: string
           character_id?: string | null
@@ -1254,6 +1259,7 @@ export type Database = {
           raid_event_id?: string | null
           raid_tier_id?: string
           source?: string | null
+          source_award_key?: string | null
           updated_at?: string | null
         }
         Relationships: [

@@ -275,3 +275,33 @@ describe('GH #295: raid_event_id on the addon builders', () => {
     expect(linked.awarded_date).toBe('2026-09-21')
   })
 })
+
+describe('FU-1 of #331, #293: award copies and addon award keys on the builders', () => {
+  const addonBase = {
+    guildId: 'guild-1', item: ITEM, characterId: 'char-1', characterName: 'Thrall',
+    awardedBy: 'user-1', today: '2026-09-21',
+  }
+
+  it('buildAddonAwardRow sets source_award_key only when sourceAwardKey is non-null', () => {
+    expect(buildAddonAwardRow(addonBase)).not.toHaveProperty('source_award_key')
+    expect(buildAddonAwardRow({ ...addonBase, sourceAwardKey: null })).not.toHaveProperty('source_award_key')
+    expect(buildAddonAwardRow({ ...addonBase, sourceAwardKey: 'addon:k' }).source_award_key).toBe('addon:k')
+    expect(buildAddonAwardRow({ ...addonBase, sourceAwardKey: 'addon:k' })).not.toHaveProperty('award_copy')
+  })
+
+  it('buildImportStringAwardRow sets source_award_key only when sourceAwardKey is non-null', () => {
+    const base = { ...addonBase, awardedAt: '2026-09-21T01:00:00Z' }
+    expect(buildImportStringAwardRow(base)).not.toHaveProperty('source_award_key')
+    expect(buildImportStringAwardRow({ ...base, sourceAwardKey: null })).not.toHaveProperty('source_award_key')
+    expect(buildImportStringAwardRow({ ...base, sourceAwardKey: 'addon:k' }).source_award_key).toBe('addon:k')
+    expect(buildImportStringAwardRow({ ...base, sourceAwardKey: 'addon:k' })).not.toHaveProperty('award_copy')
+  })
+
+  it('buildBulkAwardRow sets award_copy when awardCopy is given and omits it otherwise', () => {
+    const base = { guildId: 'guild-1', awardedBy: 'user-1', item: ITEM, notes: null }
+    expect(buildBulkAwardRow(base)).not.toHaveProperty('award_copy')
+    expect(buildBulkAwardRow({ ...base, awardCopy: 1 }).award_copy).toBe(1)
+    expect(buildBulkAwardRow({ ...base, awardCopy: 2 }).award_copy).toBe(2)
+    expect(buildBulkAwardRow({ ...base, awardCopy: 2 })).not.toHaveProperty('source_award_key')
+  })
+})
