@@ -7,6 +7,7 @@ import { getAttendanceWindowEnd, resolveOwnedEvents, resolveActiveRaiderModifier
 import { toDateString } from '@/utils/date'
 import { deflateRawSync } from 'zlib'
 import { withFactionVariants } from '@/domain/loot/faction-item-aliases'
+import { buildMemberRankedItems, type MemberRankedItem } from '@/lib/addon/member-ranked-items'
 
 /**
  * GET /api/addon/export-string
@@ -16,6 +17,11 @@ import { withFactionVariants } from '@/domain/loot/faction-item-aliases'
  *
  * Query params:
  * - guild_id: Required
+ *
+ * members[].items leave out removed list rows (FU-3 of #331, #293) and send
+ * each raider's ranks best last (buildMemberRankedItems), so the addon's
+ * last-wins import keeps the best rank. The payload shape and the LLP1:1
+ * prefix are unchanged.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -189,7 +195,7 @@ export async function GET(request: NextRequest) {
       .select(`
         id, character_id, phase, status,
         loot_submission_items (
-          loot_item_id, rank,
+          loot_item_id, rank, slot, removed_at,
           loot_items (wowhead_id)
         )
       `)
@@ -290,7 +296,7 @@ export async function GET(request: NextRequest) {
       lootItems: lootItems || [],
       raidNameMap,
       memberships: memberships || [],
-      submissions: submissions || [],
+      memberItems: buildMemberRankedItems(submissions || [], null),
       priorities: priorities || [],
       blpData: blpData || [],
       attendanceByCharacter,
@@ -335,13 +341,8 @@ interface BuildPayloadArgs {
     character_id: string; role: string; membership_status: string;
     characters: unknown
   }>
-  submissions: Array<{
-    id: string; character_id: string; phase: number; status: string;
-    loot_submission_items: Array<{
-      loot_item_id: string; rank: number;
-      loot_items: { wowhead_id: number } | { wowhead_id: number }[]
-    }>
-  }>
+  /** characterId -> ranked items, from buildMemberRankedItems. */
+  memberItems: Record<string, MemberRankedItem[]>
   priorities: Array<{
     loot_item_id: string; role_priorities: Record<string, number>;
     class_priorities: Record<string, number>; character_priorities: Record<string, number>;
@@ -361,7 +362,7 @@ interface BuildPayloadArgs {
 
 function buildExportPayload(args: BuildPayloadArgs) {
   const { guild, settings, expansion, lootItems, raidNameMap, memberships,
-          submissions, priorities, blpData, attendanceByCharacter } = args
+          memberItems, priorities, blpData, attendanceByCharacter } = args
 
   // Build items array. Mirrored under the other faction's id (GH #290): the
   // addon keys items and member ranks by exact wowhead_id (see
@@ -379,20 +380,6 @@ function buildExportPayload(args: BuildPayloadArgs) {
     slot: item.item_slot,
     item_type: item.item_type,
   })))
-
-  // Build submission lookup: characterId -> [{ wowhead_id, rank }]
-  const submissionsByCharacter: Record<string, Array<{ wowhead_id: number; rank: number }>> = {}
-  for (const sub of submissions) {
-    if (!sub.loot_submission_items) continue
-    const charItems: Array<{ wowhead_id: number; rank: number }> = []
-    for (const item of sub.loot_submission_items) {
-      const lootItem = Array.isArray(item.loot_items) ? item.loot_items[0] : item.loot_items
-      if (lootItem?.wowhead_id) {
-        charItems.push({ wowhead_id: lootItem.wowhead_id, rank: item.rank })
-      }
-    }
-    submissionsByCharacter[sub.character_id] = withFactionVariants(charItems)
-  }
 
   // Build members array
   interface CharacterData {
@@ -420,7 +407,7 @@ function buildExportPayload(args: BuildPayloadArgs) {
       role: spec?.role || null,
       guild_role: m.role,
       membership_status: m.membership_status || 'full',
-      items: submissionsByCharacter[m.character_id] || [],
+      items: memberItems[m.character_id] || [],
     }
   }).filter(Boolean)
 

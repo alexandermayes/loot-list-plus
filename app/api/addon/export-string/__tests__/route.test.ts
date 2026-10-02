@@ -60,7 +60,13 @@ interface LootSubmissionRow {
   character_id: string
   phase: number
   status: string
-  loot_submission_items: Array<{ loot_item_id: string; rank: number; loot_items: { wowhead_id: number } }>
+  loot_submission_items: Array<{
+    loot_item_id: string
+    rank: number
+    slot?: number
+    removed_at?: string | null
+    loot_items: { wowhead_id: number }
+  }>
 }
 
 interface Fixture {
@@ -311,5 +317,49 @@ describe('GET /api/addon/export-string (GH #290, faction-variant mirroring)', ()
     expect(nefItems.find((i: { id: string }) => i.id === 'li-nef-horde')).toBeDefined()
     // stats.items reports the catalog row count (4), still not the mirrored count.
     expect(body.stats.items).toBe(4)
+  })
+})
+
+describe('FU-3 of #331, #293 and FU-C of 261001-tv5: member items', () => {
+  beforeEach(() => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'u1' }, error: null } as never)
+    vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  async function memberItems(fixture: Fixture) {
+    const { client, calls } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    const res = await GET(request())
+    const body = await res.json()
+    return { res, items: decodePayload(body.exportString).members[0].items as Array<{ wowhead_id: number; rank: number }>, calls }
+  }
+
+  it('E1 a removed list row is left out of members[].items', async () => {
+    const fixture = baseFixture()
+    fixture.loot_submissions[0].loot_submission_items[2].removed_at = '2026-09-21T10:00:00Z'
+    const { res, items } = await memberItems(fixture)
+    expect(res.status).toBe(200)
+    expect(items.some(i => i.wowhead_id === 16921)).toBe(false)
+    expect(items.some(i => i.wowhead_id === 19003)).toBe(true)
+  })
+
+  it('E1b selects slot and removed_at and sends each raider\'s ranks best last', async () => {
+    const { items, calls } = await memberItems(baseFixture())
+    // Ranks 12 (19003, mirrored to 19002), 7 (18423, mirrored to 18422), 3 (16921).
+    expect(items).toEqual([
+      { wowhead_id: 16921, rank: 3 },
+      { wowhead_id: 18423, rank: 7 },
+      { wowhead_id: 18422, rank: 7 },
+      { wowhead_id: 19003, rank: 12 },
+      { wowhead_id: 19002, rank: 12 },
+    ])
+    const subCols = calls.find(c => c.table === 'loot_submissions' && c.cols.includes('loot_submission_items'))!.cols
+    expect(subCols).toMatch(/slot/)
+    expect(subCols).toMatch(/removed_at/)
   })
 })
