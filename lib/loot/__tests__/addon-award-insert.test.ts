@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { addonAwardKey, insertAddonAward } from '../addon-award-insert'
+import { addonAwardKey, addonAwardKeys, insertAddonAward } from '../addon-award-insert'
 import type { LootHistoryInsert } from '../loot-history-rows'
 
 type Terminal = 'single' | 'maybeSingle' | 'list'
@@ -26,7 +26,7 @@ interface Fixture {
   respond?: (call: Call, terminal: Terminal) => Result | undefined
 }
 
-/** Recording fake for loot_history: insert/update/select/single, is, order,
+/** Recording fake for loot_history: insert/update/select/single, is, in, order,
  * limit and maybeSingle, with optional per-query answers (fixture.respond). */
 function makeClient(fixture: Fixture) {
   const calls: Call[] = []
@@ -46,6 +46,7 @@ function makeClient(fixture: Fixture) {
         update: (payload: unknown) => { call.op = 'update'; call.payload = payload; return builder },
         eq: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         is: (col: string, val: unknown) => { call.filters.push([`is:${col}`, val]); return builder },
+        in: (col: string, val: unknown) => { call.filters.push([`in:${col}`, val]); return builder },
         order: (col: string, opts: { ascending: boolean }) => { call.order = [col, opts.ascending]; return builder },
         limit: () => builder,
         single: () => {
@@ -218,6 +219,55 @@ describe('addonAwardKey', () => {
   })
 })
 
+describe('addonAwardKeys (FU-C of 261001-tv5, D-01)', () => {
+  const AWARD_ID = '2026-09-20T20:00:00Z-1-a1b2c3'
+  const ok = { awardedAt: '2026-09-20T20:00:00Z', wowheadId: 20928, characterName: ' Thrall ' }
+
+  it('an awardId gives the addon2 key with the legacy key as its alternate', () => {
+    expect(addonAwardKeys({ ...ok, awardId: AWARD_ID })).toEqual({
+      key: 'addon2:2026-09-20T20:00:00Z-1-a1b2c3:20928:thrall',
+      alternateKeys: ['addon:2026-09-20T20:00:00Z:20928:thrall'],
+    })
+  })
+
+  it('a valid awardId with a bad awardedAt gives the addon2 key and no alternates', () => {
+    for (const awardedAt of ['yesterday', undefined, 1758398400]) {
+      expect(addonAwardKeys({ ...ok, awardedAt, awardId: AWARD_ID })).toEqual({
+        key: 'addon2:2026-09-20T20:00:00Z-1-a1b2c3:20928:thrall',
+        alternateKeys: [],
+      })
+    }
+  })
+
+  it('a malformed awardId falls back to the legacy key with no alternates', () => {
+    for (const awardId of ['short', 'has space in it', 'a'.repeat(65), 123, '', '-starts-with-dash', undefined, null]) {
+      expect(addonAwardKeys({ ...ok, awardId })).toEqual({
+        key: 'addon:2026-09-20T20:00:00Z:20928:thrall',
+        alternateKeys: [],
+      })
+    }
+  })
+
+  it('a bad wowheadId or name gives key null whatever the awardId', () => {
+    expect(addonAwardKeys({ ...ok, wowheadId: 0, awardId: AWARD_ID })).toEqual({ key: null, alternateKeys: [] })
+    expect(addonAwardKeys({ ...ok, characterName: '  ', awardId: AWARD_ID })).toEqual({ key: null, alternateKeys: [] })
+    expect(addonAwardKeys({ ...ok, characterName: null, awardId: AWARD_ID })).toEqual({ key: null, alternateKeys: [] })
+  })
+
+  it('accepts the longest awardId and keeps every key within 200 characters', () => {
+    const longest = 'a'.repeat(64)
+    expect(addonAwardKeys({ ...ok, awardId: longest }).key).toBe(`addon2:${longest}:20928:thrall`)
+    const longName = 'x'.repeat(150)
+    const keys = addonAwardKeys({ ...ok, characterName: longName, awardId: longest })
+    expect(keys.key).toBe('addon:2026-09-20T20:00:00Z:20928:' + longName)
+    expect(keys.key!.length).toBeLessThanOrEqual(200)
+  })
+
+  it('addonAwardKey returns the addon2 key for the same input', () => {
+    expect(addonAwardKey({ ...ok, awardId: AWARD_ID })).toBe('addon2:2026-09-20T20:00:00Z-1-a1b2c3:20928:thrall')
+  })
+})
+
 // ---------------------------------------------------------------------------
 // Keyed path (FU-1 of #331, #293, D-04)
 // ---------------------------------------------------------------------------
@@ -240,7 +290,8 @@ interface KeyedScript {
   inserts?: Result[]
 }
 
-const isKeyLookup = (c: Call) => c.op === 'select' && c.filters.some(([col]) => col === 'source_award_key')
+const isKeyLookup = (c: Call) =>
+  c.op === 'select' && c.filters.some(([col]) => col === 'source_award_key' || col === 'in:source_award_key')
 const isCandidates = (c: Call) => c.op === 'select' && c.columns === 'id, character_name, award_copy'
 const isTopCopy = (c: Call) => c.op === 'select' && c.columns === 'award_copy'
 
@@ -423,5 +474,45 @@ describe('insertAddonAward keyed path', () => {
     const { client } = keyedClient({ inserts: [{ data: null, error: { code: '23514', message: 'trigger says no' } }] })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await expect(insertAddonAward(client as any, keyedRow())).rejects.toThrow(/trigger says no/)
+  })
+})
+
+describe('insertAddonAward alternate keys (FU-C of 261001-tv5, D-02)', () => {
+  const KEY2 = 'addon2:2026-09-20T21:30:00Z-1-a1b2c3:20928:thrall'
+
+  it('A1 a row stored under the legacy alternate gives already_recorded with its id and writes nothing', async () => {
+    const { client, calls } = keyedClient({ keyRows: [{ id: 'hist-legacy' }] })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await insertAddonAward(client as any, keyedRow({ source_award_key: KEY2 }), { alternateKeys: [KEY] })
+    expect(result).toEqual({ status: 'already_recorded', id: 'hist-legacy' })
+    expect(calls).toHaveLength(1)
+    expect(calls[0].filters).toEqual([
+      ['guild_id', 'guild-1'],
+      ['in:source_award_key', [KEY2, KEY]],
+    ])
+  })
+
+  it('A2 with no row for either key the claim stamps and the insert writes the primary key only', async () => {
+    const claim = keyedClient({ candidates: [[{ id: 'hist-web', character_name: 'Thrall', award_copy: 1 }]] })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(await insertAddonAward(claim.client as any, keyedRow({ source_award_key: KEY2 }), { alternateKeys: [KEY] }))
+      .toEqual({ status: 'already_recorded', id: 'hist-web' })
+    expect(claim.calls.filter(c => c.op === 'update')[0].payload).toEqual({ source_award_key: KEY2 })
+
+    const fresh = keyedClient({ top: [{ award_copy: 1 }] })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(await insertAddonAward(fresh.client as any, keyedRow({ source_award_key: KEY2 }), { alternateKeys: [KEY] }))
+      .toEqual({ status: 'inserted', id: 'new-1' })
+    expect(inserts(fresh.calls)[0].payload).toMatchObject({ source_award_key: KEY2, award_copy: 2 })
+  })
+
+  it('A3 an empty alternate list keeps the exact .eq key lookup', async () => {
+    const { client, calls } = keyedClient({ keyRows: [{ id: 'hist-keyed' }] })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await insertAddonAward(client as any, keyedRow(), { alternateKeys: [] })
+    expect(calls[0].filters).toEqual([
+      ['guild_id', 'guild-1'],
+      ['source_award_key', KEY],
+    ])
   })
 })

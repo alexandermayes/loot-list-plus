@@ -642,5 +642,74 @@ describe('POST /api/addon/loot-award', () => {
         expect(keyLookups(calls)).toHaveLength(0)
       })
     })
+
+    describe('FU-C of 261001-tv5: optional award_id keys the award by the addon award id', () => {
+      const AWARDED_AT = '2026-09-20T20:00:00Z'
+      const AWARD_ID = '2026-09-20T20:00:00Z-1-a1b2c3'
+      const ADDON2_KEY = 'addon2:2026-09-20T20:00:00Z-1-a1b2c3:20928:thrall'
+      const LEGACY_KEY = 'addon:2026-09-20T20:00:00Z:20928:thrall'
+      const bindingsFixture = (extra: Partial<Fixture> = {}) =>
+        nightFixture({ items: [{ id: 'item-20928', name: 'Qiraji Bindings of Command', raid_tier_id: 'tier-1', wowhead_id: 20928 }], ...extra })
+      const fullPayload = (calls: Call[]) =>
+        lootHistoryInsert(calls)?.filters.find(([col]) => col === '__insert_payload__')?.[1] as Record<string, unknown>
+      const keyLookupValues = (calls: Call[]) =>
+        calls
+          .filter(c => c.table === 'loot_history')
+          .flatMap(c => c.filters.filter(([col]) => col === 'source_award_key').map(([, val]) => val))
+
+      it('L5 award_id with awarded_at writes the addon2 key and the key lookup includes the legacy key', async () => {
+        const { client, calls } = makeClient(bindingsFixture())
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+        const res = await POST(request({
+          guild_id: GUILD_ID, wowhead_id: 20928, character_name: 'Thrall', awarded_date: DATE,
+          awarded_at: AWARDED_AT, award_id: AWARD_ID,
+        }))
+        expect(res.status).toBe(200)
+        expect(fullPayload(calls).source_award_key).toBe(ADDON2_KEY)
+        expect(keyLookupValues(calls)).toEqual([[ADDON2_KEY, LEGACY_KEY]])
+      })
+
+      it('L6 a malformed award_id falls back to the awarded_at key and still returns 200', async () => {
+        const { client, calls } = makeClient(bindingsFixture())
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+        const res = await POST(request({
+          guild_id: GUILD_ID, wowhead_id: 20928, character_name: 'Thrall', awarded_date: DATE,
+          awarded_at: AWARDED_AT, award_id: 'x y',
+        }))
+        expect(res.status).toBe(200)
+        expect(fullPayload(calls).source_award_key).toBe(LEGACY_KEY)
+        expect(keyLookupValues(calls)).toEqual([LEGACY_KEY])
+      })
+
+      it('L7 award_id without awarded_at uses the addon2 key with no alternates', async () => {
+        const { client, calls } = makeClient(bindingsFixture())
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+        const res = await POST(request({
+          guild_id: GUILD_ID, wowhead_id: 20928, character_name: 'Thrall', awarded_date: DATE, award_id: AWARD_ID,
+        }))
+        expect(res.status).toBe(200)
+        expect(fullPayload(calls).source_award_key).toBe(ADDON2_KEY)
+        expect(keyLookupValues(calls)).toEqual([ADDON2_KEY])
+      })
+
+      it('L5b a re-send already stored under the legacy key is already_recorded with no side effects', async () => {
+        const { client, calls } = makeClient(bindingsFixture({ lookupRow: { id: 'hist-legacy' } }))
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+        const res = await POST(request({
+          guild_id: GUILD_ID, wowhead_id: 20928, character_name: 'Thrall', awarded_date: DATE,
+          awarded_at: AWARDED_AT, award_id: AWARD_ID,
+        }))
+        const body = await res.json()
+        expect(res.status).toBe(200)
+        expect(body.data).toMatchObject({ id: 'hist-legacy', already_recorded: true })
+        expect(lootHistoryInsert(calls)).toBeUndefined()
+        expect(notifyLootAward).not.toHaveBeenCalled()
+        expect(recomputeBlpForItems).not.toHaveBeenCalled()
+      })
+    })
   })
 })
