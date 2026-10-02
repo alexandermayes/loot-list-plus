@@ -20,6 +20,7 @@ import type {
   DecisionContext,
 } from '@/domain/types'
 import type { PlayerRanking, LootItem } from './BossSection'
+import { rankingEntryKey, bestEntryPerCharacter } from '@/domain/loot/ranking-entries'
 
 interface ItemPriority {
   role_priorities: Record<string, number | null>
@@ -173,6 +174,11 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     [rankings]
   )
 
+  // A raider can hold more than one entry for an item (GH #293). Ties, the
+  // contest banner, the award snapshot and the candidate count compare
+  // raiders by their best entry so nobody ties with or contests themselves.
+  const bestRankings = useMemo(() => bestEntryPerCharacter(sortedRankings), [sortedRankings])
+
   const { showNotification } = useNotification()
 
   // Fetch recent loot history for this item when modal opens
@@ -221,13 +227,13 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     // Build a structured decision snapshot at award time. The server includes
     // this in audit_logs.new_data so we can answer "why this person won" later
     // without rerunning scoring or pulling stale rankings.
-    const topScore = sortedRankings[0]?.loot_score ?? awardingCandidate.loot_score
-    const second = sortedRankings[1]
+    const topScore = bestRankings[0]?.loot_score ?? awardingCandidate.loot_score
+    const second = bestRankings[1]
     const tiedAtTop = !!second && Math.abs(topScore - second.loot_score) < 0.01
     const gapToNext = second ? topScore - second.loot_score : null
     const wasScoreWinner = Math.abs(awardingCandidate.loot_score - topScore) < 0.01
 
-    const topCandidates: DecisionCandidateSummary[] = sortedRankings.slice(0, 3).map(r => ({
+    const topCandidates: DecisionCandidateSummary[] = bestRankings.slice(0, 3).map(r => ({
       character_id: r.character_id,
       player_name: r.player_name,
       loot_score: r.loot_score,
@@ -292,7 +298,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     } finally {
       setAwarding(false)
     }
-  }, [awardingCandidate, item, guildId, raidTierId, mostRecentRaidEventId, awardReason, awardNote, noteMissing, sortedRankings, receivedCharacterIds, showNotification, onAwardComplete])
+  }, [awardingCandidate, item, guildId, raidTierId, mostRecentRaidEventId, awardReason, awardNote, noteMissing, bestRankings, receivedCharacterIds, showNotification, onAwardComplete])
 
   // Keyboard shortcuts: Enter to confirm award, Escape to cancel
   useEffect(() => {
@@ -339,33 +345,36 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     }
   }, [guildId, item?.id, showNotification, onAwardComplete])
 
-  // Generate inline explanations for top 3 candidates
+  // Generate inline explanations for the top 3 entries, keyed per entry
   const topExplanations = useMemo(() => {
     const map = new Map<string, ReturnType<typeof rankingToExplanation>>()
     for (let i = 0; i < Math.min(3, sortedRankings.length); i++) {
-      map.set(sortedRankings[i].character_id, rankingToExplanation(sortedRankings[i], guildSettings))
+      map.set(rankingEntryKey(sortedRankings[i]), rankingToExplanation(sortedRankings[i], guildSettings))
     }
     return map
   }, [sortedRankings, guildSettings])
 
   // Close-score analysis: group tied candidates and identify close contests
+  // Raiders are compared by their best entry (bestRankings).
   const contestInfo = useMemo(() => {
-    if (sortedRankings.length < 2) return null
-    const threshold = Math.max(1, sortedRankings[0].loot_score * 0.1)
+    if (bestRankings.length < 2) return null
+    const threshold = Math.max(1, bestRankings[0].loot_score * 0.1)
 
     // Find all candidates tied at #1
-    const topScore = sortedRankings[0].loot_score
-    const tiedAtTop = sortedRankings.filter(r => Math.abs(r.loot_score - topScore) < 0.01)
+    const topScore = bestRankings[0].loot_score
+    const tiedAtTop = bestRankings.filter(r => Math.abs(r.loot_score - topScore) < 0.01)
 
     // Find the next candidate after the tied group
-    const nextAfterTied = sortedRankings[tiedAtTop.length]
+    const nextAfterTied = bestRankings[tiedAtTop.length]
     const gapToNext = nextAfterTied ? topScore - nextAfterTied.loot_score : Infinity
 
     // Get key differences between #1 and the closest non-tied candidate
     let keyDiffs: { key: string; label: string; diff: number }[] = []
     if (tiedAtTop.length === 1 && nextAfterTied) {
-      const firstExp = topExplanations.get(sortedRankings[0].character_id)
-      const secondExp = topExplanations.get(nextAfterTied.character_id)
+      const explain = (r: PlayerRanking) =>
+        topExplanations.get(rankingEntryKey(r)) ?? rankingToExplanation(r, guildSettings)
+      const firstExp = explain(bestRankings[0])
+      const secondExp = explain(nextAfterTied)
       if (firstExp && secondExp) {
         keyDiffs = firstExp.lines.map(line => {
           const otherLine = secondExp.lines.find(l => l.key === line.key)
@@ -380,7 +389,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     if (!isTied && !isClose) return null
 
     return { tiedAtTop, nextAfterTied, gapToNext, isTied, isClose, keyDiffs }
-  }, [sortedRankings, topExplanations])
+  }, [bestRankings, topExplanations, guildSettings])
 
   // Determine which score components are non-zero for any candidate to hide empty columns
   const visibleComponents = useMemo(() => {
@@ -443,7 +452,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
 
         {/* Candidate count */}
         <div className="px-6 py-2 text-12 text-muted-foreground border-b border-border">
-          {sortedRankings.length} candidate{sortedRankings.length !== 1 ? 's' : ''}
+          {bestRankings.length} candidate{bestRankings.length !== 1 ? 's' : ''}
           {receivedCharacterIds.size > 0 && (
             <span className="ml-2">
               &middot; {receivedCharacterIds.size} already received
@@ -463,7 +472,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-13">
                   {contestInfo.tiedAtTop.map((r, i) => (
-                    <span key={r.character_id} className="flex items-center gap-1">
+                    <span key={rankingEntryKey(r)} className="flex items-center gap-1">
                       {i > 0 && <span className="text-muted-foreground mr-1">&middot;</span>}
                       <span className="font-semibold" style={{ color: r.class_color }}>{r.player_name}</span>
                     </span>
@@ -540,11 +549,12 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
               <tbody className="divide-y divide-border">
                 {sortedRankings.map((r, i) => {
                   const hasReceived = receivedCharacterIds.has(r.character_id)
-                  const explanation = topExplanations.get(r.character_id)
-                  const isConfirming = awardingCandidate?.character_id === r.character_id
+                  const entryKey = rankingEntryKey(r)
+                  const explanation = topExplanations.get(entryKey)
+                  const isConfirming = !!awardingCandidate && rankingEntryKey(awardingCandidate) === entryKey
                   return (
                     <tr
-                      key={r.character_id}
+                      key={entryKey}
                       className={`group transition-colors hover:bg-muted ${
                         !r.is_eligible ? 'opacity-50' : ''
                       } ${hasReceived ? 'bg-success/5' : ''} ${isConfirming ? 'bg-accent/10' : ''}`}

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import ItemLink from '@/app/components/ItemLink'
 import type { ItemRankings, PlayerRanking, LootItem } from './BossSection'
 import { Card } from '@/components/ui/card'
+import { rankingEntryKey } from '@/domain/loot/ranking-entries'
 
 interface RaidTier {
   id: string
@@ -133,7 +134,7 @@ function RaidModeItem({ ir, decimalPlaces, onClick }: RaidModeItemProps) {
           <span className="text-12 text-muted-foreground">No candidates</span>
         ) : (
           top3.map((r, i) => (
-            <div key={r.character_id} className="flex items-baseline gap-1.5 min-w-0">
+            <div key={rankingEntryKey(r)} className="flex items-baseline gap-1.5 min-w-0">
               <span className="text-11 text-muted-foreground font-medium">#{i + 1}</span>
               <span
                 className="text-13 font-medium truncate"

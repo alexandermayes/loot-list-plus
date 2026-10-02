@@ -35,6 +35,8 @@ interface PlayerRanking {
   class_color: string
   loot_score: number
   rank: number
+  /** Slot (1 or 2) of this entry; one raider can list an item at several ranks (GH #293) */
+  slot?: number
   attendance_score: number
   role_modifier: number
   role_bonus: number

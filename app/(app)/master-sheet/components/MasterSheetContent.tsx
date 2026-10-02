@@ -10,7 +10,8 @@ import { computeScore, computeAttendance, resolveAttendanceWindow, type ItemPrio
 import { calculateDonationsBatch } from '@/lib/donations/batch'
 import { getSpecRoles } from '@/domain/loot/spec-role-mapping'
 import { formatRankingsForGargul } from '@/domain/loot/gargul-dft'
-import { applyGlobalReceiveSkip } from '@/domain/loot/apply-receive-skip'
+import { applyGlobalReceiveSkip, pickReceivedEntries } from '@/domain/loot/apply-receive-skip'
+import { aggregateListStats } from '@/domain/loot/ranking-entries'
 import { buildTeamVisibility } from '@/domain/loot/apply-team-filter'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
@@ -823,10 +824,12 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
         }
         setItemPriorities(prioritiesMap)
 
-        // Count how many times each character received each item (by wowhead_id)
-        // Using wowhead_id ensures awards from other tiers with the same physical item are matched
-        // This handles duplicate items (e.g., same tier token for MS and OS)
-        // so we only remove the correct number of entries, not all of them
+        // Count how many times each character received each item (by wowhead_id).
+        // Using wowhead_id matches awards from other tiers and bosses of the same
+        // physical item. A raider can list one item more than once (a token for
+        // main spec and off-spec, a non-unique ring twice), so each award skips
+        // one entry, the best-ranked one across every row of the item (see
+        // pickReceivedEntries below), not every entry.
         const wowheadIdSet = new Set(itemsData.map((i: LootItem) => i.wowhead_id))
         const receivedItemCounts = new Map<string, number>()
         for (const h of (lootHistoryData || []) as { character_id: string; loot_item: { wowhead_id: number } | null }[]) {
@@ -910,11 +913,24 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
         const subsById = new Map<string, SubmissionData>(subsData.map((s: SubmissionData) => [s.id, s]))
         const characterById = new Map<string, CharacterWithRelations>(charactersData?.map((c: CharacterWithRelations) => [c.id, c]) || [])
 
-        // Track remaining awards to skip per character+item (mutable copy)
-        const remainingSkips = new Map(receivedItemCounts)
+        // Entries skipped because the raider already received that item: one per
+        // award, best rank first (slot 1 before slot 2 on a tie), chosen across
+        // every row of the wowhead_id at once so the skip never depends on which
+        // row is processed first (GH #293).
+        const itemById = new Map<string, LootItem>(itemsData.map((i: LootItem) => [i.id, i]))
+        const skipCandidates: { key: string; rank: number; slot: number; row: RankingData }[] = []
+        for (const r of allRankingsData as RankingData[]) {
+          const rowItem = itemById.get(r.loot_item_id)
+          const sub = rowItem ? subsById.get(r.submission_id) : undefined
+          const character = sub?.character_id ? characterById.get(sub.character_id) : undefined
+          if (!rowItem || !character) continue
+          skipCandidates.push({ key: `${character.id}-${rowItem.wowhead_id}`, rank: r.rank, slot: r.slot, row: r })
+        }
+        const skippedRows = new Set(
+          [...pickReceivedEntries(skipCandidates, receivedItemCounts)].map(e => e.row)
+        )
 
         for (const item of itemsData) {
-          // Sort by rank descending so highest-ranked entries are skipped first when awarded
           const itemRankingsData = allRankingsData
             .filter((r: RankingData) => r.loot_item_id === item.id)
             .sort((a: RankingData, b: RankingData) => b.rank - a.rank)
@@ -927,14 +943,8 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
             const character = sub.character_id ? characterById.get(sub.character_id) : undefined
             if (!character) continue
 
-            // Skip if character has already received this item (matched by wowhead_id)
-            // Only skip as many entries as times awarded (handles duplicate tokens for MS/OS)
-            const skipKey = `${character.id}-${item.wowhead_id}`
-            const skipsLeft = remainingSkips.get(skipKey) || 0
-            if (skipsLeft > 0) {
-              remainingSkips.set(skipKey, skipsLeft - 1)
-              continue
-            }
+            // Skip an entry the raider has already received (see skippedRows)
+            if (skippedRows.has(r)) continue
 
             const attendanceData = attendanceCache[character.id] || { score: 0, raidsAttended: 0, raidsInWindow: 0, isEligible: true }
             const guildMembership = membershipByCharId.get(character.id)
@@ -973,6 +983,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
               class_color: charClass?.color_hex || '#888888',
               loot_score: scoreResult.total,
               rank: r.rank,
+              slot: r.slot,
               attendance_score: scoreResult.components.attendanceScore,
               role_modifier: scoreResult.components.rankModifier,
               role_bonus: scoreResult.components.roleBonus,
@@ -1174,13 +1185,13 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
           })
         }
 
-        // Calculate totals and averages
+        // Calculate totals and averages per list (a raider can list an item
+        // more than once, GH #293): lists are distinct raiders, and the average
+        // uses each list's best rank.
         for (const item of Object.values(aggregateMap)) {
-          item.total_lists = item.players.length
-          if (item.players.length > 0) {
-            const totalRank = item.players.reduce((sum, p) => sum + p.item_rank, 0)
-            item.average_rank = totalRank / item.players.length
-          }
+          const stats = aggregateListStats(item.players)
+          item.total_lists = stats.total_lists
+          item.average_rank = stats.average_rank
         }
 
         // Filter out items with no loot lists and convert to array
@@ -1615,6 +1626,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
           class_color: charClass?.color_hex || '#888888',
           loot_score: scoreResult.total,
           rank: r.rank,
+          slot: r.slot,
           attendance_score: scoreResult.components.attendanceScore,
           role_modifier: scoreResult.components.rankModifier,
           role_bonus: scoreResult.components.roleBonus,

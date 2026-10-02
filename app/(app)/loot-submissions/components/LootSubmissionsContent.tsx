@@ -36,6 +36,8 @@ import { notifySubmissionChanged } from '@/app/hooks/usePendingSubmissionCount'
 import { resolvePhaseGroups, getPhaseGroupLabel, getPhaseGroupShortLabel, getCanonicalPhase, type PhaseGroup } from '@/domain/expansion/phase-groups'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { Card } from '@/components/ui/card'
+import { detailRowKey, withoutDetailRow, restoreDetailRow } from '@/domain/loot/list-row-updates'
+import { diffListItems, type DiffEntry } from '@/domain/loot/list-diff'
 
 interface Submission {
   id: string
@@ -70,14 +72,6 @@ interface SnapshotItem {
   slot: number
   loot_item_id: string
   item_name: string
-}
-
-interface DiffEntry {
-  type: 'added' | 'removed' | 'moved'
-  item_name: string
-  rank?: number
-  old_rank?: number
-  new_rank?: number
 }
 
 interface Phase {
@@ -628,71 +622,13 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
     }
   }
 
+  // One entry per copy (GH #293): see domain/loot/list-diff.ts.
   const computeDiff = (currentItems: SubmissionDetailItem[], snapshotItems: SnapshotItem[]): DiffEntry[] => {
-    const diff: DiffEntry[] = []
-
-    // Build maps: loot_item_id -> rank (use lowest rank if dupes)
-    const currentByItem = new Map<string, number>()
-    for (const item of currentItems) {
-      const id = item.loot_item?.id
-      if (id && (!currentByItem.has(id) || item.rank > currentByItem.get(id)!)) {
-        currentByItem.set(id, item.rank)
-      }
-    }
-
-    const snapshotByItem = new Map<string, { rank: number; name: string }>()
-    for (const item of snapshotItems) {
-      if (!snapshotByItem.has(item.loot_item_id) || item.rank > snapshotByItem.get(item.loot_item_id)!.rank) {
-        snapshotByItem.set(item.loot_item_id, { rank: item.rank, name: item.item_name })
-      }
-    }
-
-    // Find added items (in current but not in snapshot)
-    for (const item of currentItems) {
-      const id = item.loot_item?.id
-      if (id && !snapshotByItem.has(id)) {
-        diff.push({
-          type: 'added',
-          item_name: item.loot_item?.name || 'Unknown',
-          rank: item.rank
-        })
-      }
-    }
-
-    // Find removed items (in snapshot but not in current)
-    for (const [id, snap] of snapshotByItem) {
-      if (!currentByItem.has(id)) {
-        diff.push({
-          type: 'removed',
-          item_name: snap.name,
-          old_rank: snap.rank
-        })
-      }
-    }
-
-    // Find moved items (same item, different rank)
-    for (const [id, currentRank] of currentByItem) {
-      const snap = snapshotByItem.get(id)
-      if (snap && snap.rank !== currentRank) {
-        diff.push({
-          type: 'moved',
-          item_name: snap.name,
-          old_rank: snap.rank,
-          new_rank: currentRank
-        })
-      }
-    }
-
-    // Sort: added first, then removed, then moved. Within each group, by rank desc
-    diff.sort((a, b) => {
-      const typeOrder = { added: 0, removed: 1, moved: 2 }
-      if (typeOrder[a.type] !== typeOrder[b.type]) return typeOrder[a.type] - typeOrder[b.type]
-      const rankA = a.rank ?? a.new_rank ?? a.old_rank ?? 0
-      const rankB = b.rank ?? b.new_rank ?? b.old_rank ?? 0
-      return rankB - rankA
-    })
-
-    return diff
+    const current = currentItems
+      .filter(item => item.loot_item?.id)
+      .map(item => ({ loot_item_id: item.loot_item.id, rank: item.rank, name: item.loot_item?.name || 'Unknown' }))
+    const snapshot = snapshotItems.map(item => ({ loot_item_id: item.loot_item_id, rank: item.rank, name: item.item_name }))
+    return diffListItems(current, snapshot)
   }
 
   const viewSubmissionDetails = async (submissionId: string) => {
@@ -793,7 +729,14 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
     }
   }
 
-  const handleRemoveItem = (submissionId: string, lootItemId: string, itemName: string) => {
+  // GH #293: a list can hold two copies of one item, so remove and restore
+  // act on the one copy at the row's rank and slot.
+  const handleRemoveItem = (
+    submissionId: string,
+    lootItemId: string,
+    itemName: string,
+    position: { rank: number; slot: number },
+  ) => {
     if (!guildId) return
 
     confirm({
@@ -802,7 +745,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
       confirmLabel: 'Remove item',
       variant: 'warning',
       onConfirm: async () => {
-        setRemovingItemId(lootItemId)
+        setRemovingItemId(detailRowKey(lootItemId, position.rank, position.slot))
         try {
           const response = await fetch('/api/loot-submissions/remove-item', {
             method: 'POST',
@@ -811,6 +754,8 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
               guild_id: guildId,
               submission_id: submissionId,
               loot_item_id: lootItemId,
+              rank: position.rank,
+              slot: position.slot,
             }),
           })
 
@@ -821,7 +766,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
           }
 
           showNotification('success', `${itemName} removed from list.`)
-          setSubmissionDetails(prev => prev.filter(d => d.loot_item?.id !== lootItemId))
+          setSubmissionDetails(prev => withoutDetailRow(prev, { lootItemId, ...position }))
         } catch {
           showNotification('error', 'Couldn\'t remove item. Check your connection.')
         } finally {
@@ -831,7 +776,12 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
     })
   }
 
-  const handleRestoreItem = async (submissionId: string, lootItemId: string, itemName: string) => {
+  const handleRestoreItem = async (
+    submissionId: string,
+    lootItemId: string,
+    itemName: string,
+    position: { rank: number; slot: number },
+  ) => {
     if (!guildId) return
 
     try {
@@ -843,6 +793,8 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
           submission_id: submissionId,
           loot_item_id: lootItemId,
           restore: true,
+          rank: position.rank,
+          slot: position.slot,
         }),
       })
 
@@ -854,9 +806,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
 
       showNotification('success', `${itemName} restored.`)
       // Update local state to reflect restoration
-      setSubmissionDetails(prev => prev.map(d =>
-        d.loot_item?.id === lootItemId ? { ...d, removed_at: null } : d
-      ))
+      setSubmissionDetails(prev => restoreDetailRow(prev, { lootItemId, ...position }))
     } catch {
       showNotification('error', 'Couldn\'t restore item. Check your connection.')
     }
@@ -1194,7 +1144,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    handleRestoreItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
+                    handleRestoreItem(viewingSubmission!, item.loot_item.id, item.loot_item.name, { rank: item.rank, slot: item.slot })
                   }}
                   className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0 hover:bg-accent/20 hover:text-accent transition-colors"
                   title="Restore item"
@@ -1206,9 +1156,9 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    handleRemoveItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
+                    handleRemoveItem(viewingSubmission!, item.loot_item.id, item.loot_item.name, { rank: item.rank, slot: item.slot })
                   }}
-                  disabled={removingItemId === item.loot_item.id}
+                  disabled={removingItemId === detailRowKey(item.loot_item.id, item.rank, item.slot)}
                   className="opacity-0 group-hover:opacity-100 ml-auto p-1 text-muted-foreground hover:text-destructive transition-opacity shrink-0"
                   title="Remove from list"
                 >
@@ -1238,7 +1188,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleRestoreItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
+                      handleRestoreItem(viewingSubmission!, item.loot_item.id, item.loot_item.name, { rank: item.rank, slot: item.slot })
                     }}
                     className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success flex-shrink-0 hover:bg-accent/20 hover:text-accent transition-colors"
                     title="Restore item"
@@ -1250,9 +1200,9 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleRemoveItem(viewingSubmission!, item.loot_item.id, item.loot_item.name)
+                      handleRemoveItem(viewingSubmission!, item.loot_item.id, item.loot_item.name, { rank: item.rank, slot: item.slot })
                     }}
-                    disabled={removingItemId === item.loot_item.id}
+                    disabled={removingItemId === detailRowKey(item.loot_item.id, item.rank, item.slot)}
                     className="ml-auto p-1 text-muted-foreground hover:text-destructive shrink-0"
                     title="Remove from list"
                   >
@@ -1417,7 +1367,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                   'Both columns need to be filled out before we can approve.',
                   'Your list is looking sparse. Try to rank at least 20 items.',
                   'Some items on your list aren\'t available in this raid tier.',
-                  'Duplicate items found. Each item can only appear once.',
+                  'Some items are listed too many times. Most items can only appear once.',
                   'Looks good, approved!',
                 ].map((suggestion) => (
                   <button

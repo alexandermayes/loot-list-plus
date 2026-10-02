@@ -38,8 +38,8 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { InformationCircleIcon } from '@hugeicons/core-free-icons'
 import { useLootList, type LootItem } from '@/app/contexts/LootListContext'
 import { getPhaseGroupShortLabel } from '@/domain/expansion/phase-groups'
-import { isTokenSlot } from '@/data/token-class-mapping'
-import { maxCopiesForItem } from '@/domain/loot/slot-capacity'
+import { copyLimitState } from '@/domain/loot/item-copies'
+import { positionKey } from '@/domain/loot/list-row-updates'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent, usePagePerf } from '@/utils/analytics/client'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
@@ -160,13 +160,13 @@ interface RankRowProps {
   /** When true, shows remove buttons instead of edit controls */
   isApproved?: boolean
   /** Called when user removes an item from an approved list */
-  onRemoveItem?: (lootItemId: string, itemName: string) => void
-  /** Item ID currently being removed */
+  onRemoveItem?: (lootItemId: string, itemName: string, position: { rank: number; slot: number }) => void
+  /** Position key ("{rank}-{slot}") of the copy currently being removed */
   removingItemId?: string | null
   /** Items that were removed from this rank (keyed by rank-slot) */
   removedRankings?: Record<string, string>
   /** Called when user restores a removed item */
-  onRestoreItem?: (lootItemId: string, itemName: string) => void
+  onRestoreItem?: (lootItemId: string, itemName: string, position: { rank: number; slot: number }) => void
   /**
    * When true (default), a Reserved item in one slot disables its sibling.
    * Brackets 1-4 enforce this — Reserved costs 1 allocation point and the
@@ -245,7 +245,7 @@ const RankRow = memo(function RankRow({
               <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success shrink-0 group-hover:hidden">Removed</span>
               {onRestoreItem && (
                 <button
-                  onClick={() => onRestoreItem(removedItem1.id, removedItem1.name)}
+                  onClick={() => onRestoreItem(removedItem1.id, removedItem1.name, { rank, slot: 1 })}
                   className="text-11 font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0 hidden group-hover:inline-block hover:bg-accent/30"
                 >
                   Undo
@@ -271,7 +271,7 @@ const RankRow = memo(function RankRow({
                     readOnly={isApproved}
                     onRemove={isApproved && onRemoveItem && selectedItemId1 ? () => {
                       const item = resolveItem(selectedItemId1)
-                      if (item) onRemoveItem(item.id, item.name)
+                      if (item) onRemoveItem(item.id, item.name, { rank, slot: 1 })
                     } : undefined}
                   />
                 </DraggableSlot>
@@ -289,7 +289,7 @@ const RankRow = memo(function RankRow({
                   readOnly={isApproved}
                   onRemove={isApproved && onRemoveItem && selectedItemId1 ? () => {
                     const item = resolveItem(selectedItemId1)
-                    if (item) onRemoveItem(item.id, item.name)
+                    if (item) onRemoveItem(item.id, item.name, { rank, slot: 1 })
                   } : undefined}
                 />
               )}
@@ -324,7 +324,7 @@ const RankRow = memo(function RankRow({
               <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success shrink-0 group-hover:hidden">Removed</span>
               {onRestoreItem && (
                 <button
-                  onClick={() => onRestoreItem(removedItem2.id, removedItem2.name)}
+                  onClick={() => onRestoreItem(removedItem2.id, removedItem2.name, { rank, slot: 2 })}
                   className="text-11 font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0 hidden group-hover:inline-block hover:bg-accent/30"
                 >
                   Undo
@@ -350,7 +350,7 @@ const RankRow = memo(function RankRow({
                     readOnly={isApproved}
                     onRemove={isApproved && onRemoveItem && selectedItemId2 ? () => {
                       const item = resolveItem(selectedItemId2)
-                      if (item) onRemoveItem(item.id, item.name)
+                      if (item) onRemoveItem(item.id, item.name, { rank, slot: 2 })
                     } : undefined}
                   />
                 </DraggableSlot>
@@ -368,7 +368,7 @@ const RankRow = memo(function RankRow({
                   readOnly={isApproved}
                   onRemove={isApproved && onRemoveItem && selectedItemId2 ? () => {
                     const item = resolveItem(selectedItemId2)
-                    if (item) onRemoveItem(item.id, item.name)
+                    if (item) onRemoveItem(item.id, item.name, { rank, slot: 2 })
                   } : undefined}
                 />
               )}
@@ -461,7 +461,7 @@ const MobileRankCard = memo(function MobileRankCard({
             <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success shrink-0 group-hover:hidden">Removed</span>
             {onRestore && (
               <button
-                onClick={() => onRestore(removedItem.id, removedItem.name)}
+                onClick={() => onRestore(removedItem.id, removedItem.name, { rank, slot: slotNum })}
                 className="text-11 font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent shrink-0 hidden group-hover:inline-block hover:bg-accent/30"
               >
                 Undo
@@ -484,7 +484,7 @@ const MobileRankCard = memo(function MobileRankCard({
             readOnly={isApproved}
             onRemove={isApproved && onRemoveItem && selectedItemId ? () => {
               const item = resolveItem(selectedItemId)
-              if (item) onRemoveItem(item.id, item.name)
+              if (item) onRemoveItem(item.id, item.name, { rank, slot: slotNum })
             } : undefined}
             mobile
           />
@@ -546,10 +546,10 @@ interface BracketSectionProps {
   getSlotErrors: (rank: number, slot: 1 | 2) => ItemError[]
   ownedWowheadIds: Set<number>
   isApproved: boolean
-  onRemoveItem: (lootItemId: string, itemName: string) => void
+  onRemoveItem: (lootItemId: string, itemName: string, position: { rank: number; slot: number }) => void
   removingItemId: string | null
   removedRankings: Record<string, string>
-  onRestoreItem: (lootItemId: string, itemName: string) => void
+  onRestoreItem: (lootItemId: string, itemName: string, position: { rank: number; slot: number }) => void
   validation?: { allocationPoints: number; maxPoints: number; violations: string[] }
   maxAllocationPoints?: number
   expandedErrors: Set<string>
@@ -804,15 +804,19 @@ export default function LootListContent({
     return map
   }, [removedItems])
 
-  const handleRemoveApprovedItem = (lootItemId: string, itemName: string) => {
+  const handleRemoveApprovedItem = (
+    lootItemId: string,
+    itemName: string,
+    position: { rank: number; slot: number },
+  ) => {
     confirm({
       title: `Remove ${itemName}?`,
       description: 'This removes the item from your approved list. Your list stays approved.',
       confirmLabel: 'Remove item',
       variant: 'warning',
       onConfirm: async () => {
-        setRemovingItemId(lootItemId)
-        const success = await removeApprovedItem(lootItemId, itemName)
+        setRemovingItemId(positionKey(position.rank, position.slot))
+        const success = await removeApprovedItem(lootItemId, itemName, position)
         if (success) {
           showNotification('success', `${itemName} removed from your list.`)
         } else {
@@ -823,8 +827,12 @@ export default function LootListContent({
     })
   }
 
-  const handleRestoreItem = async (lootItemId: string, itemName: string) => {
-    const success = await restoreRemovedItem(lootItemId)
+  const handleRestoreItem = async (
+    lootItemId: string,
+    itemName: string,
+    position: { rank: number; slot: number },
+  ) => {
+    const success = await restoreRemovedItem(lootItemId, position)
     if (success) {
       showNotification('success', `${itemName} restored to your list.`)
     } else {
@@ -975,116 +983,33 @@ export default function LootListContent({
     return 'Item #2'
   }, [rankings])
 
-  // Create bracket-specific disabled sets for tokens
-  // Tokens can be selected once per bracket section (Brackets 1-4, No Bracket, Off-spec)
-  // Non-tokens are disabled everywhere once selected, except paired slots
-  // (one-handers, rings, trinkets) which can be listed twice.
-  const { bracket14DisabledItems, noBracketDisabledItems, offSpecDisabledItems } = useMemo(() => {
-    // Create a map of itemId -> item_slot for checking if an item is a token
-    const itemSlotMap = new Map(lootItems.map(item => [item.id, item.item_slot]))
-    // Per-item copy cap: paired slot AND not Unique-Equipped means two copies.
-    const maxCopiesMap = new Map(lootItems.map(item => [item.id, maxCopiesForItem(item)]))
-
-    // Separate items by bracket section based on rank
+  // Copies are counted by the real item (wowhead_id), so one item dropped by
+  // two bosses counts once (GH #293). Non-token items are counted across the
+  // whole list; non-unique rings, trinkets and one-handers may appear twice
+  // (see maxCopiesForItem). Tokens are counted separately in main spec
+  // (Brackets 1-4 plus No Bracket, ranks 50-25) and in off-spec (ranks 24-1),
+  // each up to the number of gear slots the token turns into (GH #331). The
+  // submit route applies the same rule (domain/loot/item-copies.ts).
+  const copyLimits = useMemo(() => {
     // Rankings key format: "{rank}-{slot}" e.g., "50-1", "38-2"
-    const bracket14Tokens = new Set<string>()   // Tokens selected in ranks 39-50
-    const noBracketTokens = new Set<string>()   // Tokens selected in ranks 25-38
-    const offSpecTokens = new Set<string>()     // Tokens selected in ranks 1-24
-    const nonTokenCounts = new Map<string, number>() // count per non-token itemId
-
-    Object.entries(rankings).forEach(([key, itemId]) => {
-      const rank = parseInt(key.split('-')[0])
-      const slot = itemSlotMap.get(itemId)
-      const isToken = slot ? isTokenSlot(slot) : false
-
-      if (isToken) {
-        // Tokens go into their bracket-specific set
-        if (rank >= 39) {
-          bracket14Tokens.add(itemId)
-        } else if (rank >= 25) {
-          noBracketTokens.add(itemId)
-        } else {
-          offSpecTokens.add(itemId)
-        }
-      } else {
-        // Non-tokens: track how many times they appear.
-        // Paired, non-unique items allow up to 2 occurrences (see maxCopiesForItem).
-        nonTokenCounts.set(itemId, (nonTokenCounts.get(itemId) || 0) + 1)
-      }
-    })
-
-    // A non-token item is fully used (disabled) once it hits its copy cap.
-    const nonTokenItems = new Set<string>()
-    nonTokenCounts.forEach((count, itemId) => {
-      if (count >= (maxCopiesMap.get(itemId) ?? 1)) nonTokenItems.add(itemId)
-    })
-
-    // Build disabled sets for each section
-    // Non-tokens are always disabled, tokens only disabled within their section
-    return {
-      bracket14DisabledItems: new Set([...nonTokenItems, ...bracket14Tokens]),
-      noBracketDisabledItems: new Set([...nonTokenItems, ...noBracketTokens]),
-      offSpecDisabledItems: new Set([...nonTokenItems, ...offSpecTokens]),
-    }
+    const listed = Object.entries(rankings).map(([key, itemId]) => ({
+      rank: parseInt(key.split('-')[0]),
+      itemId,
+    }))
+    return copyLimitState(listed, lootItems)
   }, [rankings, lootItems])
 
-  // Token-aware duplicate detection:
-  // - Non-token items are duplicates if they appear more than once globally,
-  //   except non-unique paired-slot items (one-handers, rings, trinkets),
-  //   which can appear twice because you equip two of them.
-  // - Token items are duplicates if they appear more than once in the SAME bracket section.
+  // Picker disabled sets: Brackets 1-4 and No Bracket share main spec's set.
+  const mainSpecDisabledItems = copyLimits.mainSpecAtLimit
+  const offSpecDisabledItems = copyLimits.offSpecAtLimit
+
+  // Listed items above their copy limit (shown as duplicates, block submit).
   const duplicateItems = useMemo(() => {
-    // If loot items haven't loaded yet, we can't determine token vs non-token.
+    // If loot items haven't loaded yet, we can't tell tokens from other items.
     // Skip duplicate detection entirely to avoid false positives.
     if (lootItems.length === 0) return []
-
-    const itemSlotMap = new Map(lootItems.map(item => [item.id, item.item_slot]))
-    const maxCopiesMap = new Map(lootItems.map(item => [item.id, maxCopiesForItem(item)]))
-
-    // Track token appearances per bracket section
-    const bracket14Tokens: string[] = []
-    const noBracketTokens: string[] = []
-    const offSpecTokens: string[] = []
-    const nonTokenItemIds: string[] = []
-
-    Object.entries(rankings).forEach(([key, itemId]) => {
-      const rank = parseInt(key.split('-')[0])
-      const slot = itemSlotMap.get(itemId)
-
-      // If we can't resolve the item's slot (e.g. item not in current tier data),
-      // skip it rather than misclassifying it as a non-token
-      if (!slot) return
-
-      if (isTokenSlot(slot)) {
-        if (rank >= 39) bracket14Tokens.push(itemId)
-        else if (rank >= 25) noBracketTokens.push(itemId)
-        else offSpecTokens.push(itemId)
-      } else {
-        nonTokenItemIds.push(itemId)
-      }
-    })
-
-    const dupes: string[] = []
-
-    // Non-token items: count occurrences and flag when exceeding the copy cap.
-    // Non-unique paired-slot items allow up to 2; everything else caps at 1.
-    const nonTokenCounts = new Map<string, number>()
-    nonTokenItemIds.forEach(itemId => {
-      nonTokenCounts.set(itemId, (nonTokenCounts.get(itemId) || 0) + 1)
-    })
-    nonTokenCounts.forEach((count, itemId) => {
-      if (count > (maxCopiesMap.get(itemId) ?? 1)) dupes.push(itemId)
-    })
-
-    // Token items: only flag duplicates within the same bracket section
-    ;[bracket14Tokens, noBracketTokens, offSpecTokens].forEach(sectionTokens => {
-      sectionTokens.forEach((itemId, index, arr) => {
-        if (arr.indexOf(itemId) !== index) dupes.push(itemId)
-      })
-    })
-
-    return dupes
-  }, [rankings, lootItems])
+    return [...copyLimits.overLimit]
+  }, [copyLimits, lootItems])
 
   // Filter items by spec type for different bracket sections
   // Items CASCADE down: Brackets 1-4 ⊆ No Bracket ⊆ Off-spec
@@ -1136,19 +1061,16 @@ export default function LootListContent({
 
   // Compute unranked items (all spec items not yet on the list, excluding LC items)
   // unrankedItemsAll is the full unfiltered set, used to derive stable filter options.
-  // Items that can be listed twice stay draggable until they hit their cap, so
-  // a second copy can be dragged in rather than only picked from the dropdown.
+  // Items that can be listed again stay draggable until they hit their limit
+  // in both spec groups, so a token with room in either group, or a second
+  // copy of a ring, can be dragged in rather than only picked from the dropdown.
   const unrankedItemsAll = useMemo(() => {
-    const rankedCounts = new Map<string, number>()
-    Object.values(rankings).forEach(itemId => {
-      rankedCounts.set(itemId, (rankedCounts.get(itemId) || 0) + 1)
-    })
     return lootItems.filter(
       item =>
-        (rankedCounts.get(item.id) || 0) < maxCopiesForItem(item) &&
+        !(copyLimits.mainSpecAtLimit.has(item.id) && copyLimits.offSpecAtLimit.has(item.id)) &&
         !item.is_loot_council
     )
-  }, [lootItems, rankings])
+  }, [lootItems, copyLimits])
 
   // Slot order matches gear-layout convention (head down to weapons).
   const SLOT_ORDER = [
@@ -1998,7 +1920,7 @@ export default function LootListContent({
           <div className="overflow-hidden">
             <div className="pb-4">
               <div className="bg-red-900/50 border border-red-500 rounded-xl p-4 text-red-300">
-                <strong>Warning:</strong> You have duplicate items on your list. Most items can only appear once. Rings, trinkets and one-handed weapons can appear twice, since you equip two of them &mdash; unless they&apos;re Unique-Equipped, which most raid rings and trinkets are. Tokens can appear once per bracket section.
+                <strong>Warning:</strong> Some items are on your list too many times. Most items can appear once, even if more than one boss drops them. Rings, trinkets and one-handed weapons that aren&apos;t Unique can appear twice. A token can appear once for each gear slot it turns into (twice for Qiraji Bindings), plus the same again in Off-spec.
               </div>
             </div>
           </div>
@@ -2037,7 +1959,7 @@ export default function LootListContent({
             showAllocationPoints: true,
             ranks: bracket1,
             lootItems: bracket14Items,
-            disabledItems: bracket14DisabledItems,
+            disabledItems: mainSpecDisabledItems,
           },
           {
             name: 'Bracket 2 (47-45)',
@@ -2048,7 +1970,7 @@ export default function LootListContent({
             showAllocationPoints: true,
             ranks: bracket2,
             lootItems: bracket14Items,
-            disabledItems: bracket14DisabledItems,
+            disabledItems: mainSpecDisabledItems,
           },
           {
             name: 'Bracket 3 (44-42)',
@@ -2059,7 +1981,7 @@ export default function LootListContent({
             showAllocationPoints: true,
             ranks: bracket3,
             lootItems: bracket14Items,
-            disabledItems: bracket14DisabledItems,
+            disabledItems: mainSpecDisabledItems,
           },
           {
             name: 'Bracket 4 (41-39)',
@@ -2070,7 +1992,7 @@ export default function LootListContent({
             showAllocationPoints: true,
             ranks: bracket4,
             lootItems: bracket14Items,
-            disabledItems: bracket14DisabledItems,
+            disabledItems: mainSpecDisabledItems,
           },
           {
             name: 'No bracket (38-25) - Main-spec',
@@ -2081,7 +2003,7 @@ export default function LootListContent({
             subtitle: 'Still considered main-spec priority',
             ranks: noBracket,
             lootItems: noBracketItems,
-            disabledItems: noBracketDisabledItems,
+            disabledItems: mainSpecDisabledItems,
           },
           {
             name: 'Off-spec (24-1)',
@@ -2198,7 +2120,7 @@ export default function LootListContent({
                   { num: 2, title: 'Type restriction', desc: 'Only 1 item of a given type per bracket. No duplicate weapon types in the same bracket.' },
                   { num: 3, title: 'Reserved items', desc: 'Must be the sole entry at that desirability level. Cannot share a rank with another item.' },
                   { num: 4, title: 'Equal priority', desc: 'Both item slots at a level receive equal priority when filled.' },
-                  { num: 5, title: 'Dual weapons', desc: 'Two identical non-unique weapons are allowed if not hand-specific (e.g., two of the same dagger).' },
+                  { num: 5, title: 'Listing an item twice', desc: 'Rings, trinkets and one-handed weapons that aren\'t Unique can be listed twice. A token can be listed once for each gear slot it turns into, plus the same again in Off-spec.' },
                   { num: 6, title: 'Off-spec importance', desc: 'Completing off-spec selections enhances guild flexibility and is encouraged.' },
                 ].map((rule) => (
                   <div key={rule.num} className="flex items-start gap-3 px-4 py-3">
@@ -2221,7 +2143,7 @@ export default function LootListContent({
                 <ul className="space-y-1.5 text-sm">
                   <li className="flex items-start gap-2">
                     <span className="mt-0.5 shrink-0">&bull;</span>
-                    <span>Each item can only be selected once across all ranks</span>
+                    <span>Each item can be listed once across all ranks, even if more than one boss drops it, except the items in rule 5.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="mt-0.5 shrink-0">&bull;</span>

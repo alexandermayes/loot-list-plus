@@ -1,4 +1,6 @@
-import { ITEM_UNIQUE } from '../../data/item-unique'
+import { ITEM_UNIQUE, ONE_HAND_WEAPON_IDS } from '../../data/item-unique'
+import { TOKEN_MAX_COPIES } from '../../data/token-copies'
+import { isTokenSlot } from '../../data/token-class-mapping'
 
 /**
  * How many copies of a single item a raider may place on one loot list.
@@ -10,8 +12,11 @@ import { ITEM_UNIQUE } from '../../data/item-unique'
  * Unique / Unique-Equipped. Nearly every raid ring and trinket in the game IS
  * unique, so the slot alone can't answer the question; see isUniqueEquipped.
  *
- * Tokens are deliberately absent: they cap at one copy *per bracket section*,
- * a rule the loot list enforces separately via `isTokenSlot`.
+ * Tokens are deliberately absent from this table: a token's count is the
+ * number of gear slots it turns into (data/token-copies.ts, GH #331), and that
+ * count applies once in main spec (Brackets 1-4 plus No Bracket, ranks 50-25)
+ * and once again in off-spec (ranks 24-1). domain/loot/item-copies.ts applies
+ * the spec-group split; maxCopiesForItem returns the per-group count.
  */
 export const MAX_COPIES_PER_SLOT: Record<string, number> = {
   'One-Hand': 2,
@@ -20,6 +25,14 @@ export const MAX_COPIES_PER_SLOT: Record<string, number> = {
 }
 
 export const DEFAULT_MAX_COPIES = 1
+
+/**
+ * Classic raid data files every weapon under one 'Weapon' slot. Only the ones
+ * the wow-classic-items package calls One-Hand can be dual-wielded, so only
+ * those are treated as One-Hand; any other 'Weapon' caps at one copy.
+ */
+const CLASSIC_WEAPON_SLOT = 'Weapon'
+const ONE_HAND_WEAPONS = new Set(ONE_HAND_WEAPON_IDS)
 
 /** Slots a raider can equip two of, and so may list twice. */
 export const PAIRED_SLOTS = Object.keys(MAX_COPIES_PER_SLOT)
@@ -66,20 +79,33 @@ const MAX_COPIES_WHEN_UNIQUE_UNKNOWN: Record<string, number> = {
 /**
  * Max copies of a specific item a raider may put on one loot list.
  *
- * Unpaired slots always cap at one. Paired slots cap at one when the item is
- * Unique and at two when it verifiably isn't; see
- * MAX_COPIES_WHEN_UNIQUE_UNKNOWN for the unflagged case.
+ * Tokens get TOKEN_MAX_COPIES (absent means 1), counted per spec group by
+ * domain/loot/item-copies.ts. A Classic 'Weapon' counts as One-Hand only when
+ * it is in ONE_HAND_WEAPON_IDS. Other unpaired slots always cap at one. Paired
+ * slots cap at one when the item is Unique and at two when it verifiably
+ * isn't; see MAX_COPIES_WHEN_UNIQUE_UNKNOWN for the unflagged case.
  */
 export function maxCopiesForItem(item: {
   item_slot?: string | null
   wowhead_id?: number | null
 }): number {
-  const slotMax = maxCopiesForSlot(item.item_slot)
+  if (item.item_slot && isTokenSlot(item.item_slot)) {
+    if (item.wowhead_id == null) return DEFAULT_MAX_COPIES
+    return TOKEN_MAX_COPIES[item.wowhead_id] ?? DEFAULT_MAX_COPIES
+  }
+
+  let slot = item.item_slot
+  if (slot === CLASSIC_WEAPON_SLOT) {
+    if (item.wowhead_id == null || !ONE_HAND_WEAPONS.has(item.wowhead_id)) return DEFAULT_MAX_COPIES
+    slot = 'One-Hand'
+  }
+
+  const slotMax = maxCopiesForSlot(slot)
   if (slotMax === DEFAULT_MAX_COPIES) return slotMax
 
   const unique = isUniqueEquipped(item.wowhead_id)
   if (unique === undefined) {
-    return MAX_COPIES_WHEN_UNIQUE_UNKNOWN[item.item_slot as string] ?? DEFAULT_MAX_COPIES
+    return MAX_COPIES_WHEN_UNIQUE_UNKNOWN[slot as string] ?? DEFAULT_MAX_COPIES
   }
   return unique ? DEFAULT_MAX_COPIES : slotMax
 }
