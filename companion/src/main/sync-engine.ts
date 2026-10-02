@@ -4,6 +4,7 @@ import path from 'path'
 import chokidar from 'chokidar'
 import { ApiClient, GuildData } from './api-client'
 import { parseLuaTable } from './lua-parser'
+import { toPendingAwardRequests, type PendingAwardRequest } from './addon-format'
 import { toLuaTable } from './lua-writer'
 import { WowFinder } from './wow-finder'
 
@@ -263,7 +264,7 @@ export class SyncEngine extends EventEmitter {
   }
 
   private readPendingFromSavedVars(): {
-    awards: Array<{ wowhead_id: number; character_name: string; boss_name?: string; awarded_date?: string }>
+    awards: PendingAwardRequest[]
     attendance: Array<{ raid_date: string; raid_name: string; attended: string[] }>
   } {
     const svPath = this.getSavedVarsPath()
@@ -278,16 +279,12 @@ export class SyncEngine extends EventEmitter {
     const profiles = (db['profiles'] as Record<string, unknown>) || {}
     const profile = (profiles['Default'] as Record<string, unknown>) || {}
 
-    const awards = (profile['pendingAwards'] as Array<Record<string, unknown>>) || []
-    const attendance = (profile['pendingAttendance'] as Array<Record<string, unknown>>) || []
+    // An empty Lua table parses as {} (not []), so a non-array means none.
+    const rawAttendance = profile['pendingAttendance']
+    const attendance = Array.isArray(rawAttendance) ? (rawAttendance as Array<Record<string, unknown>>) : []
 
     return {
-      awards: awards.map(a => ({
-        wowhead_id: a['wowheadId'] as number,
-        character_name: a['characterName'] as string,
-        boss_name: a['bossName'] as string | undefined,
-        awarded_date: a['awardedAt'] ? (a['awardedAt'] as string).split('T')[0] : undefined,
-      })),
+      awards: toPendingAwardRequests(profile['pendingAwards']),
       attendance: attendance.map(a => ({
         raid_date: a['raidDate'] as string,
         raid_name: a['raidName'] as string,

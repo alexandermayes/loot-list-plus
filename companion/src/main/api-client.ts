@@ -3,6 +3,8 @@
  * Handles sync token auth and guild data exchange.
  */
 
+import type { PendingAwardRequest } from './addon-format'
+
 export interface SyncTokenAuth {
   token: string
   guildId: string
@@ -102,14 +104,10 @@ export class ApiClient {
   }
 
   /**
-   * Submit loot awards from the addon
+   * Submit loot awards from the addon. Each award is posted as is, so
+   * awarded_at and award_id reach the server when the addon recorded them.
    */
-  async submitAwards(awards: Array<{
-    wowhead_id: number
-    character_name: string
-    boss_name?: string
-    awarded_date?: string
-  }>): Promise<{ processed: number; errors: number }> {
+  async submitAwards(awards: PendingAwardRequest[]): Promise<{ processed: number; errors: number }> {
     if (!this.auth) throw new Error('Not authenticated')
 
     let processed = 0
