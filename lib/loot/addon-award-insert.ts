@@ -10,13 +10,22 @@
  * second row, but a real second drop of the same item to the same raider on
  * the same night (a raider who listed the item twice) must be recorded.
  *
- * Keyed path (row.source_award_key set, see addonAwardKey): the key is
- * 'addon:' + awardedAt + ':' + wowheadId + ':' + the trimmed lowercased
- * name, so the same in-game award gives the same key from the export string
- * and from a companion that forwards awardedAt. Limitation: two awards of
- * one item to one raider within the same second share a key and are
- * recorded once (a later addon release adds an awardId). Each attempt:
- *   1. A row with this key in this guild means already recorded.
+ * Keyed path (row.source_award_key set, see addonAwardKeys): when the addon
+ * sends an awardId, the key is 'addon2:' + awardId + ':' + wowheadId + ':' +
+ * the trimmed lowercased name. The item and the name sit inside the key, so a
+ * reused or tampered awardId can never suppress an award of another item or
+ * raider. Without an awardId the key is the legacy 'addon:' + awardedAt +
+ * ':' + wowheadId + ':' + name. Either way the same in-game award gives the
+ * same key from the export string and from a companion that forwards
+ * awardedAt and awardId. An awardId key also carries its legacy key as an
+ * alternate (options.alternateKeys): during an out-of-order rollout an award
+ * may first be stored under its legacy key by a server or companion that
+ * ignored awardId, and its later re-send must find that row, not add one.
+ * Limitation: two awards of one item to one raider within the same second
+ * share a legacy key, so awards without an awardId are then recorded once.
+ * Each attempt:
+ *   1. A row with this key (or one of its alternates) in this guild means
+ *      already recorded.
  *   2. On a linked night, an unkeyed row for the same item, night and raider
  *      (same character_id, or for an unmatched name a null character_id with
  *      the same trimmed lowercased name) is claimed by stamping the key on it
@@ -65,45 +74,87 @@ const MAX_KEY_LENGTH = 200
 /** The addon's UTC timestamp (Core/Utils.lua GetTimestamp), with an
  * optional fraction of a second. */
 const ADDON_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/
+/** The addon's per-award id: 8 to 64 safe characters, starting with a
+ * letter or digit. */
+const AWARD_ID = /^[A-Za-z0-9][A-Za-z0-9:._-]{7,63}$/
 
 function normalizeName(value: string | null | undefined): string {
   return (value ?? '').trim().toLowerCase()
 }
 
-/**
- * The per-award idempotency key for an addon award, or null when the
- * award does not carry a usable identity: awardedAt must be the addon's UTC
- * timestamp (YYYY-MM-DDTHH:MM:SS, optional fraction, ending in Z),
- * wowheadId a positive integer and the trimmed name non-empty, and the key
- * at most 200 characters (the column's CHECK).
- */
-export function addonAwardKey(input: {
+export interface AddonAwardKeyInput {
   awardedAt: unknown
   wowheadId: unknown
   characterName: unknown
-}): string | null {
-  const { awardedAt, wowheadId, characterName } = input
+  /** The addon's own award id (addon 1.1.0 and later), optional. */
+  awardId?: unknown
+}
+
+export interface AddonAwardKeys {
+  /** The key to store and look up, or null when the award has no usable
+   * identity. */
+  key: string | null
+  /** Older keys the same award may already be stored under (the legacy
+   * awardedAt key of an awardId award), looked up but never written. */
+  alternateKeys: string[]
+}
+
+function legacyAddonAwardKey(awardedAt: unknown, wowheadId: number, name: string): string | null {
   if (typeof awardedAt !== 'string' || !ADDON_TIMESTAMP.test(awardedAt)) return null
-  if (typeof wowheadId !== 'number' || !Number.isInteger(wowheadId) || wowheadId <= 0) return null
-  if (typeof characterName !== 'string') return null
-  const name = normalizeName(characterName)
-  if (!name) return null
   const key = `addon:${awardedAt}:${wowheadId}:${name}`
   return key.length <= MAX_KEY_LENGTH ? key : null
+}
+
+/**
+ * The per-award idempotency keys for an addon award. wowheadId must be a
+ * positive integer and the trimmed name non-empty, or key is null. With an
+ * awardId matching AWARD_ID the key is 'addon2:' + awardId + ':' + wowheadId
+ * + ':' + name, and the legacy key is its alternate when awardedAt is valid.
+ * Otherwise the key is the legacy one: awardedAt must be the addon's UTC
+ * timestamp (YYYY-MM-DDTHH:MM:SS, optional fraction, ending in Z). Every key
+ * is at most 200 characters (the column's CHECK). A missing or malformed
+ * awardId never rejects an award; it only falls back to the legacy key.
+ */
+export function addonAwardKeys(input: AddonAwardKeyInput): AddonAwardKeys {
+  const { awardedAt, wowheadId, characterName, awardId } = input
+  const none: AddonAwardKeys = { key: null, alternateKeys: [] }
+  if (typeof wowheadId !== 'number' || !Number.isInteger(wowheadId) || wowheadId <= 0) return none
+  if (typeof characterName !== 'string') return none
+  const name = normalizeName(characterName)
+  if (!name) return none
+
+  const legacy = legacyAddonAwardKey(awardedAt, wowheadId, name)
+  if (typeof awardId === 'string' && AWARD_ID.test(awardId)) {
+    const key = `addon2:${awardId}:${wowheadId}:${name}`
+    if (key.length <= MAX_KEY_LENGTH) return { key, alternateKeys: legacy ? [legacy] : [] }
+  }
+  return { key: legacy, alternateKeys: [] }
+}
+
+/**
+ * The key addonAwardKeys stores for an award (kept for existing callers).
+ */
+export function addonAwardKey(input: AddonAwardKeyInput): string | null {
+  return addonAwardKeys(input).key
 }
 
 /**
  * Inserts one addon award row, returning 'already_recorded' instead of
  * failing when the same award is already recorded. Rows with a
  * source_award_key take the keyed path, all others the unchanged keyless
- * path (see the module comment). Any other insert or lookup error is thrown
- * for the caller to report.
+ * path (see the module comment). options.alternateKeys (from
+ * addonAwardKeys) are older keys the keyed lookup also matches; they are
+ * never written. Any other insert or lookup error is thrown for the caller
+ * to report.
  */
 export async function insertAddonAward(
   supabase: QueryClient,
   row: LootHistoryInsert,
+  options: { alternateKeys?: readonly string[] } = {},
 ): Promise<AddonAwardInsertResult> {
-  if (row.source_award_key) return insertKeyedAddonAward(supabase, row, row.source_award_key)
+  if (row.source_award_key) {
+    return insertKeyedAddonAward(supabase, row, row.source_award_key, options.alternateKeys ?? [])
+  }
 
   const raidEventId = row.raid_event_id ?? null
   const characterId = row.character_id ?? null
@@ -155,17 +206,18 @@ async function insertKeyedAddonAward(
   supabase: QueryClient,
   row: LootHistoryInsert,
   key: string,
+  alternateKeys: readonly string[],
 ): Promise<AddonAwardInsertResult> {
   const raidEventId = row.raid_event_id ?? null
   const characterId = row.character_id ?? null
   const wantedName = normalizeName(row.character_name)
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const { data: keyed, error: keyError } = await supabase
-      .from('loot_history')
-      .select('id')
-      .eq('guild_id', row.guild_id)
-      .eq('source_award_key', key)
+    const keyLookup = supabase.from('loot_history').select('id').eq('guild_id', row.guild_id)
+    const { data: keyed, error: keyError } = await (alternateKeys.length > 0
+      ? keyLookup.in('source_award_key', [key, ...alternateKeys])
+      : keyLookup.eq('source_award_key', key)
+    )
       .limit(1)
       .maybeSingle()
     if (keyError) {

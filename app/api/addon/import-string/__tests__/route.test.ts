@@ -74,7 +74,10 @@ interface Fixture {
 }
 
 function matchesFilters(row: Record<string, unknown>, filters: Array<[string, unknown]>): boolean {
-  return filters.every(([col, val]) => (col.startsWith('is:') ? row[col.slice(3)] === null : row[col] === val))
+  return filters.every(([col, val]) => {
+    if (col.startsWith('is:')) return row[col.slice(3)] === null
+    return Array.isArray(val) ? val.includes(row[col]) : row[col] === val
+  })
 }
 
 /** Recording fake matching the guild-scoped query sequence (expansions -> raid_tiers -> guilds -> loot_items). */
@@ -714,6 +717,88 @@ describe('POST /api/addon/import-string', () => {
         const stamp = calls.find(c => c.table === 'loot_history' && c.updatePayload)
         expect(stamp?.updatePayload).toEqual({ source_award_key: KEY_1 })
         expect(notifyLootAward).not.toHaveBeenCalled()
+      })
+
+      describe('FU-C of 261001-tv5: an award that carries an awardId', () => {
+        const AWARD_A = '2026-09-20T20:00:00Z-1-a1b2c3'
+        const AWARD_B = '2026-09-20T20:00:00Z-2-d4e5f6'
+        const ADDON2_A = `addon2:${AWARD_A}:20928:thrall`
+        const ADDON2_B = `addon2:${AWARD_B}:20928:thrall`
+        const withId = (awardId: string) => ({ ...first, awardId })
+        const keyLookupValues = (calls: Call[]) =>
+          calls
+            .filter(c => c.table === 'loot_history')
+            .flatMap(c => c.filters.filter(([col]) => col === 'source_award_key').map(([, val]) => val))
+
+        it('I5 gets the addon2 key and its lookup includes the legacy key', async () => {
+          const fixture = bindingsFixture([])
+          const { client, calls } = makeClient(fixture)
+          vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+          const res = await POST(request({ importString: importString(payloadWith([withId(AWARD_A)], [])) }))
+          const body = await res.json()
+
+          expect(body.data.awards).toEqual({ processed: 1, errors: 0, already_recorded: 0 })
+          expect(insertedRows(calls)).toEqual([{ award_copy: 1, source_award_key: ADDON2_A }])
+          expect(keyLookupValues(calls)).toEqual([[ADDON2_A, KEY_1]])
+        })
+
+        it('I5b an award stored earlier under its legacy key is already recorded, not doubled', async () => {
+          const fixture = bindingsFixture([stored('hist-legacy', 1, KEY_1)])
+          const { client, calls } = makeClient(fixture)
+          vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+          const res = await POST(request({ importString: importString(payloadWith([withId(AWARD_A)], [])) }))
+          const body = await res.json()
+
+          expect(body.data.awards).toEqual({ processed: 1, errors: 0, already_recorded: 1 })
+          expect(lootHistoryInserts(calls)).toHaveLength(0)
+          expect(fixture.history).toHaveLength(1)
+        })
+
+        it('I6 importing the same string again reports it under already_recorded and inserts nothing', async () => {
+          const fixture = bindingsFixture([])
+          const { client, calls } = makeClient(fixture)
+          vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+          const exportString = importString(payloadWith([withId(AWARD_A)], []))
+
+          await POST(request({ importString: exportString }))
+          const insertsAfterFirst = lootHistoryInserts(calls).length
+          const res = await POST(request({ importString: exportString }))
+          const body = await res.json()
+
+          expect(insertsAfterFirst).toBe(1)
+          expect(body.data.awards).toEqual({ processed: 1, errors: 0, already_recorded: 1 })
+          expect(lootHistoryInserts(calls)).toHaveLength(1)
+          expect(fixture.history).toHaveLength(1)
+        })
+
+        it('I7 two awards in the same second with different awardIds record copy 1 and copy 2', async () => {
+          const fixture = bindingsFixture([])
+          const { client, calls } = makeClient(fixture)
+          vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+          const res = await POST(request({ importString: importString(payloadWith([withId(AWARD_A), withId(AWARD_B)], [])) }))
+          const body = await res.json()
+
+          expect(body.data.awards).toEqual({ processed: 2, errors: 0, already_recorded: 0 })
+          expect(insertedRows(calls)).toEqual([
+            { award_copy: 1, source_award_key: ADDON2_A },
+            { award_copy: 2, source_award_key: ADDON2_B },
+          ])
+          expect(fixture.history).toHaveLength(2)
+        })
+
+        it('I8 an award without awardId keeps the legacy key', async () => {
+          const fixture = bindingsFixture([])
+          const { client, calls } = makeClient(fixture)
+          vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+          await POST(request({ importString: importString(payloadWith([first], [])) }))
+
+          expect(insertedRows(calls)).toEqual([{ award_copy: 1, source_award_key: KEY_1 }])
+          expect(keyLookupValues(calls)).toEqual([KEY_1])
+        })
       })
     })
   })

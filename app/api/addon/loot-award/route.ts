@@ -6,7 +6,7 @@ import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { notifyLootAward } from '@/lib/discord-loot-announcements'
 import { resolveGuildLootItem } from '@/lib/loot/guild-scoped-lookup'
 import { buildAddonAwardRow } from '@/lib/loot/loot-history-rows'
-import { addonAwardKey, insertAddonAward, type AddonAwardInsertResult } from '@/lib/loot/addon-award-insert'
+import { addonAwardKeys, insertAddonAward, type AddonAwardInsertResult } from '@/lib/loot/addon-award-insert'
 import { findAwardRaidEvent } from '@/utils/raid-events/team-routing'
 import { recomputeBlpForItems } from '@/utils/blp/recompute'
 
@@ -18,6 +18,8 @@ interface LootAwardRequest {
   awarded_date?: string
   /** The addon's own award timestamp (UTC ISO), optional (FU-1 of #331, #293). */
   awarded_at?: unknown
+  /** The addon's own award id, optional (FU-C of 261001-tv5). */
+  award_id?: unknown
   notes?: string
 }
 
@@ -50,8 +52,15 @@ interface LootAwardRequest {
  * builds for that in-game award, so the two paths dedupe against each other
  * and a second copy of an item on one night synced in a later batch is
  * recorded. A missing or malformed awarded_at is never rejected; the award
- * then takes the keyless path, exactly as before. Today's companion sends
- * none (the follow-up companion release forwards it).
+ * then takes the keyless path, exactly as before. Companion 1.0.0 sends
+ * none; companion 1.1.0 forwards it.
+ *
+ * FU-C of 261001-tv5: an optional award_id (the addon's own award id, sent
+ * by companion 1.1.0 for awards from addon 1.1.0) gives the award the
+ * 'addon2:' key the export-string import builds from the same awardId, with
+ * its awarded_at key looked up as an alternate so an award first stored
+ * under that older key is not recorded twice. A missing or malformed
+ * award_id is never rejected; the award then keys on awarded_at as above.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -59,7 +68,7 @@ export async function POST(request: NextRequest) {
     if (!auth.ok) return auth.response
 
     const body: LootAwardRequest = await request.json()
-    const { guild_id, wowhead_id, character_name, boss_name, awarded_date, awarded_at, notes } = body
+    const { guild_id, wowhead_id, character_name, boss_name, awarded_date, awarded_at, award_id, notes } = body
 
     if (!guild_id || !wowhead_id || !character_name) {
       return NextResponse.json({
@@ -126,6 +135,12 @@ export async function POST(request: NextRequest) {
     // Insert loot history entry. raid_tier_id and expansion_id come from the
     // guild-scoped lookup above (GH #294 D-01) — not from the request.
     const today = new Date().toISOString().split('T')[0]
+    const keys = addonAwardKeys({
+      awardedAt: awarded_at,
+      wowheadId: wowhead_id,
+      characterName: character_name,
+      awardId: award_id,
+    })
     let result: AddonAwardInsertResult
     try {
       result = await insertAddonAward(
@@ -140,9 +155,10 @@ export async function POST(request: NextRequest) {
           notes,
           bossName: boss_name,
           raidEventId,
-          sourceAwardKey: addonAwardKey({ awardedAt: awarded_at, wowheadId: wowhead_id, characterName: character_name }),
+          sourceAwardKey: keys.key,
           today,
-        })
+        }),
+        { alternateKeys: keys.alternateKeys },
       )
     } catch (insertError) {
       console.error('Failed to insert loot history:', insertError)

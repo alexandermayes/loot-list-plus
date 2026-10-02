@@ -5,6 +5,7 @@ import { trackApiError } from '@/utils/analytics/server'
 import { getAttendanceWindowEnd, resolveOwnedEvents, resolveActiveRaiderModifiers } from '@/domain/scoring'
 import { toDateString } from '@/utils/date'
 import { withFactionVariants } from '@/domain/loot/faction-item-aliases'
+import { buildMemberRankedItems, fetchReceivedCounts } from '@/lib/addon/member-ranked-items'
 
 /**
  * GET /api/addon/guild-data
@@ -16,6 +17,13 @@ import { withFactionVariants } from '@/domain/loot/faction-item-aliases'
  * - guild_id: Required
  *
  * Auth: Session cookie or Bearer sync token scoped to guild_id (GH #300)
+ *
+ * members[].items leave out removed list rows (FU-3 of #331, #293) and send
+ * each raider's ranks best last (buildMemberRankedItems), so the companion's
+ * last-wins collapse keeps the best rank. One listed entry per award of the
+ * item to the raider is left out too, best rank first, as on the master
+ * sheet and in the Gargul export (FU-C of 261001-tv5). A failed loot
+ * history read sends every entry.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -44,12 +52,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Guild not found' }, { status: 404 })
     }
 
-    // Fetch all data in parallel
+    // Fetch all data in parallel. receivedCounts is null when the loot
+    // history read fails (the export then skips nothing).
     const [
       settingsResult,
       expansionResult,
       raidTiersResult,
       membershipsResult,
+      receivedCounts,
     ] = await Promise.all([
       supabase.from('guild_settings').select('*').eq('guild_id', guildId).single(),
       supabase.from('expansions').select('id, name, current_phase').eq('id', guild.active_expansion_id).single(),
@@ -58,6 +68,7 @@ export async function GET(request: NextRequest) {
         character_id, role, membership_status,
         characters (id, name, wow_classes (name, color_hex), spec:class_specs (id, name))
       `).eq('guild_id', guildId).eq('is_active', true),
+      fetchReceivedCounts(supabase, guildId),
     ])
 
     const raidTierIds = raidTiersResult.data?.map(rt => rt.id) || []
@@ -72,7 +83,7 @@ export async function GET(request: NextRequest) {
         .in('raid_tier_id', raidTierIds).order('name'),
       supabase.from('loot_submissions').select(`
         id, character_id, phase, status,
-        loot_submission_items (loot_item_id, rank, loot_items (wowhead_id))
+        loot_submission_items (loot_item_id, rank, slot, removed_at, loot_items (wowhead_id))
       `).eq('guild_id', guildId).eq('status', 'approved'),
       supabase.from('bad_luck_protection').select('character_id, loot_item_id, times_passed').eq('guild_id', guildId),
       // Drop events from the in-progress reset week so the addon's score
@@ -126,19 +137,9 @@ export async function GET(request: NextRequest) {
       item_type: item.item_type,
     })))
 
-    // Build submission lookup
-    const submissionsByChar: Record<string, Array<{ wowhead_id: number; rank: number }>> = {}
-    for (const sub of submissionsResult.data || []) {
-      if (!sub.loot_submission_items) continue
-      const charItems: Array<{ wowhead_id: number; rank: number }> = []
-      for (const item of sub.loot_submission_items) {
-        const lootItem = Array.isArray(item.loot_items) ? item.loot_items[0] : item.loot_items
-        if (lootItem?.wowhead_id) {
-          charItems.push({ wowhead_id: lootItem.wowhead_id, rank: item.rank })
-        }
-      }
-      submissionsByChar[sub.character_id] = withFactionVariants(charItems)
-    }
+    // Build submission lookup: removed rows out, best rank last, faction
+    // mirrors (see lib/addon/member-ranked-items.ts)
+    const submissionsByChar = buildMemberRankedItems(submissionsResult.data || [], receivedCounts)
 
     // Build members
     interface CharData { id: string; name: string; wow_classes: { name: string; color_hex: string } | { name: string; color_hex: string }[]; spec: { id: string; name: string; role: string } | { id: string; name: string; role: string }[] | null }

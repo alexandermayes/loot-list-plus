@@ -13,7 +13,7 @@ import {
   type LootItemHints,
 } from '@/lib/loot/guild-scoped-lookup'
 import { buildImportStringAwardRow, type LootItemScope } from '@/lib/loot/loot-history-rows'
-import { addonAwardKey, insertAddonAward } from '@/lib/loot/addon-award-insert'
+import { addonAwardKeys, insertAddonAward } from '@/lib/loot/addon-award-insert'
 import { matchAwardSession } from '@/lib/addon/award-session'
 import { inflateRawSync } from 'zlib'
 
@@ -25,6 +25,8 @@ interface AddonAward {
   bossName?: string
   raidName?: string
   awardedAt: string
+  /** The addon's own award id (addon 1.1.0 and later), optional. */
+  awardId?: string
   manual?: boolean
 }
 
@@ -81,6 +83,13 @@ interface ImportPayload {
  * on one night (a different awardedAt) is recorded as the next copy. An
  * export that holds only the later award, after "Clear pending" in game,
  * still records it as the next copy.
+ *
+ * FU-C of 261001-tv5: an award that carries an awardId (addon 1.1.0) is
+ * keyed by it instead ('addon2:' key, the same one POST
+ * /api/addon/loot-award builds from the companion's award_id), with its
+ * awardedAt key looked up as an alternate, so two awards in the same second
+ * become two copies and an award stored earlier under its awardedAt key is
+ * not recorded twice. A missing or malformed awardId keys on awardedAt.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -375,6 +384,12 @@ async function processAward(
   }
 
   const today = new Date().toISOString().split('T')[0]
+  const keys = addonAwardKeys({
+    awardedAt: award.awardedAt,
+    wowheadId: award.wowheadId,
+    characterName: award.characterName,
+    awardId: award.awardId,
+  })
   const result = await insertAddonAward(
     supabase,
     buildImportStringAwardRow({
@@ -386,13 +401,10 @@ async function processAward(
       manual: award.manual,
       awardedBy: userId,
       raidEventId,
-      sourceAwardKey: addonAwardKey({
-        awardedAt: award.awardedAt,
-        wowheadId: award.wowheadId,
-        characterName: award.characterName,
-      }),
+      sourceAwardKey: keys.key,
       today,
-    })
+    }),
+    { alternateKeys: keys.alternateKeys },
   )
 
   if (result.status === 'already_recorded') return { status: 'already_recorded' }
