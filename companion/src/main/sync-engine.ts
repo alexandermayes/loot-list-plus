@@ -4,6 +4,14 @@ import path from 'path'
 import chokidar from 'chokidar'
 import { ApiClient, GuildData } from './api-client'
 import { parseLuaTable } from './lua-parser'
+import {
+  applyGuildDataToSavedVars,
+  buildGuildDataLua,
+  readPendingLists,
+  toPendingAttendanceRequests,
+  toPendingAwardRequests,
+  type SentPending,
+} from './addon-format'
 import { toLuaTable } from './lua-writer'
 import { WowFinder } from './wow-finder'
 
@@ -26,13 +34,16 @@ export interface SyncStatus {
 /**
  * Orchestrates data flow between LootList+ API and WoW addon SavedVariables.
  *
- * Sync cycle:
- * 1. Fetch guild data from API
- * 2. Write to SavedVariables file (addon reads on /reload)
- * 3. Watch SavedVariables for changes (addon writes on logout)
- * 4. Read pending awards/attendance from SavedVariables
- * 5. Push to API
- * 6. Clear pending data from SavedVariables
+ * Sync cycle (one pass):
+ * 1. Read pending awards/attendance from SavedVariables
+ * 2. Push attendance, then awards, to the API
+ * 3. Fetch guild data from the API (it now includes what was just pushed)
+ * 4. In one SavedVariables write, replace guildData and remove the pending
+ *    entries that were sent (addon reads the file on login or /reload)
+ * If step 3 fails nothing is written, so pending data is sent again on the
+ * next pass (awards dedupe by key, attendance upserts).
+ * Between passes, SavedVariables is watched for changes (the addon writes
+ * on logout or /reload) and new pending data triggers a pass.
  */
 export class SyncEngine extends EventEmitter {
   private config: SyncConfig
@@ -97,31 +108,32 @@ export class SyncEngine extends EventEmitter {
     this.updateStatus({ state: 'syncing' })
 
     try {
-      // Step 1: Fetch fresh guild data from API
+      // Step 1: Read pending data from SavedVariables
+      const svPath = this.getSavedVarsPath()
+      const saved = this.readSavedVars(svPath)
+      const sent: SentPending = saved ? readPendingLists(saved) : { awards: [], attendance: [] }
+      const awards = toPendingAwardRequests(sent.awards)
+      const attendance = toPendingAttendanceRequests(sent.attendance)
+
+      // Step 2: Push pending data to API. Attendance goes first: its import
+      // creates the raid night that the awards then link to (#295).
+      if (attendance.length > 0) {
+        const result = await this.api.submitAttendance(attendance)
+        console.log('Synced attendance records:', result.processed, 'errors:', result.errors)
+      }
+
+      if (awards.length > 0) {
+        const result = await this.api.submitAwards(awards)
+        console.log('Synced awards:', result.processed, 'errors:', result.errors)
+      }
+
+      // Step 3: Fetch fresh guild data. A failure throws before anything is
+      // written, so the pending data stays in the file for the next pass.
       const guildData = await this.api.getGuildData()
 
-      // Step 2: Write to SavedVariables
-      await this.writeGuildDataToSavedVars(guildData)
-
-      // Step 3: Read pending data from SavedVariables
-      const pending = this.readPendingFromSavedVars()
-
-      // Step 4: Push pending data to API. Attendance goes first: its import
-      // creates the raid night that the awards then link to (#295).
-      if (pending.attendance.length > 0) {
-        const result = await this.api.submitAttendance(pending.attendance)
-        console.log(`Synced ${result.processed} attendance records (${result.errors} errors)`)
-      }
-
-      if (pending.awards.length > 0) {
-        const result = await this.api.submitAwards(pending.awards)
-        console.log(`Synced ${result.processed} awards (${result.errors} errors)`)
-      }
-
-      // Step 5: Clear pending data from SavedVariables
-      if (pending.awards.length > 0 || pending.attendance.length > 0) {
-        this.clearPendingInSavedVars()
-      }
+      // Step 4: One write: guild data in, sent pending entries out
+      const hadPending = sent.awards.length > 0 || sent.attendance.length > 0
+      this.writeSyncResult(svPath, guildData, hadPending ? sent : null)
 
       this.updateStatus({
         state: 'watching',
@@ -178,8 +190,18 @@ export class SyncEngine extends EventEmitter {
     throw new Error('No SavedVariables folder found. Make sure the addon is installed and WoW has been launched at least once. Expected: ' + svDir)
   }
 
-  private async writeGuildDataToSavedVars(guildData: GuildData) {
-    const svPath = this.getSavedVarsPath()
+  /** The parsed SavedVariables file, or null when it does not exist yet. */
+  private readSavedVars(svPath: string): Record<string, unknown> | null {
+    if (!fs.existsSync(svPath)) return null
+    return parseLuaTable(fs.readFileSync(svPath, 'utf-8'))
+  }
+
+  /**
+   * Re-reads the file (the addon may have added pending data while the pass
+   * ran), applies guild data and the sent pending entries in place, and
+   * writes it once.
+   */
+  private writeSyncResult(svPath: string, guildData: GuildData, sent: SentPending | null) {
     const dir = path.dirname(svPath)
 
     // Ensure directory exists
@@ -187,134 +209,18 @@ export class SyncEngine extends EventEmitter {
       fs.mkdirSync(dir, { recursive: true })
     }
 
-    // Read existing SavedVariables or create new
-    let existing: Record<string, unknown> = {}
-    if (fs.existsSync(svPath)) {
-      const content = fs.readFileSync(svPath, 'utf-8')
-      existing = parseLuaTable(content)
-    }
-
-    // Navigate to the profile's guildData
-    const db = (existing['LootListPlusDB'] as Record<string, unknown>) || {}
-    const profiles = (db['profiles'] as Record<string, unknown>) || {}
-    const defaultProfile = (profiles['Default'] as Record<string, unknown>) || {}
-
-    // Update guild data
-    defaultProfile['guildData'] = {
-      guildId: guildData.guildId,
-      guildName: guildData.guildName,
-      importedAt: new Date().toISOString(),
-      expansionId: guildData.expansionId,
-      phase: guildData.phase,
-      settings: guildData.settings,
-      items: this.convertItemsToLuaFormat(guildData.items),
-      members: this.convertMembersToLuaFormat(guildData.members),
-      priorities: guildData.priorities,
-      blp: guildData.blp,
-      attendance: guildData.attendance,
-    }
-
-    profiles['Default'] = defaultProfile
-    db['profiles'] = profiles
-    existing['LootListPlusDB'] = db
-
-    // Write back
-    const lua = toLuaTable('LootListPlusDB', db)
-    fs.writeFileSync(svPath, lua, 'utf-8')
+    const existing = this.readSavedVars(svPath) ?? {}
+    const db = applyGuildDataToSavedVars(existing, buildGuildDataLua(guildData, new Date().toISOString()), sent)
+    fs.writeFileSync(svPath, toLuaTable('LootListPlusDB', db), 'utf-8')
   }
 
-  private convertItemsToLuaFormat(items: GuildData['items']): Record<number, unknown> {
-    const result: Record<number, unknown> = {}
-    for (const item of items) {
-      result[item.wowhead_id] = {
-        id: item.id,
-        name: item.name,
-        bossName: item.boss_name,
-        raidName: item.raid_name,
-        classification: item.classification,
-        slot: item.slot,
-        itemType: item.item_type,
-        wowheadId: item.wowhead_id,
-      }
-    }
-    return result
-  }
-
-  private convertMembersToLuaFormat(members: GuildData['members']): Record<string, unknown> {
-    const result: Record<string, unknown> = {}
-    for (const member of members) {
-      const items: Record<string, number> = {}
-      for (const item of member.items) {
-        items[String(item.wowhead_id)] = item.rank
-      }
-      result[member.character_id] = {
-        name: member.name,
-        class: member.class_token,
-        classColor: member.class_color,
-        spec: member.spec_name,
-        specId: member.spec_id,
-        role: member.role,
-        guildRole: member.guild_role,
-        membershipStatus: member.membership_status,
-        items,
-      }
-    }
-    return result
-  }
-
-  private readPendingFromSavedVars(): {
-    awards: Array<{ wowhead_id: number; character_name: string; boss_name?: string; awarded_date?: string }>
-    attendance: Array<{ raid_date: string; raid_name: string; attended: string[] }>
-  } {
-    const svPath = this.getSavedVarsPath()
-    if (!fs.existsSync(svPath)) {
-      return { awards: [], attendance: [] }
-    }
-
-    const content = fs.readFileSync(svPath, 'utf-8')
-    const data = parseLuaTable(content)
-
-    const db = (data['LootListPlusDB'] as Record<string, unknown>) || {}
-    const profiles = (db['profiles'] as Record<string, unknown>) || {}
-    const profile = (profiles['Default'] as Record<string, unknown>) || {}
-
-    const awards = (profile['pendingAwards'] as Array<Record<string, unknown>>) || []
-    const attendance = (profile['pendingAttendance'] as Array<Record<string, unknown>>) || []
-
+  private readPendingFromSavedVars() {
+    const saved = this.readSavedVars(this.getSavedVarsPath())
+    const pending = saved ? readPendingLists(saved) : { awards: [], attendance: [] }
     return {
-      awards: awards.map(a => ({
-        wowhead_id: a['wowheadId'] as number,
-        character_name: a['characterName'] as string,
-        boss_name: a['bossName'] as string | undefined,
-        awarded_date: a['awardedAt'] ? (a['awardedAt'] as string).split('T')[0] : undefined,
-      })),
-      attendance: attendance.map(a => ({
-        raid_date: a['raidDate'] as string,
-        raid_name: a['raidName'] as string,
-        attended: (a['attended'] as string[]) || [],
-      })),
+      awards: toPendingAwardRequests(pending.awards),
+      attendance: toPendingAttendanceRequests(pending.attendance),
     }
-  }
-
-  private clearPendingInSavedVars() {
-    const svPath = this.getSavedVarsPath()
-    if (!fs.existsSync(svPath)) return
-
-    const content = fs.readFileSync(svPath, 'utf-8')
-    const data = parseLuaTable(content)
-
-    const db = (data['LootListPlusDB'] as Record<string, unknown>) || {}
-    const profiles = (db['profiles'] as Record<string, unknown>) || {}
-    const profile = (profiles['Default'] as Record<string, unknown>) || {}
-
-    profile['pendingAwards'] = []
-    profile['pendingAttendance'] = []
-
-    profiles['Default'] = profile
-    db['profiles'] = profiles
-
-    const lua = toLuaTable('LootListPlusDB', db)
-    fs.writeFileSync(svPath, lua, 'utf-8')
   }
 
   private startFileWatcher() {

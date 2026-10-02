@@ -10,7 +10,31 @@
  *     },
  *   },
  * }
+ *
+ * Lua tells [20928] (a number key) from ["20928"] (a string key), but a JS
+ * object key is always a string. So every parsed non-array table records
+ * which of its keys were numbers under LUA_NUMBER_KEYS, and lua-writer.ts
+ * writes those back as [n]. The addon looks items up by number and member
+ * ranks by string, so the difference matters.
  */
+
+/** Hidden marker: the keys of a table that are Lua numbers, as strings. */
+export const LUA_NUMBER_KEYS: unique symbol = Symbol('luaNumberKeys')
+
+/**
+ * Records keys of obj as Lua number keys, adding to any keys already
+ * recorded. The marker is a non-enumerable Symbol property, so it is
+ * invisible to Object.keys, JSON.stringify and object spread.
+ */
+export function markLuaNumberKeys(obj: object, keys: Iterable<string>): void {
+  const holder = obj as { [LUA_NUMBER_KEYS]?: Set<string> }
+  let set = holder[LUA_NUMBER_KEYS]
+  if (!set) {
+    set = new Set<string>()
+    Object.defineProperty(obj, LUA_NUMBER_KEYS, { value: set, enumerable: false, configurable: true })
+  }
+  for (const key of keys) set.add(key)
+}
 
 export function parseLuaTable(lua: string): Record<string, unknown> {
   const result: Record<string, unknown> = {}
@@ -138,9 +162,15 @@ function parseLuaTableValue(lua: string, start: number): ParseResult {
     return { value: entries.map(e => e.value), endIndex: pos }
   } else {
     const obj: Record<string, unknown> = {}
+    const numberKeys = new Set<string>()
     for (const entry of entries) {
-      obj[String(entry.key)] = entry.value
+      const key = String(entry.key)
+      obj[key] = entry.value
+      // The last entry for a key decides its type, as it decides its value.
+      if (typeof entry.key === 'number') numberKeys.add(key)
+      else numberKeys.delete(key)
     }
+    if (numberKeys.size > 0) markLuaNumberKeys(obj, numberKeys)
     return { value: obj, endIndex: pos }
   }
 }
