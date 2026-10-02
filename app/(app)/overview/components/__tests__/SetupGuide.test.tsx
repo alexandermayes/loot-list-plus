@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SetupGuide } from '../SetupGuide'
 
@@ -120,7 +120,12 @@ describe('SetupGuide', () => {
     ))
   })
 
+  // Unmount while fetch is still stubbed: this afterEach runs before
+  // vitest.setup.ts's cleanup(), and unmounting flushes any pending effect.
+  // SetupGuide's checkSetupProgress effect calls fetch with a relative URL,
+  // same ordering hazard as CreateReserveRunModal.test.tsx.
   afterEach(() => {
+    cleanup()
     vi.unstubAllGlobals()
   })
 
