@@ -21,6 +21,20 @@ export interface PendingAwardRequest {
   award_id?: string
 }
 
+/** One pending attendance record as POST /api/addon/attendance receives it. */
+export interface PendingAttendanceRequest {
+  raid_date: string
+  raid_name: string
+  attended: string[]
+}
+
+/** The pending lists read at the start of a sync pass, as the addon wrote
+ * them. Only these entries are cleared at the end of the pass. */
+export interface SentPending {
+  awards: unknown[]
+  attendance: unknown[]
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -52,6 +66,135 @@ export function toPendingAwardRequests(raw: unknown): PendingAwardRequest[] {
     })
   }
   return requests
+}
+
+/**
+ * Maps the addon's profile.pendingAttendance list to attendance requests.
+ * A missing or non-array list (an empty Lua table parses as {}) gives [].
+ */
+export function toPendingAttendanceRequests(raw: unknown): PendingAttendanceRequest[] {
+  if (!Array.isArray(raw)) return []
+  const requests: PendingAttendanceRequest[] = []
+  for (const entry of raw) {
+    const a = asRecord(entry)
+    if (!a) continue
+    requests.push({
+      raid_date: a['raidDate'] as string,
+      raid_name: a['raidName'] as string,
+      attended: Array.isArray(a['attended']) ? (a['attended'] as string[]) : [],
+    })
+  }
+  return requests
+}
+
+/**
+ * The pending lists of a parsed SavedVariables file (LootListPlusDB,
+ * profiles.Default), as raw arrays. A missing or non-array list gives [].
+ */
+export function readPendingLists(saved: Record<string, unknown>): SentPending {
+  const db = asRecord(saved['LootListPlusDB'])
+  const profiles = asRecord(db?.['profiles'])
+  const profile = asRecord(profiles?.['Default'])
+  const awards = profile?.['pendingAwards']
+  const attendance = profile?.['pendingAttendance']
+  return {
+    awards: Array.isArray(awards) ? awards : [],
+    attendance: Array.isArray(attendance) ? attendance : [],
+  }
+}
+
+function pendingAwardIdentity(entry: unknown): string | null {
+  const a = asRecord(entry)
+  if (!a) return null
+  if (typeof a['awardId'] === 'string') return `id:${a['awardId']}`
+  const name = typeof a['characterName'] === 'string' ? a['characterName'].trim().toLowerCase() : ''
+  return `at:${String(a['awardedAt'])}|${String(a['wowheadId'])}|${name}`
+}
+
+function pendingAttendanceIdentity(entry: unknown): string | null {
+  const a = asRecord(entry)
+  if (!a) return null
+  return `${String(a['raidDate'])}|${String(a['raidName'])}|${String(a['startTime'])}`
+}
+
+/**
+ * The entries of current that were not sent: each sent entry removes one
+ * current entry with the same identity. Kept entries are the same objects.
+ */
+function withoutSent(current: unknown, sent: readonly unknown[], identity: (entry: unknown) => string | null): unknown[] {
+  if (!Array.isArray(current)) return []
+  const sentCounts = new Map<string, number>()
+  for (const entry of sent) {
+    const id = identity(entry)
+    if (id !== null) sentCounts.set(id, (sentCounts.get(id) ?? 0) + 1)
+  }
+  return current.filter(entry => {
+    const id = identity(entry)
+    const left = id === null ? 0 : (sentCounts.get(id) ?? 0)
+    if (left === 0) return true
+    sentCounts.set(id as string, left - 1)
+    return false
+  })
+}
+
+/** The table at parent[key], created in place when it is missing. */
+function tableAt(parent: Record<string, unknown>, key: string): Record<string, unknown> {
+  const existing = asRecord(parent[key])
+  if (existing) return existing
+  const created: Record<string, unknown> = {}
+  parent[key] = created
+  return created
+}
+
+/**
+ * Applies one sync pass to a parsed SavedVariables file and returns the
+ * LootListPlusDB table to write. profiles.Default.guildData is replaced.
+ * With sent (the pending lists read at the start of the pass, when it had
+ * any), the sent awards and attendance are removed from the file's pending
+ * lists, matching awards on awardId when present, otherwise on awardedAt,
+ * wowheadId and name, and attendance on raidDate, raidName and startTime.
+ * Entries the addon added while the pass ran stay for the next sync.
+ *
+ * The parsed tables are changed in place and every other table is kept by
+ * reference, so the hidden Lua number-key markers (lua-parser.ts) survive
+ * and keys such as [20928] in lootHistory or another profile are written
+ * back unchanged. Never rebuild these tables with a spread, structuredClone
+ * or a JSON round trip.
+ */
+export function applyGuildDataToSavedVars(
+  saved: Record<string, unknown>,
+  guildDataLua: Record<string, unknown>,
+  sent: SentPending | null,
+): Record<string, unknown> {
+  const db = tableAt(saved, 'LootListPlusDB')
+  const profiles = tableAt(db, 'profiles')
+  const profile = tableAt(profiles, 'Default')
+  profile['guildData'] = guildDataLua
+  if (sent) {
+    profile['pendingAwards'] = withoutSent(profile['pendingAwards'], sent.awards, pendingAwardIdentity)
+    profile['pendingAttendance'] = withoutSent(profile['pendingAttendance'], sent.attendance, pendingAttendanceIdentity)
+  }
+  return db
+}
+
+/**
+ * The guildData table written for the addon (the same fields the addon's
+ * own /llp import stores).
+ */
+export function buildGuildDataLua(guildData: GuildData, importedAt: string): Record<string, unknown> {
+  return {
+    guildId: guildData.guildId,
+    guildName: guildData.guildName,
+    importedAt,
+    expansionId: guildData.expansionId,
+    phase: guildData.phase,
+    settings: guildData.settings,
+    items: convertItemsToLuaFormat(guildData.items),
+    members: convertMembersToLuaFormat(guildData.members),
+    priorities: guildData.priorities,
+    blp: guildData.blp,
+    attendance: guildData.attendance,
+  }
 }
 
 /**

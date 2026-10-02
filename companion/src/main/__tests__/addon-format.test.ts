@@ -2,7 +2,15 @@
 // Runs in the root vitest suite. companion/tsconfig.json excludes
 // __tests__, so the companion typecheck never needs vitest's types.
 import { describe, it, expect } from 'vitest'
-import { convertItemsToLuaFormat, convertMembersToLuaFormat, toPendingAwardRequests } from '../addon-format'
+import {
+  applyGuildDataToSavedVars,
+  buildGuildDataLua,
+  convertItemsToLuaFormat,
+  convertMembersToLuaFormat,
+  readPendingLists,
+  toPendingAttendanceRequests,
+  toPendingAwardRequests,
+} from '../addon-format'
 import { parseLuaTable } from '../lua-parser'
 import { toLuaTable } from '../lua-writer'
 import type { GuildData } from '../api-client'
@@ -240,5 +248,150 @@ describe('Lua output keys (FU-A of 261001-tv5, D-09)', () => {
     expect(lua).toContain('["123abc"] = 3,')
     // An unmarked numeric-looking key is a string key, exactly as today.
     expect(lua).toContain('["20928"] = 4,')
+  })
+})
+
+describe('applyGuildDataToSavedVars (FU-A of 261001-tv5, D-10)', () => {
+  const awardA = { wowheadId: 20928, characterName: 'Thrall', awardedAt: AWARDED_AT, awardId: AWARD_ID }
+  const awardB = { wowheadId: 20928, characterName: 'Thrall', awardedAt: '2026-09-20T21:30:00Z' }
+  const night = { raidDate: '2026-09-20', raidName: "Temple of Ahn'Qiraj", startTime: '2026-09-20T19:00:00Z', attended: ['Thrall'] }
+  const guildDataLua = () => ({ guildId: 'g1', items: convertItemsToLuaFormat([item(20928)]) })
+
+  function savedFile(extra: Record<string, unknown> = {}) {
+    return {
+      LootListPlusDB: {
+        profileKeys: { 'Thrall - Faerlina': 'Default' },
+        options: { minimap: { hide: false } },
+        profiles: {
+          Default: {
+            guildData: { guildId: 'old' },
+            lootHistory: [{ wowheadId: 16921, characterName: 'Jaina' }],
+            pendingAwards: [awardA, awardB],
+            pendingAttendance: [night],
+            ...extra,
+          },
+          Alt: { guildData: { guildId: 'alt' } },
+        },
+      },
+    }
+  }
+
+  it('S1 sets profiles.Default.guildData and keeps profileKeys, options, lootHistory and other profiles', () => {
+    const saved = savedFile()
+    const before = JSON.parse(JSON.stringify(saved))
+    const gd = guildDataLua()
+    const db = applyGuildDataToSavedVars(saved, gd, null)
+
+    expect(db).toBe(saved.LootListPlusDB)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const profiles = (db as any).profiles
+    expect(profiles.Default.guildData).toBe(gd)
+    expect(db.profileKeys).toEqual(before.LootListPlusDB.profileKeys)
+    expect(db.options).toEqual(before.LootListPlusDB.options)
+    expect(profiles.Default.lootHistory).toEqual(before.LootListPlusDB.profiles.Default.lootHistory)
+    expect(profiles.Alt).toEqual(before.LootListPlusDB.profiles.Alt)
+  })
+
+  it('S2 removes the sent pending entries only when the pass had pending data', () => {
+    const untouched = applyGuildDataToSavedVars(savedFile(), guildDataLua(), null)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((untouched as any).profiles.Default.pendingAwards).toEqual([awardA, awardB])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((untouched as any).profiles.Default.pendingAttendance).toEqual([night])
+
+    const saved = savedFile()
+    const sent = readPendingLists(saved)
+    const cleared = applyGuildDataToSavedVars(saved, guildDataLua(), sent)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((cleared as any).profiles.Default.pendingAwards).toEqual([])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((cleared as any).profiles.Default.pendingAttendance).toEqual([])
+  })
+
+  it('S3 creates profiles.Default when the file had none', () => {
+    const empty: Record<string, unknown> = {}
+    const gd = guildDataLua()
+    const db = applyGuildDataToSavedVars(empty, gd, null)
+    expect(db).toEqual({ profiles: { Default: { guildData: gd } } })
+    expect(empty.LootListPlusDB).toBe(db)
+  })
+
+  it('S4 [20928] keys in another profile and in lootHistory are still written as [20928]', () => {
+    const file = [
+      'LootListPlusDB = {',
+      '\t["profiles"] = {',
+      '\t\t["Default"] = {',
+      '\t\t\t["lootHistory"] = {',
+      '\t\t\t\t[20928] = {',
+      '\t\t\t\t\t["characterName"] = "Thrall",',
+      '\t\t\t\t},',
+      '\t\t\t},',
+      '\t\t},',
+      '\t\t["Alt"] = {',
+      '\t\t\t["guildData"] = {',
+      '\t\t\t\t["items"] = {',
+      '\t\t\t\t\t[20928] = {',
+      '\t\t\t\t\t\t["name"] = "Qiraji Bindings of Command",',
+      '\t\t\t\t\t},',
+      '\t\t\t\t},',
+      '\t\t\t},',
+      '\t\t},',
+      '\t},',
+      '}',
+      '',
+    ].join('\n')
+    const saved = parseLuaTable(file)
+    const db = applyGuildDataToSavedVars(saved, guildDataLua(), readPendingLists(saved))
+    const lua = toLuaTable('LootListPlusDB', db)
+    expect(lua).not.toContain('["20928"]')
+    // lootHistory, the other profile's items and the new guildData items.
+    expect(lua.match(/\[20928\] = \{/g)).toHaveLength(3)
+  })
+
+  it('S5 a pending award the addon added during the pass survives the clear', () => {
+    const sent = readPendingLists(savedFile())
+    // The file as re-read at the end of the pass: one more award arrived.
+    const awardC = { wowheadId: 20928, characterName: 'Thrall', awardedAt: '2026-09-20T22:00:00Z', awardId: '2026-09-20T22:00:00Z-1-ffffff' }
+    const night2 = { ...night, startTime: '2026-09-21T19:00:00Z', raidDate: '2026-09-21' }
+    const saved = savedFile({ pendingAwards: [awardA, awardB, awardC], pendingAttendance: [night, night2] })
+    const db = applyGuildDataToSavedVars(saved, guildDataLua(), sent)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const profile = (db as any).profiles.Default
+    expect(profile.pendingAwards).toEqual([awardC])
+    expect(profile.pendingAttendance).toEqual([night2])
+  })
+
+  it('S6 awards match on awardId, then on awardedAt, wowheadId and name; each sent entry clears one', () => {
+    const twin = { ...awardB }
+    const sent = { awards: [{ ...awardA, awardedAt: 'changed' }, { ...awardB, characterName: ' THRALL ' }], attendance: [] }
+    const saved = savedFile({ pendingAwards: [awardA, awardB, twin] })
+    const db = applyGuildDataToSavedVars(saved, guildDataLua(), sent)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((db as any).profiles.Default.pendingAwards).toEqual([twin])
+  })
+
+  it('S7 an empty pending table read as {} gives no requests and clears to []', () => {
+    const saved = savedFile({ pendingAwards: {}, pendingAttendance: {} })
+    expect(readPendingLists(saved)).toEqual({ awards: [], attendance: [] })
+    expect(toPendingAttendanceRequests({})).toEqual([])
+    expect(toPendingAttendanceRequests([night])).toEqual([
+      { raid_date: '2026-09-20', raid_name: "Temple of Ahn'Qiraj", attended: ['Thrall'] },
+    ])
+  })
+
+  it('S8 buildGuildDataLua writes the addon guildData fields with numeric item keys', () => {
+    const gd = buildGuildDataLua(
+      {
+        guildId: 'g1', guildName: 'Test Guild', expansionId: 'exp-1', phase: 5, settings: {},
+        items: [item(20928)], members: [member([{ wowhead_id: 20928, rank: 50 }])],
+        priorities: {}, blp: {}, attendance: {},
+      },
+      '2026-10-02T12:00:00.000Z',
+    )
+    expect(Object.keys(gd)).toEqual([
+      'guildId', 'guildName', 'importedAt', 'expansionId', 'phase', 'settings',
+      'items', 'members', 'priorities', 'blp', 'attendance',
+    ])
+    expect(toLuaTable('X', gd)).toContain('[20928] = {')
   })
 })

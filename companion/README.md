@@ -20,6 +20,33 @@ The preload script deliberately exposes individual `ipcRenderer.invoke` wrappers
 rather than the `ipcRenderer` module — Electron 29 made passing the module over
 `contextBridge` an error, and the narrow surface is the safer pattern regardless.
 
+## Data written for the addon
+
+The sync engine writes `LootListPlusDB.profiles.Default.guildData` into the
+addon's SavedVariables file. The formatting lives in
+`src/main/addon-format.ts`, with tests in `src/main/__tests__` that run in the
+root vitest suite (`npx vitest run companion/src/main/__tests__` from the repo
+root).
+
+- `items` uses integer keys (`[20928] = { ... }`): the addon looks items up
+  by number.
+- Each member's `items` and `itemRanks` use string keys (`["20928"]`): the
+  addon reads them with `tostring`. `items` holds the highest rank for each
+  item, and `itemRanks` lists every rank, highest first, for a raider who
+  listed an item more than once.
+- Parsing and rewriting the file keeps integer keys as integers and string
+  keys as strings, so data the addon wrote (such as `lootHistory`) is not
+  changed.
+
+Each sync pass reads the pending awards and attendance, sends attendance and
+then awards, downloads guild data, and then writes guild data and removes the
+pending entries it sent in a single file write. If the download fails nothing
+is written, and the pending data is sent again on the next pass.
+
+WoW owns the SavedVariables file while the game is running and overwrites it
+at logout or `/reload`, so data the companion writes reaches the addon when it
+is written while WoW is closed.
+
 ## Develop
 
 ```bash
