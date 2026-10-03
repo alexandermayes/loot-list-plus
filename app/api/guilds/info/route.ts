@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { isGuildCreator, verifyGuildMasterPermissions } from '@/utils/server-roles'
 import { parseForeverRuleset } from '@/data/wow-realms'
 import { getGuildGame } from '@/domain/expansion/game'
+import { checkUserManagesDiscordServer, discordServerAccessError } from '@/lib/discord-server-access'
 
 type ServiceClient = ReturnType<typeof createServiceRoleClient>
 
@@ -72,6 +73,35 @@ export async function PUT(request: NextRequest) {
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: 'No fields to update' }, { status: 400 })
+    }
+
+    // A Discord server can be linked only by someone who owns or manages it.
+    // Only a new, non-empty server id is checked: keeping the stored id or
+    // unlinking (null) needs no Discord call. Stored ids are compared after
+    // trimming, since guild creation once saved them untrimmed.
+    const newDiscordServerId = updateData.discord_server_id
+    if (newDiscordServerId) {
+      const { data: storedGuild, error: storedError } = await serviceSupabase
+        .from('guilds')
+        .select('discord_server_id')
+        .eq('id', guild_id)
+        .single()
+
+      if (storedError) {
+        console.error('Error reading guild Discord server link:', storedError)
+        return NextResponse.json({ error: 'Failed to update guild information' }, { status: 500 })
+      }
+
+      const storedId = typeof storedGuild?.discord_server_id === 'string'
+        ? storedGuild.discord_server_id.trim()
+        : null
+      if (storedId !== newDiscordServerId) {
+        const access = await checkUserManagesDiscordServer(newDiscordServerId)
+        if (!access.ok) {
+          const { status, body: errorBody } = discordServerAccessError(access.reason)
+          return NextResponse.json(errorBody, { status })
+        }
+      }
     }
 
     // Update guild using service role (bypasses RLS)

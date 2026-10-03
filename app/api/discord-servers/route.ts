@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { canManageDiscordServer } from '@/lib/discord-server-access'
 
 /** Partial shape of a guild object from the Discord API (GET /users/@me/guilds) */
 interface DiscordGuild {
@@ -58,17 +59,9 @@ export async function GET() {
 
     const guilds: DiscordGuild[] = await discordResponse.json()
 
-    // Filter for guilds where user has admin permissions
-    const ADMINISTRATOR = BigInt(0x8)
-    const MANAGE_GUILD = BigInt(0x20)
-
-    const adminGuilds = guilds.filter((guild) => {
-      const permissions = BigInt(guild.permissions || '0')
-      const hasAdmin = (permissions & ADMINISTRATOR) === ADMINISTRATOR
-      const hasManage = (permissions & MANAGE_GUILD) === MANAGE_GUILD
-
-      return hasAdmin || hasManage || guild.owner
-    })
+    // Servers the user owns or has Administrator or Manage Server in: the
+    // same rule the server applies when a guild is linked to a server.
+    const adminGuilds = guilds.filter((guild) => canManageDiscordServer(guild))
 
     return NextResponse.json({
       guilds: adminGuilds

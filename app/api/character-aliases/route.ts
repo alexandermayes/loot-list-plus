@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
+import { findInvalidCharacterIds, formatInvalidAwardRefsError, normalizeRefId } from '@/lib/loot/guild-award-refs'
 
 // POST - Bulk upsert character aliases
 export async function POST(request: NextRequest) {
@@ -28,6 +29,37 @@ export async function POST(request: NextRequest) {
     const verification = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_members')
     if (!verification.hasPermission) {
       return NextResponse.json({ error: 'Only officers can manage aliases' }, { status: 403 })
+    }
+
+    // Every alias must point at a character with an active membership in
+    // this guild (the rule bulk awards use). A missing, null or empty
+    // character_id is invalid too, reported as null.
+    const normalizedIds: Array<string | null> = aliases.map(
+      (a: { character_id?: unknown } | null) => normalizeRefId(a?.character_id)
+    )
+    let invalidMemberIds: string[]
+    try {
+      invalidMemberIds = await findInvalidCharacterIds(
+        serviceSupabase,
+        guild_id,
+        normalizedIds.filter((id): id is string => id !== null)
+      )
+    } catch (lookupError) {
+      console.error('Character alias membership lookup error:', lookupError)
+      return NextResponse.json({ error: 'Failed to save aliases' }, { status: 500 })
+    }
+    const invalidSet = new Set(invalidMemberIds)
+    const invalidCharacterIds: Array<string | null> = []
+    for (const id of normalizedIds) {
+      if ((id === null || invalidSet.has(id)) && !invalidCharacterIds.includes(id)) {
+        invalidCharacterIds.push(id)
+      }
+    }
+    if (invalidCharacterIds.length > 0) {
+      return NextResponse.json(
+        { error: formatInvalidAwardRefsError([], invalidMemberIds), invalid_character_ids: invalidCharacterIds },
+        { status: 400 }
+      )
     }
 
     // Normalize alias names to lowercase and build upsert data
