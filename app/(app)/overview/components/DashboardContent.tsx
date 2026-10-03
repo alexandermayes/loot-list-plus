@@ -49,6 +49,8 @@ import type { RaidTeam } from '@/domain/raid-team/types'
 import type { Tables } from '@/lib/database.types'
 import { resolveRaidDays } from '@/domain/raid-team/settings'
 import { paginatedSelect } from '@/utils/supabase/paginate'
+import { findInvalidCharacterIds } from '@/lib/loot/guild-award-refs'
+import { isActiveCompetitor, buildItemCompetition } from '@/domain/loot/item-competition'
 
 // Get next N raid dates from configured raid days
 function getNextRaidDates(raidDays: number[], timezone: string, count = 2): Date[] {
@@ -1319,39 +1321,26 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
             )
 
             if (allSubmissionsForItems.length > 0) {
-              // Group by item, count unique characters, find user's rank position
-              const itemMap = new Map<string, Array<{ character_id: string; rank: number }>>()
-              for (const sub of allSubmissionsForItems) {
-                const submission = Array.isArray(sub.submission) ? sub.submission[0] : sub.submission
-                if (!submission) continue
-                const list = itemMap.get(sub.loot_item_id) || []
-                list.push({ character_id: submission.character_id, rank: sub.rank })
-                itemMap.set(sub.loot_item_id, list)
-              }
+              // Flatten to the shared entry shape and leave out raiders who no
+              // longer have an active membership in this guild (GH #326),
+              // using the same check the award routes use. The viewer's own
+              // entries always count (buildItemCompetition).
+              const entries = allSubmissionsForItems
+                .map(sub => {
+                  const submission = Array.isArray(sub.submission) ? sub.submission[0] : sub.submission
+                  if (!submission) return null
+                  return { loot_item_id: sub.loot_item_id, character_id: submission.character_id, rank: sub.rank }
+                })
+                .filter((e): e is { loot_item_id: string; character_id: string; rank: number } => e !== null)
 
-              for (const [itemId, entries] of itemMap) {
-                const uniqueCharacters = new Set(entries.map(e => e.character_id))
-                const othersCount = uniqueCharacters.size - (uniqueCharacters.has(characterId) ? 1 : 0)
+              const otherCharacterIds = [
+                ...new Set(entries.map(e => e.character_id).filter(id => id && id !== characterId)),
+              ]
+              const departedCompetitorIds = otherCharacterIds.length > 0
+                ? await findInvalidCharacterIds(supabase, activeGuild.id, otherCharacterIds)
+                : []
 
-                // A user can have the same item ranked twice (mainspec + offspec).
-                // Use their highest rank — the scoring engine awards loot off the
-                // best entry, so the "you're #N" against the guild should match.
-                // Picking arbitrary-first via .find() previously yielded the offspec
-                // rank and counted the user's own mainspec entry as a competitor
-                // above them (GH #58).
-                const userBestRank = entries.reduce<number | null>(
-                  (best, e) => (e.character_id === characterId && (best === null || e.rank > best) ? e.rank : best),
-                  null,
-                )
-                const userRank = userBestRank !== null ? entries
-                  .filter(e => e.rank > userBestRank)
-                  .reduce((acc, e) => {
-                    acc.add(e.character_id)
-                    return acc
-                  }, new Set<string>()).size + 1 : uniqueCharacters.size
-
-                competitionMap[itemId] = { totalWanting: othersCount, userRank }
-              }
+              Object.assign(competitionMap, buildItemCompetition(entries, characterId, departedCompetitorIds))
             }
           } catch {
             // Competition data not critical
@@ -1421,6 +1410,11 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
         })
         .filter((pair: { itemId: string; rank: number } | null): pair is { itemId: string; rank: number } => pair !== null)
 
+      // Characters left out of the tied-raider list, from a membership check
+      // run right after the batched read below (GH #326). Empty until that
+      // check finds anyone to look up, or if the check finds nobody inactive.
+      let departedTieIds: ReadonlySet<string> = new Set()
+
       // Batch fetch all same-rank submissions for all items in ONE query
       // Note: Supabase returns joined relations as arrays
       let allSameRankSubmissions: Array<{
@@ -1488,6 +1482,27 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
           .is('removed_at', null)
 
         allSameRankSubmissions = (batchedSubmissions || []) as typeof allSameRankSubmissions
+
+        // Leave out tied raiders without an active membership in this guild
+        // (GH #326). A failed lookup empties the tie rows for this load
+        // rather than showing an unfiltered list; it never reaches the
+        // outer catch or shows a toast.
+        const tieCharacterIds = new Set<string>()
+        for (const sub of allSameRankSubmissions) {
+          const submission = Array.isArray(sub.submission) ? sub.submission[0] : sub.submission
+          const subCharacterId = submission?.character_id
+          if (subCharacterId && subCharacterId !== characterId) tieCharacterIds.add(subCharacterId)
+        }
+        if (tieCharacterIds.size > 0) {
+          try {
+            departedTieIds = new Set(
+              await findInvalidCharacterIds(supabase, activeGuild.id, [...tieCharacterIds]),
+            )
+          } catch (err) {
+            console.error('Dashboard ties: membership check failed:', err)
+            allSameRankSubmissions = []
+          }
+        }
       }
 
       // Group submissions by item_id for quick lookup
@@ -1516,7 +1531,8 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
           const tiedCharacters: TiedCharacter[] = sameRankSubmissions
             .filter(sub => {
               const submission = Array.isArray(sub.submission) ? sub.submission[0] : sub.submission
-              return submission?.character_id !== characterId
+              if (submission?.character_id === characterId) return false
+              return isActiveCompetitor(submission?.character_id, departedTieIds, characterId)
             })
             .map(sub => {
               const submission = Array.isArray(sub.submission) ? sub.submission[0] : sub.submission
