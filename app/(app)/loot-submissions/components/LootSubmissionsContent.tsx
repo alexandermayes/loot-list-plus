@@ -38,6 +38,8 @@ import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { Card } from '@/components/ui/card'
 import { detailRowKey, withoutDetailRow, restoreDetailRow } from '@/domain/loot/list-row-updates'
 import { diffListItems, type DiffEntry } from '@/domain/loot/list-diff'
+import { bulkDeleteIds, bulkDeleteNotice } from '@/domain/loot/bulk-delete'
+import { createPendingReviewNotification, type ReviewNotificationPayload } from './review-notification'
 
 interface Submission {
   id: string
@@ -130,15 +132,19 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
   const [contentLoading, setContentLoading] = useState(false)
   const [reviewing, setReviewing] = useState<string | null>(null)
   const [reviewNotes, setReviewNotes] = useState('')
-  const [undoAction, setUndoAction] = useState<{ submissionId: string; previousStatus: string; characterName: string; newStatus: string } | null>(null)
+  const [undoAction, setUndoAction] = useState<{ submissionId: string; characterName: string; newStatus: string } | null>(null)
   const [undoTimer, setUndoTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
+  const [undoing, setUndoing] = useState(false)
+  // One controller per mount: holds the review DM until the undo window
+  // ends (GH #353 D-08).
+  const [pendingNotification] = useState(() => createPendingReviewNotification())
   const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
   const [guildId, setGuildId] = useState<string | null>(null)
     const [viewingSubmission, setViewingSubmission] = useState<string | null>(null)
   const [submissionDetails, setSubmissionDetails] = useState<SubmissionDetailItem[]>([])
   const [loadingDetails, setLoadingDetails] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState<{ type: 'single' | 'pending' | 'all', id?: string } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'single' | 'pending' | 'all', id?: string, ids?: string[] } | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [resolvedGroups, setResolvedGroups] = useState<PhaseGroup[]>([])
   const [raidTierInfos, setRaidTierInfos] = useState<RaidTierInfo[]>([])
@@ -173,6 +179,18 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
     document.title = 'LootList+ • Loot Submissions'
     trackClientEvent('admin_pending_submissions_viewed')
   }, [])
+
+  // A held review DM must still go out if the officer closes the tab or
+  // navigates away inside the undo window: pagehide fires for both, and
+  // keepalive lets the request outlive the page (GH #353 D-08).
+  useEffect(() => {
+    const releaseOnHide = () => pendingNotification.release({ keepalive: true })
+    window.addEventListener('pagehide', releaseOnHide)
+    return () => {
+      window.removeEventListener('pagehide', releaseOnHide)
+      releaseOnHide()
+    }
+  }, [pendingNotification])
 
   // Refresh Wowhead tooltips when submission details modal opens
   // Uses centralized debounced refresh to prevent excessive API calls
@@ -493,21 +511,20 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
         throw new Error(data.error || 'Couldn\'t update submission')
       }
 
-      // Send Discord DM notification (fire and forget - don't block on this)
+      // Hold the Discord DM until the undo window ends instead of sending
+      // it immediately (GH #353 D-08): a misclick followed by Undo should
+      // never reach the raider.
       const submission = submissions.find(s => s.id === submissionId)
       const phaseNumber = typeof activePhase === 'object' ? activePhase?.phase : null
-      fetch('/api/discord/send-notification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          submission_id: submissionId,
-          status,
-          review_notes: trimmedNotes || undefined,
-          guild_name: activeGuild?.name,
-          character_name: submission?.member?.character_name,
-          phase: phaseNumber
-        })
-      }).catch(err => console.error('Failed to send Discord notification:', err))
+      const notificationPayload: ReviewNotificationPayload = {
+        submission_id: submissionId,
+        status,
+        review_notes: trimmedNotes || undefined,
+        guild_name: activeGuild?.name,
+        character_name: submission?.member?.character_name,
+        phase: phaseNumber ?? null,
+      }
+      pendingNotification.hold(notificationPayload)
 
       trackClientEvent('submission_reviewed', {
         guild_id: guildId,
@@ -522,11 +539,13 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
       })
 
       // Show undo toast instead of regular notification
-      const previousStatus = submission?.status || 'pending'
       const characterName = submission?.member?.character_name || 'Unknown'
       if (undoTimer) clearTimeout(undoTimer)
-      setUndoAction({ submissionId, previousStatus, characterName, newStatus: status })
-      const timer = setTimeout(() => setUndoAction(null), 8000)
+      setUndoAction({ submissionId, characterName, newStatus: status })
+      const timer = setTimeout(() => {
+        pendingNotification.release()
+        setUndoAction(null)
+      }, 8000)
       setUndoTimer(timer)
 
       setReviewNotes('')
@@ -545,26 +564,45 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
   }
 
   const handleUndoReview = async () => {
-    if (!undoAction) return
+    if (!undoAction || undoing) return
+    const { submissionId, characterName } = undoAction
+    if (undoTimer) clearTimeout(undoTimer)
+    setUndoing(true)
     try {
       const res = await fetch('/api/loot-submissions/review', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          submission_id: undoAction.submissionId,
-          status: undoAction.previousStatus,
+          submission_id: submissionId,
+          status: 'pending',
         }),
       })
-      if (!res.ok) throw new Error('Failed to undo')
-      showNotification('success', `Reverted ${undoAction.characterName}'s submission`)
-      if (undoTimer) clearTimeout(undoTimer)
-      setUndoAction(null)
+      if (!res.ok) {
+        let serverText: string | undefined
+        try {
+          const data = await res.json()
+          serverText = data?.error
+        } catch {
+          // Body wasn't JSON; fall through with no server text.
+        }
+        throw new Error(serverText || '')
+      }
+      // The undo succeeded, so the held DM for the original review (which
+      // no longer stands) is dropped, not sent.
+      pendingNotification.discard(submissionId)
+      showNotification('success', `Reverted ${characterName}'s submission`)
+      setUndoAction(prev => (prev?.submissionId === submissionId ? null : prev))
       notifySubmissionChanged()
       if (guildId && activePhase !== null && activeGuild?.active_expansion_id) {
         await loadSubmissions(guildId, activePhase, activeGuild.active_expansion_id)
       }
-    } catch {
-      showNotification('error', "Couldn't undo. Try manually from the submission list.")
+    } catch (error: unknown) {
+      // The review still stands, so the raider needs to hear about it now.
+      pendingNotification.release({ submissionId })
+      setUndoAction(prev => (prev?.submissionId === submissionId ? null : prev))
+      showNotification('error', (error instanceof Error && error.message) || "Couldn't undo the review. The list keeps its new status.")
+    } finally {
+      setUndoing(false)
     }
   }
 
@@ -685,7 +723,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
     setDeleting(true)
     try {
       // Build request body based on deletion type
-      const requestBody: { guild_id: string; submission_id?: string; target?: string } = {
+      const requestBody: { guild_id: string; submission_id?: string; target?: string; submission_ids?: string[] } = {
         guild_id: guildId
       }
 
@@ -693,6 +731,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
         requestBody.submission_id = deleteTarget.id
       } else {
         requestBody.target = deleteTarget.type === 'pending' ? 'pending' : 'all'
+        requestBody.submission_ids = deleteTarget.ids || []
       }
 
       const response = await fetch('/api/loot-submissions/delete', {
@@ -705,18 +744,15 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Couldn\'t delete submission. Try again.')
+        throw new Error(errorData.error || 'Couldn\'t delete submissions. Try again.')
       }
 
       const result = await response.json()
       if (deleteTarget.type === 'single') {
         showNotification('success', 'Submission deleted')
       } else {
-        showNotification('success', `Deleted ${result.count} submission${result.count !== 1 ? 's' : ''}`)
-      }
-
-      if (activeGuild?.active_expansion_id) {
-        await loadSubmissions(guildId, activePhase, activeGuild.active_expansion_id)
+        const notice = bulkDeleteNotice(result.count, result.requested)
+        showNotification(notice.type, notice.message)
       }
 
       setShowDeleteConfirm(false)
@@ -726,6 +762,10 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
       showNotification('error', (error instanceof Error ? error.message : '') || 'Couldn\'t delete submissions. Try again.')
     } finally {
       setDeleting(false)
+      notifySubmissionChanged()
+      if (guildId && activePhase !== null && activeGuild?.active_expansion_id) {
+        await loadSubmissions(guildId, activePhase, activeGuild.active_expansion_id)
+      }
     }
   }
 
@@ -982,8 +1022,9 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
               <Button
                 variant="destructive-outline"
                 size="sm"
+                disabled={bulkDeleteIds(filteredSubmissions, 'pending').length === 0}
                 onClick={() => {
-                  setDeleteTarget({ type: 'pending' })
+                  setDeleteTarget({ type: 'pending', ids: bulkDeleteIds(filteredSubmissions, 'pending') })
                   setShowDeleteConfirm(true)
                 }}
               >
@@ -992,8 +1033,9 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
               <Button
                 variant="destructive-outline"
                 size="sm"
+                disabled={bulkDeleteIds(filteredSubmissions, 'all').length === 0}
                 onClick={() => {
-                  setDeleteTarget({ type: 'all' })
+                  setDeleteTarget({ type: 'all', ids: bulkDeleteIds(filteredSubmissions, 'all') })
                   setShowDeleteConfirm(true)
                 }}
               >
@@ -1498,8 +1540,8 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                 {deleteTarget?.type === 'single'
                   ? 'This will permanently delete this loot submission. The user will need to recreate their list.'
                   : deleteTarget?.type === 'pending'
-                  ? 'This will permanently delete all pending loot submissions for this guild. Users will need to recreate their lists.'
-                  : 'This will permanently delete ALL loot submissions (pending, approved, and received) for this guild. This action cannot be undone.'}
+                  ? `This will permanently delete the ${deleteTarget.ids?.length ?? 0} pending ${deleteTarget.ids?.length === 1 ? 'list' : 'lists'} shown. Raiders will need to recreate their lists.`
+                  : `This will permanently delete the ${deleteTarget?.ids?.length ?? 0} ${deleteTarget?.ids?.length === 1 ? 'list' : 'lists'} shown, including approved and rejected lists. This action cannot be undone.`}
               </p>
               <Alert variant="destructive">
                 <AlertDescription className="font-medium">
@@ -1542,12 +1584,17 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
           </span>
           <button
             onClick={handleUndoReview}
-            className="text-13 font-medium text-accent hover:text-accent/80 transition-colors"
+            disabled={undoing}
+            className="text-13 font-medium text-accent hover:text-accent/80 transition-colors disabled:opacity-50 disabled:pointer-events-none"
           >
             Undo
           </button>
           <button
-            onClick={() => { if (undoTimer) clearTimeout(undoTimer); setUndoAction(null) }}
+            onClick={() => {
+              if (undoTimer) clearTimeout(undoTimer)
+              pendingNotification.release()
+              setUndoAction(null)
+            }}
             className="text-muted-foreground hover:text-foreground transition-colors ml-1"
           >
             <span className="text-16">&times;</span>
