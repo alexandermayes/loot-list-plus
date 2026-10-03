@@ -8,6 +8,7 @@ import { GET } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { trackApiError } from '@/utils/analytics/server'
 import { FACTION_ITEM_ALIASES } from '@/domain/loot/faction-item-aliases'
 
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
@@ -85,6 +86,8 @@ interface Fixture {
   /** FU-C of 261001-tv5: awards read for the receive skip. */
   loot_history?: Array<{ guild_id: string; character_id: string | null; loot_item: { wowhead_id: number } | null }>
   lootHistoryError?: boolean
+  /** GH #326: simulates a failed character_guild_memberships read. */
+  membershipsError?: boolean
 }
 
 function emptyFixture(): Fixture {
@@ -117,8 +120,14 @@ function resolveRows(table: string, filters: Filter[], fixture: Fixture): unknow
       return rows.filter((r: { id: string }) => r.id === find('id'))
     case 'raid_tiers':
       return rows.filter((r: { expansion_id: string }) => r.expansion_id === find('expansion_id'))
-    case 'character_guild_memberships':
-      return rows.filter((r: { guild_id: string }) => r.guild_id === find('guild_id'))
+    case 'character_guild_memberships': {
+      const isActiveFilter = filters.find(f => f[0] === 'is_active')
+      return rows.filter((r: { guild_id: string; is_active?: boolean }) => {
+        if (r.guild_id !== find('guild_id')) return false
+        if (isActiveFilter && r.is_active !== isActiveFilter[1]) return false
+        return true
+      })
+    }
     case 'loot_items': {
       const val = find('raid_tier_id')
       if (Array.isArray(val)) return rows.filter((r: { raid_tier_id: string }) => val.includes(r.raid_tier_id))
@@ -175,6 +184,9 @@ function makeClient(fixture: Fixture) {
           return Promise.resolve({ data: rows[0] ?? null, error: null })
         },
         then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) => {
+          if (table === 'character_guild_memberships' && fixture.membershipsError) {
+            return Promise.resolve({ data: null, error: { message: 'cgm boom' } }).then(resolve, reject)
+          }
           const rows = resolveRows(table, call.filters, fixture)
           return Promise.resolve({ data: rows, error: null, count: rows.length }).then(resolve, reject)
         },
@@ -419,5 +431,142 @@ describe('FU-3 of #331, #293 and FU-C of 261001-tv5: member items', () => {
     const subCols = calls.find(c => c.table === 'loot_submissions' && c.cols.includes('loot_submission_items'))!.cols
     expect(subCols).toMatch(/slot/)
     expect(subCols).toMatch(/removed_at/)
+  })
+})
+
+describe('GH #326: export members come from active memberships only', () => {
+  beforeEach(() => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'u1' }, error: null } as never)
+    vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  /** Adds a second character, c2, with an approved list ranking li-unrelated. */
+  function addSecondMember(fixture: Fixture, membershipOverrides: Partial<MembershipRow> = {}): Fixture {
+    fixture.character_guild_memberships.push({
+      guild_id: GUILD_ID,
+      character_id: 'c2',
+      role: 'raider',
+      membership_status: 'inactive',
+      is_active: false,
+      characters: {
+        id: 'c2',
+        name: 'Jaina',
+        user_id: 'user-2',
+        wow_classes: { name: 'Mage', color_hex: '#69CCF0' },
+        spec: null,
+      },
+      ...membershipOverrides,
+    })
+    fixture.loot_submissions.push({
+      id: 's2',
+      guild_id: GUILD_ID,
+      character_id: 'c2',
+      phase: 4,
+      status: 'approved',
+      loot_submission_items: [
+        { loot_item_id: 'li-unrelated', rank: 5, loot_items: { wowhead_id: 16921 } },
+      ],
+    })
+    return fixture
+  }
+
+  it('X1: an inactive member (c2) has no member entry or items in the export', async () => {
+    const fixture = addSecondMember(baseFixture())
+    const { client } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+
+    const payload = decodePayload(body.exportString)
+    expect(payload.members.map((m: { character_id: string }) => m.character_id)).toEqual(['c1'])
+  })
+
+  it('X2: stats.submissions counts only c1\'s approved list, and stats.members is 1', async () => {
+    const fixture = addSecondMember(baseFixture())
+    const { client } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.stats.submissions).toBe(1)
+    expect(body.stats.members).toBe(1)
+  })
+
+  it('X3: a guild whose only membership row is inactive exports no members, no submissions, and derives nothing from draft or rejected lists', async () => {
+    const fixture = emptyFixture()
+    fixture.guilds = [{ id: GUILD_ID, name: 'Test Guild', active_expansion_id: 'exp-1' }]
+    fixture.expansions = [{ id: 'exp-1', name: 'Classic', current_phase: 3 }]
+    fixture.character_guild_memberships = [
+      {
+        guild_id: GUILD_ID,
+        character_id: 'c1',
+        role: 'raider',
+        membership_status: 'inactive',
+        is_active: false,
+        characters: {
+          id: 'c1',
+          name: 'Thrall',
+          user_id: 'user-1',
+          wow_classes: { name: 'Shaman', color_hex: '#0070DE' },
+          spec: null,
+        },
+      },
+    ]
+    fixture.loot_submissions = [
+      { id: 's-approved', guild_id: GUILD_ID, character_id: 'c1', phase: 4, status: 'approved', loot_submission_items: [] },
+      { id: 's-draft', guild_id: GUILD_ID, character_id: 'c2', phase: 4, status: 'draft', loot_submission_items: [] },
+      { id: 's-rejected', guild_id: GUILD_ID, character_id: 'c3', phase: 4, status: 'rejected', loot_submission_items: [] },
+    ]
+    const { client, calls } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+
+    const payload = decodePayload(body.exportString)
+    expect(payload.members).toEqual([])
+    expect(body.stats.members).toBe(0)
+    expect(body.stats.submissions).toBe(0)
+
+    expect(calls.some(c => c.table === 'characters')).toBe(false)
+    expect(calls.some(c => c.table === 'loot_submissions' && c.cols === 'character_id')).toBe(false)
+  })
+
+  it('X4: a failing membership read answers 500, calls trackApiError once, and returns no exportString', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const fixture = baseFixture()
+    fixture.membershipsError = true
+    const { client } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await GET(request())
+    const body = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(body).toEqual({ error: 'Internal server error' })
+    expect(body.exportString).toBeUndefined()
+    expect(trackApiError).toHaveBeenCalledTimes(1)
+    errorSpy.mockRestore()
+  })
+
+  it('X5: the character_guild_memberships call filters eq guild_id and eq is_active true', async () => {
+    const { client, calls } = makeClient(baseFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    await GET(request())
+
+    const membershipCall = calls.find(c => c.table === 'character_guild_memberships')
+    expect(membershipCall).toBeDefined()
+    expect(membershipCall!.filters).toContainEqual(['guild_id', GUILD_ID])
+    expect(membershipCall!.filters).toContainEqual(['is_active', true])
   })
 })

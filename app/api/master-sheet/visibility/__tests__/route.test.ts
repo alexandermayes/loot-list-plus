@@ -434,3 +434,191 @@ describe('POST /api/master-sheet/visibility', () => {
     expect(actualKept.size).toBeGreaterThan(0)
   })
 })
+
+describe("GH #326: the phase gate counts only the caller's active characters", () => {
+  const CALLER_ALT = 'aaaaaaaa-0000-0000-0000-000000000014'
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: USER_ID }, error: null } as never)
+  })
+
+  /**
+   * Raider path (not the guild creator). CALLER_CHAR has NO approved list of
+   * its own; only its alt, CALLER_ALT, has an approved phase 1 list in GUILD.
+   * CALLER_ALT's membership row is varied per test. ACTIVE_CHAR has an
+   * approved phase 1 list ranking ITEM, so its ranking is what the gate
+   * would reveal once a phase is unlocked.
+   */
+  function altTables(
+    callerAltMembership: Row,
+    overrides: Partial<Record<string, Row[]>> = {},
+  ): Record<string, Row[]> {
+    return baseTables({
+      guilds: [{ id: GUILD, created_by: OTHER_USER }],
+      characters: [
+        { id: CALLER_CHAR, user_id: USER_ID, name: 'Caller', spec_id: null },
+        { id: CALLER_ALT, user_id: USER_ID, name: 'CallerAlt', spec_id: null },
+        { id: ACTIVE_CHAR, user_id: 'other-user-1', name: 'Active', spec_id: null },
+      ],
+      character_guild_memberships: [
+        { character_id: CALLER_CHAR, guild_id: GUILD, role: 'Member', membership_status: 'active', is_active: true },
+        callerAltMembership,
+        { character_id: ACTIVE_CHAR, guild_id: GUILD, role: 'Member', membership_status: 'active', is_active: true },
+      ],
+      guild_roles: [{ guild_id: GUILD, name: 'Member', position: 0, permissions: [] }],
+      loot_items: [{ id: ITEM, raid_tier_id: TIER_ID }],
+      raid_tiers: [{ id: TIER_ID, phase: 1, master_sheet_visible: true, expansion_id: EXP_ID }],
+      expansions: [{ id: EXP_ID, phase_groups: null }],
+      loot_submission_items: [
+        { id: 'r1', rank: 1, slot: 1, submission_id: SUB_ACTIVE, loot_item_id: ITEM, removed_at: null },
+      ],
+      loot_submissions: [
+        { id: SUB_ACTIVE, status: 'approved', character_id: ACTIVE_CHAR, guild_id: GUILD, phase: 1, expansion_id: EXP_ID },
+        { id: 'sub-alt', status: 'approved', character_id: CALLER_ALT, guild_id: GUILD, phase: 1, expansion_id: EXP_ID },
+      ],
+      ...overrides,
+    })
+  }
+
+  it('G1 (tracer): a departed alt (is_active false) does not unlock the phase; the answer is four empty arrays', async () => {
+    const tables = altTables({
+      character_id: CALLER_ALT,
+      guild_id: GUILD,
+      role: 'Member',
+      membership_status: 'inactive',
+      is_active: false,
+    })
+    const { client } = makeClient(tables)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: [ITEM] }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body).toEqual({ rankings: [], submissions: [], characters: [], memberships: [] })
+  })
+
+  it('G2: an active alt (is_active true) still unlocks the phase', async () => {
+    const tables = altTables({
+      character_id: CALLER_ALT,
+      guild_id: GUILD,
+      role: 'Member',
+      membership_status: 'active',
+      is_active: true,
+    })
+    const { client } = makeClient(tables)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: [ITEM] }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.characters.map((c: { id: string }) => c.id)).toEqual([ACTIVE_CHAR])
+  })
+
+  it('G3: an alt whose membership is_active is NULL does not unlock the phase', async () => {
+    const tables = altTables({
+      character_id: CALLER_ALT,
+      guild_id: GUILD,
+      role: 'Member',
+      membership_status: 'inactive',
+      is_active: null,
+    })
+    const { client } = makeClient(tables)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: [ITEM] }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body).toEqual({ rankings: [], submissions: [], characters: [], memberships: [] })
+  })
+
+  it('G4: an alt with no membership row in this guild, only an active row in ANOTHER guild, does not unlock the phase', async () => {
+    const tables = altTables({
+      character_id: CALLER_ALT,
+      guild_id: OTHER_GUILD,
+      role: 'Member',
+      membership_status: 'active',
+      is_active: true,
+    })
+    const { client } = makeClient(tables)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: [ITEM] }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body).toEqual({ rankings: [], submissions: [], characters: [], memberships: [] })
+  })
+
+  it('G5: the membership lookup runs with both caller characters before the approved-list read, which then only carries the active one', async () => {
+    const tables = altTables({
+      character_id: CALLER_ALT,
+      guild_id: GUILD,
+      role: 'Member',
+      membership_status: 'inactive',
+      is_active: false,
+    })
+    const { client, calls } = makeClient(tables)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    await POST(request({ guild_id: GUILD, item_ids: [ITEM] }))
+
+    const lookupIndex = calls.findIndex(
+      c => c.table === 'character_guild_memberships' && c.select === 'character_id',
+    )
+    expect(lookupIndex).toBeGreaterThanOrEqual(0)
+    const lookupCall = calls[lookupIndex]
+    expect(lookupCall.filters).toContainEqual({ type: 'eq', col: 'guild_id', val: GUILD })
+    expect(lookupCall.filters).toContainEqual({ type: 'eq', col: 'is_active', val: true })
+    const lookupIdFilter = lookupCall.filters.find(f => f.type === 'in' && f.col === 'character_id') as
+      | { type: 'in'; col: string; val: unknown[] }
+      | undefined
+    expect(lookupIdFilter!.val).toEqual(expect.arrayContaining([CALLER_CHAR, CALLER_ALT]))
+
+    const approvedListIndex = calls.findIndex(
+      c => c.table === 'loot_submissions' && c.select === 'phase, expansion_id',
+    )
+    expect(approvedListIndex).toBeGreaterThan(lookupIndex)
+    const approvedListCall = calls[approvedListIndex]
+    const approvedListIdFilter = approvedListCall.filters.find(f => f.type === 'in' && f.col === 'character_id') as
+      | { type: 'in'; col: string; val: unknown[] }
+      | undefined
+    expect(approvedListIdFilter!.val).toEqual([CALLER_CHAR])
+  })
+
+  it('G6: a membership lookup error answers 500 rather than unlocking or denying silently', async () => {
+    const tables = altTables({
+      character_id: CALLER_ALT,
+      guild_id: GUILD,
+      role: 'Member',
+      membership_status: 'inactive',
+      is_active: false,
+    })
+    const { client } = makeClient(tables, { failCgmSelect: 'character_id' })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: [ITEM] }))
+    const body = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(body).toEqual({ error: 'Internal server error' })
+    consoleErrorSpy.mockRestore()
+  })
+
+  it('G7: the creator path (an existing bypass) never calls the per-phase approved-list read', async () => {
+    const { client, calls } = makeClient(baseTables())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: [ITEM] }))
+    expect(res.status).toBe(200)
+
+    const approvedListCall = calls.find(
+      c => c.table === 'loot_submissions' && c.select === 'phase, expansion_id',
+    )
+    expect(approvedListCall).toBeUndefined()
+  })
+})
