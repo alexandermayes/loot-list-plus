@@ -142,6 +142,9 @@ const TRIGGER_RULES: TriggerRule[] = [
   },
 ]
 
+/** The em dash character, built from its code point so this file never contains one. */
+const EM_DASH = String.fromCharCode(0x2014)
+
 const roleList = (list: string) => list.split(',').map(role => role.trim().replace(/^"|"$/g, ''))
 
 describe('guild Discord links and helper rules migration shape (quick task 261002-l8o)', () => {
@@ -288,7 +291,7 @@ describe('guild Discord links and helper rules migration shape (quick task 26100
     expect(comments).toHaveLength(5)
     for (const stmt of comments) {
       expect(stmt).not.toContain('--')
-      expect(stmt).not.toContain('—')
+      expect(stmt).not.toContain(EM_DASH)
     }
   })
 
@@ -297,7 +300,7 @@ describe('guild Discord links and helper rules migration shape (quick task 26100
     for (const heading of ['Background', 'Fix', 'Why triggers', 'Error contract', 'Not changed', 'Deploy order', 'Rollback']) {
       expect(raw, heading).toMatch(new RegExp(`^-- ${heading}\\n-- -+$`, 'm'))
     }
-    expect(raw).not.toContain('—')
+    expect(raw).not.toContain(EM_DASH)
   })
 
   it('the Rollback lists a statement for every part, with get_user_guild_ids recreated before the guildmate helper is dropped', () => {
