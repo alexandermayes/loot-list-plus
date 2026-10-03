@@ -2251,6 +2251,7 @@ export type Database = {
         }[]
       }
       get_current_user_guild_ids: { Args: never; Returns: string[] }
+      get_current_user_guildmate_ids: { Args: never; Returns: string[] }
       get_guild_current_expansion: {
         Args: { p_guild_id: string }
         Returns: string
@@ -2298,12 +2299,6 @@ export type Database = {
           class_color: string
           class_name: string
           membership_role: string
-        }[]
-      }
-      get_user_guild_ids: {
-        Args: { p_user_id: string }
-        Returns: {
-          guild_id: string
         }[]
       }
       increment_blp: {
