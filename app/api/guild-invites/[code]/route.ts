@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
+import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 import { setUserMilestone, trackEvent } from '@/utils/analytics/server'
@@ -108,8 +108,6 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabase = await createClient()
-
     if (!code) {
       return NextResponse.json(
         { error: 'Invite code is required' },
@@ -117,10 +115,15 @@ export async function POST(
       )
     }
 
+    // Service role client for the redeem RPC and the membership writes
+    const serviceSupabase = createServiceRoleClient()
+
     // Atomically validate and claim a use of the invite code via RPC.
     // This prevents the race condition where concurrent requests could
     // read the same current_uses value and both increment, exceeding max_uses.
-    const { data: redeemResult, error: redeemError } = await supabase
+    // The RPC runs with the service role; the route has already required a
+    // signed-in user above.
+    const { data: redeemResult, error: redeemError } = await serviceSupabase
       .rpc('redeem_invite_code', { code_input: code })
 
     if (redeemError) {
@@ -154,9 +157,6 @@ export async function POST(
 
     // Invite code is now atomically claimed. Extract details from the RPC result.
     const guildId = redeemed.invite_guild_id
-
-    // Use service role client to bypass RLS for character operations
-    const serviceSupabase = createServiceRoleClient()
 
     // Resolve the guild's default role name (lowest-position role)
     const defaultRole = await getDefaultRoleName(guildId)

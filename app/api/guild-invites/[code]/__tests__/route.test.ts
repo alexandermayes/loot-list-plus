@@ -50,7 +50,7 @@ interface ServiceWorld {
   failInsert?: boolean
 }
 
-function serviceClient(w: ServiceWorld) {
+function serviceClient(w: ServiceWorld, redeemed: unknown) {
   const calls: Call[] = []
   function from(table: string) {
     const call: Call = { table, op: 'select', filters: [] }
@@ -92,31 +92,17 @@ function serviceClient(w: ServiceWorld) {
     return builder
   }
   const writes = () => calls.filter(c => c.op !== 'select')
-  return { client: { from }, calls, writes }
-}
-
-/** User-session client: the redeem_invite_code RPC and the guild realm read. */
-function userClient(redeemed: unknown) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const builder: any = {
-    select: () => builder,
-    eq: () => builder,
-    single: () => Promise.resolve({ data: { realm: 'Realm' }, error: null }),
-  }
-  return {
-    rpc: vi.fn(() => Promise.resolve({ data: [redeemed], error: null })),
-    from: vi.fn(() => builder),
-  }
+  // The redeem_invite_code RPC runs on the service-role client.
+  const rpc = vi.fn(() => Promise.resolve({ data: [redeemed], error: null }))
+  return { client: { from, rpc }, calls, writes, rpc }
 }
 
 const REDEEMED = { invite_guild_id: GUILD, error_code: null }
 
 function setup(w: ServiceWorld, redeemed: unknown = REDEEMED) {
-  const user = userClient(redeemed)
-  const service = serviceClient(w)
-  vi.mocked(createClient).mockResolvedValue(user as never)
+  const service = serviceClient(w, redeemed)
   vi.mocked(createServiceRoleClient).mockReturnValue(service.client as never)
-  return { user, service }
+  return { service }
 }
 
 function request() {
@@ -137,6 +123,30 @@ describe('POST /api/guild-invites/[code] records the join for users without a ch
     vi.mocked(consumeGuildJoinGrant).mockImplementation(async () => {
       events.push('consume')
     })
+  })
+
+  it('redeems the code with the service-role client and never creates the user-session client', async () => {
+    const { service } = setup({ hasCharacter: true, existing: null })
+
+    const res = await POST(request(), params)
+
+    expect(res.status).toBe(200)
+    expect(service.rpc).toHaveBeenCalledTimes(1)
+    expect(service.rpc).toHaveBeenCalledWith('redeem_invite_code', { code_input: CODE })
+    expect(createClient).not.toHaveBeenCalled()
+  })
+
+  it('returns the existing 500 when the redeem RPC fails, with no other service-role call', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { service } = setup({ hasCharacter: true, existing: null })
+    service.rpc.mockResolvedValueOnce({ data: null, error: { message: 'rpc failed' } } as never)
+
+    const res = await POST(request(), params)
+
+    expect(res.status).toBe(500)
+    expect(await res.json()).toEqual({ error: 'Internal server error' })
+    expect(service.calls).toEqual([])
+    expect(createClient).not.toHaveBeenCalled()
   })
 
   it('records the join before setting the active guild when the user has no character with a class set', async () => {
