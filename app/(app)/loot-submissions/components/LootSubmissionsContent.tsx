@@ -38,6 +38,7 @@ import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { Card } from '@/components/ui/card'
 import { detailRowKey, withoutDetailRow, restoreDetailRow } from '@/domain/loot/list-row-updates'
 import { diffListItems, type DiffEntry } from '@/domain/loot/list-diff'
+import { bulkDeleteIds, bulkDeleteNotice } from '@/domain/loot/bulk-delete'
 
 interface Submission {
   id: string
@@ -138,7 +139,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
   const [submissionDetails, setSubmissionDetails] = useState<SubmissionDetailItem[]>([])
   const [loadingDetails, setLoadingDetails] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState<{ type: 'single' | 'pending' | 'all', id?: string } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'single' | 'pending' | 'all', id?: string, ids?: string[] } | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [resolvedGroups, setResolvedGroups] = useState<PhaseGroup[]>([])
   const [raidTierInfos, setRaidTierInfos] = useState<RaidTierInfo[]>([])
@@ -685,7 +686,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
     setDeleting(true)
     try {
       // Build request body based on deletion type
-      const requestBody: { guild_id: string; submission_id?: string; target?: string } = {
+      const requestBody: { guild_id: string; submission_id?: string; target?: string; submission_ids?: string[] } = {
         guild_id: guildId
       }
 
@@ -693,6 +694,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
         requestBody.submission_id = deleteTarget.id
       } else {
         requestBody.target = deleteTarget.type === 'pending' ? 'pending' : 'all'
+        requestBody.submission_ids = deleteTarget.ids || []
       }
 
       const response = await fetch('/api/loot-submissions/delete', {
@@ -705,18 +707,15 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Couldn\'t delete submission. Try again.')
+        throw new Error(errorData.error || 'Couldn\'t delete submissions. Try again.')
       }
 
       const result = await response.json()
       if (deleteTarget.type === 'single') {
         showNotification('success', 'Submission deleted')
       } else {
-        showNotification('success', `Deleted ${result.count} submission${result.count !== 1 ? 's' : ''}`)
-      }
-
-      if (activeGuild?.active_expansion_id) {
-        await loadSubmissions(guildId, activePhase, activeGuild.active_expansion_id)
+        const notice = bulkDeleteNotice(result.count, result.requested)
+        showNotification(notice.type, notice.message)
       }
 
       setShowDeleteConfirm(false)
@@ -726,6 +725,10 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
       showNotification('error', (error instanceof Error ? error.message : '') || 'Couldn\'t delete submissions. Try again.')
     } finally {
       setDeleting(false)
+      notifySubmissionChanged()
+      if (guildId && activePhase !== null && activeGuild?.active_expansion_id) {
+        await loadSubmissions(guildId, activePhase, activeGuild.active_expansion_id)
+      }
     }
   }
 
@@ -982,8 +985,9 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
               <Button
                 variant="destructive-outline"
                 size="sm"
+                disabled={bulkDeleteIds(filteredSubmissions, 'pending').length === 0}
                 onClick={() => {
-                  setDeleteTarget({ type: 'pending' })
+                  setDeleteTarget({ type: 'pending', ids: bulkDeleteIds(filteredSubmissions, 'pending') })
                   setShowDeleteConfirm(true)
                 }}
               >
@@ -992,8 +996,9 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
               <Button
                 variant="destructive-outline"
                 size="sm"
+                disabled={bulkDeleteIds(filteredSubmissions, 'all').length === 0}
                 onClick={() => {
-                  setDeleteTarget({ type: 'all' })
+                  setDeleteTarget({ type: 'all', ids: bulkDeleteIds(filteredSubmissions, 'all') })
                   setShowDeleteConfirm(true)
                 }}
               >
@@ -1498,8 +1503,8 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                 {deleteTarget?.type === 'single'
                   ? 'This will permanently delete this loot submission. The user will need to recreate their list.'
                   : deleteTarget?.type === 'pending'
-                  ? 'This will permanently delete all pending loot submissions for this guild. Users will need to recreate their lists.'
-                  : 'This will permanently delete ALL loot submissions (pending, approved, and received) for this guild. This action cannot be undone.'}
+                  ? `This will permanently delete the ${deleteTarget.ids?.length ?? 0} pending ${deleteTarget.ids?.length === 1 ? 'list' : 'lists'} shown. Raiders will need to recreate their lists.`
+                  : `This will permanently delete the ${deleteTarget?.ids?.length ?? 0} ${deleteTarget?.ids?.length === 1 ? 'list' : 'lists'} shown, including approved and rejected lists. This action cannot be undone.`}
               </p>
               <Alert variant="destructive">
                 <AlertDescription className="font-medium">
