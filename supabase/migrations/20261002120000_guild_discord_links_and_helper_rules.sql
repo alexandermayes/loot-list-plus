@@ -18,7 +18,19 @@
 -- insert. The guilds policies decide who may write a guild row (INSERT: the
 -- creator; UPDATE: any officer), not which values its columns may hold.
 --
--- [Parts 2 to 4: background added in later steps.]
+-- Two SELECT policies call get_user_guild_ids(p_user_id): "Guild members
+-- can view guild memberships" on character_guild_memberships (passing
+-- auth.uid()) and "Profiles viewable by self or guildmates" on profiles
+-- (passing the row's user id). The other guild helpers that policies call
+-- read the signed-in user themselves (get_current_user_guild_ids,
+-- is_guild_officer, is_guild_master; see 20260804000001). No app, bot,
+-- script or companion code calls get_user_guild_ids.
+--
+-- redeem_invite_code is called only by POST /api/guild-invites/[code]. That
+-- route used the user's session for the call, so authenticated kept EXECUTE
+-- (class b in 20260930000200). The route now calls it with the service role.
+--
+-- [Part 4: background added in a later step.]
 --
 -- Fix
 -- ---
@@ -40,9 +52,35 @@
 -- separate function and trigger, so enforce_guild_owner_write_rules from
 -- 20260930000100 is unchanged.
 --
--- [Part 2: guild helpers read the signed-in user. Added in a later step.]
+-- 2. Guild helpers read the signed-in user. A new helper,
+-- get_current_user_guildmate_ids(), takes no argument and returns the user
+-- ids of the signed-in user's guildmates: users with an active membership in
+-- one of the signed-in user's active guilds (get_current_user_guild_ids, so
+-- "the signed-in user's active guilds" stays defined in one place). It
+-- returns no rows for anon. It is SECURITY DEFINER with a pinned search_path,
+-- EXECUTE revoked from PUBLIC and granted to anon, authenticated and
+-- service_role (class d in 20260930000200), since policies call it.
 --
--- [Part 3: invite redemption is server-only. Added in a later step.]
+-- The two policies are rebuilt with the same names and commands:
+--
+--   * memberships: guild_id IN (SELECT get_current_user_guild_ids()), which
+--     has the same body as get_user_guild_ids with auth.uid() in place of
+--     the argument, and the old policy passed auth.uid().
+--   * profiles: auth.uid() = id OR id IN (SELECT
+--     get_current_user_guildmate_ids()). The old policy asked, per row,
+--     whether the row's user shares an active guild with the signed-in user;
+--     the new one asks whether the row's user is in the signed-in user's
+--     guildmate set, which is the same question, computed once per query.
+--
+-- Then get_user_guild_ids is dropped, without CASCADE. Postgres records
+-- policy expressions as dependencies, so the drop refuses (SQLSTATE 2BP01)
+-- while any policy, view or function still depends on it, and the whole
+-- migration then rolls back.
+--
+-- 3. Invite redemption is server-only. redeem_invite_code moves to class a
+-- of 20260930000200: EXECUTE is revoked from PUBLIC, anon and authenticated
+-- and granted to service_role only. The function reads no auth.uid(), so
+-- its results do not change.
 --
 -- [Part 4: character aliases stay inside their guild. Added in a later step.]
 --
@@ -74,21 +112,52 @@
 -- a Classic guild and a Forever guild in one community server); there is no
 -- unique constraint on discord_server_id. The file is safe to re-run: every
 -- statement is CREATE OR REPLACE, COMMENT, REVOKE, GRANT, DROP POLICY IF
--- EXISTS or DROP FUNCTION IF EXISTS.
+-- EXISTS followed by CREATE POLICY, or DROP FUNCTION IF EXISTS.
 --
 -- Deploy order
 -- ------------
--- The app code that writes the link with the service role ships first and
--- must be live before this migration runs; otherwise guild creation with a
--- Discord server would be refused by the trigger.
+-- The app code ships first and must be live before this migration runs: it
+-- writes the Discord server link with the service role and calls
+-- redeem_invite_code with the service role. Otherwise guild creation with a
+-- Discord server would be refused by the trigger, and invite redemption
+-- would be refused for lack of EXECUTE.
 --
 -- Rollback
 -- --------
--- A forward migration with these statements restores the previous behaviour.
--- No data changes either way:
+-- A forward migration with these statements, in this order, restores the
+-- previous behaviour. No data changes either way. get_user_guild_ids is
+-- recreated before the policies that use it, and its REVOKE comes before
+-- its GRANT (a new function starts with the PUBLIC default). The guildmate
+-- helper is dropped only after the profiles policy stops using it:
 --
 --   DROP TRIGGER IF EXISTS "enforce_guild_discord_link_rules" ON "public"."guilds";
 --   DROP FUNCTION IF EXISTS "public"."enforce_guild_discord_link_rules"();
+--   CREATE OR REPLACE FUNCTION "public"."get_user_guild_ids"("p_user_id" "uuid") RETURNS TABLE("guild_id" "uuid")
+--       LANGUAGE "sql" STABLE SECURITY DEFINER
+--       SET "search_path" TO 'public', 'pg_temp'
+--       AS $$
+--       SELECT DISTINCT cgm.guild_id
+--       FROM character_guild_memberships cgm
+--       INNER JOIN characters c ON c.id = cgm.character_id
+--       WHERE c.user_id = p_user_id
+--       AND cgm.is_active = true;
+--     $$;
+--   REVOKE ALL ON FUNCTION "public"."get_user_guild_ids"("p_user_id" "uuid") FROM PUBLIC;
+--   GRANT EXECUTE ON FUNCTION "public"."get_user_guild_ids"("p_user_id" "uuid") TO "anon", "authenticated", "service_role";
+--   DROP POLICY IF EXISTS "Guild members can view guild memberships" ON "public"."character_guild_memberships";
+--   CREATE POLICY "Guild members can view guild memberships" ON "public"."character_guild_memberships" FOR SELECT USING (("guild_id" IN ( SELECT "public"."get_user_guild_ids"("auth"."uid"()) AS "get_user_guild_ids")));
+--   DROP POLICY IF EXISTS "Profiles viewable by self or guildmates" ON "public"."profiles";
+--   CREATE POLICY "Profiles viewable by self or guildmates" ON "public"."profiles"
+--     FOR SELECT USING (
+--       "auth"."uid"() = "id"
+--       OR EXISTS (
+--         SELECT 1
+--         FROM "public"."get_user_guild_ids"("profiles"."id") AS "target"("guild_id")
+--         WHERE "target"."guild_id" IN (SELECT "public"."get_current_user_guild_ids"())
+--       )
+--     );
+--   DROP FUNCTION IF EXISTS "public"."get_current_user_guildmate_ids"();
+--   GRANT EXECUTE ON FUNCTION "public"."redeem_invite_code"("code_input" "text") TO "authenticated";
 
 -- ---------------------------------------------------------------------------
 -- 1. guilds: the Discord server link is written only by the server
@@ -129,3 +198,47 @@ REVOKE ALL ON FUNCTION "public"."enforce_guild_discord_link_rules"() FROM PUBLIC
 CREATE OR REPLACE TRIGGER "enforce_guild_discord_link_rules" BEFORE INSERT OR UPDATE OF "discord_server_id" ON "public"."guilds" FOR EACH ROW EXECUTE FUNCTION "public"."enforce_guild_discord_link_rules"();
 
 COMMENT ON TRIGGER "enforce_guild_discord_link_rules" ON "public"."guilds" IS 'A guild''s Discord server link is set or changed only by the server. See public.enforce_guild_discord_link_rules().';
+
+-- ---------------------------------------------------------------------------
+-- 2. Guild helpers read the signed-in user
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION "public"."get_current_user_guildmate_ids"() RETURNS SETOF "uuid"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+  SELECT DISTINCT c.user_id
+  FROM public.character_guild_memberships cgm
+  JOIN public.characters c ON c.id = cgm.character_id
+  WHERE cgm.is_active = true
+    AND c.user_id IS NOT NULL
+    AND cgm.guild_id IN (SELECT public.get_current_user_guild_ids());
+$$;
+
+COMMENT ON FUNCTION "public"."get_current_user_guildmate_ids"() IS 'User ids of the signed-in user''s guildmates: users with an active membership in one of the signed-in user''s active guilds (get_current_user_guild_ids). No rows for anon. Used by the profiles SELECT policy. SECURITY DEFINER with EXECUTE for anon, authenticated and service_role only.';
+
+REVOKE ALL ON FUNCTION "public"."get_current_user_guildmate_ids"() FROM PUBLIC;
+
+GRANT EXECUTE ON FUNCTION "public"."get_current_user_guildmate_ids"() TO "anon", "authenticated", "service_role";
+
+-- The two policies that called get_user_guild_ids, rebuilt on the helpers
+-- that read the signed-in user (same names and commands).
+DROP POLICY IF EXISTS "Guild members can view guild memberships" ON "public"."character_guild_memberships";
+
+CREATE POLICY "Guild members can view guild memberships" ON "public"."character_guild_memberships" FOR SELECT USING ("guild_id" IN (SELECT "public"."get_current_user_guild_ids"()));
+
+DROP POLICY IF EXISTS "Profiles viewable by self or guildmates" ON "public"."profiles";
+
+CREATE POLICY "Profiles viewable by self or guildmates" ON "public"."profiles" FOR SELECT USING ("auth"."uid"() = "id" OR "id" IN (SELECT "public"."get_current_user_guildmate_ids"()));
+
+-- No policy uses get_user_guild_ids any more. No CASCADE: the drop refuses
+-- if anything else still depends on it.
+DROP FUNCTION IF EXISTS "public"."get_user_guild_ids"("p_user_id" "uuid");
+
+-- ---------------------------------------------------------------------------
+-- 3. Invite redemption is server-only
+-- ---------------------------------------------------------------------------
+
+REVOKE ALL ON FUNCTION "public"."redeem_invite_code"("code_input" "text") FROM PUBLIC, "anon", "authenticated";
+
+GRANT EXECUTE ON FUNCTION "public"."redeem_invite_code"("code_input" "text") TO "service_role";
