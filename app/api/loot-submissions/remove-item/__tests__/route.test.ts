@@ -9,6 +9,7 @@ import { verifyPermission } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
 import { toDateString } from '@/utils/date'
 import { buildRemoveItemHistoryRow } from '@/lib/loot/loot-history-rows'
+import { logAudit } from '@/utils/audit/log'
 
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
@@ -44,7 +45,7 @@ interface Fixture {
   tiers: TierRow[]
   items: ItemRow[]
   itemDetails: ItemDetail[]
-  restoreUpdateError?: { message: string } | null
+  restoreUpdateError?: { message: string; code?: string } | null
   removeUpdateError?: { message: string } | null
   historyInsertError?: { message: string } | null
 }
@@ -413,6 +414,82 @@ describe('POST /api/loot-submissions/remove-item', () => {
       expect(res.status).toBe(400)
       expect(body.error).toBe('Item is not removed')
       expect(submissionItemUpdates(calls)).toHaveLength(0)
+    })
+  })
+
+  // GH #354: since the partial unique index, a removed row and a live row
+  // can share a rank and slot. Remove and restore must act on the matching
+  // row, and a restore that collides with a live row is refused.
+  describe('a removed row and a live row share a rank and slot (GH #354)', () => {
+    const liveThenRemoved = (): SubmissionItemRow[] => [
+      { id: 'row-live', rank: 50, slot: '1', loot_item_id: ITEM_ID, removed_at: null },
+      { id: 'row-removed', rank: 50, slot: '1', loot_item_id: ITEM_ID, removed_at: '2026-09-20T00:00:00Z' },
+    ]
+    const removedThenLive = (): SubmissionItemRow[] => [
+      { id: 'row-removed', rank: 50, slot: '1', loot_item_id: ITEM_ID, removed_at: '2026-09-20T00:00:00Z' },
+      { id: 'row-live', rank: 50, slot: '1', loot_item_id: ITEM_ID, removed_at: null },
+    ]
+    const twoRemovedAtOnePosition = (): SubmissionItemRow[] => [
+      { id: 'row-earlier', rank: 50, slot: '1', loot_item_id: ITEM_ID, removed_at: '2026-09-20T00:00:00Z' },
+      { id: 'row-later', rank: 50, slot: '1', loot_item_id: ITEM_ID, removed_at: '2026-09-21T00:00:00Z' },
+    ]
+
+    async function post(itemRows: SubmissionItemRow[], extra: Record<string, unknown>, fixtureOverrides: Partial<Fixture> = {}) {
+      const fixture = { ...baseFixture(), itemRows, ...fixtureOverrides }
+      const { client, calls } = makeClient(fixture)
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+      const res = await POST(request({ guild_id: GUILD_ID, submission_id: SUBMISSION_ID, loot_item_id: ITEM_ID, ...extra }))
+      return { res, body: await res.json(), calls }
+    }
+
+    it.each([
+      ['live row listed first', liveThenRemoved()],
+      ['removed row listed first', removedThenLive()],
+    ])('removes the live row at the position when %s', async (_label, rows) => {
+      const { res, body, calls } = await post(rows, { rank: 50, slot: 1 })
+      expect(res.status).toBe(200)
+      expect(body.ranks_removed).toEqual([50])
+      const updates = submissionItemUpdates(calls)
+      expect(updates).toHaveLength(1)
+      expect(updates[0].filters).toEqual([['id', 'row-live'], ['removed_at', null]])
+    })
+
+    it.each([
+      ['live row listed first', liveThenRemoved()],
+      ['removed row listed first', removedThenLive()],
+    ])('restores the removed row at the position when %s', async (_label, rows) => {
+      const { res, body, calls } = await post(rows, { restore: true, rank: 50, slot: 1 })
+      expect(res.status).toBe(200)
+      expect(body.restored).toBe(true)
+      const updates = submissionItemUpdates(calls)
+      expect(updates).toHaveLength(1)
+      expect(updates[0].filters).toEqual([['id', 'row-removed']])
+    })
+
+    it('restores the row with the later removed_at when two removed rows share the position', async () => {
+      const { calls } = await post(twoRemovedAtOnePosition(), { restore: true, rank: 50, slot: 1 })
+      const updates = submissionItemUpdates(calls)
+      expect(updates).toHaveLength(1)
+      expect(updates[0].filters).toEqual([['id', 'row-later']])
+    })
+
+    it('a restore blocked by the new index (23505) returns 409 with the GH #354 copy and writes no audit entry', async () => {
+      const { res, body, calls } = await post(liveThenRemoved(), { restore: true, rank: 50, slot: 1 }, {
+        restoreUpdateError: { message: 'duplicate key value violates unique constraint', code: '23505' },
+      })
+      expect(res.status).toBe(409)
+      expect(body.error).toBe('Another item is now at this rank and slot. Remove or move it first, then try again.')
+      expect(logAudit).not.toHaveBeenCalled()
+      expect(lootHistoryInserts(calls)).toHaveLength(0)
+    })
+
+    it('a restore blocked by any other error keeps the existing 500 message', async () => {
+      const { res, body } = await post(liveThenRemoved(), { restore: true, rank: 50, slot: 1 }, {
+        restoreUpdateError: { message: 'connection reset' },
+      })
+      expect(res.status).toBe(500)
+      expect(body.error).toBe('Couldn\'t restore item. Try again.')
+      expect(logAudit).not.toHaveBeenCalled()
     })
   })
 })

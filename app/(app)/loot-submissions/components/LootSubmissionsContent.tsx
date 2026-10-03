@@ -36,7 +36,7 @@ import { notifySubmissionChanged } from '@/app/hooks/usePendingSubmissionCount'
 import { resolvePhaseGroups, getPhaseGroupLabel, getPhaseGroupShortLabel, getCanonicalPhase, type PhaseGroup } from '@/domain/expansion/phase-groups'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { Card } from '@/components/ui/card'
-import { detailRowKey, withoutDetailRow, restoreDetailRow } from '@/domain/loot/list-row-updates'
+import { detailRowKey, withoutDetailRow, restoreDetailRow, groupDetailRowsByRank } from '@/domain/loot/list-row-updates'
 import { diffListItems, type DiffEntry } from '@/domain/loot/list-diff'
 import { bulkDeleteIds, bulkDeleteNotice } from '@/domain/loot/bulk-delete'
 import { createPendingReviewNotification, type ReviewNotificationPayload } from './review-notification'
@@ -862,20 +862,10 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
     return true
   })
 
-  // Memoize grouped submission details to avoid recalculating on every render
-  const groupedSubmissionDetails = useMemo(() => {
-    const grouped: Record<number, SubmissionDetailItem[]> = {}
-    for (const detail of submissionDetails) {
-      const rank = detail.rank
-      if (!grouped[rank]) grouped[rank] = []
-      grouped[rank].push(detail)
-    }
-    // Sort items within each rank by slot so Item #1 and #2 display correctly
-    for (const items of Object.values(grouped)) {
-      items.sort((a, b) => a.slot - b.slot)
-    }
-    return Object.entries(grouped).sort(([a], [b]) => Number(b) - Number(a))
-  }, [submissionDetails])
+  // One cell per rank and slot (GH #354): a removed row and a live row can
+  // share a position since the partial unique index only guards live rows,
+  // and the live one is shown.
+  const groupedSubmissionDetails = useMemo(() => groupDetailRowsByRank(submissionDetails), [submissionDetails])
 
   return (
     <div className="font-poppins">
@@ -1310,41 +1300,33 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                       </tr>
                     </thead>
                     <tbody>
-                      {groupedSubmissionDetails.map(([rank, items]) => {
-                        const rankNum = Number(rank)
-                        const itemsArr = items as SubmissionDetailItem[]
-                        return (
-                          <tr key={rank} className="border-b border-border">
-                            <td className={`px-3 py-2 font-semibold text-sm text-foreground bg-gradient-to-r ${getRankGradient(rankNum)}`}>
-                              {rank}
-                            </td>
-                            <td className="px-3 py-2">{renderItemCell(itemsArr[0])}</td>
-                            <td className="px-3 py-2">{renderItemCell(itemsArr[1])}</td>
-                          </tr>
-                        )
-                      })}
+                      {groupedSubmissionDetails.map((group) => (
+                        <tr key={group.rank} className="border-b border-border">
+                          <td className={`px-3 py-2 font-semibold text-sm text-foreground bg-gradient-to-r ${getRankGradient(group.rank)}`}>
+                            {group.rank}
+                          </td>
+                          <td className="px-3 py-2">{renderItemCell(group.slot1)}</td>
+                          <td className="px-3 py-2">{renderItemCell(group.slot2)}</td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
 
                 {/* Mobile card list */}
                 <div className="sm:hidden space-y-2 p-2">
-                  {groupedSubmissionDetails.map(([rank, items]) => {
-                    const rankNum = Number(rank)
-                    const itemsArr = items as SubmissionDetailItem[]
-                    return (
-                      <Card key={rank} className="overflow-hidden">
-                        <div className="px-3 py-2 flex items-center gap-2">
-                          <span className={`inline-flex items-center justify-center w-8 h-6 rounded text-12 font-bold text-white ${getRankBg(rankNum)}`}>
-                            {rank}
-                          </span>
-                          <span className="text-13 text-muted-foreground">Rank {rank}</span>
-                        </div>
-                        {renderMobileItem(itemsArr[0], 'Item #1')}
-                        {renderMobileItem(itemsArr[1], 'Item #2')}
-                      </Card>
-                    )
-                  })}
+                  {groupedSubmissionDetails.map((group) => (
+                    <Card key={group.rank} className="overflow-hidden">
+                      <div className="px-3 py-2 flex items-center gap-2">
+                        <span className={`inline-flex items-center justify-center w-8 h-6 rounded text-12 font-bold text-white ${getRankBg(group.rank)}`}>
+                          {group.rank}
+                        </span>
+                        <span className="text-13 text-muted-foreground">Rank {group.rank}</span>
+                      </div>
+                      {renderMobileItem(group.slot1, 'Item #1')}
+                      {renderMobileItem(group.slot2, 'Item #2')}
+                    </Card>
+                  ))}
                 </div>
               </>
             )}
