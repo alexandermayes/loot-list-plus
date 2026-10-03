@@ -128,13 +128,11 @@ export async function GET(request: NextRequest) {
       raidNameMap[rt.id] = rt.name
     }
 
-    // Fetch guild members - try new table first, fall back to deriving from submissions
-    let memberships: Array<{
-      character_id: string; role: string; membership_status: string;
-      characters: unknown
-    }> = []
-
-    const { data: newMemberships } = await supabase
+    // Guild members, from active memberships only (the same rule the award
+    // check uses, findInvalidCharacterIds): a guild with no active member
+    // exports no members, rather than deriving a roster from draft or
+    // rejected lists (GH #326).
+    const { data: activeMemberships, error: membershipsError } = await supabase
       .from('character_guild_memberships')
       .select(`
         character_id,
@@ -149,48 +147,16 @@ export async function GET(request: NextRequest) {
       .eq('guild_id', guildId)
       .eq('is_active', true)
 
-    console.log('[addon/export-string] character_guild_memberships:', newMemberships?.length)
-
-    if (newMemberships && newMemberships.length > 0) {
-      memberships = newMemberships
-    } else {
-      // Derive members from characters that have submissions in this guild
-      const { data: subCharIds, error: subErr } = await supabase
-        .from('loot_submissions')
-        .select('character_id')
-        .eq('guild_id', guildId)
-
-      console.log('[addon/export-string] Submissions with char IDs:', subCharIds?.length, 'error:', subErr?.message)
-
-      // Deduplicate character IDs
-      const charIdMap: Record<string, boolean> = {}
-      for (const s of subCharIds || []) {
-        if (s.character_id) charIdMap[s.character_id] = true
-      }
-      const uniqueCharIds = Object.keys(charIdMap)
-
-      console.log('[addon/export-string] Unique character IDs:', uniqueCharIds.length, uniqueCharIds.slice(0, 3))
-
-      if (uniqueCharIds.length > 0) {
-        const { data: characters, error: charErr } = await supabase
-          .from('characters')
-          .select('id, name, user_id, wow_classes (name, color_hex), spec:class_specs (id, name)')
-          .in('id', uniqueCharIds)
-
-        console.log('[addon/export-string] Characters found:', characters?.length, 'error:', charErr?.message)
-
-        if (characters && characters.length > 0) {
-          memberships = characters.map(c => ({
-            character_id: c.id,
-            role: 'Member',
-            membership_status: 'full',
-            characters: c,
-          }))
-
-          console.log('[addon/export-string] Derived memberships:', memberships.length)
-        }
-      }
+    if (membershipsError) {
+      throw new Error('Failed to read guild memberships for the addon export')
     }
+
+    const memberships: Array<{
+      character_id: string; role: string; membership_status: string;
+      characters: unknown
+    }> = activeMemberships ?? []
+
+    console.log('[addon/export-string] character_guild_memberships:', memberships.length)
 
     // Fetch approved submissions for active expansion
     const { data: submissions } = await supabase
@@ -314,12 +280,21 @@ export async function GET(request: NextRequest) {
     const encoded = compressed.toString('base64')
     const exportString = `LLP1:1:${encoded}`
 
+    // stats.submissions counts only approved lists whose character is in the
+    // exported members[] (GH #326): a raider who left the guild no longer
+    // inflates this count, even though a legacy approved list of theirs
+    // still exists.
+    const exportedMemberIds = new Set(payload.members.map(m => m?.character_id))
+    const exportedSubmissionCount = (submissions || []).filter(
+      s => s.character_id != null && exportedMemberIds.has(s.character_id),
+    ).length
+
     return NextResponse.json({
       exportString,
       stats: {
         items: lootItems?.length || 0,
         members: memberships?.length || 0,
-        submissions: submissions?.length || 0,
+        submissions: exportedSubmissionCount,
         raidTiers: raidTiers?.length || 0,
         expansion: expansion?.name || null,
         compressedSize: encoded.length,
