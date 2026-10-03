@@ -126,21 +126,17 @@ function rollbackStatements(): string[] {
 }
 
 describe('loot list and expansion rules require an active guild membership migration shape (quick task 261003-j61)', () => {
-  it('the file exists, sorts after every other migration, and has a unique timestamp', () => {
+  // Anchored to the newest migration that existed when this one was written
+  // (20261003120000, quick task 261003-fcg), not to a live directory scan,
+  // which would fail as soon as any later migration lands (#309).
+  it('the file exists, sorts after every migration that preceded it, and has a unique timestamp', () => {
     expect(fs.existsSync(MIGRATION_FILE)).toBe(true)
+    expect(Number(MIGRATION_TIMESTAMP)).toBeGreaterThan(20261003120000)
 
-    const allSqlFiles = fs
+    const sameTimestamp = fs
       .readdirSync(MIGRATIONS_DIR)
       .filter(name => name.endsWith('.sql') && name !== path.basename(MIGRATION_FILE))
-
-    for (const name of allSqlFiles) {
-      const ts = name.slice(0, 14)
-      if (/^\d{14}$/.test(ts)) {
-        expect(Number(MIGRATION_TIMESTAMP)).toBeGreaterThan(Number(ts))
-      }
-    }
-
-    const sameTimestamp = allSqlFiles.filter(name => name.slice(0, 14) === MIGRATION_TIMESTAMP)
+      .filter(name => name.slice(0, 14) === MIGRATION_TIMESTAMP)
     expect(sameTimestamp).toEqual([])
   })
 
