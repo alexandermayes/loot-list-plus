@@ -3,12 +3,11 @@
  *
  * Run: npx tsx domain/scoring/__tests__/export-fixtures.ts > lua-test-fixtures.json
  *
- * The output can be loaded by the addon's test harness to verify
- * ScoreEngine.lua produces identical results.
- *
- * NOTE: The Lua engine needs updating to match late/benched/excused changes.
- * Until then, only the base fixtures (no late/benched/excused fields) are
- * comparable.
+ * The output can be loaded by a Lua test harness to verify the addon's
+ * Modules/ScoreEngine.lua (alexandermayes/loot-list-plus-addon) produces
+ * identical results. The addon repo's own parity check is
+ * tests/tools/gen_web_fixtures.mts, which covers late, benched and excused
+ * records too.
  */
 
 import {

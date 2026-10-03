@@ -42,7 +42,7 @@ export default function AddonPage() {
                 The LootList+ addon lets officers distribute loot in-game using your guild&apos;s priority data. Install the addon, then use the export/import below to sync.
               </Text>
               <Text size="xs" color="muted">
-                Download the addon from CurseForge or copy it manually to your WoW AddOns folder.
+                Copy the LootList+ addon folder into your WoW AddOns folder. Ask us on Discord for the latest version.
               </Text>
             </div>
           </div>
