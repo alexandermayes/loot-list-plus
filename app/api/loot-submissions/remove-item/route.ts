@@ -59,13 +59,18 @@ type TargetPick = { row: SubmissionItemRow } | { error: string; status: number }
 const NOT_FOUND_ERROR = 'Item not found in this submission'
 const ALREADY_REMOVED_ERROR = 'Item already removed'
 const NOT_REMOVED_ERROR = 'Item is not removed'
+const RESTORE_POSITION_TAKEN_ERROR = 'Another item is now at this rank and slot. Remove or move it first, then try again.'
 
 /**
- * Picks the one loot_submission_items row to act on (GH #293): a list can
- * hold two copies of an item, and removing or restoring one must leave the
- * other alone. With a position, the row at that rank and slot; without one,
- * the best-ranked candidate (rank descending, then slot ascending). `rows`
- * are already filtered by submission_id and loot_item_id.
+ * Picks the one loot_submission_items row to act on (GH #293, GH #354): a
+ * list can hold two copies of an item, and removing or restoring one must
+ * leave the other alone. Since #354 a removed row and a live row can share
+ * a rank and slot (the partial unique index only guards live rows), so with
+ * a position the route picks the row that matches the requested action: the
+ * live row for remove, the most recently removed row for restore. Without a
+ * position, the best-ranked candidate (rank descending, then slot
+ * ascending) among the rows matching that action. `rows` are already
+ * filtered by submission_id and loot_item_id.
  */
 function pickTargetRow(
   rows: readonly SubmissionItemRow[],
@@ -73,11 +78,18 @@ function pickTargetRow(
   mode: 'remove' | 'restore'
 ): TargetPick {
   if (position) {
-    const row = rows.find(r => Number(r.rank) === position.rank && Number(r.slot) === position.slot)
-    if (!row) return { error: NOT_FOUND_ERROR, status: 404 }
-    if (mode === 'remove' && row.removed_at) return { error: ALREADY_REMOVED_ERROR, status: 400 }
-    if (mode === 'restore' && !row.removed_at) return { error: NOT_REMOVED_ERROR, status: 400 }
-    return { row }
+    const atPosition = rows.filter(r => Number(r.rank) === position.rank && Number(r.slot) === position.slot)
+    if (atPosition.length === 0) return { error: NOT_FOUND_ERROR, status: 404 }
+    if (mode === 'remove') {
+      const row = atPosition.find(r => !r.removed_at)
+      if (!row) return { error: ALREADY_REMOVED_ERROR, status: 400 }
+      return { row }
+    }
+    const removedRows = atPosition
+      .filter(r => r.removed_at)
+      .sort((a, b) => (Date.parse(b.removed_at as string) || 0) - (Date.parse(a.removed_at as string) || 0))
+    if (removedRows.length === 0) return { error: NOT_REMOVED_ERROR, status: 400 }
+    return { row: removedRows[0] }
   }
 
   const candidates = rows
@@ -114,6 +126,9 @@ function pickTargetRow(
  * expansion_id from the guild-scoped item) instead of an inline untyped
  * insert. An item the guild does not own is rejected with 400 before the
  * soft delete.
+ *
+ * GH #354: a restore returns 409 when another item now holds that rank and
+ * slot (the partial unique index on live rows refuses the update).
  */
 export async function POST(request: Request) {
   try {
@@ -204,6 +219,9 @@ export async function POST(request: Request) {
         .eq('id', target.id)
 
       if (restoreError) {
+        if (restoreError.code === '23505') {
+          return NextResponse.json({ error: RESTORE_POSITION_TAKEN_ERROR }, { status: 409 })
+        }
         console.error('Error restoring item:', restoreError)
         return NextResponse.json({ error: 'Couldn\'t restore item. Try again.' }, { status: 500 })
       }
