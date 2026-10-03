@@ -11,6 +11,11 @@
  * - it's `rejected` (an officer sent it back).
  *
  * Excludes never-submitted drafts and clean `pending` / `approved` lists.
+ *
+ * This is the status rule only. A raider who left a guild can't resubmit a
+ * list there, so the count badge and the Discord reminder also require the
+ * list's character to be an active member of the list's own guild
+ * (findInvalidCharacterIds; see lib/loot/active-member-lists.ts).
  */
 export interface ResubmitState {
   status: string | null
