@@ -11,8 +11,8 @@ import { calculateDonationsBatch } from '@/lib/donations/batch'
 import { getSpecRoles } from '@/domain/loot/spec-role-mapping'
 import { formatRankingsForGargul } from '@/domain/loot/gargul-dft'
 import { applyGlobalReceiveSkip, pickReceivedEntries } from '@/domain/loot/apply-receive-skip'
-import { aggregateListStats } from '@/domain/loot/ranking-entries'
 import { buildTeamVisibility } from '@/domain/loot/apply-team-filter'
+import { loadMasterSheetSummary } from '@/lib/loot/master-sheet-summary'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { getBossImage } from '@/utils/bossImages'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
@@ -154,13 +154,6 @@ interface CharacterWithRelations {
   spec: CharacterSpec | CharacterSpec[] | null
   character_guild_memberships: CharacterGuildMembership[]
 }
-
-interface AggregateCharacterRow {
-  id: string
-  name: string | null
-  class: CharacterClass | CharacterClass[]
-}
-
 
 interface MasterSheetContentProps {
   // Server-rendered heading from page.tsx. Acts as the LCP target until the
@@ -1043,161 +1036,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
       setAggregateLoading(true)
 
       try {
-        // Get all loot items for all active tiers in this phase
-        const { data: itemsData } = await supabase
-          .from('loot_items')
-          .select('id, name, boss_name, item_slot, wowhead_id, classification, raid_tier_id, is_loot_council')
-          .in('raid_tier_id', activeTierIds)
-          .eq('is_available', true)
-          .order('boss_name')
-          .order('name')
-
-        if (!itemsData || itemsData.length === 0) {
-          setAggregateItems([])
-          setAggregateLoading(false)
-          return
-        }
-
-        const itemIds = itemsData.map((i: { id: string }) => i.id)
-
-        // Get all submission items for these items (paginated + ordered to defeat Supabase's 1000-row cap)
-        const submissionItemsData = await paginatedSelect<{ loot_item_id: string; rank: number; slot: number; submission_id: string }>(
-          (start, end) =>
-            supabase
-              .from('loot_submission_items')
-              .select('loot_item_id, rank, slot, submission_id')
-              .in('loot_item_id', itemIds)
-              .is('removed_at', null)
-              .order('id', { ascending: true })
-              .range(start, end)
-        )
-
-        if (!submissionItemsData || submissionItemsData.length === 0) {
-          setAggregateItems([])
-          setAggregateLoading(false)
-          return
-        }
-
-        // Get approved submissions only
-        type SubmissionItemData = { loot_item_id: string; rank: number; slot: number; submission_id: string }
-        const submissionIds = [...new Set(submissionItemsData.map((si: SubmissionItemData) => si.submission_id))]
-        const { data: submissionsData } = await supabase
-          .from('loot_submissions')
-          .select('id, character_id, status')
-          .in('id', submissionIds)
-          .eq('status', 'approved')
-
-        if (!submissionsData || submissionsData.length === 0) {
-          setAggregateItems([])
-          setAggregateLoading(false)
-          return
-        }
-
-        type AggregateSubmission = { id: string; character_id: string | null; status: string }
-        const approvedSubmissionIds = new Set(submissionsData.map((s: AggregateSubmission) => s.id))
-
-        // Get character info
-        const characterIds = [...new Set(submissionsData.map((s: AggregateSubmission) => s.character_id).filter((id: string | null) => id !== null))]
-        const { data: charactersData } = await supabase
-          .from('characters')
-          .select('id, name, class:wow_classes(name, color_hex)')
-          .in('id', characterIds)
-
-        // Team filter: scope the Summary to the active team's members, keeping
-        // unassigned raiders, so it matches the Rankings view and Gargul
-        // export. See buildTeamVisibility and issue #165.
-        let isTeamVisible: (characterId: string) => boolean = () => true
-        if (activeTeamId) {
-          const { data: teamMembers } = await supabase
-            .from('raid_team_members')
-            .select('character_id, raid_team_id')
-            .eq('guild_id', guildId)
-          isTeamVisible = buildTeamVisibility(teamMembers || [], activeTeamId)
-        }
-
-        // Get loot history for awarded count (match by wowhead_id so cross-tier awards are counted)
-        // Paginated + ordered to defeat Supabase's 1000-row response cap.
-        const wowheadIdSet = new Set(itemsData.map((i: { wowhead_id: number }) => i.wowhead_id))
-        const lootHistoryData = await paginatedSelect<{ loot_item: { wowhead_id: number } | null }>(
-          (start, end) =>
-            supabase
-              .from('loot_history')
-              .select('loot_item:loot_items(wowhead_id)')
-              .eq('guild_id', guildId)
-              .order('id', { ascending: true })
-              .range(start, end)
-        )
-
-        // Count awards per wowhead_id
-        const awardedCounts: Record<number, number> = {}
-        for (const h of (lootHistoryData || []) as { loot_item: { wowhead_id: number } | null }[]) {
-          const wowheadId = h.loot_item?.wowhead_id
-          if (wowheadId == null || !wowheadIdSet.has(wowheadId)) continue
-          awardedCounts[wowheadId] = (awardedCounts[wowheadId] || 0) + 1
-        }
-
-        // Build aggregate data
-        const aggregateMap: Record<string, LootListAggregateItem> = {}
-
-        for (const item of itemsData) {
-          aggregateMap[item.id] = {
-            item_id: item.id,
-            item_name: item.name,
-            boss_name: item.boss_name,
-            item_slot: item.item_slot,
-            wowhead_id: item.wowhead_id,
-            classification: item.classification || 'common',
-            total_lists: 0,
-            already_awarded: awardedCounts[item.wowhead_id] || 0,
-            players: [],
-            average_rank: 0,
-          }
-        }
-
-        // Populate players for each item
-
-        // Create lookup maps for O(1) access (performance optimization)
-        const submissionsById = new Map<string, AggregateSubmission>(submissionsData.map((s: AggregateSubmission) => [s.id, s]))
-        const aggregateCharacterById = new Map<string, AggregateCharacterRow>(charactersData?.map((c: AggregateCharacterRow) => [c.id, c]) || [])
-
-        for (const si of submissionItemsData) {
-          if (!approvedSubmissionIds.has(si.submission_id)) continue
-
-          const submission = submissionsById.get(si.submission_id)
-          if (!submission) continue
-
-          const character = submission.character_id ? aggregateCharacterById.get(submission.character_id) : undefined
-          if (!character) continue
-          if (!isTeamVisible(character.id)) continue
-
-          const aggregate = aggregateMap[si.loot_item_id]
-          if (!aggregate) continue
-
-          const charClass = Array.isArray(character.class) ? character.class[0] : character.class
-
-          aggregate.players.push({
-            character_id: character.id,
-            character_name: character.name || 'Unknown',
-            class_name: charClass?.name || 'Unknown',
-            class_color: charClass?.color_hex || '#888888',
-            primary_rank: si.slot,
-            item_rank: si.rank,
-          })
-        }
-
-        // Calculate totals and averages per list (a raider can list an item
-        // more than once, GH #293): lists are distinct raiders, and the average
-        // uses each list's best rank.
-        for (const item of Object.values(aggregateMap)) {
-          const stats = aggregateListStats(item.players)
-          item.total_lists = stats.total_lists
-          item.average_rank = stats.average_rank
-        }
-
-        // Filter out items with no loot lists and convert to array
-        const aggregateArray = Object.values(aggregateMap).filter(item => item.total_lists > 0)
-        setAggregateItems(aggregateArray)
-
+        setAggregateItems(await loadMasterSheetSummary(supabase, { guildId, activeTierIds, activeTeamId }))
       } catch (err) {
         console.error('Error loading aggregate data:', err)
         showNotification('error', 'Couldn\'t load aggregate data. Try refreshing the page.')
