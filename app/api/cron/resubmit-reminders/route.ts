@@ -3,6 +3,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { paginatedSelect } from '@/utils/supabase/paginate'
 import { discordFetch } from '@/lib/discord'
 import { NEEDS_RESUBMISSION_OR_FILTER } from '@/domain/loot/resubmit'
+import { keepListsOfActiveMembers } from '@/lib/loot/active-member-lists'
 
 /**
  * GET /api/cron/resubmit-reminders
@@ -14,6 +15,10 @@ import { NEEDS_RESUBMISSION_OR_FILTER } from '@/domain/loot/resubmit'
  *
  * One DM per raider (aggregated across all their needs-resubmit lists), then we
  * stamp `resubmit_reminded_at` on each of those submissions.
+ *
+ * A raider who left (or was kicked from) a guild can't resubmit a list there
+ * (the submit route refuses it), so before any of this we drop candidates
+ * whose character is no longer an active member of the list's own guild.
  */
 
 // Re-remind at most once per this window while a list stays in the needs-resubmit state.
@@ -45,25 +50,52 @@ export async function GET(request: NextRequest) {
   const cutoffIso = new Date(Date.now() - REMINDER_COOLDOWN_HOURS * 3_600_000).toISOString()
 
   // 1) Candidate submissions: need resubmission AND not reminded within the cooldown.
-  //    Two .or() filters AND together in PostgREST.
-  const candidates = await paginatedSelect<CandidateSub>((start, end) =>
-    supabase
+  //    Two .or() filters AND together in PostgREST. Paginated by hand (rather
+  //    than through paginatedSelect, which drops query errors) because a
+  //    failed read here must stop the run before any DM goes out.
+  const candidates: CandidateSub[] = []
+  for (let start = 0; ; start += 1000) {
+    const end = start + 999
+    const { data, error } = await supabase
       .from('loot_submissions')
       .select('id, guild_id, character_id, resubmit_reminder_count')
       .or(NEEDS_RESUBMISSION_OR_FILTER)
       .or(`resubmit_reminded_at.is.null,resubmit_reminded_at.lt.${cutoffIso}`)
       .lt('resubmit_reminder_count', MAX_REMINDERS_PER_LIST)
       .order('id', { ascending: true })
-      .range(start, end),
-  )
+      .range(start, end)
+    if (error) {
+      console.error('[resubmit-reminders] candidate read failed:', error)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
+    if (!data || data.length === 0) break
+    candidates.push(...(data as CandidateSub[]))
+    if (data.length < 1000) break
+  }
 
   if (candidates.length === 0) {
     return NextResponse.json({ reminded: 0, submissions: 0 })
   }
 
+  // 1b) Keep only lists whose character is still an active member of the
+  //     list's guild (the submit route's check). A raider who left cannot
+  //     resubmit, so they are not reminded. A membership-read failure stops
+  //     the whole run rather than risk an unfiltered DM.
+  let kept: CandidateSub[]
+  try {
+    kept = await keepListsOfActiveMembers(supabase, candidates)
+  } catch (err) {
+    console.error('[resubmit-reminders] membership check failed:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+
+  if (kept.length === 0) {
+    return NextResponse.json({ reminded: 0, submissions: 0 })
+  }
+
   // 2) Resolve characters -> user_id (+ name), then user prefs and guild names.
-  const characterIds = [...new Set(candidates.map((c) => c.character_id))]
-  const guildIds = [...new Set(candidates.map((c) => c.guild_id))]
+  const characterIds = [...new Set(kept.map((c) => c.character_id))]
+  const guildIds = [...new Set(kept.map((c) => c.guild_id))]
 
   const characters = await paginatedSelect<{ id: string; user_id: string | null; name: string | null }>(
     (start, end) =>
@@ -95,7 +127,7 @@ export async function GET(request: NextRequest) {
     guildNames: Set<string>
   }
   const byUser = new Map<string, Bucket>()
-  for (const sub of candidates) {
+  for (const sub of kept) {
     const char = charById.get(sub.character_id)
     if (!char?.user_id) continue
     const pref = prefByUser.get(char.user_id)
@@ -113,7 +145,7 @@ export async function GET(request: NextRequest) {
   }
 
   // 4) Send one DM per raider, then stamp the reminded submissions.
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://lootlistplus.com'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.getlootlist.com'
   let remindedUsers = 0
   // Successfully-reminded submissions, carrying the count they had before this run.
   const stamped: Array<{ id: string; count: number }> = []
@@ -157,7 +189,10 @@ export async function GET(request: NextRequest) {
 
   // 5) Stamp the cooldown marker + bump the per-list count on everything we
   //    successfully reminded. Group by prior count so each row lands at count+1
-  //    in a single bulk update per distinct value (0/1/2).
+  //    in a single bulk update per distinct value (0/1/2). A failed stamp is
+  //    logged and excluded from the reported count rather than aborting the
+  //    run: the same lists simply stay candidates and get picked up again.
+  let stampedCount = 0
   if (stamped.length > 0) {
     const now = new Date().toISOString()
     const idsByCount = new Map<number, string[]>()
@@ -169,13 +204,18 @@ export async function GET(request: NextRequest) {
     for (const [prevCount, ids] of idsByCount) {
       for (let i = 0; i < ids.length; i += 500) {
         const chunk = ids.slice(i, i + 500)
-        await supabase
+        const { error } = await supabase
           .from('loot_submissions')
           .update({ resubmit_reminded_at: now, resubmit_reminder_count: prevCount + 1 })
           .in('id', chunk)
+        if (error) {
+          console.error('[resubmit-reminders] reminder stamp failed:', error)
+          continue
+        }
+        stampedCount += chunk.length
       }
     }
   }
 
-  return NextResponse.json({ reminded: remindedUsers, submissions: stamped.length })
+  return NextResponse.json({ reminded: remindedUsers, submissions: stampedCount })
 }
