@@ -12,8 +12,11 @@ type ServiceClient = ReturnType<typeof createServiceRoleClient>
 /**
  * Narrow `itemIds` to those whose raid tier is in a phase the caller has
  * earned: the tier must be `master_sheet_visible`, and one of the caller's
- * characters must already have an approved submission for that phase (or any
- * phase merged into the same group). See GH #202.
+ * characters with an active membership in this guild must already have an
+ * approved submission for that phase (or any phase merged into the same
+ * group). A character that has left the guild does not count, using the
+ * same check the award routes use (findInvalidCharacterIds). See GH #202
+ * and GH #326.
  */
 async function filterItemsToEarnedPhases(
   supabase: ServiceClient,
@@ -22,6 +25,12 @@ async function filterItemsToEarnedPhases(
   callerCharacterIds: string[],
 ): Promise<string[]> {
   if (callerCharacterIds.length === 0) return []
+
+  const inactiveCallerCharacterIds = await findInvalidCharacterIds(supabase, guildId, callerCharacterIds)
+  const activeCallerCharacterIds = callerCharacterIds.filter(
+    id => !inactiveCallerCharacterIds.includes(id),
+  )
+  if (activeCallerCharacterIds.length === 0) return []
 
   // Paginated: a merged phase can request more than 1000 items, and the
   // silent 1000-row cap would drop the tail from the allowed set — items
@@ -69,7 +78,7 @@ async function filterItemsToEarnedPhases(
       .select('phase, expansion_id')
       .eq('guild_id', guildId)
       .eq('status', 'approved')
-      .in('character_id', callerCharacterIds),
+      .in('character_id', activeCallerCharacterIds),
     // Every phase in these expansions, not just the requested tiers' phases:
     // resolvePhaseGroups() drops group members that aren't in the list it's
     // given, which would silently split a merged group and deny a raider whose
@@ -132,8 +141,10 @@ async function filterItemsToEarnedPhases(
  *
  * The requested items are then gated per phase (GH #202): a raider only gets
  * rankings for a phase whose tiers are `master_sheet_visible` AND for which
- * they already have an approved submission, so nobody can scout the field
- * before committing their own list. Officers (`manage_loot`) and holders of
+ * one of their characters with an active membership in this guild already
+ * has an approved submission, so nobody can scout the field before
+ * committing their own list, and an alt that left the guild no longer
+ * unlocks a phase (GH #326). Officers (`manage_loot`) and holders of
  * `view_master_sheet` bypass the gate. This is enforced here rather than
  * relying on the page's checks alone — the client gate is a UX affordance,
  * not a boundary.
