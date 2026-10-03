@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 Phase: 06 (Week-4 Review & Next Bet) — EXECUTING
 Plan: 6 of 9
 Status: Ready to execute
-Last activity: 2026-10-02 - Completed quick task 261002-h0v: in-game award keys and item ranks (server and companion), PRs #344 and #346 merged, companion-v1.1.0 drafted
+Last activity: 2026-10-02 - Completed quick task 261002-k0n: addon 1.1.0 merged in the addon repo (PR #1) and the in-repo addon copy removed (PR #358); not yet published
 
 Progress: [████████████████████] 23/23 plans ([███████░░░] 67%)
 
@@ -218,6 +218,7 @@ Recent decisions affecting current work:
 | 261001-t74 | Fix the intermittent CI failure seen on PR #337: CreateReserveRunModal and SetupGuide tests restored the real fetch before React cleanup, so a pending fetch effect could hit Node fetch with a relative URL. Tests now unmount first; new regression test (fails 3/3 with the old order, 32/32 clean with the fix, including under load). Test-only. PR #339 | 2026-10-02 | bfecc8fe |  | [261001-t74-fix-flaky-fetch-unstub-order-in-reserve-](./quick/261001-t74-fix-flaky-fetch-unstub-order-in-reserve-/) |
 | 261001-tv5 | Allow a second award of the same item to one raider on one raid night: loot_history gains award_copy and source_award_key (index swapped, migration shipped first as PR #341); keyed addon export awards dedupe by key and absorb one unkeyed row; the web award modal asks before a second copy (fixes the old silent-success toast); repeated Gargul lines number copies; reassign moves to the next free copy; companion accepts awarded_at. Copy user-approved. PGlite 27/27. Follow-ups: companion and addon releases. PRs #341, #342 | 2026-10-02 | 4b3f66e6 | Needs Review | [261001-tv5-allow-a-second-award-of-the-same-item-on](./quick/261001-tv5-allow-a-second-award-of-the-same-item-on/) |
 | 261002-h0v | In-game follow-ups, server and companion: the server keys addon awards by award id (old-key fallback, never double), addon exports drop removed rows, send each raider's ranks best last and hide copies already received; companion 1.1.0 forwards award time and id, keeps every rank with item keys the addon can read, sends pending data before downloading and clears only what it sent (also fixes a crash on syncs with nothing pending). Release notes user-approved. PRs #344 and #346; companion-v1.1.0 tagged as a draft release. Next: addon release (FU-B). | 2026-10-02 | 8d81b1dc | Needs Review | [261002-h0v-in-game-support-for-several-ranks-of-one](./quick/261002-h0v-in-game-support-for-several-ranks-of-one/) |
+| 261002-k0n | Addon 1.1.0 (FU-B): the addon repo gets the web-parity ScoreEngine (luajit parity tests, 60/60), per-item rank consumption since the last import, a per-award awardId, Role bonus and Raider bonus breakdown lines, version 1.1.0 and a CHANGELOG (addon repo PR #1). This repo drops the partial addon/ copy and replaces the admin page's CurseForge line (PR #358). Not yet published: CurseForge/Wago projects pending; companion 1.1.0 still a draft. | 2026-10-02 | 20d7049d | Needs Review | [261002-k0n-addon-1-1-0-item-ranks-and-award-ids](./quick/261002-k0n-addon-1-1-0-item-ranks-and-award-ids/) |
 
 ## Deferred Items
 
