@@ -47,9 +47,10 @@ export function checkBotAuth(request: Request): NextResponse | null {
  * if no guild is linked to that Discord server.
  *
  * The schema technically allows multiple LootList+ guilds per Discord server
- * (different raid teams / game versions). For slash commands we just pick
- * the first active one — most installs are 1:1 and this avoids surfacing a
- * disambiguation step in chat.
+ * (different raid teams / game versions). For slash commands we pick the
+ * oldest active guild linked to the server (created_at, then id to break
+ * ties), so the same server always resolves to the same guild. Most installs
+ * are 1:1 and this avoids surfacing a disambiguation step in chat.
  */
 export async function resolveGuildFromDiscord(
   supabase: SupabaseClient,
@@ -60,6 +61,8 @@ export async function resolveGuildFromDiscord(
     .select('id, name, active_expansion_id, is_active')
     .eq('discord_server_id', discordGuildId)
     .eq('is_active', true)
+    .order('created_at', { ascending: true })
+    .order('id', { ascending: true })
     .limit(1)
     .maybeSingle()
   if (!data) return null

@@ -7,6 +7,7 @@ import { getCached, invalidateCache, cacheKeys } from '@/utils/cache'
 import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 import { trackApiError, trackEvent, setUserMilestone } from '@/utils/analytics/server'
 import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
+import { checkUserManagesDiscordServer, discordServerAccessError } from '@/lib/discord-server-access'
 
 // POST - Create a new guild
 export async function POST(request: NextRequest) {
@@ -87,7 +88,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create guild
+    // A Discord server can be linked only by someone who owns or manages it.
+    // A blank or missing id creates the guild without a link.
+    let verifiedDiscordServerId: string | null = null
+    if (discord_server_id !== undefined && discord_server_id !== null && discord_server_id !== '') {
+      if (typeof discord_server_id !== 'string') {
+        const { status, body: errorBody } = discordServerAccessError('not_manager')
+        return NextResponse.json(errorBody, { status })
+      }
+      const trimmedServerId = discord_server_id.trim()
+      if (trimmedServerId) {
+        const access = await checkUserManagesDiscordServer(trimmedServerId)
+        if (!access.ok) {
+          const { status, body: errorBody } = discordServerAccessError(access.reason)
+          return NextResponse.json(errorBody, { status })
+        }
+        verifiedDiscordServerId = trimmedServerId
+      }
+    }
+
+    // Service role client for the link write, seeding and rollbacks. guilds
+    // has no DELETE policy, so removing a guild after a failed step must use
+    // the service role (a user-session delete would remove nothing).
+    const serviceSupabase = createServiceRoleClient()
+
+    // Create guild. The Discord server link is written by the server below,
+    // not by the user session.
     const { data: guild, error: guildError } = await supabase
       .from('guilds')
       .insert({
@@ -95,7 +121,6 @@ export async function POST(request: NextRequest) {
         realm: realm || null,
         faction,
         game: derivedGame,
-        discord_server_id: discord_server_id || null,
         created_by: user.id,
         is_active: true,
         require_discord_verification: false,
@@ -112,8 +137,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Link the verified Discord server with the service role
+    if (verifiedDiscordServerId) {
+      const { error: linkError } = await serviceSupabase
+        .from('guilds')
+        .update({ discord_server_id: verifiedDiscordServerId })
+        .eq('id', guild.id)
+
+      if (linkError) {
+        console.error('Error linking Discord server to new guild:', linkError)
+        await serviceSupabase.from('guilds').delete().eq('id', guild.id)
+        return NextResponse.json(
+          { error: 'Failed to create guild' },
+          { status: 500 }
+        )
+      }
+    }
+
     // Seed expansion and raid tiers using service role client (bypasses RLS)
-    const serviceSupabase = createServiceRoleClient()
     const { expansionId, error: seedError } = await seedExpansionForGuild(
       serviceSupabase,
       guild.id,
@@ -125,7 +166,7 @@ export async function POST(request: NextRequest) {
     if (seedError) {
       console.error('Error seeding expansion:', seedError)
       // Rollback: delete the guild since expansion seeding failed
-      await supabase.from('guilds').delete().eq('id', guild.id)
+      await serviceSupabase.from('guilds').delete().eq('id', guild.id)
       return NextResponse.json(
         { error: 'Couldn\'t set up the expansion. Try again.' },
         { status: 500 }
@@ -144,9 +185,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Auto-fetch Discord icon directly from Discord API
-    if (discord_server_id && process.env.DISCORD_BOT_TOKEN) {
+    if (verifiedDiscordServerId && process.env.DISCORD_BOT_TOKEN) {
       try {
-        const discordResponse = await fetch(`https://discord.com/api/v10/guilds/${encodeURIComponent(discord_server_id)}`, {
+        const discordResponse = await fetch(`https://discord.com/api/v10/guilds/${encodeURIComponent(verifiedDiscordServerId)}`, {
           headers: { 'Authorization': `Bot ${process.env.DISCORD_BOT_TOKEN}` }
         })
 
@@ -154,7 +195,7 @@ export async function POST(request: NextRequest) {
           const guildData = await discordResponse.json()
           if (guildData.icon) {
             const extension = guildData.icon.startsWith('a_') ? 'gif' : 'png'
-            const iconUrl = `https://cdn.discordapp.com/icons/${discord_server_id}/${guildData.icon}.${extension}?size=256`
+            const iconUrl = `https://cdn.discordapp.com/icons/${verifiedDiscordServerId}/${guildData.icon}.${extension}?size=256`
             await serviceSupabase
               .from('guilds')
               .update({ icon_url: iconUrl })
