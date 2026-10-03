@@ -51,7 +51,47 @@ function priorityEmbed(payload) {
     color: EMBED_COLOR_ORANGE,
     title: `Top priority — ${payload.item_name}`,
     description: `${itemLine}\n\n${lines.join('\n')}`,
+    footer: { text: 'Sorted by loot list rank. Loot Scores are on the Master Sheet.' },
   };
+}
+
+function rankingsHiddenEmbed(itemName) {
+  return {
+    color: EMBED_COLOR_ORANGE,
+    description: `Rankings for **${itemName}** are hidden right now. An officer can turn on **Ranks** for its raid tier in Guild Settings.`,
+  };
+}
+
+/**
+ * Builds the embed for a /priority answer (GH #325). Pure: takes the route's
+ * result and the raw item text the raider typed, returns one embed.
+ * - no_guild_linked: the existing "server isn't linked" embed.
+ * - item_not_found, no_items_in_expansion or no_active_expansion: the existing
+ *   "couldn't find an item matching" embed (retrying a no-raids expansion can't help).
+ * - rankings_hidden (403): the item's raid tier has Ranks off (COPY C-1).
+ * - any other non-ok answer: the existing generic "try again" embed.
+ * - ok: the existing priorityEmbed, with a footer naming the sort order (COPY C-2)
+ *   when at least one raider is listed; the empty state is unchanged.
+ */
+function priorityReply(res, itemQuery) {
+  if (res.status === 404 && res.body?.error === 'no_guild_linked') {
+    return notLinkedEmbed();
+  }
+  if (
+    res.status === 404 &&
+    (res.body?.error === 'item_not_found' ||
+      res.body?.error === 'no_items_in_expansion' ||
+      res.body?.error === 'no_active_expansion')
+  ) {
+    return errorEmbed(`Couldn't find an item matching **${itemQuery}**.`);
+  }
+  if (res.status === 403 && res.body?.error === 'rankings_hidden') {
+    return rankingsHiddenEmbed(res.body.item_name);
+  }
+  if (!res.ok) {
+    return errorEmbed("LootList+ couldn't run that lookup. Try again in a sec.");
+  }
+  return priorityEmbed(res.body);
 }
 
 async function handleScore(interaction) {
@@ -87,23 +127,7 @@ async function handlePriority(interaction) {
     return;
   }
   const res = await fetchPriority(interaction.guildId, itemQuery);
-  if (res.status === 404 && res.body?.error === 'no_guild_linked') {
-    await interaction.editReply({ embeds: [notLinkedEmbed()] });
-    return;
-  }
-  if (res.status === 404 && res.body?.error === 'item_not_found') {
-    await interaction.editReply({
-      embeds: [errorEmbed(`Couldn't find an item matching **${itemQuery}**.`)],
-    });
-    return;
-  }
-  if (!res.ok) {
-    await interaction.editReply({
-      embeds: [errorEmbed("LootList+ couldn't run that lookup. Try again in a sec.")],
-    });
-    return;
-  }
-  await interaction.editReply({ embeds: [priorityEmbed(res.body)] });
+  await interaction.editReply({ embeds: [priorityReply(res, itemQuery)] });
 }
 
 async function handleInteractionCreate(interaction) {
@@ -142,4 +166,4 @@ async function handleInteractionCreate(interaction) {
   }
 }
 
-module.exports = { handleInteractionCreate };
+module.exports = { handleInteractionCreate, priorityReply };

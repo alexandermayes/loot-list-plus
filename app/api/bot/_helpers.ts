@@ -51,12 +51,15 @@ export function checkBotAuth(request: Request): NextResponse | null {
  * oldest active guild linked to the server (created_at, then id to break
  * ties), so the same server always resolves to the same guild. Most installs
  * are 1:1 and this avoids surfacing a disambiguation step in chat.
+ *
+ * Throws if the query errors, so a database error reaches the caller's catch
+ * and answers 500 instead of being read as "no guild linked".
  */
 export async function resolveGuildFromDiscord(
   supabase: SupabaseClient,
   discordGuildId: string
 ): Promise<{ id: string; name: string; active_expansion_id: string | null } | null> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('guilds')
     .select('id, name, active_expansion_id, is_active')
     .eq('discord_server_id', discordGuildId)
@@ -65,6 +68,9 @@ export async function resolveGuildFromDiscord(
     .order('id', { ascending: true })
     .limit(1)
     .maybeSingle()
+  if (error) {
+    throw new Error(`Failed to look up the guild linked to this Discord server: ${error.message}`)
+  }
   if (!data) return null
   return { id: data.id, name: data.name, active_expansion_id: data.active_expansion_id }
 }
