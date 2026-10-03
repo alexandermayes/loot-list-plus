@@ -30,7 +30,12 @@
 -- route used the user's session for the call, so authenticated kept EXECUTE
 -- (class b in 20260930000200). The route now calls it with the service role.
 --
--- [Part 4: background added in a later step.]
+-- character_aliases maps a name seen in raid logs to a character of the
+-- guild. It is written by POST /api/character-aliases (the service role,
+-- after a manage_members check) and by officer sessions through PostgREST.
+-- Its INSERT and UPDATE policies check only is_guild_officer(guild_id), not
+-- which character a row points at. Both app callers pick characters from
+-- the guild's active roster.
 --
 -- Fix
 -- ---
@@ -82,7 +87,17 @@
 -- and granted to service_role only. The function reads no auth.uid(), so
 -- its results do not change.
 --
--- [Part 4: character aliases stay inside their guild. Added in a later step.]
+-- 4. Character aliases stay inside their guild. One BEFORE INSERT OR UPDATE
+-- OF guild_id, character_id trigger on character_aliases,
+-- enforce_character_alias_guild_refs, accepts a row only when its
+-- character_id has an active character_guild_memberships row in its
+-- guild_id (is_active = true, the rule the loot_history trigger of
+-- 20260929180000 uses). It applies to every role, the service role
+-- included, and to the insert phase of an upsert. On UPDATE it checks only
+-- a write that changes guild_id or character_id, so existing rows stay
+-- editable (for example an alias_name change). A NULL guild_id or
+-- character_id is left to the NOT NULL constraints. POST
+-- /api/character-aliases makes the same check first and answers with a 400.
 --
 -- Why triggers
 -- ------------
@@ -91,10 +106,15 @@
 -- the server's write from a user session's write to the same column. The
 -- trigger reads the role setting for that.
 --
+-- The policies decide who may write a row, not what a row may point at, and
+-- the server routes write with the service role, which bypasses RLS. A
+-- trigger applies to every writer, so the alias rule holds for the routes
+-- and for PostgREST alike.
+--
 -- Security: each trigger function is SECURITY DEFINER with a pinned
 -- search_path, and EXECUTE is revoked from PUBLIC, anon and authenticated
 -- (the 20260722000001 pattern). Triggers still fire for those roles, but the
--- functions cannot be called directly.
+-- functions cannot be called directly. Neither function writes anything.
 --
 -- Error contract
 -- --------------
@@ -103,12 +123,23 @@
 -- 'new row violates row-level security policy for table "guilds"', and no
 -- DETAIL. The message is passed with RAISE USING MESSAGE, never as a format
 -- string. The body reads only NEW, OLD, TG_OP, the role setting and the
--- trigger depth; it never reads table data and writes nothing.
+-- trigger depth; it never reads table data.
+--
+-- enforce_character_alias_guild_refs: a refused write raises SQLSTATE 23514
+-- (check_violation) with the message
+-- 'character_aliases.character_id is not an active member of this guild'
+-- and DETAIL 'character_id <id>, guild_id <id>' (the ids the write sent).
+-- As in 20260929180000, an anon or authenticated caller who is not an
+-- officer of the row's guild, and whom RLS would refuse anyway, gets the
+-- RLS error instead (42501, 'new row violates row-level security policy
+-- for table "character_aliases"', no DETAIL), so the check reveals nothing
+-- to them.
 --
 -- Not changed
 -- -----------
 -- Existing Discord server links are kept as they are; the rule governs new
--- links only. Several guilds may still share one Discord server (for example
+-- links only. Existing character_aliases rows are not validated or changed;
+-- the rule applies to new rows and to changes of guild_id or character_id. Several guilds may still share one Discord server (for example
 -- a Classic guild and a Forever guild in one community server); there is no
 -- unique constraint on discord_server_id. The file is safe to re-run: every
 -- statement is CREATE OR REPLACE, COMMENT, REVOKE, GRANT, DROP POLICY IF
@@ -158,6 +189,8 @@
 --     );
 --   DROP FUNCTION IF EXISTS "public"."get_current_user_guildmate_ids"();
 --   GRANT EXECUTE ON FUNCTION "public"."redeem_invite_code"("code_input" "text") TO "authenticated";
+--   DROP TRIGGER IF EXISTS "enforce_character_alias_guild_refs" ON "public"."character_aliases";
+--   DROP FUNCTION IF EXISTS "public"."enforce_character_alias_guild_refs"();
 
 -- ---------------------------------------------------------------------------
 -- 1. guilds: the Discord server link is written only by the server
@@ -242,3 +275,58 @@ DROP FUNCTION IF EXISTS "public"."get_user_guild_ids"("p_user_id" "uuid");
 REVOKE ALL ON FUNCTION "public"."redeem_invite_code"("code_input" "text") FROM PUBLIC, "anon", "authenticated";
 
 GRANT EXECUTE ON FUNCTION "public"."redeem_invite_code"("code_input" "text") TO "service_role";
+
+-- ---------------------------------------------------------------------------
+-- 4. character_aliases: aliases point only at active members of their guild
+-- ---------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION "public"."enforce_character_alias_guild_refs"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  -- A NULL reference is left to the NOT NULL constraints.
+  IF NEW.guild_id IS NULL OR NEW.character_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  -- On UPDATE only a changed guild_id or character_id is checked, so
+  -- existing rows stay editable.
+  IF TG_OP = 'UPDATE'
+     AND NEW.guild_id IS NOT DISTINCT FROM OLD.guild_id
+     AND NEW.character_id IS NOT DISTINCT FROM OLD.character_id THEN
+    RETURN NEW;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.character_guild_memberships cgm
+    WHERE cgm.character_id = NEW.character_id
+      AND cgm.guild_id = NEW.guild_id
+      AND cgm.is_active = true
+  ) THEN
+    RETURN NEW;
+  END IF;
+
+  -- A BEFORE trigger runs before the RLS WITH CHECK. A user session that RLS
+  -- refuses anyway gets the error RLS gives, so the check reveals nothing.
+  IF coalesce(current_setting('role', true), '') IN ('anon', 'authenticated')
+     AND NOT public.is_guild_officer(NEW.guild_id) THEN
+    RAISE EXCEPTION USING
+      MESSAGE = 'new row violates row-level security policy for table "character_aliases"',
+      ERRCODE = 'insufficient_privilege';
+  END IF;
+
+  RAISE EXCEPTION USING
+    MESSAGE = 'character_aliases.character_id is not an active member of this guild',
+    DETAIL = format('character_id %s, guild_id %s', NEW.character_id, NEW.guild_id),
+    ERRCODE = 'check_violation';
+END;
+$$;
+
+COMMENT ON FUNCTION "public"."enforce_character_alias_guild_refs"() IS 'Character aliases point only at characters with an active membership in the alias''s guild, for every role including service_role. On UPDATE only a change of guild_id or character_id is checked, so existing rows stay editable. When the check fails for an anon or authenticated caller who is not an officer of the guild, the RLS error is raised instead. SECURITY DEFINER with EXECUTE revoked from PUBLIC, anon and authenticated.';
+
+REVOKE ALL ON FUNCTION "public"."enforce_character_alias_guild_refs"() FROM PUBLIC, "anon", "authenticated";
+
+CREATE OR REPLACE TRIGGER "enforce_character_alias_guild_refs" BEFORE INSERT OR UPDATE OF "guild_id", "character_id" ON "public"."character_aliases" FOR EACH ROW EXECUTE FUNCTION "public"."enforce_character_alias_guild_refs"();
+
+COMMENT ON TRIGGER "enforce_character_alias_guild_refs" ON "public"."character_aliases" IS 'Keeps character aliases pointing at active members of the alias''s own guild. See public.enforce_character_alias_guild_refs().';
