@@ -3,11 +3,18 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { trackEvent } from '@/utils/analytics/server'
 import { requireReserveAccess } from '@/utils/feature-gate'
+import { hasActiveGuildMembership } from '@/utils/reserve-access'
+
+// Explicit column list: every field the Reserve page's ReserveRun type
+// reads. Never '*' — raid_leader_token and created_by are never listed.
+const RUN_LIST_COLUMNS =
+  'id, guild_id, raid_tier_id, title, status, raid_at, lock_at, locked_at, max_reserves, visibility, share_token, created_at'
 
 /**
  * GET /api/reserve-runs?guild_id=X
  *
- * List reserve runs for a guild. Any guild member can view.
+ * List reserve runs for a guild. Active members of the guild only; never
+ * returns the raid leader token.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -23,10 +30,15 @@ export async function GET(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient()
 
+    const isMember = await hasActiveGuildMembership(serviceSupabase, user.id, guildId)
+    if (!isMember) {
+      return NextResponse.json({ error: 'Not a guild member' }, { status: 403 })
+    }
+
     const { data: runs, error } = await serviceSupabase
       .from('reserve_runs')
       .select(`
-        *,
+        ${RUN_LIST_COLUMNS},
         reserve_submissions(count),
         raid_tiers(name)
       `)
@@ -38,18 +50,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch runs' }, { status: 500 })
     }
 
-    // Flatten submission count and raid tier name
+    // Flatten submission count and raid tier name. The embed's cardinality
+    // narrows differently once the select string carries a variable
+    // (RUN_LIST_COLUMNS) instead of a plain literal, so this accepts
+    // raid_tiers as either shape rather than assuming the to-one object.
     const runsWithCounts = (runs || []).map((run: {
       reserve_submissions?: { count: number }[] | null
-      raid_tiers?: { name: string } | null
+      raid_tiers?: { name: string } | { name: string }[] | null
       [key: string]: unknown
-    }) => ({
-      ...run,
-      submission_count: run.reserve_submissions?.[0]?.count ?? 0,
-      raid_tier_name: run.raid_tiers?.name ?? null,
-      reserve_submissions: undefined,
-      raid_tiers: undefined,
-    }))
+    }) => {
+      const raidTier = Array.isArray(run.raid_tiers) ? run.raid_tiers[0] : run.raid_tiers
+      return {
+        ...run,
+        submission_count: run.reserve_submissions?.[0]?.count ?? 0,
+        raid_tier_name: raidTier?.name ?? null,
+        reserve_submissions: undefined,
+        raid_tiers: undefined,
+      }
+    })
 
     return NextResponse.json({ success: true, runs: runsWithCounts })
   } catch (err) {
@@ -61,7 +79,8 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/reserve-runs
  *
- * Create a new reserve run. Officer-only.
+ * Create a new reserve run. Any active member of the guild (Premium or
+ * grandfathered).
  *
  * Body: {
  *   guild_id, expansion_id, raid_tier_id, title, raid_at, lock_at,
@@ -113,30 +132,18 @@ export async function POST(request: NextRequest) {
 
     const serviceSupabase = createServiceRoleClient()
 
-    // Premium feature (guilds with pre-cutoff runs are grandfathered)
-    const access = await requireReserveAccess(serviceSupabase, user.id, guild_id)
-    if (!access.allowed) return access.error
-
-    // If guild_id provided, verify the user is a member of the guild
+    // Membership before Premium (D-05): a non-member gets the same answer
+    // whatever the guild's Premium status.
     if (guild_id) {
-      const { data: userChars } = await serviceSupabase
-        .from('characters')
-        .select('id')
-        .eq('user_id', user.id)
-      if (!userChars || userChars.length === 0) {
-        return NextResponse.json({ error: 'Not a guild member' }, { status: 403 })
-      }
-      const { data: membership } = await serviceSupabase
-        .from('character_guild_memberships')
-        .select('id')
-        .eq('guild_id', guild_id)
-        .in('character_id', userChars.map((c: { id: string }) => c.id))
-        .eq('is_active', true)
-        .limit(1)
-      if (!membership || membership.length === 0) {
+      const isMember = await hasActiveGuildMembership(serviceSupabase, user.id, guild_id)
+      if (!isMember) {
         return NextResponse.json({ error: 'Not a guild member' }, { status: 403 })
       }
     }
+
+    // Premium feature (guilds with pre-cutoff runs are grandfathered)
+    const access = await requireReserveAccess(serviceSupabase, user.id, guild_id)
+    if (!access.allowed) return access.error
 
     // Build rule snapshot
     const rule_snapshot = {
