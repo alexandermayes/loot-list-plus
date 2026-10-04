@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { extractLeaderToken } from '@/utils/reserve-access'
+import { decideReserveRunManager } from '@/utils/reserve-access'
 
 /**
  * GET /api/reserve-runs/[id]/audit
  *
- * Returns the audit log for a reserve run. Guild members can view.
+ * Returns the audit log for a reserve run. Managers only: the leader link,
+ * the run's creator while an active member of its guild, and officers with
+ * Manage reserves for a guild run. Run history is a management record, not
+ * something every viewer needs.
  */
 export async function GET(
   request: NextRequest,
@@ -26,29 +29,16 @@ export async function GET(
       return NextResponse.json({ error: 'Run not found' }, { status: 404 })
     }
 
-    // Any of: leader token, creator, or guild member grants read access
-    const token = extractLeaderToken(request)
-    let allowed = token === run.raid_leader_token
-    if (!allowed && user) {
-      if (run.created_by === user.id) {
-        allowed = true
-      } else if (run.guild_id) {
-        const { data: membership } = await serviceSupabase
-          .from('character_guild_memberships')
-          .select('id, characters!inner(user_id)')
-          .eq('guild_id', run.guild_id)
-          .eq('is_active', true)
-          .eq('characters.user_id', user.id)
-          .limit(1)
-        if (membership && membership.length > 0) allowed = true
-      } else {
-        // Public run, no guild — any authed user with the run id can view audit
-        allowed = true
-      }
-    }
+    const decision = await decideReserveRunManager({
+      serviceSupabase,
+      run,
+      request,
+      userId: user?.id ?? null,
+    })
 
-    if (!allowed) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!decision.allowed) {
+      const status = decision.reason === 'Unauthorized' ? 401 : 403
+      return NextResponse.json({ error: decision.reason ?? 'Forbidden' }, { status })
     }
 
     const { data: entries, error } = await serviceSupabase
