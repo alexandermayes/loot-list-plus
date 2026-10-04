@@ -7,6 +7,14 @@ import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { revalidateCharacterAttendance } from '@/lib/cache/dashboard-attendance'
 import { recomputeBlpForEvents } from '@/utils/blp/recompute'
 import { routeRecordsToTeamEvents } from '@/utils/raid-events/team-routing'
+import { findInvalidRaidEventIds } from '@/lib/loot/guild-award-refs'
+import {
+  ATTENDANCE_OUTSIDE_GUILD_ERROR,
+  ATTENDANCE_CHARACTER_NOT_IN_GUILD_ERROR,
+  ATTENDANCE_REQUEST_INVALID_ERROR,
+  parseAttendanceRecords,
+  findCharacterIdsWithoutGuildMembership,
+} from '@/lib/attendance/guild-attendance-refs'
 
 interface AttendanceRecord {
   raid_event_id: string
@@ -33,20 +41,25 @@ interface AttendanceFilters {
  * POST /api/attendance/bulk
  *
  * Bulk upsert/insert attendance records. Uses service role to bypass RLS
- * after verifying officer permissions.
+ * after verifying officer permissions, so before anything is written this
+ * handler checks that every record's raid_event_id is a raid event of the
+ * verified guild and every character_id has a membership row (active or
+ * not) in that guild (261003-she D-02) — the service role bypasses RLS
+ * entirely, so these are the only checks standing between a request and a
+ * write into another guild's attendance.
  *
  * Body: {
  *   guild_id: string,
  *   action: 'upsert' | 'insert',
- *   records: AttendanceRecord[],
- *   onConflict?: string  // e.g. 'raid_event_id,character_id'
+ *   records: AttendanceRecord[],   // only the ten attendance fields
+ *   onConflict?: 'raid_event_id,character_id'  // the only accepted value
  * }
  */
 export const POST = withPermission<{
   guild_id?: string
-  action?: string
-  records?: AttendanceRecord[]
-  onConflict?: string
+  action?: unknown
+  records?: unknown
+  onConflict?: unknown
 }>(
   'manage_attendance',
   ({ body }) => body.guild_id,
@@ -57,8 +70,49 @@ export const POST = withPermission<{
       return NextResponse.json({ error: 'guild_id and records array are required' }, { status: 400 })
     }
 
+    if (
+      (action !== 'upsert' && action !== 'insert') ||
+      (onConflict !== undefined && onConflict !== 'raid_event_id,character_id')
+    ) {
+      return NextResponse.json({ error: ATTENDANCE_REQUEST_INVALID_ERROR }, { status: 400 })
+    }
+
+    const parsedRecords = parseAttendanceRecords(records)
+    if (!parsedRecords) {
+      return NextResponse.json({ error: ATTENDANCE_REQUEST_INVALID_ERROR }, { status: 400 })
+    }
+
+    // Every id below is checked against the guild before routing, which
+    // reads raid_events by id with NO guild filter and can create this
+    // guild's team events from the dates it finds — after these checks
+    // every id it reads is this guild's, and every id it returns comes from
+    // findOrCreateTeamEvent, which is guild-scoped.
+    const raidEventIdsToCheck = [...new Set(parsedRecords.map(r => r.raid_event_id))]
+    const invalidRaidEventIds = await findInvalidRaidEventIds(serviceSupabase, guild_id, raidEventIdsToCheck)
+    if (invalidRaidEventIds.length > 0) {
+      return NextResponse.json(
+        { error: ATTENDANCE_OUTSIDE_GUILD_ERROR, invalid_raid_event_ids: invalidRaidEventIds },
+        { status: 400 },
+      )
+    }
+
+    // Route-level copy of the attendance trigger rule 261003-m45 adds in
+    // the database, checked up front so the officer gets a clear 400
+    // rather than a trigger error. Any membership (active or not) passes,
+    // so a raider's past nights stay editable after they leave the guild.
+    const characterIdsToCheck = [...new Set(
+      parsedRecords.map(r => r.character_id).filter((id): id is string => !!id),
+    )]
+    const invalidCharacterIds = await findCharacterIdsWithoutGuildMembership(serviceSupabase, guild_id, characterIdsToCheck)
+    if (invalidCharacterIds.length > 0) {
+      return NextResponse.json(
+        { error: ATTENDANCE_CHARACTER_NOT_IN_GUILD_ERROR, invalid_character_ids: invalidCharacterIds },
+        { status: 400 },
+      )
+    }
+
     // Stamp modified_by and computed status on all records (dual-write)
-    const stampedRecords = records.map((r: AttendanceRecord) => ({
+    const stampedRecords = parsedRecords.map((r) => ({
       ...r,
       modified_by: user.id,
       status: resolveStatus(r),
@@ -72,7 +126,7 @@ export const POST = withPermission<{
     if (action === 'upsert') {
       const { data, error } = await serviceSupabase
         .from('attendance_records')
-        .upsert(stampedRecords, { onConflict: onConflict || 'raid_event_id,character_id' })
+        .upsert(stampedRecords, { onConflict: 'raid_event_id,character_id' })
         .select()
 
       if (error) {
@@ -101,7 +155,7 @@ export const POST = withPermission<{
       // Invalidate dashboard attendance for each affected character so the
       // overview hero card reflects the new attendance immediately.
       const affectedCharIds = new Set<string>()
-      for (const r of records as AttendanceRecord[]) {
+      for (const r of stampedRecords) {
         if (r.character_id) affectedCharIds.add(r.character_id)
       }
       for (const id of affectedCharIds) revalidateCharacterAttendance(id)
@@ -146,7 +200,7 @@ export const POST = withPermission<{
 
       // Invalidate dashboard attendance for each affected character
       const affectedCharIds = new Set<string>()
-      for (const r of records as AttendanceRecord[]) {
+      for (const r of stampedRecords) {
         if (r.character_id) affectedCharIds.add(r.character_id)
       }
       for (const id of affectedCharIds) revalidateCharacterAttendance(id)
