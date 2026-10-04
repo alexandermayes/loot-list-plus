@@ -47,6 +47,47 @@ export async function POST(
       return NextResponse.json({ error: 'Can only award items on locked or completed runs' }, { status: 400 })
     }
 
+    // Matches the database rule added in quick task 261003-t28: a
+    // submission_id must belong to this run, and loot_item_id must be in
+    // the run's raid tier. Checking here lets a mismatch answer 400 with a
+    // clear message instead of the trigger's 500. Fail closed on a lookup
+    // error: nothing is written.
+    if (submission_id) {
+      const { data: submissionRow, error: submissionError } = await serviceSupabase
+        .from('reserve_submissions')
+        .select('id')
+        .eq('id', submission_id)
+        .eq('reserve_run_id', id)
+        .maybeSingle()
+      if (submissionError) {
+        console.error('Error checking award submission:', submissionError)
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+      }
+      if (!submissionRow) {
+        return NextResponse.json(
+          { error: "This award doesn't match this reserve run. Refresh the page, then try again." },
+          { status: 400 }
+        )
+      }
+    }
+
+    const { data: itemRow, error: itemError } = await serviceSupabase
+      .from('loot_items')
+      .select('id')
+      .eq('id', loot_item_id)
+      .eq('raid_tier_id', run.raid_tier_id)
+      .maybeSingle()
+    if (itemError) {
+      console.error('Error checking award item:', itemError)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
+    if (!itemRow) {
+      return NextResponse.json(
+        { error: "This award doesn't match this reserve run. Refresh the page, then try again." },
+        { status: 400 }
+      )
+    }
+
     // awarded_by FK must be satisfied even when the caller is using a
     // leader token. Fall back to the run creator in that case.
     const awardedBy = user?.id ?? run.created_by

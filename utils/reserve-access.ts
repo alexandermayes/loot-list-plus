@@ -29,6 +29,7 @@ export interface ReserveRunAccess {
     status: string
     created_by: string
     raid_leader_token: string
+    raid_tier_id: string
   } | null
   reason?: string
 }
@@ -49,7 +50,7 @@ export async function verifyReserveRunAccess({
 }: VerifyParams): Promise<ReserveRunAccess> {
   const { data: run, error } = await serviceSupabase
     .from('reserve_runs')
-    .select('id, guild_id, status, created_by, raid_leader_token')
+    .select('id, guild_id, status, created_by, raid_leader_token, raid_tier_id')
     .eq('id', runId)
     .single()
 
