@@ -38,6 +38,13 @@ import { notifyTrialEnding } from '@/lib/billing/trial-ending'
  * purchaser on Discord before a card-less trial pauses Premium. Same
  * caveat as above: this line is a description of a Dashboard setting on
  * we_1U8UUlFV7dhwtnIjYXou6I5i that must actually exist.
+ *
+ * Events can arrive after their guild was deleted: deleting a Premium
+ * guild now cancels its Stripe subscription first
+ * (lib/billing/cancel-guild-subscription.ts), so the customer.subscription.deleted
+ * event that follows routinely finds no guild row. Such events are
+ * acknowledged with 200 and nothing is written, so Stripe does not retry;
+ * this route never changes a subscription in response.
  */
 export async function POST(request: NextRequest) {
   const stripe = getStripe()
@@ -160,7 +167,30 @@ export async function POST(request: NextRequest) {
     }
 
     const serviceSupabase = createServiceRoleClient()
-    const { tier, error } = await syncSubscriptionToGuild(serviceSupabase, guildId, subscription)
+    const { tier, error, guildMissing } = await syncSubscriptionToGuild(serviceSupabase, guildId, subscription)
+
+    if (guildMissing) {
+      const logContext = { eventType: event.type, subscriptionId: subscription.id, guildId, status: subscription.status }
+      if (tier === 'pro') {
+        // A live subscription with nowhere to apply it to - worth a human
+        // noticing (see OD-5: a guild deleted before this fix may still be
+        // billing). Everything else here (a canceled/ended subscription
+        // whose guild delete already ran this same flow) is routine.
+        console.error('Stripe webhook: event for a deleted guild with a live subscription', logContext)
+      } else {
+        console.log('Stripe webhook: event for a deleted guild, acknowledged with no write', logContext)
+      }
+
+      if (tier !== 'pro') {
+        try {
+          await syncPremiumDiscordRole(serviceSupabase, guildId, subscription.metadata?.user_id ?? null, false)
+        } catch (discordError) {
+          console.error(`Stripe webhook ${event.type}: Discord role sync failed for guild ${guildId}, reconciliation cron will catch it`, discordError)
+        }
+      }
+
+      return NextResponse.json({ received: true })
+    }
 
     // Community Discord perk: grant/revoke the Premium role for the purchaser.
     // Awaited so the sync completes before we respond, but wrapped in its own

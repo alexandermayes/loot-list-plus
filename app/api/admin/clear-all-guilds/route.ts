@@ -60,6 +60,40 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // OD-3 A: refuse the whole bulk delete while any guild it would delete
+    // still has a live Premium subscription. The normal delete path
+    // (DELETE /api/guilds, POST /api/guilds/delete) cancels a guild's
+    // subscription before deleting it; this admin tool deletes guild rows
+    // directly with the admin client and makes no Stripe call, so it must
+    // not be the path that silently leaves a subscription billing for a
+    // guild that no longer exists.
+    let liveSubsQuery = supabase
+      .from('guild_subscriptions')
+      .select('guild_id')
+      .not('stripe_subscription_id', 'is', null)
+      .not('status', 'in', '(canceled,incomplete_expired)')
+
+    if (keepGuildId) {
+      liveSubsQuery = liveSubsQuery.neq('guild_id', keepGuildId)
+    }
+
+    const { data: liveSubs, error: liveSubsError } = await liveSubsQuery
+
+    if (liveSubsError) {
+      console.error('Error checking live Premium subscriptions:', liveSubsError)
+      return NextResponse.json({ error: 'Couldn\'t delete guilds. Try again.' }, { status: 500 })
+    }
+
+    if (liveSubs && liveSubs.length > 0) {
+      return NextResponse.json(
+        {
+          error: 'Some of these guilds still have a live Premium subscription. Delete them one at a time from Guild Settings, which cancels the subscription, then try again.',
+          guild_ids: liveSubs.map((row) => row.guild_id),
+        },
+        { status: 409 }
+      )
+    }
+
     // Delete character guild memberships
     let charMembersQuery = supabase
       .from('character_guild_memberships')

@@ -8,6 +8,8 @@ import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 import { trackApiError, trackEvent, setUserMilestone } from '@/utils/analytics/server'
 import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { checkUserManagesDiscordServer, discordServerAccessError } from '@/lib/discord-server-access'
+import { getStripe } from '@/lib/billing/stripe'
+import { endGuildBillingBeforeDelete, GUILD_DELETE_BILLING_ERRORS } from '@/lib/billing/cancel-guild-subscription'
 
 // POST - Create a new guild
 export async function POST(request: NextRequest) {
@@ -339,7 +341,7 @@ export async function POST(request: NextRequest) {
 
 // GET - List user's guilds
 // Optimized: Fast auth (getSession), single query using inner join, Redis caching (60s TTL)
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Fast auth check using getSession (no network call)
     const { user, error: authError } = await getAuthenticatedUser()
@@ -447,6 +449,37 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
+    // Permission is checked here, before any Stripe call, because a
+    // subscription cancellation cannot be undone: delete_guild enforces the
+    // same is_guild_master rule on its own, but only after billing would
+    // already have run.
+    const { data: isMaster, error: masterError } = await supabase.rpc('is_guild_master', {
+      target_guild_id: guild_id
+    })
+
+    if (masterError) {
+      console.error('Error checking is_guild_master:', masterError)
+      return NextResponse.json(
+        { error: 'Couldn\'t delete guild. Try again.' },
+        { status: 500 }
+      )
+    }
+
+    if (isMaster !== true) {
+      return NextResponse.json(
+        { error: 'Only the guild master can delete this guild.' },
+        { status: 403 }
+      )
+    }
+
+    // Billing ends first: cancel every live Stripe subscription of this
+    // guild before delete_guild runs, so a deleted guild never leaves a
+    // live, billing subscription behind.
+    const billing = await endGuildBillingBeforeDelete(createServiceRoleClient(), getStripe(), guild_id)
+    if (!billing.ok) {
+      return NextResponse.json({ error: billing.error }, { status: billing.status })
+    }
+
     // Delete guild using RPC (bypasses RLS and verifies creator)
     const { error: deleteError } = await supabase.rpc('delete_guild', {
       p_guild_id: guild_id
@@ -455,7 +488,11 @@ export async function DELETE(request: NextRequest) {
     if (deleteError) {
       console.error('Error deleting guild:', deleteError)
       return NextResponse.json(
-        { error: 'Couldn\'t delete guild. Try again.' },
+        {
+          error: billing.canceled.length > 0
+            ? GUILD_DELETE_BILLING_ERRORS.canceledButNotDeleted
+            : GUILD_DELETE_BILLING_ERRORS.deleteFailed
+        },
         { status: 500 }
       )
     }

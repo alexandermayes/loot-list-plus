@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
+import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { trackApiError } from '@/utils/analytics/server'
+import { getStripe } from '@/lib/billing/stripe'
+import { endGuildBillingBeforeDelete, GUILD_DELETE_BILLING_ERRORS } from '@/lib/billing/cancel-guild-subscription'
 
 // POST - Delete a guild (only creator can delete)
 export async function POST(request: NextRequest) {
@@ -45,6 +48,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Billing ends first: cancel every live Stripe subscription of this
+    // guild before delete_guild runs, the same way DELETE /api/guilds does.
+    const billing = await endGuildBillingBeforeDelete(createServiceRoleClient(), getStripe(), guild_id)
+    if (!billing.ok) {
+      return NextResponse.json({ error: billing.error }, { status: billing.status })
+    }
+
     // Delete guild using RPC (bypasses RLS and verifies creator)
     const { error: deleteError } = await supabase.rpc('delete_guild', {
       p_guild_id: guild_id
@@ -53,7 +63,11 @@ export async function POST(request: NextRequest) {
     if (deleteError) {
       console.error('Error calling delete_guild function:', deleteError)
       return NextResponse.json(
-        { error: 'Couldn\'t delete guild. Try again.' },
+        {
+          error: billing.canceled.length > 0
+            ? GUILD_DELETE_BILLING_ERRORS.canceledButNotDeleted
+            : GUILD_DELETE_BILLING_ERRORS.deleteFailed
+        },
         { status: 500 }
       )
     }
