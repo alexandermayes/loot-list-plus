@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { parseWowSimsExport, type ParsedGearItem } from '@/lib/wowsims-parser'
+import { verifyOfficerPermissions } from '@/utils/server-roles'
 
 /**
  * GET /api/character-gear
@@ -163,6 +164,9 @@ export async function GET(request: NextRequest) {
  * Import gear from WowSims JSON export.
  * Replaces all existing equipped items for the character.
  *
+ * Access: the character's owner, or an officer (by role position, or the
+ * guild creator) in a guild where the character has an active membership.
+ *
  * Body:
  * - character_id: The character ID
  * - wowsims_json: The raw JSON string from WowSims export
@@ -199,7 +203,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (character.user_id !== user.id) {
-      // Check if user is officer in character's guild
+      // The character needs an active membership in at least one guild (the
+      // database rule for character_equipped_items requires this for officer
+      // writes too).
       const { data: characterGuilds } = await supabase
         .from('character_guild_memberships')
         .select('guild_id')
@@ -210,31 +216,21 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Not authorized to modify this character' }, { status: 403 })
       }
 
-      const guildIds = characterGuilds.map(g => g.guild_id)
+      const guildIds = [...new Set(characterGuilds.map(g => g.guild_id))]
 
-      // Get user's characters
-      const { data: userCharacters } = await supabase
-        .from('characters')
-        .select('id')
-        .eq('user_id', user.id)
-
-      if (!userCharacters || userCharacters.length === 0) {
-        return NextResponse.json({ error: 'Not authorized to modify this character' }, { status: 403 })
+      // Officer check mirrors the database's is_guild_officer rule: an officer
+      // by role position, or the guild creator, in a guild where the character
+      // is an active member.
+      let isAuthorized = false
+      for (const guildId of guildIds) {
+        const { hasPermission } = await verifyOfficerPermissions(supabase, user.id, guildId)
+        if (hasPermission) {
+          isAuthorized = true
+          break
+        }
       }
 
-      const userCharacterIds = userCharacters.map(c => c.id)
-
-      // Check if user has officer role in any of the character's guilds
-      const { data: officerMembership } = await supabase
-        .from('character_guild_memberships')
-        .select('role')
-        .in('character_id', userCharacterIds)
-        .in('guild_id', guildIds)
-        .eq('is_active', true)
-        .in('role', ['Officer', 'Guild Master'])
-        .limit(1)
-
-      if (!officerMembership || officerMembership.length === 0) {
+      if (!isAuthorized) {
         return NextResponse.json({ error: 'Not authorized to modify this character' }, { status: 403 })
       }
     }

@@ -3,7 +3,7 @@
 // Response/Request globals that next/server relies on.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
-import { GET } from '../route'
+import { GET, POST } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 
@@ -36,6 +36,14 @@ const VIEWER_AD = u(4)
 const OUTSIDER = u(5)
 const VIEWER_INACTIVE = u(6)
 const NO_CHARS = u(7)
+const RAID_LEADER = u(8)
+const OFFICER = u(9)
+const CREATOR = u(10)
+const MEMBER = u(11)
+const VETERAN = u(12)
+const NAMED_OFFICER = u(13)
+const INACTIVE_OFFICER = u(14)
+const OFFICER_C = u(15)
 
 // Characters
 const CH_T = c(1) // owned by OWNER; active in A, D, F; inactive in C
@@ -47,6 +55,14 @@ const CH_VA2 = c(6) // owned by VIEWER_AD; active in A (second character, same g
 const CH_VD = c(7) // owned by VIEWER_AD; active in D
 const CH_X = c(8) // owned by OUTSIDER; active in B
 const CH_VI = c(9) // owned by VIEWER_INACTIVE; inactive in A
+const CH_RL = c(10) // owned by RAID_LEADER; active in A, role Raid Leader (position 60)
+const CH_OF = c(11) // owned by OFFICER; active in A, role Officer (position 50)
+const CH_CR = c(12) // owned by CREATOR; active in B as Member (CREATOR created guild D, owns no character there)
+const CH_MEM = c(13) // owned by MEMBER; active in A, role Member (position 0)
+const CH_VET = c(14) // owned by VETERAN; active in A, role Veteran (position 20)
+const CH_NO = c(15) // owned by NAMED_OFFICER; active in F, role Officer, where F's Officer role is position 10
+const CH_IOF = c(16) // owned by INACTIVE_OFFICER; role Officer in A, membership inactive
+const CH_OFC = c(17) // owned by OFFICER_C; active in C as Officer (CH_T is inactive in C)
 
 interface CharacterRow { id: string; user_id: string; name?: string }
 interface MembershipRow { character_id: string; guild_id: string; role: string; is_active: boolean }
@@ -101,6 +117,14 @@ function defaultFixture(): Fixture {
       { id: CH_VD, user_id: VIEWER_AD, name: 'Viewerfive' },
       { id: CH_X, user_id: OUTSIDER, name: 'Outsiderone' },
       { id: CH_VI, user_id: VIEWER_INACTIVE, name: 'Inactiveone' },
+      { id: CH_RL, user_id: RAID_LEADER, name: 'Raidleaderone' },
+      { id: CH_OF, user_id: OFFICER, name: 'Officerone' },
+      { id: CH_CR, user_id: CREATOR, name: 'Creatorone' },
+      { id: CH_MEM, user_id: MEMBER, name: 'Memberone' },
+      { id: CH_VET, user_id: VETERAN, name: 'Veteranone' },
+      { id: CH_NO, user_id: NAMED_OFFICER, name: 'Namedofficerone' },
+      { id: CH_IOF, user_id: INACTIVE_OFFICER, name: 'Inactiveofficerone' },
+      { id: CH_OFC, user_id: OFFICER_C, name: 'Officercone' },
     ],
     memberships: [
       { character_id: CH_T, guild_id: GUILD_A, role: 'Member', is_active: true },
@@ -115,10 +139,20 @@ function defaultFixture(): Fixture {
       { character_id: CH_VD, guild_id: GUILD_D, role: 'Member', is_active: true },
       { character_id: CH_X, guild_id: GUILD_B, role: 'Member', is_active: true },
       { character_id: CH_VI, guild_id: GUILD_A, role: 'Member', is_active: false },
+      { character_id: CH_RL, guild_id: GUILD_A, role: 'Raid Leader', is_active: true },
+      { character_id: CH_OF, guild_id: GUILD_A, role: 'Officer', is_active: true },
+      { character_id: CH_CR, guild_id: GUILD_B, role: 'Member', is_active: true },
+      { character_id: CH_MEM, guild_id: GUILD_A, role: 'Member', is_active: true },
+      { character_id: CH_VET, guild_id: GUILD_A, role: 'Veteran', is_active: true },
+      { character_id: CH_NO, guild_id: GUILD_F, role: 'Officer', is_active: true },
+      { character_id: CH_IOF, guild_id: GUILD_A, role: 'Officer', is_active: false },
+      { character_id: CH_OFC, guild_id: GUILD_C, role: 'Officer', is_active: true },
     ],
     guildRoles: [
       { guild_id: GUILD_A, name: 'Guild Master', position: 100 },
       { guild_id: GUILD_A, name: 'Officer', position: 50 },
+      { guild_id: GUILD_A, name: 'Raid Leader', position: 60 },
+      { guild_id: GUILD_A, name: 'Veteran', position: 20 },
       { guild_id: GUILD_A, name: 'Member', position: 0 },
       { guild_id: GUILD_B, name: 'Guild Master', position: 100 },
       { guild_id: GUILD_B, name: 'Officer', position: 50 },
@@ -130,14 +164,14 @@ function defaultFixture(): Fixture {
       { guild_id: GUILD_D, name: 'Officer', position: 50 },
       { guild_id: GUILD_D, name: 'Member', position: 0 },
       { guild_id: GUILD_F, name: 'Guild Master', position: 100 },
-      { guild_id: GUILD_F, name: 'Officer', position: 50 },
+      { guild_id: GUILD_F, name: 'Officer', position: 10 },
       { guild_id: GUILD_F, name: 'Member', position: 0 },
     ],
     guilds: [
       { id: GUILD_A, created_by: u(901) },
       { id: GUILD_B, created_by: u(902) },
       { id: GUILD_C, created_by: u(903) },
-      { id: GUILD_D, created_by: u(904) },
+      { id: GUILD_D, created_by: CREATOR },
       { id: GUILD_F, created_by: u(905) },
     ],
     equippedItems: [
@@ -276,6 +310,34 @@ function setup(fixture: Fixture, authUserId: string | null = OWNER) {
 function getRequest(query: string) {
   return new NextRequest(`http://localhost/api/character-gear?${query}`)
 }
+
+function postRequest(body: unknown) {
+  const rawBody = typeof body === 'string' ? body : JSON.stringify(body)
+  return new NextRequest('http://localhost/api/character-gear', {
+    method: 'POST',
+    body: rawBody,
+  })
+}
+
+// The WoWSims full-sim / website export shape of lib/__tests__/wowsims-parser.test.ts
+// lines 13-27: a positional equipment.items array (Head, Neck, an empty Shoulder that
+// is dropped, Back), run through the real parseWowSimsExport.
+const WOWSIMS_EXPORT = JSON.stringify({
+  player: {
+    name: 'Zaptest',
+    level: 70,
+    race: 'RaceDraenei',
+    class: 'ClassShaman',
+    equipment: {
+      items: [
+        { id: 34333, name: 'Cursed Vision of Sargeras' },
+        { id: 34204 },
+        {},
+        { id: 34242, enchant: { id: 2621 }, gems: [{ id: 32409 }] },
+      ],
+    },
+  },
+})
 
 const callsFor = (calls: Call[], table: string) => calls.filter(c => c.table === table)
 const filterValue = (call: Call, op: FilterOp, col: string) => call.filters.find(f => f[0] === op && f[1] === col)?.[2]
@@ -427,6 +489,131 @@ describe('GET /api/character-gear', () => {
       const res = await GET(getRequest(`character_id=${CH_T}`))
       expect(res.status).toBe(500)
       expect((await res.json()).error).toBe('Failed to fetch equipped items')
+    })
+  })
+})
+
+describe('POST /api/character-gear', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    equippedIdCounter = 1000
+  })
+
+  it('returns 401 Unauthorized and makes no database call when there is no session', async () => {
+    setup(defaultFixture(), null)
+    const res = await POST(postRequest({ character_id: CH_T, wowsims_json: WOWSIMS_EXPORT }))
+    expect(res.status).toBe(401)
+    expect((await res.json()).error).toBe('Unauthorized')
+    expect(createServiceRoleClient).not.toHaveBeenCalled()
+  })
+
+  it('returns 400 character_id is required when character_id is absent', async () => {
+    setup(defaultFixture(), OWNER)
+    const res = await POST(postRequest({ wowsims_json: WOWSIMS_EXPORT }))
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe('character_id is required')
+  })
+
+  it('returns 400 wowsims_json is required when wowsims_json is absent', async () => {
+    setup(defaultFixture(), OWNER)
+    const res = await POST(postRequest({ character_id: CH_T }))
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe('wowsims_json is required')
+  })
+
+  it('returns 404 Character not found for an unknown character_id', async () => {
+    setup(defaultFixture(), OWNER)
+    const res = await POST(postRequest({ character_id: c(999), wowsims_json: WOWSIMS_EXPORT }))
+    expect(res.status).toBe(404)
+    expect((await res.json()).error).toBe('Character not found')
+  })
+
+  describe('owner', () => {
+    it('imports gear, replacing existing equipped items with the parsed ones', async () => {
+      const { calls } = setup(defaultFixture(), OWNER)
+      const res = await POST(postRequest({ character_id: CH_T, wowsims_json: WOWSIMS_EXPORT }))
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect(body.items_imported).toBe(3)
+
+      const deleteCalls = callsFor(calls, 'character_equipped_items').filter(call => call.op === 'delete')
+      expect(deleteCalls).toHaveLength(1)
+      expect(filterValue(deleteCalls[0], 'eq', 'character_id')).toBe(CH_T)
+
+      const insertCalls = callsFor(calls, 'character_equipped_items').filter(call => call.op === 'insert')
+      expect(insertCalls).toHaveLength(1)
+      const payload = insertCalls[0].payload as Array<{ character_id: string; slot: string }>
+      expect(payload).toHaveLength(3)
+      expect(payload.every(row => row.character_id === CH_T)).toBe(true)
+      expect(payload.map(row => row.slot)).toEqual(['Head', 'Neck', 'Back'])
+
+      expect(callsFor(calls, 'guild_roles')).toHaveLength(0)
+      expect(callsFor(calls, 'guilds')).toHaveLength(0)
+    })
+
+    it('returns 400 PARSE_ERROR and makes no write for a body that is not valid WowSims JSON', async () => {
+      const { calls } = setup(defaultFixture(), OWNER)
+      const res = await POST(postRequest({ character_id: CH_T, wowsims_json: 'not json' }))
+      expect(res.status).toBe(400)
+      expect((await res.json()).code).toBe('PARSE_ERROR')
+      expect(callsFor(calls, 'character_equipped_items')).toHaveLength(0)
+    })
+  })
+
+  describe('officer by role position', () => {
+    it('accepts a custom officer role name (Raid Leader, position 60)', async () => {
+      const { calls } = setup(defaultFixture(), RAID_LEADER)
+      const res = await POST(postRequest({ character_id: CH_T, wowsims_json: WOWSIMS_EXPORT }))
+      expect(res.status).toBe(200)
+      expect((await res.json()).items_imported).toBe(3)
+      expect(callsFor(calls, 'character_equipped_items').some(call => call.op === 'insert')).toBe(true)
+    })
+
+    it('accepts the default Officer role (position 50)', async () => {
+      setup(defaultFixture(), OFFICER)
+      const res = await POST(postRequest({ character_id: CH_T, wowsims_json: WOWSIMS_EXPORT }))
+      expect(res.status).toBe(200)
+    })
+
+    it('accepts the guild creator even with no membership in that guild', async () => {
+      setup(defaultFixture(), CREATOR)
+      const res = await POST(postRequest({ character_id: CH_T, wowsims_json: WOWSIMS_EXPORT }))
+      expect(res.status).toBe(200)
+    })
+  })
+
+  describe('refused', () => {
+    const refusedCases: Array<[string, string, string]> = [
+      ['a role named Member (position 0)', MEMBER, CH_T],
+      ['a custom role below officer position (Veteran, 20)', VETERAN, CH_T],
+      ['a role named Officer whose guild puts Officer below officer position (10)', NAMED_OFFICER, CH_T],
+      ['an officer whose membership is inactive', INACTIVE_OFFICER, CH_T],
+      ['an officer of a guild the character is inactive in', OFFICER_C, CH_T],
+      ['an officer asking for a character with no active membership anywhere', OFFICER, CH_GONE],
+    ]
+
+    it.each(refusedCases)('refuses %s, with no write', async (_label, userId, characterId) => {
+      const { calls } = setup(defaultFixture(), userId)
+      const res = await POST(postRequest({ character_id: characterId, wowsims_json: WOWSIMS_EXPORT }))
+      expect(res.status).toBe(403)
+      expect((await res.json()).error).toBe('Not authorized to modify this character')
+      expect(callsFor(calls, 'character_equipped_items')).toHaveLength(0)
+    })
+  })
+
+  describe('fail closed', () => {
+    beforeEach(() => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+    })
+
+    it('returns 403 with no write when a character_guild_memberships read errors', async () => {
+      const fixture = defaultFixture()
+      fixture.errors = { character_guild_memberships: 'db down' }
+      const { calls } = setup(fixture, OFFICER)
+      const res = await POST(postRequest({ character_id: CH_T, wowsims_json: WOWSIMS_EXPORT }))
+      expect(res.status).toBe(403)
+      expect((await res.json()).error).toBe('Not authorized to modify this character')
+      expect(callsFor(calls, 'character_equipped_items')).toHaveLength(0)
     })
   })
 })
