@@ -157,8 +157,11 @@ const ref = (name: string) => `${q('public')}\\.${q(name)}`
  * contains one. */
 const EM_DASH = String.fromCharCode(0x2014)
 
-const TRIGGER_COLUMNS = ITEM_RULE === 'tier' ? '"reserve_run_id", "submission_id", "loot_item_id"' : '"reserve_run_id", "submission_id"'
+const TRIGGER_COLUMNS =
+  ITEM_RULE === 'tier' ? '"reserve_run_id", "submission_id", "loot_item_id"' : '"reserve_run_id", "submission_id"'
 
+/** The full D-01 statement list (12 statements: Task 1's seven BLP policy
+ * statements, then Task 2's function, comment, revoke, trigger and comment). */
 const EXPECTED_ORDER: RegExp[] = [
   /^SET LOCAL lock_timeout = '5s'$/i,
   new RegExp(`^DROP POLICY IF EXISTS ${q('Officers can insert BLP credits')} ON ${ref('blp_credits')}$`),
@@ -170,7 +173,10 @@ const EXPECTED_ORDER: RegExp[] = [
   new RegExp(`^CREATE OR REPLACE FUNCTION ${ref('enforce_reserve_award_refs')}\\(\\)`, 'i'),
   new RegExp(`^COMMENT ON FUNCTION ${ref('enforce_reserve_award_refs')}\\(\\) IS `, 'i'),
   new RegExp(`^REVOKE ALL ON FUNCTION ${ref('enforce_reserve_award_refs')}\\(\\) FROM `, 'i'),
-  new RegExp(`^CREATE OR REPLACE TRIGGER ${q('enforce_reserve_award_refs')} BEFORE INSERT OR UPDATE OF ${TRIGGER_COLUMNS} ON ${ref('reserve_awards')} FOR EACH ROW EXECUTE FUNCTION ${ref('enforce_reserve_award_refs')}\\(\\)$`, 'i'),
+  new RegExp(
+    `^CREATE OR REPLACE TRIGGER ${q('enforce_reserve_award_refs')} BEFORE INSERT OR UPDATE OF ${TRIGGER_COLUMNS} ON ${ref('reserve_awards')} FOR EACH ROW EXECUTE FUNCTION ${ref('enforce_reserve_award_refs')}\\(\\)$`,
+    'i',
+  ),
   new RegExp(`^COMMENT ON TRIGGER ${q('enforce_reserve_award_refs')} ON ${ref('reserve_awards')} IS `, 'i'),
 ]
 
@@ -193,13 +199,11 @@ describe('BLP and reserve award rules migration shape (quick task 261003-t28)', 
     expect(sameTimestamp).toEqual([])
   })
 
-  it('has exactly the expected statements in order', () => {
+  it('has exactly the 12 expected statements in order', () => {
     const stmts = statements()
-    const hasTrigger = stmts.length > 7
-    const expected = hasTrigger ? EXPECTED_ORDER : EXPECTED_ORDER.slice(0, 7)
-    expect(stmts).toHaveLength(expected.length)
+    expect(stmts).toHaveLength(EXPECTED_ORDER.length)
     stmts.forEach((stmt, i) => {
-      expect(stmt, `statement ${i + 1}`).toMatch(expected[i])
+      expect(stmt, `statement ${i + 1}`).toMatch(EXPECTED_ORDER[i])
     })
   })
 
@@ -221,20 +225,17 @@ describe('BLP and reserve award rules migration shape (quick task 261003-t28)', 
     expect(executable).not.toContain('Guild members can view BLP"')
   })
 
-  it('rollbackStatements() holds, for each of the six dropped policies in order, its DROP followed by its exact baseline CREATE', () => {
+  it('rollbackStatements() holds, for each of the six dropped policies in order, its DROP followed by its exact baseline CREATE, then the trigger and function drops', () => {
     const rb = rollbackStatements()
-    const hasTrigger = statements().length > 7
-    expect(rb).toHaveLength(hasTrigger ? 14 : 12)
+    expect(rb).toHaveLength(14)
     let idx = 0
     for (const { name, table } of DROPPED_POLICIES) {
       expect(rb[idx]).toBe(`DROP POLICY IF EXISTS "${name}" ON "public"."${table}"`)
       expect(rb[idx + 1]).toBe(baselinePolicy(name, table))
       idx += 2
     }
-    if (hasTrigger) {
-      expect(rb[12]).toBe('DROP TRIGGER IF EXISTS "enforce_reserve_award_refs" ON "public"."reserve_awards"')
-      expect(rb[13]).toBe('DROP FUNCTION IF EXISTS "public"."enforce_reserve_award_refs"()')
-    }
+    expect(rb[12]).toBe('DROP TRIGGER IF EXISTS "enforce_reserve_award_refs" ON "public"."reserve_awards"')
+    expect(rb[13]).toBe('DROP FUNCTION IF EXISTS "public"."enforce_reserve_award_refs"()')
   })
 
   it('has no forbidden statement over the identifier-blanked, string-blanked, body-removed SQL', () => {
@@ -257,14 +258,17 @@ describe('BLP and reserve award rules migration shape (quick task 261003-t28)', 
       expect(stmt).not.toContain('--')
       expect(stmt).not.toContain(';')
     }
-    const hasTrigger = statements().length > 7
-    const firstLine = hasTrigger
-      ? '-- BLP and reserve award rules stay inside the guild.'
-      : '-- BLP tables are written only by the BLP functions.'
-    expect(raw.split('\n')[0]).toBe(firstLine)
-    const headings = hasTrigger
-      ? ['Problem', 'Fix', 'Readers and writers checked', 'Error contract', 'Production safety', 'Not changed', 'Deploy', 'Rollback']
-      : ['Problem', 'Fix', 'Readers and writers checked', 'Error contract', 'Production safety', 'Not changed', 'Deploy', 'Rollback']
+    expect(raw.split('\n')[0]).toBe('-- BLP and reserve award rules stay inside the guild.')
+    const headings = [
+      'Problem',
+      'Fix',
+      'Readers and writers checked',
+      'Error contract',
+      'Production safety',
+      'Not changed',
+      'Deploy',
+      'Rollback',
+    ]
     let lastIndex = -1
     for (const heading of headings) {
       const re = new RegExp(`^-- ${heading}\\n-- -+$`, 'm')
@@ -275,12 +279,8 @@ describe('BLP and reserve award rules migration shape (quick task 261003-t28)', 
     }
   })
 
-  // The following cases only apply once Task 2 has appended the trigger
-  // function; they no-op (return early) against the Task 1 file so this
-  // file is valid both mid-plan and at the end.
   it('the CREATE FUNCTION has no parameters, returns trigger, is plpgsql SECURITY DEFINER with search_path public, pg_temp, and the file has exactly two dollar-quoted bodies', () => {
     const stmts = statements()
-    if (stmts.length <= 7) return
     const code = stripComments(readMigrationRaw())
     expect((code.match(/\$\$/g) ?? []).length).toBe(2)
     const { prefix } = functionParts(stmts[FN_START])
@@ -291,7 +291,6 @@ describe('BLP and reserve award rules migration shape (quick task 261003-t28)', 
 
   it('the enforce_reserve_award_refs body has every D-03 element for the OD-1 resolution and is read-only', () => {
     const stmts = statements()
-    if (stmts.length <= 7) return
     const { body } = functionParts(stmts[FN_START])
     const collapsed = body.replace(/\s+/g, ' ')
     expect(collapsed).toMatch(/NEW\.reserve_run_id IS NULL/)
@@ -330,7 +329,6 @@ describe('BLP and reserve award rules migration shape (quick task 261003-t28)', 
 
   it('revokes ALL from PUBLIC, anon and authenticated, with no GRANT in the file', () => {
     const stmts = statements()
-    if (stmts.length <= 7) return
     const revoke = stmts[FN_START + 2]
     const m = revoke.match(/ FROM (.+)$/i)
     expect(m).not.toBeNull()
