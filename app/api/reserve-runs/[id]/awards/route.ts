@@ -4,11 +4,13 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { trackEvent } from '@/utils/analytics/server'
 import { logReserveAudit } from '@/utils/reserve-audit'
 import { verifyReserveRunAccess } from '@/utils/reserve-access'
+import { requireReserveRunPremium } from '@/utils/feature-gate'
 
 /**
  * POST /api/reserve-runs/[id]/awards
  *
- * Log an item award for a reserve run. Officer-only.
+ * Log an item award for a reserve run. Run managers only; the run's guild
+ * needs Premium or reserve grandfathering.
  *
  * Body: { loot_item_id, character_name, submission_id?, notes? }
  */
@@ -42,6 +44,9 @@ export async function POST(
       return NextResponse.json({ error: access.reason ?? 'Forbidden' }, { status })
     }
     const run = access.run
+
+    const premiumAccess = await requireReserveRunPremium(serviceSupabase, run, 'manager')
+    if (!premiumAccess.allowed) return premiumAccess.error
 
     if (run.status !== 'locked' && run.status !== 'completed') {
       return NextResponse.json({ error: 'Can only award items on locked or completed runs' }, { status: 400 })
@@ -137,7 +142,8 @@ export async function POST(
 /**
  * DELETE /api/reserve-runs/[id]/awards
  *
- * Remove an award. Officer-only.
+ * Remove an award. Run managers only; the run's guild needs Premium or
+ * reserve grandfathering.
  *
  * Query: ?award_id=X
  */
@@ -161,10 +167,13 @@ export async function DELETE(
       request,
       userId: user?.id ?? null,
     })
-    if (!access.allowed) {
+    if (!access.allowed || !access.run) {
       const status = access.reason === 'Run not found' ? 404 : access.reason === 'Unauthorized' ? 401 : 403
       return NextResponse.json({ error: access.reason ?? 'Forbidden' }, { status })
     }
+
+    const premiumAccess = await requireReserveRunPremium(serviceSupabase, access.run, 'manager')
+    if (!premiumAccess.allowed) return premiumAccess.error
 
     // Fetch the award before deletion so we can log useful details
     const { data: awardRow } = await serviceSupabase

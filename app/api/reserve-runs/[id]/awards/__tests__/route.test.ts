@@ -3,11 +3,12 @@
 // Response/Request globals that next/server relies on.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
-import { POST } from '../route'
+import { POST, DELETE } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyReserveRunAccess } from '@/utils/reserve-access'
 import { logReserveAudit } from '@/utils/reserve-audit'
+import { requireReserveRunPremium } from '@/utils/feature-gate'
 
 // Quick task 261003-t28 amendment A1: the route now checks, before writing,
 // that a given submission_id belongs to this run and that loot_item_id is
@@ -20,6 +21,7 @@ vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
 vi.mock('@/utils/reserve-access', () => ({ verifyReserveRunAccess: vi.fn() }))
 vi.mock('@/utils/reserve-audit', () => ({ logReserveAudit: vi.fn() }))
 vi.mock('@/utils/analytics/server', () => ({ trackEvent: vi.fn() }))
+vi.mock('@/utils/feature-gate', () => ({ requireReserveRunPremium: vi.fn() }))
 
 const RUN_ID = 'aaaaaaaa-0000-0000-0000-000000000001'
 const TIER_ID = 'aaaaaaaa-0000-0000-0000-000000000002'
@@ -54,6 +56,7 @@ function makeClient(fixture: Fixture) {
       const builder: any = {
         select: () => builder,
         insert: () => builder,
+        delete: () => builder,
         eq: (col: string, val: unknown) => {
           call.filters.push([col, val])
           return builder
@@ -79,6 +82,9 @@ function makeClient(fixture: Fixture) {
           }
           return Promise.resolve({ data: null, error: null })
         },
+        // Only reached by DELETE's bare delete().eq().eq() (no single()).
+        then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>
+          Promise.resolve({ data: null, error: null }).then(resolve, reject),
       }
       return builder
     },
@@ -104,9 +110,11 @@ const baseRun = {
 }
 
 beforeEach(() => {
+  vi.clearAllMocks()
   vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: USER_ID, email: 'o@example.test' } } as never)
   vi.mocked(verifyReserveRunAccess).mockResolvedValue({ allowed: true, actor: 'officer', run: baseRun } as never)
   vi.mocked(logReserveAudit).mockResolvedValue(undefined)
+  vi.mocked(requireReserveRunPremium).mockResolvedValue({ allowed: true } as never)
 })
 
 describe('POST /api/reserve-runs/[id]/awards (quick task 261003-t28 amendment A1)', () => {
@@ -209,5 +217,109 @@ describe('POST /api/reserve-runs/[id]/awards (quick task 261003-t28 amendment A1
     })
 
     expect(res.status).toBe(200)
+  })
+})
+
+describe('POST /api/reserve-runs/[id]/awards (D-03: the run owner needs reserve access)', () => {
+  it('calls requireReserveRunPremium once with the client, baseRun and manager', async () => {
+    const { client } = makeClient({ tierItemIds: new Set([ITEM_ID]) })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    await POST(makeRequest({ loot_item_id: ITEM_ID, character_name: 'Raiderone' }), {
+      params: Promise.resolve({ id: RUN_ID }),
+    })
+
+    expect(requireReserveRunPremium).toHaveBeenCalledTimes(1)
+    expect(requireReserveRunPremium).toHaveBeenCalledWith(client, baseRun, 'manager')
+  })
+
+  it('passes through the gate denial, with no award insert, no submission or item read and no audit', async () => {
+    const gateError = new Response(JSON.stringify({ error: 'gate', code: 'premium_required' }), { status: 403 })
+    vi.mocked(requireReserveRunPremium).mockResolvedValue({ allowed: false, error: gateError } as never)
+    const { client, calls } = makeClient({ tierItemIds: new Set([ITEM_ID]) })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(makeRequest({ loot_item_id: ITEM_ID, character_name: 'Raiderone' }), {
+      params: Promise.resolve({ id: RUN_ID }),
+    })
+    const json = await res.json()
+
+    expect(res.status).toBe(403)
+    expect(json).toEqual({ error: 'gate', code: 'premium_required' })
+    expect(calls.some(c => c.table === 'reserve_awards')).toBe(false)
+    expect(calls.some(c => c.table === 'reserve_submissions')).toBe(false)
+    expect(calls.some(c => c.table === 'loot_items')).toBe(false)
+    expect(logReserveAudit).not.toHaveBeenCalled()
+  })
+
+  it('does not call requireReserveRunPremium when verifyReserveRunAccess denies', async () => {
+    vi.mocked(verifyReserveRunAccess).mockResolvedValue({ allowed: false, actor: 'none', run: null, reason: 'Forbidden' } as never)
+    const { client } = makeClient({})
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(makeRequest({ loot_item_id: ITEM_ID, character_name: 'Raiderone' }), {
+      params: Promise.resolve({ id: RUN_ID }),
+    })
+
+    expect(res.status).toBe(403)
+    expect(requireReserveRunPremium).not.toHaveBeenCalled()
+  })
+
+  it('answers 500 with nothing written when requireReserveRunPremium rejects', async () => {
+    vi.mocked(requireReserveRunPremium).mockRejectedValue(new Error('boom'))
+    const { client, calls } = makeClient({ tierItemIds: new Set([ITEM_ID]) })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(makeRequest({ loot_item_id: ITEM_ID, character_name: 'Raiderone' }), {
+      params: Promise.resolve({ id: RUN_ID }),
+    })
+    const json = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(json.error).toBe('Internal server error')
+    expect(calls.some(c => c.table === 'reserve_awards')).toBe(false)
+  })
+})
+
+describe('DELETE /api/reserve-runs/[id]/awards (D-03: the run owner needs reserve access)', () => {
+  function makeDeleteRequest() {
+    return new NextRequest(`http://localhost/api/reserve-runs/x/awards?award_id=${AWARD_ID}`, { method: 'DELETE' })
+  }
+
+  it('calls requireReserveRunPremium once with the client, baseRun and manager, then deletes', async () => {
+    const { client, calls } = makeClient({})
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await DELETE(makeDeleteRequest(), { params: Promise.resolve({ id: RUN_ID }) })
+
+    expect(res.status).toBe(200)
+    expect(requireReserveRunPremium).toHaveBeenCalledTimes(1)
+    expect(requireReserveRunPremium).toHaveBeenCalledWith(client, baseRun, 'manager')
+    void calls
+  })
+
+  it('passes through the gate denial, with no reserve_awards read or delete', async () => {
+    const gateError = new Response(JSON.stringify({ error: 'gate', code: 'premium_required' }), { status: 403 })
+    vi.mocked(requireReserveRunPremium).mockResolvedValue({ allowed: false, error: gateError } as never)
+    const { client, calls } = makeClient({})
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await DELETE(makeDeleteRequest(), { params: Promise.resolve({ id: RUN_ID }) })
+    const json = await res.json()
+
+    expect(res.status).toBe(403)
+    expect(json).toEqual({ error: 'gate', code: 'premium_required' })
+    expect(calls.some(c => c.table === 'reserve_awards')).toBe(false)
+  })
+
+  it('does not call requireReserveRunPremium when verifyReserveRunAccess denies', async () => {
+    vi.mocked(verifyReserveRunAccess).mockResolvedValue({ allowed: false, actor: 'none', run: null, reason: 'Forbidden' } as never)
+    const { client } = makeClient({})
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await DELETE(makeDeleteRequest(), { params: Promise.resolve({ id: RUN_ID }) })
+
+    expect(res.status).toBe(403)
+    expect(requireReserveRunPremium).not.toHaveBeenCalled()
   })
 })
