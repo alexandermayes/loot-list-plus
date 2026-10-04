@@ -3,15 +3,51 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { trackEvent } from '@/utils/analytics/server'
 import { logReserveAudit } from '@/utils/reserve-audit'
-import { verifyReserveRunAccess, extractLeaderToken } from '@/utils/reserve-access'
+import { verifyReserveRunAccess, decideReserveRunViewer } from '@/utils/reserve-access'
+
+// Explicit column lists for every caller, so a database column never
+// reaches a response by way of select('*').
+const SUBMISSION_COLUMNS = 'id, character_name, character_class, character_spec, items, created_at, updated_at'
+const AWARD_COLUMNS = 'id, loot_item_id, character_name, submission_id, awarded_at, notes'
+
+// Every reserve_runs column except raid_leader_token and created_by, the
+// two fields a manager-only read returns. An allow-list, so a column added
+// to the table later is withheld from viewers until it is listed here.
+const RUN_VIEWER_FIELDS = [
+  'id',
+  'guild_id',
+  'expansion_id',
+  'raid_team_id',
+  'raid_tier_id',
+  'title',
+  'status',
+  'raid_at',
+  'lock_at',
+  'locked_at',
+  'max_reserves',
+  'max_reserves_per_item',
+  'allow_duplicates',
+  'enforce_class_restrictions',
+  'visibility',
+  'rules_note',
+  'discord_invite_url',
+  'hard_reserves',
+  'rule_snapshot',
+  'share_token',
+  'created_at',
+  'updated_at',
+] as const
 
 /**
  * GET /api/reserve-runs/[id]
  *
- * Get full run details with submissions and awards. Accessible to guild
- * members, the run creator, or any caller presenting the raid leader token.
- * The raid_leader_token field itself is only returned to callers who have
- * management access.
+ * Managers (the leader link, the run's creator while an active member of
+ * the run's guild, and officers with Manage reserves for a guild run) get
+ * the full run, including the raid leader token. Any other active member
+ * of a guild run's guild can view the run without the token or created_by;
+ * while the run is open and not public_live, their sign-ups carry an
+ * item_count instead of the reserved items. A run with no guild has no
+ * viewers who are not already managers.
  */
 export async function GET(
   request: NextRequest,
@@ -33,66 +69,54 @@ export async function GET(
       return NextResponse.json({ error: 'Run not found' }, { status: 404 })
     }
 
-    // Determine whether the caller should be treated as a manager. The run
-    // is readable by anyone authenticated who is either a guild member, the
-    // creator, or holds the leader token.
-    const providedToken = extractLeaderToken(request)
-    const isTokenHolder = providedToken && providedToken === run.raid_leader_token
-    const isCreator = user && run.created_by === user.id
+    const viewer = await decideReserveRunViewer({
+      serviceSupabase,
+      run,
+      request,
+      userId: user?.id ?? null,
+    })
 
-    let isGuildMember = false
-    if (user && run.guild_id && !isCreator && !isTokenHolder) {
-      const { data: membership } = await serviceSupabase
-        .from('character_guild_memberships')
-        .select('id, characters!inner(user_id)')
-        .eq('guild_id', run.guild_id)
-        .eq('is_active', true)
-        .eq('characters.user_id', user.id)
-        .limit(1)
-      isGuildMember = !!(membership && membership.length > 0)
+    if (!viewer.canView) {
+      const status = viewer.reason === 'Unauthorized' ? 401 : 403
+      return NextResponse.json({ error: viewer.reason ?? 'Forbidden' }, { status })
     }
 
-    // If the run is guild-linked, we require auth + (membership OR creator OR token).
-    // If the run is public (no guild_id), it's readable by anyone with the run id.
-    if (run.guild_id && !isTokenHolder && !isCreator && !isGuildMember) {
-      if (!user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      }
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
+    const canManage = viewer.canManage
 
-    const canManage = !!(isTokenHolder || isCreator || (user && run.guild_id === null))
-    // Officers of the linked guild also manage — re-derive via existing helper
-    if (!canManage && user && run.guild_id) {
-      const access = await verifyReserveRunAccess({
-        serviceSupabase,
-        runId: id,
-        request,
-        userId: user.id,
-      })
-      if (access.allowed) {
-        // Upgrade canManage by shadowing via a local reassignment
-        ;(run as unknown as { _canManage?: boolean })._canManage = true
-      }
-    }
-
-    const canManageFinal =
-      canManage || !!(run as unknown as { _canManage?: boolean })._canManage
-
-    // Fetch submissions
-    const { data: submissions } = await serviceSupabase
+    // Fetch submissions (explicit column list; no internal ids reach any caller)
+    const { data: submissions, error: submissionsError } = await serviceSupabase
       .from('reserve_submissions')
-      .select('*')
+      .select(SUBMISSION_COLUMNS)
       .eq('reserve_run_id', id)
       .eq('status', 'submitted')
       .order('created_at', { ascending: true })
 
-    // Fetch awards
-    const { data: awards } = await serviceSupabase
+    if (submissionsError) {
+      throw new Error(`Reserve run GET: submissions read failed: ${submissionsError.message}`)
+    }
+
+    // Non-managers do not see the reserved items while the run is open and
+    // hidden from public view; everyone gets an item_count either way.
+    const hideItems = !canManage && run.status === 'open' && run.visibility !== 'public_live'
+    const submissionsWithCounts = (submissions || []).map((sub) => {
+      const itemCount = Array.isArray(sub.items) ? sub.items.length : 0
+      return {
+        ...sub,
+        items: hideItems ? [] : sub.items,
+        item_count: itemCount,
+      }
+    })
+
+    // Fetch awards (explicit column list)
+    const { data: awards, error: awardsError } = await serviceSupabase
       .from('reserve_awards')
-      .select('*')
+      .select(AWARD_COLUMNS)
       .eq('reserve_run_id', id)
       .order('awarded_at', { ascending: true })
+
+    if (awardsError) {
+      throw new Error(`Reserve run GET: awards read failed: ${awardsError.message}`)
+    }
 
     // Fetch loot items for this raid tier
     const { data: items } = await serviceSupabase
@@ -109,20 +133,17 @@ export async function GET(
       .eq('id', run.raid_tier_id)
       .single()
 
-    // Redact the leader token from non-managers
-    const runPayload = { ...run } as Record<string, unknown>
-    delete runPayload._canManage
-    if (!canManageFinal) {
-      delete runPayload.raid_leader_token
-    }
+    const runPayload: Record<string, unknown> = canManage
+      ? { ...run }
+      : Object.fromEntries(RUN_VIEWER_FIELDS.map((key) => [key, (run as Record<string, unknown>)[key]]))
 
     return NextResponse.json({
       success: true,
-      can_manage: canManageFinal,
+      can_manage: canManage,
       run: {
         ...runPayload,
         raid_tier_name: raidTier?.name || null,
-        submissions: submissions || [],
+        submissions: submissionsWithCounts,
         awards: awards || [],
         items: items || [],
       },
