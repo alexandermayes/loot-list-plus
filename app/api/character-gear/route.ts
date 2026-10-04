@@ -3,20 +3,17 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { parseWowSimsExport, type ParsedGearItem } from '@/lib/wowsims-parser'
 
-interface EquippedItem {
-  id: string
-  slot: string
-  wowhead_id: number
-  item_name: string | null
-  enchant_id: number | null
-  gem_ids: number[] | null
-  imported_at: string
-}
-
 /**
  * GET /api/character-gear
  *
- * Fetches equipped items for a character.
+ * Fetches equipped items and loot history awards for a character.
+ *
+ * Access: the character's owner, or an active member of a guild where the
+ * character also has an active membership.
+ *
+ * Awards: the owner sees awards from every guild the character has ever been
+ * awarded in. Anyone else sees awards only from the guilds they actively
+ * share with the character.
  *
  * Query params:
  * - character_id: The character ID
@@ -48,6 +45,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Character not found' }, { status: 404 })
     }
 
+    // awardGuildIds is null for the owner (no guild filter: every guild's awards
+    // count). For anyone else it is the distinct guilds the caller actively
+    // shares with the character, the same guilds the access check below requires.
+    let awardGuildIds: string[] | null = null
+
     // Check if user owns character or is in same guild
     if (character.user_id !== user.id) {
       // Get guilds this character belongs to
@@ -75,17 +77,18 @@ export async function GET(request: NextRequest) {
 
       const userCharacterIds = userCharacters.map(c => c.id)
 
-      const { data: sharedGuildMembership } = await supabase
+      const { data: sharedGuildMemberships } = await supabase
         .from('character_guild_memberships')
-        .select('id')
+        .select('guild_id')
         .in('character_id', userCharacterIds)
         .in('guild_id', guildIds)
         .eq('is_active', true)
-        .limit(1)
 
-      if (!sharedGuildMembership || sharedGuildMembership.length === 0) {
+      if (!sharedGuildMemberships || sharedGuildMemberships.length === 0) {
         return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
       }
+
+      awardGuildIds = [...new Set(sharedGuildMemberships.map(m => m.guild_id))]
     }
 
     // Get equipped items (from WowSims import)
@@ -100,8 +103,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch equipped items' }, { status: 500 })
     }
 
-    // Get awarded items from loot history (items received via raid tracking)
-    const { data: awardedItems, error: awardedError } = await supabase
+    // Get awarded items from loot history (items received via raid tracking).
+    // The owner sees every guild; anyone else is limited to awardGuildIds, the
+    // guilds they actively share with the character.
+    let awardedItemsQuery = supabase
       .from('loot_history')
       .select(`
         id,
@@ -113,6 +118,12 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('character_id', characterId)
+
+    if (awardGuildIds !== null) {
+      awardedItemsQuery = awardedItemsQuery.in('guild_id', awardGuildIds)
+    }
+
+    const { data: awardedItems, error: awardedError } = await awardedItemsQuery
 
     if (awardedError) {
       console.error('Error fetching loot history:', awardedError)
