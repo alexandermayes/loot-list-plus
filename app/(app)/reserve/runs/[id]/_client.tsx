@@ -73,6 +73,7 @@ type Submission = {
   character_class: string
   character_spec: string | null
   items: string[]
+  item_count: number
   created_at: string
   updated_at: string
 }
@@ -993,7 +994,7 @@ export default function ReserveRunPage() {
                       })
                     ) : (
                       <span className="text-12 text-muted-foreground italic">
-                        {sub.items.length} item{sub.items.length !== 1 ? 's' : ''} reserved (hidden until locked)
+                        {sub.item_count} item{sub.item_count !== 1 ? 's' : ''} reserved (hidden until locked)
                       </span>
                     )}
                   </div>
@@ -1176,7 +1177,8 @@ export default function ReserveRunPage() {
           </Card>
         )}
 
-        {/* Audit log */}
+        {/* Audit log: managers only (run history is a management record) */}
+        {canManage && (
         <Card className="overflow-hidden">
           <button
             type="button"
@@ -1238,6 +1240,7 @@ export default function ReserveRunPage() {
             </div>
           )}
         </Card>
+        )}
 
         {/* Danger zone — destructive actions kept away from the main flow */}
         {canManage && (

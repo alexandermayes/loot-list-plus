@@ -3,7 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { logReserveAudit } from '@/utils/reserve-audit'
 import { trackEvent } from '@/utils/analytics/server'
-import { verifyReserveRunAccess } from '@/utils/reserve-access'
+import { verifyReserveRunAccess, hasActiveGuildMembership } from '@/utils/reserve-access'
 import { requireReserveAccess } from '@/utils/feature-gate'
 
 /**
@@ -11,7 +11,8 @@ import { requireReserveAccess } from '@/utils/feature-gate'
  *
  * Clone an existing run. Copies settings and hard reserves but creates
  * a new share token and starts the clone as open with no submissions
- * or awards. Officer-only.
+ * or awards. Run managers who are active members of the run's guild, or
+ * the creator of a run with no guild.
  */
 export async function POST(
   request: NextRequest,
@@ -19,7 +20,7 @@ export async function POST(
 ) {
   try {
     // Duplicating a run creates a new row owned by the caller. That means
-    // we still require the caller to be authenticated — a raid leader
+    // we still require the caller to be authenticated: a raid leader
     // token alone is not enough, because the new run needs a `created_by`
     // FK to auth.users.
     const { user, error: authError } = await getAuthenticatedUser()
@@ -51,7 +52,18 @@ export async function POST(
       return NextResponse.json({ error: 'Run not found' }, { status: 404 })
     }
 
-    // Duplicating creates a new run — Premium (or grandfathered) only
+    // The copy is a new run created_by the caller (the create rule, D-05):
+    // a guild source needs an active membership in that guild, whichever
+    // way the caller manages the source (a signed-in leader-link holder
+    // included).
+    if (source.guild_id) {
+      const isMember = await hasActiveGuildMembership(serviceSupabase, user.id, source.guild_id)
+      if (!isMember) {
+        return NextResponse.json({ error: 'Not a guild member' }, { status: 403 })
+      }
+    }
+
+    // Duplicating creates a new run: Premium (or grandfathered) only
     const premiumAccess = await requireReserveAccess(serviceSupabase, user.id, source.guild_id)
     if (!premiumAccess.allowed) return premiumAccess.error
 

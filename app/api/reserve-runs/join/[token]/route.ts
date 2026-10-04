@@ -3,7 +3,11 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { canClassReserveItem } from '@/utils/wowClassRestrictions'
 import { logReserveAudit } from '@/utils/reserve-audit'
-import { extractLeaderToken } from '@/utils/reserve-access'
+import { extractLeaderToken, creatorMayManage } from '@/utils/reserve-access'
+
+// Explicit column list for the join POST response: no internal ids
+// (reserve_run_id, character_id, user_id) reach the client.
+const JOIN_SUBMISSION_COLUMNS = 'id, character_name, character_class, character_spec, items, status, created_at, updated_at'
 
 type UserCharacter = {
   id: string
@@ -154,8 +158,11 @@ export async function GET(
       const auth = await getAuthenticatedUser()
       user = auth.user
       if (user) {
-        // Creator check
-        if (run.created_by === user.id) canManage = true
+        // Creator check: a guild run's creator manages it only while an
+        // active member of that guild (D-01). A lookup error here falls
+        // through to the outer catch, leaving canManage unchanged (fail
+        // closed).
+        if (await creatorMayManage(serviceSupabase, run, user.id)) canManage = true
 
         // Fetch user's guild characters for the form
         if (run.guild_id) {
@@ -205,7 +212,7 @@ export async function GET(
       success: true,
       can_manage: canManage,
       run: {
-        id: run.id,
+        id: canManage ? run.id : undefined,
         title: run.title,
         status: run.status,
         raid_at: run.raid_at,
@@ -466,7 +473,7 @@ export async function POST(
           status: 'submitted',
         })
         .eq('id', existing.id)
-        .select()
+        .select(JOIN_SUBMISSION_COLUMNS)
         .single()
 
       if (updateError) {
@@ -497,7 +504,7 @@ export async function POST(
         items,
         status: 'submitted',
       })
-      .select()
+      .select(JOIN_SUBMISSION_COLUMNS)
       .single()
 
     if (insertError) {
