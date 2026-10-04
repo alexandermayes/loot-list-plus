@@ -16,8 +16,10 @@ const MIGRATION_FILE = path.join(
   `${MIGRATION_TIMESTAMP}_team_donation_attendance_character_rules.sql`,
 )
 /** OD-1 resolution: an attendance row accepts any membership row of the
- * character in the raid event's guild, active or not. */
-const ATT_RULE: 'any' | 'active' = 'any'
+ * character in the raid event's guild, active or not. Typed as `string`
+ * (not a narrower union) so the `=== 'active'` comparisons below remain
+ * meaningful to tsc regardless of which branch is live. */
+const ATT_RULE: string = 'any'
 
 /** Strip line comments (trimmed lines starting with `--`, and trailing `--`
  * to end of line on a code line). No string literal in this SQL contains
