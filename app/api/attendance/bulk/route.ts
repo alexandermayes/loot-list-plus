@@ -65,7 +65,7 @@ const ATTENDANCE_FLAG_COLUMNS = 'id, signed_up, attended, no_call_no_show, was_l
  * after verifying officer permissions, so before anything is written this
  * handler checks that every record's raid_event_id is a raid event of the
  * verified guild and every character_id has a membership row (active or
- * not) in that guild (261003-she D-02) — the service role bypasses RLS
+ * not) in that guild (261003-she D-02). The service role bypasses RLS
  * entirely, so these are the only checks standing between a request and a
  * write into another guild's attendance.
  *
@@ -105,7 +105,7 @@ export const POST = withPermission<{
 
     // Every id below is checked against the guild before routing, which
     // reads raid_events by id with NO guild filter and can create this
-    // guild's team events from the dates it finds — after these checks
+    // guild's team events from the dates it finds. After these checks
     // every id it reads is this guild's, and every id it returns comes from
     // findOrCreateTeamEvent, which is guild-scoped.
     const raidEventIdsToCheck = [...new Set(parsedRecords.map(r => r.raid_event_id))]
@@ -245,7 +245,7 @@ export const POST = withPermission<{
  *
  * Updates attendance status flags by filter criteria. Only the six status
  * flags may be set, and a filter must name a raid event, a row id or a set
- * of row ids — an empty or character-only filter is refused rather than
+ * of row ids: an empty or character-only filter is refused rather than
  * reaching every raid of every guild. A raid_event_id or row id outside the
  * guild the officer was verified for is refused with nothing written
  * (261003-she D-03, OD-1 A). Status (dual-write) is computed from each
@@ -475,7 +475,7 @@ export const DELETE = withPermission<{
       return NextResponse.json({ error: 'raid_event_id or ids required' }, { status: 400 })
     }
 
-    // Checked even on the ids path, where it does not filter the delete —
+    // Checked even on the ids path, where it does not filter the delete:
     // an officer naming another guild's raid event should see C-1, not a
     // silent no-op.
     if (raid_event_id) {
