@@ -7,6 +7,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { PlusSignIcon } from '@hugeicons/core-free-icons'
 import nextDynamic from 'next/dynamic'
 import { Card } from '@/components/ui/card'
+import { sendAttendanceBulk, importSaveFailureMessage, type AttendanceSaveFailure } from './components/attendance-save'
 
 const LootHistoryTab = nextDynamic(() => import('./components/LootHistoryTab'), {
   loading: () => (
@@ -1485,6 +1486,11 @@ export default function RaidTrackingPage() {
       loot: { success: 0, failed: 0, errors: [] as string[] },
       signups: { success: 0, failed: 0 }
     }
+    // Every attendance/signup save (and the reads a save depends on) is
+    // checked; a failed one is collected here and reported once at the end
+    // with a single error toast (261003-she D-06), instead of each call
+    // silently discarding its response.
+    const saveFailures: AttendanceSaveFailure[] = []
 
     // Import Attendance — only if attendance data was actually provided AND
     // the user changed it from the pre-fill. In edit mode the text field is
@@ -1544,12 +1550,14 @@ export default function RaidTrackingPage() {
 
       // When editing, first remove attendance for members not in the new list
       if (showImportModal.isEdit) {
-        const { data: currentRecords } = await supabase
+        const { data: currentRecords, error: currentRecordsError } = await supabase
           .from('attendance_records')
           .select('id, character_id, character_name')
           .eq('raid_event_id', showImportModal.raidId)
 
-        if (currentRecords) {
+        if (currentRecordsError) {
+          saveFailures.push({ status: null, error: null })
+        } else if (currentRecords) {
           type AttendanceRecord = { id: string; character_id: string | null; character_name: string | null }
           const linkedToRemove = currentRecords
             .filter((r: AttendanceRecord) => r.character_id && !linkedCharacterIds.includes(r.character_id))
@@ -1562,31 +1570,20 @@ export default function RaidTrackingPage() {
           const idsToRemove = [...linkedToRemove, ...unlinkedToRemove]
 
           if (idsToRemove.length > 0) {
-            await fetch('/api/attendance/bulk', {
-              method: 'DELETE',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ guild_id: activeGuild.id, ids: idsToRemove })
-            })
+            const failure = await sendAttendanceBulk('DELETE', { guild_id: activeGuild.id, ids: idsToRemove })
+            if (failure) saveFailures.push(failure)
           }
         }
       }
 
       if (linkedUpdates.length > 0) {
-        const attendanceRes = await fetch('/api/attendance/bulk', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            guild_id: activeGuild.id,
-            action: 'upsert',
-            records: linkedUpdates,
-            onConflict: 'raid_event_id,character_id'
-          })
+        const failure = await sendAttendanceBulk('POST', {
+          guild_id: activeGuild.id,
+          action: 'upsert',
+          records: linkedUpdates,
+          onConflict: 'raid_event_id,character_id'
         })
-        if (!attendanceRes.ok) {
-          const err = await attendanceRes.json().catch(() => ({}))
-          console.error('Attendance save failed:', err)
-          showNotification('error', err.error || 'Failed to save attendance. Try again.')
-        }
+        if (failure) saveFailures.push(failure)
       }
 
       // For unlinked attendees, selectively delete stale records and upsert current ones.
@@ -1595,47 +1592,42 @@ export default function RaidTrackingPage() {
       // were filtered from the pre-fill due to matching a newly-linked member).
       const newUnlinkedNames = new Set(unlinkedUpdates.map(u => u.character_name?.toLowerCase()))
       type UnlinkedRecord = { id: string; character_name: string | null }
-      const { data: existingUnlinked } = await supabase
+      const { data: existingUnlinked, error: existingUnlinkedError } = await supabase
         .from('attendance_records')
         .select('id, character_name')
         .eq('raid_event_id', showImportModal.raidId)
         .is('character_id', null)
 
-      const staleIds = (existingUnlinked as UnlinkedRecord[] || [])
-        .filter(r => r.character_name && !newUnlinkedNames.has(r.character_name.toLowerCase()))
-        .map(r => r.id)
-
-      if (staleIds.length > 0) {
-        await fetch('/api/attendance/bulk', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ guild_id: activeGuild.id, ids: staleIds })
-        })
-      }
-
-      if (unlinkedUpdates.length > 0) {
-        // Delete existing unlinked records that will be re-inserted (to avoid duplicates)
-        const refreshIds = (existingUnlinked as UnlinkedRecord[] || [])
-          .filter(r => r.character_name && newUnlinkedNames.has(r.character_name.toLowerCase()))
+      if (existingUnlinkedError) {
+        saveFailures.push({ status: null, error: null })
+      } else {
+        const staleIds = (existingUnlinked as UnlinkedRecord[] || [])
+          .filter(r => r.character_name && !newUnlinkedNames.has(r.character_name.toLowerCase()))
           .map(r => r.id)
 
-        if (refreshIds.length > 0) {
-          await fetch('/api/attendance/bulk', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ guild_id: activeGuild.id, ids: refreshIds })
-          })
+        if (staleIds.length > 0) {
+          const failure = await sendAttendanceBulk('DELETE', { guild_id: activeGuild.id, ids: staleIds })
+          if (failure) saveFailures.push(failure)
         }
 
-        await fetch('/api/attendance/bulk', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        if (unlinkedUpdates.length > 0) {
+          // Delete existing unlinked records that will be re-inserted (to avoid duplicates)
+          const refreshIds = (existingUnlinked as UnlinkedRecord[] || [])
+            .filter(r => r.character_name && newUnlinkedNames.has(r.character_name.toLowerCase()))
+            .map(r => r.id)
+
+          if (refreshIds.length > 0) {
+            const failure = await sendAttendanceBulk('DELETE', { guild_id: activeGuild.id, ids: refreshIds })
+            if (failure) saveFailures.push(failure)
+          }
+
+          const failure = await sendAttendanceBulk('POST', {
             guild_id: activeGuild.id,
             action: 'insert',
             records: unlinkedUpdates
           })
-        })
+          if (failure) saveFailures.push(failure)
+        }
       }
     }
 
@@ -1661,7 +1653,7 @@ export default function RaidTrackingPage() {
       // For unlinked signup names, update existing unlinked records (from attendance)
       // or insert new ones (signup-only names not in attendance data)
       for (const name of unlinkedSignupNames) {
-        const { data: existing } = await supabase
+        const { data: existing, error: existingError } = await supabase
           .from('attendance_records')
           .select('id')
           .eq('raid_event_id', showImportModal.raidId)
@@ -1669,47 +1661,43 @@ export default function RaidTrackingPage() {
           .is('character_id', null)
           .limit(1)
 
+        if (existingError) {
+          saveFailures.push({ status: null, error: null })
+          continue
+        }
+
         if (existing && existing.length > 0) {
-          await fetch('/api/attendance/bulk', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              guild_id: activeGuild.id,
-              updates: { signed_up: true },
-              filters: { id: existing[0].id }
-            })
+          const failure = await sendAttendanceBulk('PATCH', {
+            guild_id: activeGuild.id,
+            updates: { signed_up: true },
+            filters: { id: existing[0].id }
           })
+          if (failure) saveFailures.push(failure)
         } else {
-          await fetch('/api/attendance/bulk', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              guild_id: activeGuild.id,
-              action: 'insert',
-              records: [{
-                raid_event_id: showImportModal.raidId,
-                character_name: name,
-                signed_up: true,
-                attended: false,
-                no_call_no_show: false,
-                was_late: false,
-                was_benched: false
-              }]
-            })
+          const failure = await sendAttendanceBulk('POST', {
+            guild_id: activeGuild.id,
+            action: 'insert',
+            records: [{
+              raid_event_id: showImportModal.raidId,
+              character_name: name,
+              signed_up: true,
+              attended: false,
+              no_call_no_show: false,
+              was_late: false,
+              was_benched: false
+            }]
           })
+          if (failure) saveFailures.push(failure)
         }
       }
 
       if (signupCharacterIds.length > 0) {
-        await fetch('/api/attendance/bulk', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            guild_id: activeGuild.id,
-            updates: { signed_up: true },
-            filters: { raid_event_id: showImportModal.raidId, character_ids: signupCharacterIds }
-          })
+        const failure = await sendAttendanceBulk('PATCH', {
+          guild_id: activeGuild.id,
+          updates: { signed_up: true },
+          filters: { raid_event_id: showImportModal.raidId, character_ids: signupCharacterIds }
         })
+        if (failure) saveFailures.push(failure)
       }
     }
 
@@ -1722,6 +1710,10 @@ export default function RaidTrackingPage() {
 
       if (itemsToUse.length === 0) {
         results.loot.errors.push('Could not load loot items database. Please try again.')
+        const saveFailureMessage = importSaveFailureMessage(saveFailures)
+        if (saveFailureMessage) {
+          showNotification('error', saveFailureMessage)
+        }
         showNotification('error', 'Couldn\'t import loot. Items database not available.')
         setImporting(false)
         setShowImportModal(null)
@@ -1928,8 +1920,12 @@ export default function RaidTrackingPage() {
       parts.push(`Signups: ${results.signups.success} matched${results.signups.failed > 0 ? `, ${results.signups.failed} unmatched` : ''}`)
     }
 
-    const hasErrors = results.attendance.failed > 0 || results.loot.failed > 0 || results.signups.failed > 0
+    const saveFailureMessage = importSaveFailureMessage(saveFailures)
+    const hasErrors = results.attendance.failed > 0 || results.loot.failed > 0 || results.signups.failed > 0 || saveFailureMessage !== null
     showNotification(hasErrors ? 'warning' : 'success', `Import complete. ${parts.join(' | ')}`)
+    if (saveFailureMessage) {
+      showNotification('error', saveFailureMessage)
+    }
   }
 
   // Parse Gargul loot export format: DATE;[ITEM_ID];CHARACTER_NAME
