@@ -6,7 +6,7 @@ import { requireReserveAccess } from '@/utils/feature-gate'
 import { hasActiveGuildMembership } from '@/utils/reserve-access'
 
 // Explicit column list: every field the Reserve page's ReserveRun type
-// reads. Never '*' — raid_leader_token and created_by are never listed.
+// reads. Never '*': raid_leader_token and created_by are never listed.
 const RUN_LIST_COLUMNS =
   'id, guild_id, raid_tier_id, title, status, raid_at, lock_at, locked_at, max_reserves, visibility, share_token, created_at'
 

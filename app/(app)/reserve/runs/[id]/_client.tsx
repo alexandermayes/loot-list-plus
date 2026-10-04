@@ -1177,7 +1177,7 @@ export default function ReserveRunPage() {
           </Card>
         )}
 
-        {/* Audit log — managers only (run history is a management record) */}
+        {/* Audit log: managers only (run history is a management record) */}
         {canManage && (
         <Card className="overflow-hidden">
           <button
