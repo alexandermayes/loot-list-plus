@@ -540,7 +540,7 @@ export default function LootSettingsContent({
 
       // Start loot items loading in parallel (only needs expansionId)
       const lootItemsPromise = activeGuild.active_expansion_id
-        ? loadLootItems(activeGuild.active_expansion_id)
+        ? loadLootItems(activeGuild.active_expansion_id, activeGuild.id)
         : Promise.resolve()
 
       // Parallelize all independent data loads
@@ -624,7 +624,7 @@ export default function LootSettingsContent({
     }
   }
 
-  const loadLootItems = async (expansionId: string) => {
+  const loadLootItems = async (expansionId: string, guildId: string) => {
     // Get raid tiers for active expansion (only guild-active tiers)
     const { data: tiersData } = await supabase
       .from('raid_tiers')
@@ -636,12 +636,29 @@ export default function LootSettingsContent({
 
     const tierIds = tiersData.map((t: { id: string }) => t.id)
 
+    // Officer notes are officer-only: they're read through the server route
+    // below (same Manage loot check as the PATCH writer), never with the
+    // browser session client. Run it alongside the items query so the page
+    // still loads in one round trip.
+    const notesPromise: Promise<Record<string, string>> = fetch(
+      `/api/loot-items/officer-notes?guild_id=${encodeURIComponent(guildId)}&expansion_id=${encodeURIComponent(expansionId)}`
+    ).then(async (res) => {
+      if (res.ok) {
+        const data = await res.json()
+        return (data.notes || {}) as Record<string, string>
+      }
+      if (res.status === 403 && !hasPermission('manage_loot')) {
+        return {}
+      }
+      throw new Error('Failed to load officer notes')
+    })
+
     // Load loot items in pages. PostgREST silently caps unpaginated queries
     // at 1000 rows, which truncated late-alphabet items for guilds whose
     // active expansion has >1000 items (e.g. MoP at 1705). Order by 'id' so
     // successive pages are stable — 'name' alone isn't unique across tiers
     // and can cause Postgres to skip / duplicate rows between range() calls.
-    const itemsData = await paginatedSelect<LootItem>((start, end) =>
+    const itemsPromise = paginatedSelect<LootItem>((start, end) =>
       supabase
         .from('loot_items')
         .select(`
@@ -656,13 +673,15 @@ export default function LootSettingsContent({
           is_available,
           is_loot_council,
           roles,
-          officer_notes,
           raid_tier:raid_tiers(name)
         `)
         .in('raid_tier_id', tierIds)
         .order('id', { ascending: true })
         .range(start, end)
     )
+
+    const [notes, rawItemsData] = await Promise.all([notesPromise, itemsPromise])
+    const itemsData: LootItem[] = rawItemsData.map((item) => ({ ...item, officer_notes: notes[item.id] }))
 
     if (itemsData.length > 0) {
       setLootItems(itemsData)
