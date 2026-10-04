@@ -2,10 +2,11 @@
 // jsdom (the global vitest.config.ts environment) does not provide the web
 // Response/Request globals that next/server relies on.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { POST } from '../route'
+import { POST, PATCH, DELETE } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyPermission } from '@/utils/server-roles'
+import { logAudit } from '@/utils/audit/log'
 import { revalidateCharacterAttendance } from '@/lib/cache/dashboard-attendance'
 import { recomputeBlpForEvents } from '@/utils/blp/recompute'
 
@@ -53,9 +54,16 @@ const RA1 = 'dddddddd-0000-0000-0000-000000000001'
 const RA2 = 'dddddddd-0000-0000-0000-000000000002'
 const RB1 = 'dddddddd-0000-0000-0000-000000000003'
 const R_NULL_EVENT = 'dddddddd-0000-0000-0000-000000000004'
+const RPUG = 'dddddddd-0000-0000-0000-000000000005'
+const UNKNOWN_ROW_ID = 'dddddddd-0000-0000-0000-000000000099'
 const OFFICER_USER_ID = 'eeeeeeee-0000-0000-0000-000000000001'
 
 const bulkCharId = (n: number) => `ffffffff-0000-0000-0000-${String(n).padStart(12, '0')}`
+const bulkRowId = (n: number) => `99999999-0000-0000-0000-${String(n).padStart(12, '0')}`
+
+// Must match ATTENDANCE_FLAG_COLUMNS in ../route.ts exactly, so the fake
+// client can tell the merged-status flag read apart from a plain id lookup.
+const ATTENDANCE_FLAG_COLUMNS = 'id, signed_up, attended, no_call_no_show, was_late, was_benched, is_excused'
 
 // ─── Recording fake client ──────────────────────────────────
 
@@ -77,6 +85,7 @@ interface AttendanceRow {
   id: string
   raid_event_id: string | null
   character_id?: string | null
+  character_name?: string | null
   signed_up?: boolean
   attended?: boolean
   no_call_no_show?: boolean
@@ -111,6 +120,7 @@ function baseFixture(): Fixture {
       { id: RA2, raid_event_id: EA, character_id: CA2 },
       { id: RB1, raid_event_id: EB, character_id: CB },
       { id: R_NULL_EVENT, raid_event_id: null },
+      { id: RPUG, raid_event_id: EA, character_id: null, character_name: 'Pugname' },
     ],
   }
 }
@@ -161,9 +171,28 @@ function makeClient(fixture: Fixture, calls: Call[]) {
 
     if (call.table === 'attendance_records' && call.op === 'select') {
       const inIds = call.filters.find(f => f[0] === 'in' && f[1] === 'id')?.[2] as string[] | undefined
+      const isFlagSelect = call.selectCols === ATTENDANCE_FLAG_COLUMNS
+      const shapeRow = (r: AttendanceRow) => isFlagSelect
+        ? {
+            id: r.id,
+            signed_up: r.signed_up,
+            attended: r.attended,
+            no_call_no_show: r.no_call_no_show,
+            was_late: r.was_late,
+            was_benched: r.was_benched,
+            is_excused: r.is_excused,
+          }
+        : { id: r.id, raid_event_id: r.raid_event_id }
       if (inIds) {
         const matched = attendanceRows.filter(r => inIds.includes(r.id))
-        return { data: matched.map(r => ({ id: r.id, raid_event_id: r.raid_event_id })), error: null }
+        return { data: matched.map(shapeRow), error: null }
+      }
+      const raidEventVal = call.filters.find(f => f[0] === 'eq' && f[1] === 'raid_event_id')?.[2]
+      if (raidEventVal !== undefined) {
+        const charIdsVal = call.filters.find(f => f[0] === 'in' && f[1] === 'character_id')?.[2] as string[] | undefined
+        const matched = attendanceRows.filter(r =>
+          r.raid_event_id === raidEventVal && (!charIdsVal || charIdsVal.includes(r.character_id ?? '')))
+        return { data: matched.map(shapeRow), error: null }
       }
       return { data: [], error: null }
     }
@@ -194,7 +223,7 @@ function makeClient(fixture: Fixture, calls: Call[]) {
           if (raidEventVal !== undefined && row.raid_event_id !== raidEventVal) continue
           if (characterVal !== undefined && row.character_id !== characterVal) continue
           if (isNullCharacter && row.character_id) continue
-          if (namesVal && !namesVal.includes((row as unknown as { character_name?: string }).character_name ?? '')) continue
+          if (namesVal && !namesVal.includes(row.character_name ?? '')) continue
           attendanceRows.splice(i, 1)
         }
       }
@@ -257,7 +286,10 @@ async function run(
 }
 
 const writeCalls = (calls: Call[]) => calls.filter(c => c.table === 'attendance_records' && (c.op === 'upsert' || c.op === 'insert'))
+const updateCalls = (calls: Call[]) => calls.filter(c => c.table === 'attendance_records' && c.op === 'update')
+const deleteCalls = (calls: Call[]) => calls.filter(c => c.table === 'attendance_records' && c.op === 'delete')
 const raidEventLookups = (calls: Call[]) => calls.filter(c => c.table === 'raid_events' && c.op === 'select' && c.filters.some(f => f[0] === 'in'))
+const raidEventTouches = (calls: Call[]) => calls.filter(c => c.table === 'raid_events' && c.op === 'update')
 const membershipLookups = (calls: Call[]) => calls.filter(c => c.table === 'character_guild_memberships' && c.op === 'select')
 const routingMarkers = (calls: Call[]) => calls.filter(c => c.table === 'routing')
 
@@ -472,6 +504,272 @@ describe('attendance bulk route', () => {
         action: 'upsert',
         records: [{ raid_event_id: EA, character_id: CA1 }],
       })
+      expect(res.status).toBe(500)
+      expect(json.error).toBe('constraint violation')
+    })
+  })
+
+  describe('PATCH /api/attendance/bulk', () => {
+    it('Q-1: updates signed_up for two fresh rows, scoped by raid_event_id and character_ids', async () => {
+      const fixture = {
+        ...baseFixture(),
+        attendanceRows: [
+          { id: RA1, raid_event_id: EA, character_id: CA1 },
+          { id: RA2, raid_event_id: EA, character_id: CA2 },
+        ],
+      }
+      const { res, json, calls } = await run(PATCH, 'PATCH', fixture, {
+        updates: { signed_up: true },
+        filters: { raid_event_id: EA, character_ids: [CA1, CA2] },
+      })
+      expect(res.status).toBe(200)
+      expect(json).toEqual({ success: true })
+
+      const updates = updateCalls(calls)
+      expect(updates).toHaveLength(1)
+      expect(updates[0].filters).toEqual(expect.arrayContaining([
+        ['eq', 'raid_event_id', EA],
+        ['in', 'character_id', [CA1, CA2]],
+      ]))
+      expect(updates[0].filters.some(f => f[1] === 'id')).toBe(false)
+      const payload = updates[0].payload as Record<string, unknown>
+      expect(payload).toEqual({ signed_up: true, modified_by: OFFICER_USER_ID, status: 'signed_up' })
+
+      const touches = raidEventTouches(calls)
+      expect(touches).toHaveLength(1)
+      expect(touches[0].filters).toEqual(expect.arrayContaining([
+        ['eq', 'id', EA],
+        ['eq', 'guild_id', GUILD_A],
+      ]))
+
+      expect(recomputeBlpForEvents).toHaveBeenCalledWith(expect.anything(), GUILD_A, [EA])
+    })
+
+    it("Q-2/A1: filters by id keeps an attended row's status attended when only signed_up changes", async () => {
+      const { res, json, calls } = await run(PATCH, 'PATCH', baseFixture(), {
+        updates: { signed_up: true },
+        filters: { id: RA1 },
+      })
+      expect(res.status).toBe(200)
+      expect(json).toEqual({ success: true })
+
+      const updates = updateCalls(calls)
+      expect(updates).toHaveLength(1)
+      expect(updates[0].filters).toEqual(expect.arrayContaining([
+        ['in', 'id', [RA1]],
+        ['in', 'raid_event_id', [EA]],
+      ]))
+      expect(updates[0].payload).toEqual({ signed_up: true, modified_by: OFFICER_USER_ID, status: 'attended' })
+      expect(recomputeBlpForEvents).toHaveBeenCalledWith(expect.anything(), GUILD_A, [EA])
+    })
+
+    it('A1: clearing attended on an attended row moves status by the merged flags', async () => {
+      const { res, calls } = await run(PATCH, 'PATCH', baseFixture(), {
+        updates: { attended: false },
+        filters: { id: RA1 },
+      })
+      expect(res.status).toBe(200)
+      const updates = updateCalls(calls)
+      expect(updates).toHaveLength(1)
+      expect(updates[0].payload).toEqual({ attended: false, modified_by: OFFICER_USER_ID, status: 'absent' })
+    })
+
+    it.each([
+      ['raid_event_id EB', { raid_event_id: EB }, 'invalid_raid_event_ids', [EB]],
+      ['id RB1', { id: RB1 }, 'invalid_ids', [RB1]],
+      ['ids [RA1, RB1]', { ids: [RA1, RB1] }, 'invalid_ids', [RB1]],
+      ['id R_NULL_EVENT', { id: R_NULL_EVENT }, 'invalid_ids', [R_NULL_EVENT]],
+    ])('Q-3: filters %s gives 400 C-1 and makes no update', async (_label, filters, key, expected) => {
+      const { res, json, calls } = await run(PATCH, 'PATCH', baseFixture(), {
+        updates: { signed_up: true },
+        filters,
+      })
+      expect(res.status).toBe(400)
+      expect(json.error).toBe("This attendance belongs to a raid that isn't in this guild. Refresh the page, then try again.")
+      expect(json[key]).toEqual(expected)
+      expect(updateCalls(calls)).toHaveLength(0)
+    })
+
+    it('Q-4: filters by an unknown id returns 200 with no update call', async () => {
+      const { res, json, calls } = await run(PATCH, 'PATCH', baseFixture(), {
+        updates: { signed_up: true },
+        filters: { id: UNKNOWN_ROW_ID },
+      })
+      expect(res.status).toBe(200)
+      expect(json).toEqual({ success: true })
+      expect(updateCalls(calls)).toHaveLength(0)
+    })
+
+    it.each([
+      ['empty filters', { signed_up: true }, {}],
+      ['character_ids alone', { signed_up: true }, { character_ids: [CA1] }],
+      ['an unknown filter key', { signed_up: true }, { raid_event_id: EA, bogus: true }],
+      ['empty ids', { signed_up: true }, { ids: [] }],
+      ['empty updates', {}, { raid_event_id: EA }],
+      ['updates with raid_event_id', { raid_event_id: EB }, { raid_event_id: EA }],
+      ['updates with character_id', { character_id: CB }, { raid_event_id: EA }],
+      ['updates with an unknown key', { notes: 'x' }, { raid_event_id: EA }],
+      ['a non-boolean flag', { signed_up: 'true' }, { raid_event_id: EA }],
+    ])('Q-5 (C-3): %s gives 400 with no lookup and no write', async (_label, updates, filters) => {
+      const { res, json, calls } = await run(PATCH, 'PATCH', baseFixture(), { updates, filters })
+      expect(res.status).toBe(400)
+      expect(json.error).toBe('This page is out of date. Refresh it, then try again.')
+      expect(raidEventLookups(calls)).toHaveLength(0)
+      expect(updateCalls(calls)).toHaveLength(0)
+    })
+
+    it.each([
+      ['updates missing', { filters: { raid_event_id: EA } }],
+      ['filters missing', { updates: { signed_up: true } }],
+    ])('keeps the existing 400 text when %s', async (_label, body) => {
+      const { res, json } = await run(PATCH, 'PATCH', baseFixture(), body)
+      expect(res.status).toBe(400)
+      expect(json.error).toBe('guild_id, updates, and filters are required')
+    })
+
+    it('Q-6: an attendance_records lookup error returns 500 with no update', async () => {
+      const fixture = { ...baseFixture(), errors: { 'attendance_records:select': 'db down' } }
+      const { res, json, calls } = await run(PATCH, 'PATCH', fixture, {
+        updates: { signed_up: true },
+        filters: { id: RA1 },
+      })
+      expect(res.status).toBe(500)
+      expect(json.error).toBe('Internal server error')
+      expect(updateCalls(calls)).toHaveLength(0)
+    })
+
+    it('Q-6: a raid_events lookup error returns 500 with no update', async () => {
+      const fixture = { ...baseFixture(), errors: { 'raid_events:select': 'db down' } }
+      const { res, json, calls } = await run(PATCH, 'PATCH', fixture, {
+        updates: { signed_up: true },
+        filters: { raid_event_id: EA },
+      })
+      expect(res.status).toBe(500)
+      expect(json.error).toBe('Internal server error')
+      expect(updateCalls(calls)).toHaveLength(0)
+    })
+  })
+
+  describe('DELETE /api/attendance/bulk', () => {
+    it('D-1: deletes by raid_event_id and character_id', async () => {
+      const { res, json, calls } = await run(DELETE, 'DELETE', baseFixture(), {
+        raid_event_id: EA,
+        character_id: CA1,
+      })
+      expect(res.status).toBe(200)
+      expect(json).toEqual({ success: true })
+      const deletes = deleteCalls(calls)
+      expect(deletes).toHaveLength(1)
+      expect(deletes[0].filters).toEqual(expect.arrayContaining([
+        ['eq', 'raid_event_id', EA],
+        ['eq', 'character_id', CA1],
+      ]))
+      expect(recomputeBlpForEvents).toHaveBeenCalledWith(expect.anything(), GUILD_A, [EA])
+    })
+
+    it('D-1: deletes unlinked rows by character_id_is_null and character_names', async () => {
+      const { res, calls } = await run(DELETE, 'DELETE', baseFixture(), {
+        raid_event_id: EA,
+        character_id_is_null: true,
+        character_names: ['Pugname'],
+      })
+      expect(res.status).toBe(200)
+      const deletes = deleteCalls(calls)
+      expect(deletes).toHaveLength(1)
+      expect(deletes[0].filters).toEqual(expect.arrayContaining([
+        ['eq', 'raid_event_id', EA],
+        ['is', 'character_id', null],
+        ['in', 'character_name', ['Pugname']],
+      ]))
+    })
+
+    it('D-2: deletes by ids, scoped to the resolved raid events', async () => {
+      const { res, json, calls } = await run(DELETE, 'DELETE', baseFixture(), { ids: [RA1, RA2] })
+      expect(res.status).toBe(200)
+      expect(json).toEqual({ success: true })
+      const deletes = deleteCalls(calls)
+      expect(deletes).toHaveLength(1)
+      expect(deletes[0].filters).toEqual(expect.arrayContaining([
+        ['in', 'id', [RA1, RA2]],
+        ['in', 'raid_event_id', [EA]],
+      ]))
+      expect(recomputeBlpForEvents).toHaveBeenCalledWith(expect.anything(), GUILD_A, [EA])
+    })
+
+    it('D-3: ids including another guild\'s row give 400 C-1 and make no delete', async () => {
+      const { res, json, calls } = await run(DELETE, 'DELETE', baseFixture(), { ids: [RA1, RB1] })
+      expect(res.status).toBe(400)
+      expect(json.error).toBe("This attendance belongs to a raid that isn't in this guild. Refresh the page, then try again.")
+      expect(json.invalid_ids).toEqual([RB1])
+      expect(deleteCalls(calls)).toHaveLength(0)
+    })
+
+    it("D-3: another guild's raid_event_id gives 400 C-1 and makes no delete", async () => {
+      const { res, json, calls } = await run(DELETE, 'DELETE', baseFixture(), { raid_event_id: EB })
+      expect(res.status).toBe(400)
+      expect(json.error).toBe("This attendance belongs to a raid that isn't in this guild. Refresh the page, then try again.")
+      expect(json.invalid_raid_event_ids).toEqual([EB])
+      expect(deleteCalls(calls)).toHaveLength(0)
+    })
+
+    it('D-3: an unknown id returns 200 with no delete, audit or recompute', async () => {
+      const { res, json, calls } = await run(DELETE, 'DELETE', baseFixture(), { ids: [UNKNOWN_ROW_ID] })
+      expect(res.status).toBe(200)
+      expect(json).toEqual({ success: true })
+      expect(deleteCalls(calls)).toHaveLength(0)
+      expect(logAudit).not.toHaveBeenCalled()
+      expect(recomputeBlpForEvents).not.toHaveBeenCalled()
+    })
+
+    it.each([
+      ['empty ids', { ids: [] }],
+      ['a non-UUID id', { ids: ['x'] }],
+      ['an empty character name', { raid_event_id: EA, character_names: [''] }],
+      ['an unknown key', { raid_event_id: EA, bogus: true }],
+      ['a non-boolean character_id_is_null', { raid_event_id: EA, character_id_is_null: 'yes' }],
+    ])('D-4 (C-3): %s gives 400 with no delete', async (_label, body) => {
+      const { res, json, calls } = await run(DELETE, 'DELETE', baseFixture(), body)
+      expect(res.status).toBe(400)
+      expect(json.error).toBe('This page is out of date. Refresh it, then try again.')
+      expect(deleteCalls(calls)).toHaveLength(0)
+    })
+
+    it('keeps the existing 400 text when neither ids nor raid_event_id is sent', async () => {
+      const { res, json } = await run(DELETE, 'DELETE', baseFixture(), {})
+      expect(res.status).toBe(400)
+      expect(json.error).toBe('raid_event_id or ids required')
+    })
+
+    it('D-5: 150 ids of guild A rows make two row lookups and two deletes', async () => {
+      const rowIds = Array.from({ length: 150 }, (_, i) => bulkRowId(i))
+      const fixture = {
+        ...baseFixture(),
+        attendanceRows: [
+          ...baseFixture().attendanceRows,
+          ...rowIds.map(rid => ({ id: rid, raid_event_id: EA, character_id: CA1 })),
+        ],
+      }
+      const { res, calls } = await run(DELETE, 'DELETE', fixture, { ids: rowIds })
+      expect(res.status).toBe(200)
+      const lookups = calls.filter(c => c.table === 'attendance_records' && c.op === 'select' && c.filters.some(f => f[0] === 'in' && f[1] === 'id'))
+      expect(lookups).toHaveLength(2)
+      const deletes = deleteCalls(calls)
+      expect(deletes).toHaveLength(2)
+      expect((deletes[0].filters.find(f => f[1] === 'id')?.[2] as string[])).toHaveLength(100)
+      expect((deletes[1].filters.find(f => f[1] === 'id')?.[2] as string[])).toHaveLength(50)
+    })
+
+    it('D-5: a row lookup error returns 500 with no delete', async () => {
+      const fixture = { ...baseFixture(), errors: { 'attendance_records:select': 'db down' } }
+      const { res, json, calls } = await run(DELETE, 'DELETE', fixture, { ids: [RA1] })
+      expect(res.status).toBe(500)
+      expect(json.error).toBe('Internal server error')
+      expect(deleteCalls(calls)).toHaveLength(0)
+    })
+
+    it('D-5: a delete error returns 500 with the database message', async () => {
+      const fixture = { ...baseFixture(), errors: { 'attendance_records:delete': 'constraint violation' } }
+      const { res, json } = await run(DELETE, 'DELETE', fixture, { raid_event_id: EA, character_id: CA1 })
       expect(res.status).toBe(500)
       expect(json.error).toBe('constraint violation')
     })
