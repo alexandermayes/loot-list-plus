@@ -13,6 +13,7 @@ import RealmSelector from '@/app/components/RealmSelector'
 import ForeverRulesetSelector from '@/app/components/ForeverRulesetSelector'
 import { getRegionForRealm } from '@/data/wow-realms'
 import { getGuildGame } from '@/domain/expansion/game'
+import { isPro } from '@/domain/guild/feature-flags'
 import { GuildSettingsContentSkeleton } from '@/components/ui/skeletons'
 import { EmptyState } from '@/components/ui/empty-state'
 import {
@@ -93,7 +94,7 @@ export default function GuildSettingsContent() {
   const [selectedNewOwner, setSelectedNewOwner] = useState<string>('')
 
   const router = useRouter()
-  const { activeGuild, loading: guildLoading, isOfficer, hasPermission, refreshGuilds, user } = useGuildContext()
+  const { activeGuild, loading: guildLoading, isOfficer, hasPermission, user } = useGuildContext()
   const { showNotification } = useNotification()
 
   // Forever guild: reads guilds.game only (D-07); never the active expansion's
@@ -176,6 +177,7 @@ export default function GuildSettingsContent() {
     if (!guildLoading) {
       loadData().catch(console.error)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guildLoading, activeGuild])
 
   const handleSaveBasicInfo = async () => {
@@ -405,6 +407,7 @@ export default function GuildSettingsContent() {
     if (!activeGuild?.discord_server_id || guildLoading || loading) return
     if (!hasPermission('manage_settings')) return
     loadDiscordChannels()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeGuild?.discord_server_id, guildLoading, loading, hasPermission])
 
   const handleToggleLootAnnouncements = async (enabled: boolean) => {
@@ -590,6 +593,7 @@ export default function GuildSettingsContent() {
                         : 'border-border-strong bg-background-elevated hover:bg-muted'
                     } ${!isGuildCreator ? 'opacity-60 cursor-not-allowed' : ''}`}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_02.jpg"
                       alt="Alliance"
@@ -610,6 +614,7 @@ export default function GuildSettingsContent() {
                         : 'border-border-strong bg-background-elevated hover:bg-muted'
                     } ${!isGuildCreator ? 'opacity-60 cursor-not-allowed' : ''}`}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src="https://wow.zamimg.com/images/wow/icons/large/inv_bannerpvp_01.jpg"
                       alt="Horde"
@@ -680,6 +685,7 @@ export default function GuildSettingsContent() {
           <Card className="overflow-hidden">
             <div className="p-6 border-b border-border">
               <div className="flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/discord-icon.svg" alt="" className="w-6 h-6" />
                 <div>
                   <Heading level={2}>Discord integration</Heading>
@@ -757,6 +763,7 @@ export default function GuildSettingsContent() {
           <Card className="overflow-hidden">
             <div className="p-6 border-b border-border">
               <div className="flex items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/wcl-icon.png" alt="" className="w-6 h-6" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                 <div>
                   <Heading level={2}>Warcraft Logs</Heading>
@@ -948,6 +955,11 @@ export default function GuildSettingsContent() {
                 </ModalDescription>
               </ModalHeader>
               <ModalBody className="space-y-4">
+                {isPro(activeGuild) && (
+                  <p className="text-13 text-muted-foreground">
+                    {"Deleting this guild also cancels its Premium subscription right away. You won't be charged again, and the rest of the current billing period isn't refunded."}
+                  </p>
+                )}
                 <Alert variant="destructive">
                   <AlertDescription className="text-muted-foreground">
                     Type <span className="font-mono font-semibold text-destructive">{deleteConfirmText}</span> to confirm.
