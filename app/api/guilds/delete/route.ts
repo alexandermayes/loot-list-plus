@@ -45,27 +45,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Try to use the delete_guild function if it exists
+    // Delete guild using RPC (bypasses RLS and verifies creator)
     const { error: deleteError } = await supabase.rpc('delete_guild', {
       p_guild_id: guild_id
     })
 
     if (deleteError) {
       console.error('Error calling delete_guild function:', deleteError)
-      // If the function doesn't exist or fails, manually delete
-      // This will cascade delete related data if foreign keys are set up properly
-      const { error: manualDeleteError } = await supabase
-        .from('guilds')
-        .delete()
-        .eq('id', guild_id)
-
-      if (manualDeleteError) {
-        console.error('Error manually deleting guild:', manualDeleteError)
-        return NextResponse.json(
-          { error: 'Failed to delete guild' },
-          { status: 500 }
-        )
-      }
+      return NextResponse.json(
+        { error: 'Couldn\'t delete guild. Try again.' },
+        { status: 500 }
+      )
     }
 
     // Check if user has any other guilds via character memberships
