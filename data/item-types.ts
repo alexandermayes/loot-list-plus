@@ -1121,8 +1121,16 @@ export function getItemTypeInfo(wowheadId: number): ItemTypeInfo | undefined {
 export const ARMOR_SLOTS = ['Head', 'Shoulder', 'Chest', 'Wrist', 'Hands', 'Waist', 'Legs', 'Feet'] as const
 
 /**
- * Infer armor type from item slot and name patterns
- * This is a fallback for items not in the mapping
+ * A fallback for items with no ITEM_TYPES entry and no stored type. A wrong
+ * guess heavier than the real type hides the item from a class that can
+ * wear it (GH #388; the same happened with "gauntlets", removed on
+ * 2026-03-29). Checked against the wow-classic-items package for the
+ * Classic, TBC and Wrath raid catalogs, "breastplate", "greaves",
+ * "sabatons" and "vambraces" name mail and plate pieces alike (73, 57, 71
+ * and 56 percent plate), while other names containing "plate" were plate 57
+ * times out of 59 (both misses are Classic legplates that now have
+ * entries). A name with no reliable hint returns undefined, which shows the
+ * item to every class.
  */
 export function inferArmorType(slot: string, name: string): ArmorType | undefined {
   const nameLower = name.toLowerCase()
@@ -1140,10 +1148,11 @@ export function inferArmorType(slot: string, name: string): ArmorType | undefine
   }
 
   // Plate indicators
-  // Note: "gauntlets" excluded — used across all armor types (Mail, Leather, Plate)
-  if (nameLower.includes('plate') || nameLower.includes('breastplate') ||
-      nameLower.includes('sabatons') || nameLower.includes('greaves') ||
-      nameLower.includes('vambraces')) {
+  // Note: "gauntlets" excluded — used across all armor types (Mail, Leather, Plate).
+  // "breastplate", "greaves", "sabatons" and "vambraces" excluded too (GH #388):
+  // those words name mail and plate pieces alike, so a bare "plate" is the
+  // only reliable signal, and only when the name is not "breastplate".
+  if (nameLower.includes('plate') && !nameLower.includes('breastplate')) {
     return 'Plate'
   }
 
