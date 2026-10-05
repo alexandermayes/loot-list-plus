@@ -4,7 +4,7 @@ import { classicRaids } from '../classic-wow-raids'
 import { canClassUseToken, getTokenClasses, isTokenSlot } from '../token-class-mapping'
 import { canUseWeaponType, isClassAgnosticSlot, type WeaponType, type WowClassName } from '../class-proficiencies'
 import { ITEM_ICONS } from '../item-icons'
-import { ITEM_TYPES, type ItemTypeInfo, inferArmorType, inferWeaponType } from '../item-types'
+import { ITEM_TYPES, type ItemTypeInfo, inferArmorType, inferWeaponType, ARMOR_SLOTS } from '../item-types'
 import { GH273_CORE } from './fixtures/classic-gh273-core'
 import { GH284_RECIPES, GH284_RESEARCH } from './fixtures/classic-gh284-recipes'
 import { ITEM_CLASSIFICATIONS } from '../classic-wow-item-classifications'
@@ -345,6 +345,54 @@ describe('Classic catalog icons and item types (#273)', () => {
       })
       .map(entry => `${entry.name} (${entry.wowhead_id})`)
     expect(mismatched).toEqual([])
+  })
+})
+
+// The package-agreement check above only covers ids that already have an
+// entry, and the GH-273 coverage only checks items the package attributes to
+// a Classic raid zone (GH #278), so Tier 1 and Tier 2 pieces without a zone
+// were never required to have a type. With no entry and an empty stored
+// type the picker guesses from the name, which hid mail pieces from Hunters
+// and Shamans (GH #388).
+const armorPieces = (() => {
+  const seen = new Set<number>()
+  const pieces: typeof catalogEntries = []
+  for (const entry of catalogEntries) {
+    if (!ARMOR_SLOTS.includes(entry.slot as (typeof ARMOR_SLOTS)[number])) continue
+    if (seen.has(entry.wowhead_id)) continue
+    seen.add(entry.wowhead_id)
+    pieces.push(entry)
+  }
+  return pieces
+})()
+
+describe('Classic raid armor types (#388)', () => {
+  it('has exactly 341 Classic raid armor pieces', () => {
+    expect(armorPieces).toHaveLength(341)
+  })
+
+  it('every Classic raid armor piece has an ITEM_TYPES entry that agrees with the package', () => {
+    const failures = armorPieces
+      .filter(entry => {
+        const packageItem = packageById.get(entry.wowhead_id)
+        const expected = packageItem ? packageTypeInfo(packageItem) : null
+        return JSON.stringify(ITEM_TYPES[entry.wowhead_id] ?? null) !== JSON.stringify(expected)
+      })
+      .map(entry => {
+        const packageItem = packageById.get(entry.wowhead_id)
+        const expected = packageItem ? packageTypeInfo(packageItem) : null
+        const actual = ITEM_TYPES[entry.wowhead_id]
+        return `${entry.raid} | ${entry.name} (${entry.wowhead_id}): ITEM_TYPES ${actual ? JSON.stringify(actual) : 'none'}, package ${expected ? JSON.stringify(expected) : 'none'}`
+      })
+    expect(failures).toEqual([])
+  })
+
+  it('no Classic catalog item with slot Back, Token, Quest or Recipe has an ITEM_TYPES entry', () => {
+    const failures = catalogEntries
+      .filter(entry => ['Back', 'Token', 'Quest', 'Recipe'].includes(entry.slot))
+      .filter(entry => ITEM_TYPES[entry.wowhead_id] !== undefined)
+      .map(entry => `${entry.raid} | ${entry.name} (${entry.wowhead_id})`)
+    expect(failures).toEqual([])
   })
 })
 
