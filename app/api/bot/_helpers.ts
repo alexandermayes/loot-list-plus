@@ -9,6 +9,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { guildHasPaidAccess } from '@/utils/feature-gate'
 
 /**
  * Constant-time comparison of two strings. Slower than `===` only for the
@@ -73,4 +74,49 @@ export async function resolveGuildFromDiscord(
   }
   if (!data) return null
   return { id: data.id, name: data.name, active_expansion_id: data.active_expansion_id }
+}
+
+/**
+ * The canonical app origin for a user-facing link, matching
+ * lib/billing/trial-ending.ts resolveAppOrigin (per app/layout.tsx
+ * metadataBase). Read at call time, not at module load, so tests can stub
+ * NEXT_PUBLIC_APP_URL. Trailing slashes are removed so callers can append
+ * a path with a single slash.
+ */
+function appOrigin(): string {
+  const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://www.getlootlist.com'
+  return origin.replace(/\/+$/, '')
+}
+
+/**
+ * Require LootList+ Premium for the Discord bot's /score and /priority
+ * lookups. Null means go on (the guild has Premium); otherwise a 403
+ * NextResponse the caller returns as is.
+ *
+ * Called directly after guild resolution in both routes, before any guild
+ * data is read. A thrown read error (guildHasPaidAccess fails closed) is
+ * not caught here, so it reaches the route's own catch and answers 500 -
+ * a tier read error never answers premium_required and never lets data
+ * through.
+ *
+ * Why 403 and not 402: slice 1 already answers premium_required with 403
+ * (utils/feature-gate.ts requireReserveAccess and requireReserveRunPremium),
+ * the bot already handles a 403 machine code (rankings_hidden), nothing in
+ * the codebase answers 402, and 402 has no settled meaning.
+ *
+ * `error` is a machine code the bot keys on, same as every other bot route
+ * answer (no_guild_linked, item_not_found, rankings_hidden); the human text
+ * lives in the bot. `guild_name` is returned raw, as /score already returns
+ * it; the bot cleans it for Discord markdown.
+ */
+export async function requireBotLookupAccess(
+  supabase: SupabaseClient,
+  guild: { id: string; name: string }
+): Promise<NextResponse | null> {
+  const hasAccess = await guildHasPaidAccess(supabase, guild.id, 'discord_bot')
+  if (hasAccess) return null
+  return NextResponse.json(
+    { error: 'premium_required', guild_name: guild.name, premium_url: `${appOrigin()}/premium` },
+    { status: 403 }
+  )
 }

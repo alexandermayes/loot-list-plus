@@ -748,6 +748,8 @@ An officer links the server under **Guild Settings → Discord**. This also requ
 - \`/priority <item>\` — show who ranks an item highest
 - \`/help <question>\` — ask the help bot a question
 
+\`/score\` and \`/priority\` answer for guilds with LootList+ Premium, including guilds on a free trial. \`/help\` works for every guild.
+
 ## Announcements
 
 Under **Guild Settings → Discord** you can pick channels for **loot announcements** and **raid summaries**, and turn notifications on or off.

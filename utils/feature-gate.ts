@@ -14,6 +14,10 @@
  *   if (!access.allowed) return access.error
  *
  *   const hasAccess = await guildHasPaidAccess(serviceSupabase, guildId, 'reserve_runs')
+ *
+ *   const blocked = await requireBotLookupAccess(supabase, guild)
+ *   if (blocked) return blocked
+ *   (lives in app/api/bot/_helpers.ts)
  */
 
 import { NextResponse } from 'next/server'
@@ -58,10 +62,14 @@ const RESERVE_GRANDFATHER_CUTOFF = '2026-08-27T00:00:00Z'
  * any read: Premium only, with no grandfathering, because no guild has
  * used it yet.
  *
- * Discord bot lookups and addon sync get their own keys when they move
- * to Premium (slices 2 and 3 of the 261004-jgk split).
+ * 'discord_bot' is the Discord bot's /score and /priority lookups
+ * (app/api/bot/_helpers.ts requireBotLookupAccess). Premium only, with no
+ * grandfathering: bot use was never recorded per guild, so the cutoff is
+ * immediate. /help and the bot's announcements are not gated.
+ *
+ * Addon and companion sync get their own key when they move to Premium.
  */
-export type PaidFeature = 'reserve_runs' | 'guild_api'
+export type PaidFeature = 'reserve_runs' | 'guild_api' | 'discord_bot'
 
 /**
  * Read a guild's subscription tier with the service client. Throws on a

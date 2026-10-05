@@ -14,6 +14,16 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'October 5, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Discord bot lookups join Premium',
+        description: 'The /score and /priority commands in Discord now need LootList+ Premium, and guilds on a free trial have them too. /help, loot announcements and raid summaries stay free for every guild. Officers can upgrade from the sidebar or Guild Settings.',
+      },
+    ],
+  },
+  {
     date: 'September 27, 2026',
     items: [
       {

@@ -2,7 +2,7 @@
 // jsdom (the global vitest.config.ts environment) does not provide the web
 // Response/Request globals that next/server relies on.
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { checkBotAuth, resolveGuildFromDiscord } from '../_helpers'
+import { checkBotAuth, resolveGuildFromDiscord, requireBotLookupAccess } from '../_helpers'
 
 const BOT_KEY = 'test-bot-key'
 
@@ -140,5 +140,43 @@ describe('resolveGuildFromDiscord', () => {
   it('throws when the query errors', async () => {
     const { client } = makeGuildsClient([], { fail: true })
     await expect(resolveGuildFromDiscord(client as never, 'd1')).rejects.toThrow()
+  })
+})
+
+describe('requireBotLookupAccess', () => {
+  const GUILD = { id: 'g1', name: 'Guild One' }
+
+  it('resolves null for a pro guild', async () => {
+    const { client, calls } = makeGuildsClient([{ id: 'g1', subscription_tier: 'pro' }])
+    const result = await requireBotLookupAccess(client as never, GUILD)
+    expect(result).toBeNull()
+    expect(calls[0].filters).toEqual([{ type: 'eq', col: 'id', val: 'g1' }])
+  })
+
+  it('resolves a 403 premium_required response for a free guild, falling back to the default origin', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_URL', '')
+    const { client } = makeGuildsClient([{ id: 'g1', subscription_tier: 'free' }])
+    const result = await requireBotLookupAccess(client as never, GUILD)
+    expect(result).not.toBeNull()
+    expect(result?.status).toBe(403)
+    const body = await result!.json()
+    expect(body).toEqual({
+      error: 'premium_required',
+      guild_name: 'Guild One',
+      premium_url: 'https://www.getlootlist.com/premium',
+    })
+  })
+
+  it('uses the stubbed app origin, with a trailing slash removed', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://preview.example.test//')
+    const { client } = makeGuildsClient([{ id: 'g1', subscription_tier: 'free' }])
+    const result = await requireBotLookupAccess(client as never, GUILD)
+    const body = await result!.json()
+    expect(body.premium_url).toBe('https://preview.example.test/premium')
+  })
+
+  it('rejects on a read error, with no response', async () => {
+    const { client } = makeGuildsClient([], { fail: true })
+    await expect(requireBotLookupAccess(client as never, GUILD)).rejects.toThrow()
   })
 })
