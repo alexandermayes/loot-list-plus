@@ -6,13 +6,21 @@ import { resolveRaidDays } from '@/domain/raid-team/settings'
 import { pickScheduleSource } from '@/domain/raid-team/pick-schedule-source'
 import { isDateScheduled } from '@/domain/raid-team/schedule-history'
 import { revalidateGuildRaidEvents } from '@/lib/cache/dashboard-attendance'
+import {
+  findGuildExpansion,
+  resolveGuildRaidTierId,
+  RAID_EVENT_EXPANSION_NOT_IN_GUILD_ERROR,
+} from '@/lib/raid-events/guild-raid-refs'
 
 /**
  * POST /api/raid-events/ensure
  *
  * Ensures raid events exist for the given dates. Creates any missing ones.
  * Accessible to any guild member (creating blank events is idempotent/harmless).
- * All DB operations use service role to bypass RLS.
+ * All DB operations use service role to bypass RLS. A given expansion_id
+ * must be one of the guild's expansions (refused with a 400 otherwise, or
+ * a 500 if the lookup fails); new events take a tier of that expansion
+ * only.
  *
  * Body: { guild_id, dates: string[], expansion_id: string }
  * Returns: { events: RaidEvent[] } — all events in the date range
@@ -61,6 +69,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
     }
 
+    // A given expansion_id must be one of the guild's own expansions before
+    // anything else is read or created (OD-1, resolved: refuse the whole
+    // request). absent, null and the empty string all mean "create
+    // nothing" and skip this check entirely, same as before.
+    let expansion = null
+    if (expansion_id) {
+      expansion = await findGuildExpansion(serviceSupabase, guild_id, expansion_id)
+      if (!expansion) {
+        return NextResponse.json(
+          { error: RAID_EVENT_EXPANSION_NOT_IN_GUILD_ERROR },
+          { status: 400 }
+        )
+      }
+    }
+
     // When no team is specified but the guild HAS teams, never auto-create
     // unassigned (null-team) events. Raids belong to teams in a team guild, so a
     // guild-wide auto-create (e.g. from the "All teams" attendance view) would
@@ -69,10 +92,13 @@ export async function POST(request: NextRequest) {
     // guild-wide/bonus raids are created through their own flows, not here.
     let allowCreate = true
     if (!raid_team_id) {
-      const { count: teamCount } = await serviceSupabase
+      const { count: teamCount, error: teamCountError } = await serviceSupabase
         .from('raid_teams')
         .select('id', { count: 'exact', head: true })
         .eq('guild_id', guild_id)
+      if (teamCountError) {
+        throw new Error(`Failed to count raid teams for guild ${guild_id}: ${teamCountError.message}`)
+      }
       if ((teamCount ?? 0) > 0) {
         allowCreate = false
       }
@@ -146,61 +172,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. If there are new dates, look up the tier and create events
-    if (newDates.length > 0 && expansion_id && allowCreate) {
-      // Get current phase
-      const { data: expData } = await serviceSupabase
-        .from('expansions')
-        .select('current_phase')
-        .eq('id', expansion_id)
-        .single()
-
-      const currentPhase = expData?.current_phase || 1
-
-      // Find the active tier for this phase
-      const { data: tierData } = await serviceSupabase
-        .from('raid_tiers')
-        .select('id')
-        .eq('expansion_id', expansion_id)
-        .eq('phase', currentPhase)
-        .eq('is_guild_active', true)
-        .limit(1)
-        .maybeSingle()
-
-      // Fallback: if no active tier for current phase, try any tier for this phase
-      let tierId = tierData?.id
-      if (!tierId) {
-        const { data: fallbackTier } = await serviceSupabase
-          .from('raid_tiers')
-          .select('id')
-          .eq('expansion_id', expansion_id)
-          .eq('phase', currentPhase)
-          .limit(1)
-          .maybeSingle()
-        tierId = fallbackTier?.id
-      }
-
-      // Second fallback: any active tier for the expansion
-      if (!tierId) {
-        const { data: anyTier } = await serviceSupabase
-          .from('raid_tiers')
-          .select('id')
-          .eq('expansion_id', expansion_id)
-          .eq('is_guild_active', true)
-          .limit(1)
-          .maybeSingle()
-        tierId = anyTier?.id
-      }
-
-      // Third fallback: literally any tier for the expansion (ignore is_guild_active)
-      if (!tierId) {
-        const { data: lastResort } = await serviceSupabase
-          .from('raid_tiers')
-          .select('id')
-          .eq('expansion_id', expansion_id)
-          .limit(1)
-          .maybeSingle()
-        tierId = lastResort?.id
-      }
+    if (newDates.length > 0 && expansion && allowCreate) {
+      const tierId = await resolveGuildRaidTierId(serviceSupabase, expansion)
 
       if (tierId) {
         const newEvents = newDates.map(date => ({
@@ -229,7 +202,7 @@ export async function POST(request: NextRequest) {
           revalidateGuildRaidEvents(guild_id)
         }
       } else {
-        console.error(`No raid tier found for expansion ${expansion_id}, phase ${currentPhase}`)
+        console.error('No raid tier found for expansion:', { expansion_id: expansion.id, phase: expansion.current_phase || 1 })
       }
     }
 
