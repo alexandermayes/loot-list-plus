@@ -3,9 +3,52 @@ const { handleHelp } = require('./help');
 
 const EMBED_COLOR_ORANGE = 0xff8000;
 const EMBED_COLOR_RED = 0xd73a4a;
+const DEFAULT_PREMIUM_URL = 'https://www.getlootlist.com/premium';
+const MAX_GUILD_NAME_LENGTH = 64;
+// Mirrors lib/billing/trial-ending.ts UNSAFE_GUILD_NAME_CHARS: brackets and
+// parens (link syntax), @ (mentions), and the emphasis/code characters
+// (* _ ~ ` |). The bot is a separate deploy and cannot import app code.
+const UNSAFE_GUILD_NAME_CHARS = /[[\]()@*_~`|]/g;
 
 function errorEmbed(message) {
   return { color: EMBED_COLOR_RED, description: message };
+}
+
+/**
+ * guilds.name is user text interpolated into a public Discord embed
+ * description, which renders Discord markdown (links, mentions, emphasis).
+ * Mirrors lib/billing/trial-ending.ts sanitizeGuildName: strips the unsafe
+ * characters, collapses whitespace, trims, and caps at 64 characters.
+ * Returns null when nothing usable is left, or when name isn't a non-empty
+ * string.
+ */
+function safeGuildName(name) {
+  if (typeof name !== 'string' || name.length === 0) return null;
+  const cleaned = name
+    .replace(UNSAFE_GUILD_NAME_CHARS, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_GUILD_NAME_LENGTH);
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+/**
+ * Builds the embed for a 403 { error: 'premium_required' } answer from
+ * either lookup route (UE3, D-02). Orange, description only: no title, no
+ * footer. The guild name is cleaned for Discord markdown (safeGuildName);
+ * an empty or fully-unsafe name falls back to C-5b. The URL is the route's
+ * premium_url when it looks like an https link, else DEFAULT_PREMIUM_URL.
+ */
+function premiumRequiredEmbed(body) {
+  const url =
+    typeof body?.premium_url === 'string' && body.premium_url.startsWith('https://')
+      ? body.premium_url
+      : DEFAULT_PREMIUM_URL;
+  const name = safeGuildName(body?.guild_name);
+  const description = name
+    ? `Bot lookups are part of LootList+ Premium. An officer can upgrade **${name}** at ${url}.`
+    : `Bot lookups are part of LootList+ Premium. An officer can upgrade your guild at ${url}.`;
+  return { color: EMBED_COLOR_ORANGE, description };
 }
 
 function notLinkedEmbed() {
@@ -69,6 +112,7 @@ function rankingsHiddenEmbed(itemName) {
  * - item_not_found, no_items_in_expansion or no_active_expansion: the existing
  *   "couldn't find an item matching" embed (retrying a no-raids expansion can't help).
  * - rankings_hidden (403): the item's raid tier has Ranks off (COPY C-1).
+ * - premium_required (403, UE3): the guild needs LootList+ Premium (C-5/C-5b).
  * - any other non-ok answer: the existing generic "try again" embed.
  * - ok: the existing priorityEmbed, with a footer naming the sort order (COPY C-2)
  *   when at least one raider is listed; the empty state is unchanged.
@@ -88,10 +132,38 @@ function priorityReply(res, itemQuery) {
   if (res.status === 403 && res.body?.error === 'rankings_hidden') {
     return rankingsHiddenEmbed(res.body.item_name);
   }
+  if (res.status === 403 && res.body?.error === 'premium_required') {
+    return premiumRequiredEmbed(res.body);
+  }
   if (!res.ok) {
     return errorEmbed("LootList+ couldn't run that lookup. Try again in a sec.");
   }
   return priorityEmbed(res.body);
+}
+
+/**
+ * Builds the embed for a /score answer (UE3). Pure: takes the route's
+ * result and the character name the raider typed, returns one embed.
+ * - no_guild_linked: the existing "server isn't linked" embed.
+ * - character_not_found: the existing "couldn't find a character named" embed.
+ * - premium_required (403): the guild needs LootList+ Premium (C-5/C-5b).
+ * - any other non-ok answer: the existing generic "couldn't load that score" embed.
+ * - ok: the existing scoreEmbed.
+ */
+function scoreReply(res, characterName) {
+  if (res.status === 404 && res.body?.error === 'no_guild_linked') {
+    return notLinkedEmbed();
+  }
+  if (res.status === 404 && res.body?.error === 'character_not_found') {
+    return errorEmbed(`Couldn't find a character named **${characterName}** in this guild.`);
+  }
+  if (res.status === 403 && res.body?.error === 'premium_required') {
+    return premiumRequiredEmbed(res.body);
+  }
+  if (!res.ok) {
+    return errorEmbed("LootList+ couldn't load that score. Try again in a sec.");
+  }
+  return scoreEmbed(res.body);
 }
 
 async function handleScore(interaction) {
@@ -101,23 +173,7 @@ async function handleScore(interaction) {
     return;
   }
   const res = await fetchScore(interaction.guildId, characterName);
-  if (res.status === 404 && res.body?.error === 'no_guild_linked') {
-    await interaction.editReply({ embeds: [notLinkedEmbed()] });
-    return;
-  }
-  if (res.status === 404 && res.body?.error === 'character_not_found') {
-    await interaction.editReply({
-      embeds: [errorEmbed(`Couldn't find a character named **${characterName}** in this guild.`)],
-    });
-    return;
-  }
-  if (!res.ok) {
-    await interaction.editReply({
-      embeds: [errorEmbed("LootList+ couldn't load that score. Try again in a sec.")],
-    });
-    return;
-  }
-  await interaction.editReply({ embeds: [scoreEmbed(res.body)] });
+  await interaction.editReply({ embeds: [scoreReply(res, characterName)] });
 }
 
 async function handlePriority(interaction) {
@@ -166,4 +222,4 @@ async function handleInteractionCreate(interaction) {
   }
 }
 
-module.exports = { handleInteractionCreate, priorityReply };
+module.exports = { handleInteractionCreate, priorityReply, scoreReply };
