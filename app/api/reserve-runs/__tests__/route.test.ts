@@ -6,12 +6,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { GET, POST } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
-import { requireReserveAccess } from '@/utils/feature-gate'
+import { requireReserveAccess, guildHasPaidAccess } from '@/utils/feature-gate'
 import { trackEvent } from '@/utils/analytics/server'
 
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
-vi.mock('@/utils/feature-gate', () => ({ requireReserveAccess: vi.fn() }))
+vi.mock('@/utils/feature-gate', () => ({ requireReserveAccess: vi.fn(), guildHasPaidAccess: vi.fn() }))
 vi.mock('@/utils/analytics/server', () => ({ trackEvent: vi.fn() }))
 
 const id = (n: number) => `bbbbbbbb-0000-0000-0000-${String(n).padStart(12, '0')}`
@@ -156,6 +156,7 @@ describe('GET /api/reserve-runs', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(guildHasPaidAccess).mockResolvedValue(true)
   })
 
   it('returns 401 signed out', async () => {
@@ -225,6 +226,51 @@ describe('GET /api/reserve-runs', () => {
     expect(res.status).toBe(500)
     expect(json.error).toBe('Internal server error')
     expect(runSelectCalls(calls)).toHaveLength(0)
+  })
+
+  // D-06: reserve_access tells the Reserve page whether the guild can
+  // create and change runs.
+  it('returns reserve_access true for an active member, calling guildHasPaidAccess with the client, guild id and reserve_runs', async () => {
+    setUser(MEMBER_ID)
+    setClient(baseFixture())
+    const res = await GET(listRequest(GUILD_ID))
+    const json = await res.json()
+    expect(res.status).toBe(200)
+    expect(json.reserve_access).toBe(true)
+    expect(json.runs).toHaveLength(1)
+    expect(guildHasPaidAccess).toHaveBeenCalledWith(createServiceRoleClient(), GUILD_ID, 'reserve_runs')
+  })
+
+  it('returns reserve_access false with the runs still returned when guildHasPaidAccess resolves false', async () => {
+    setUser(MEMBER_ID)
+    vi.mocked(guildHasPaidAccess).mockResolvedValue(false)
+    setClient(baseFixture())
+    const res = await GET(listRequest(GUILD_ID))
+    const json = await res.json()
+    expect(res.status).toBe(200)
+    expect(json.reserve_access).toBe(false)
+    expect(json.runs).toHaveLength(1)
+  })
+
+  it('returns reserve_access null, 200 and the runs when guildHasPaidAccess rejects, logging with a constant message', async () => {
+    setUser(MEMBER_ID)
+    vi.mocked(guildHasPaidAccess).mockRejectedValue(new Error('boom'))
+    setClient(baseFixture())
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const res = await GET(listRequest(GUILD_ID))
+    const json = await res.json()
+    expect(res.status).toBe(200)
+    expect(json.reserve_access).toBeNull()
+    expect(json.runs).toHaveLength(1)
+    expect(consoleSpy).toHaveBeenCalledWith('Reserve runs GET: reserve access read failed:', expect.any(Error))
+  })
+
+  it('does not call guildHasPaidAccess for a non-member', async () => {
+    setUser(OUTSIDER_ID)
+    setClient(baseFixture())
+    const res = await GET(listRequest(GUILD_ID))
+    expect(res.status).toBe(403)
+    expect(guildHasPaidAccess).not.toHaveBeenCalled()
   })
 })
 

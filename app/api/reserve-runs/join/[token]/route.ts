@@ -4,6 +4,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { canClassReserveItem } from '@/utils/wowClassRestrictions'
 import { logReserveAudit } from '@/utils/reserve-audit'
 import { extractLeaderToken, creatorMayManage } from '@/utils/reserve-access'
+import { requireReserveRunPremium } from '@/utils/feature-gate'
 
 // Explicit column list for the join POST response: no internal ids
 // (reserve_run_id, character_id, user_id) reach the client.
@@ -287,13 +288,16 @@ export async function POST(
     // Fetch run
     const { data: run, error: runError } = await serviceSupabase
       .from('reserve_runs')
-      .select('id, guild_id, status, max_reserves, max_reserves_per_item, allow_duplicates, hard_reserves, raid_tier_id, enforce_class_restrictions')
+      .select('id, guild_id, created_by, status, max_reserves, max_reserves_per_item, allow_duplicates, hard_reserves, raid_tier_id, enforce_class_restrictions')
       .eq('share_token', token)
       .single()
 
     if (runError || !run) {
       return NextResponse.json({ error: 'Run not found' }, { status: 404 })
     }
+
+    const premiumAccess = await requireReserveRunPremium(serviceSupabase, run, 'guest')
+    if (!premiumAccess.allowed) return premiumAccess.error
 
     if (run.status !== 'open') {
       return NextResponse.json({ error: 'This run is no longer accepting reserves' }, { status: 400 })
