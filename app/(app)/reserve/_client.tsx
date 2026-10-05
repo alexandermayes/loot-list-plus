@@ -2,12 +2,14 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Heading, Text } from '@/components/ui/typography'
 import { Skeleton } from '@/components/ui/skeletons'
 import { HugeiconsIcon } from '@hugeicons/react'
@@ -48,6 +50,7 @@ export default function ReservePage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [createOpen, setCreateOpen] = useState(false)
+  const [reserve_access, setReserveAccess] = useState<boolean | null>(null)
 
   const loadRuns = useCallback(async () => {
     if (!activeGuild) return
@@ -56,6 +59,7 @@ export default function ReservePage() {
       const data = await res.json()
       if (data.success) {
         setRuns(data.runs)
+        setReserveAccess(data.reserve_access)
       }
     } catch (err) {
       console.error('Failed to load reserve runs:', err)
@@ -90,14 +94,29 @@ export default function ReservePage() {
           <Heading level={1}>Reserve</Heading>
           <Text color="muted" size="sm">Fast soft reserves for raids</Text>
         </div>
-        <Button
-          variant="primary"
-          onClick={() => setCreateOpen(true)}
-        >
-          <HugeiconsIcon icon={Add01Icon} size={16} />
-          Create run
-        </Button>
+        {reserve_access !== false && (
+          <Button
+            variant="primary"
+            onClick={() => setCreateOpen(true)}
+          >
+            <HugeiconsIcon icon={Add01Icon} size={16} />
+            Create run
+          </Button>
+        )}
       </div>
+
+      {/* Premium notice for a guild without reserve access */}
+      {reserve_access === false && (
+        <Alert variant="info" className="mb-6">
+          <AlertTitle>Reserve runs need LootList+ Premium</AlertTitle>
+          <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <span>Your guild can still open its existing runs. Creating runs, taking sign-ups and recording awards need Premium.</span>
+            <Button variant="outline" size="sm" asChild className="flex-shrink-0">
+              <Link href="/premium">See Premium</Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Filter tabs */}
       <div className="flex gap-2 mb-6">
@@ -131,8 +150,9 @@ export default function ReservePage() {
         </div>
       )}
 
-      {/* Empty state */}
-      {!loading && runs.length === 0 && (
+      {/* Empty state (the Premium notice above already explains the page
+          when reserve_access is false, so no EmptyState renders then) */}
+      {!loading && runs.length === 0 && reserve_access !== false && (
         <EmptyState
           title="No reserve runs yet"
           description="Create your first reserve run to get started."

@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { trackEvent } from '@/utils/analytics/server'
 import { logReserveAudit } from '@/utils/reserve-audit'
 import { verifyReserveRunAccess, decideReserveRunViewer } from '@/utils/reserve-access'
+import { requireReserveRunPremium } from '@/utils/feature-gate'
 
 // Explicit column lists for every caller, so a database column never
 // reaches a response by way of select('*').
@@ -157,7 +158,10 @@ export async function GET(
 /**
  * PATCH /api/reserve-runs/[id]
  *
- * Update run or change status. Officer-only.
+ * Update run or change status. Run managers only (leader link, the
+ * creator while an active member of the run's guild, officers with
+ * Manage reserves). The run's guild needs Premium or reserve
+ * grandfathering.
  *
  * Body: { action?: 'lock' | 'unlock' | 'complete', ...fields }
  */
@@ -182,6 +186,9 @@ export async function PATCH(
       return NextResponse.json({ error: access.reason ?? 'Forbidden' }, { status })
     }
     const run = access.run
+
+    const premiumAccess = await requireReserveRunPremium(serviceSupabase, run, 'manager')
+    if (!premiumAccess.allowed) return premiumAccess.error
 
     let updateData: Record<string, unknown> = {}
     let auditAction: string | null = null
@@ -288,7 +295,8 @@ export async function PATCH(
 /**
  * DELETE /api/reserve-runs/[id]
  *
- * Delete a reserve run. Officer-only.
+ * Delete a reserve run. Run managers only. Does not need Premium, so a
+ * guild can always remove its runs.
  */
 export async function DELETE(
   request: NextRequest,

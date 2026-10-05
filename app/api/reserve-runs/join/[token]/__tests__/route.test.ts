@@ -34,7 +34,7 @@ const SHARE_UNKNOWN = 'share-unknown'
 
 type Row = Record<string, unknown>
 type Op = 'select' | 'insert' | 'update' | 'delete'
-type Filter = ['eq' | 'in' | 'ilike', string, unknown]
+type Filter = ['eq' | 'in' | 'ilike' | 'lt', string, unknown]
 interface Call { table: string; op: Op; filters: Filter[]; selectCols?: string; payload?: unknown }
 
 interface Fixture {
@@ -46,6 +46,7 @@ interface Fixture {
   character_guild_memberships: Row[]
   reserve_submissions: Row[]
   reserve_awards: Row[]
+  errorOn?: Partial<Record<string, string>>
 }
 
 function applyFilters(rows: Row[], filters: Filter[]) {
@@ -54,6 +55,7 @@ function applyFilters(rows: Row[], filters: Filter[]) {
       if (kind === 'eq') return row[col] === val
       if (kind === 'in') return Array.isArray(val) && (val as unknown[]).includes(row[col])
       if (kind === 'ilike') return String(row[col]).toLowerCase() === String(val).toLowerCase()
+      if (kind === 'lt') return typeof row[col] === 'string' && (row[col] as string) < (val as string)
       return true
     })
   )
@@ -90,6 +92,8 @@ function makeClient(fixture: Fixture) {
   }
 
   function respond(call: Call) {
+    const errorMsg = fixture.errorOn?.[call.table]
+    if (errorMsg) return { data: null, error: { message: errorMsg } }
     const rows = tables[call.table] || []
     if (call.op === 'update') {
       const matched = applyFilters(rows, call.filters)
@@ -116,15 +120,18 @@ function makeClient(fixture: Fixture) {
         eq: (col: string, val: unknown) => { call.filters.push(['eq', col, val]); return builder },
         in: (col: string, val: unknown) => { call.filters.push(['in', col, val]); return builder },
         ilike: (col: string, val: unknown) => { call.filters.push(['ilike', col, val]); return builder },
+        lt: (col: string, val: unknown) => { call.filters.push(['lt', col, val]); return builder },
         order: () => builder,
         limit: () => builder,
         single: () => {
           const result = respond(call)
+          if (result.error) return Promise.resolve(result)
           const rows = result.data as Row[]
           return Promise.resolve(rows.length > 0 ? { data: rows[0], error: null } : { data: null, error: { message: 'not found' } })
         },
         maybeSingle: () => {
           const result = respond(call)
+          if (result.error) return Promise.resolve(result)
           const rows = result.data as Row[]
           return Promise.resolve({ data: rows[0] ?? null, error: null })
         },
@@ -166,7 +173,7 @@ function baseFixture(): Fixture {
       { id: RUN_SOLO, share_token: SHARE_SOLO, ...run({ id: RUN_SOLO, created_by: SOLO_ID, raid_leader_token: 'TOK_S', guild_id: null }) },
     ],
     raid_tiers: [{ id: TIER_ID, name: 'Tier 1' }],
-    guilds: [{ id: GUILD_ID, name: 'Guild' }],
+    guilds: [{ id: GUILD_ID, name: 'Guild', subscription_tier: 'pro' }],
     loot_items: [{ id: ITEM_ID, name: 'Sword', armor_type: null, boss_name: 'Boss', item_slot: 'weapon', wowhead_id: 1, classification: 'epic', raid_tier_id: TIER_ID, is_available: true }],
     characters: [
       { id: 'char-creator', user_id: CREATOR_ID, name: 'Creator', is_main: true, class: { name: 'Warrior', color_hex: '#fff' }, spec: { name: 'Fury' } },
@@ -285,6 +292,17 @@ describe('GET /api/reserve-runs/join/[token]', () => {
     const res = await GET(getRequest(SHARE_UNKNOWN), { params: Promise.resolve({ token: SHARE_UNKNOWN }) })
     expect(res.status).toBe(404)
   })
+
+  it('stays open (D-05): a free non-grandfathered guild still returns the same payload keys', async () => {
+    setUser(null)
+    const fixture = baseFixture()
+    fixture.guilds = [{ id: GUILD_ID, name: 'Guild', subscription_tier: 'free' }]
+    setClient(fixture)
+    const res = await GET(getRequest(SHARE_OPEN), { params: Promise.resolve({ token: SHARE_OPEN }) })
+    const json = await res.json()
+    expect(res.status).toBe(200)
+    expect(json.run.title).toBe('Run')
+  })
 })
 
 describe('POST /api/reserve-runs/join/[token]', () => {
@@ -341,6 +359,73 @@ describe('POST /api/reserve-runs/join/[token]', () => {
     const json = await res.json()
     expect(res.status).toBe(400)
     expect(json.error).toBe('This run is no longer accepting reserves')
+  })
+
+  // D-04, D-07: the run's guild needs Premium or reserve grandfathering.
+  function freeFixture(): Fixture {
+    const fixture = baseFixture()
+    fixture.guilds = [{ id: GUILD_ID, name: 'Guild', subscription_tier: 'free' }]
+    return fixture
+  }
+
+  it('refuses a guest sign-up on a free non-grandfathered guild with C-3, no insert or update', async () => {
+    const calls = setClient(freeFixture())
+    const res = await POST(postRequest(SHARE_OPEN, body()), { params: Promise.resolve({ token: SHARE_OPEN }) })
+    const json = await res.json()
+    expect(res.status).toBe(403)
+    expect(json).toEqual({
+      error: "This run can't take reserves right now because its guild doesn't have LootList+ Premium. Let your raid leader know.",
+      code: 'premium_required',
+    })
+    expect(calls.some((c) => c.table === 'reserve_submissions' && (c.op === 'insert' || c.op === 'update'))).toBe(false)
+  })
+
+  it('refuses a guest sign-up on a run with no guild when its creator has no Premium guild', async () => {
+    const fixture = baseFixture()
+    fixture.guilds = []
+    const calls = setClient(fixture)
+    const res = await POST(postRequest(SHARE_SOLO, body()), { params: Promise.resolve({ token: SHARE_SOLO }) })
+    const json = await res.json()
+    expect(res.status).toBe(403)
+    expect(json.code).toBe('premium_required')
+    expect(calls.some((c) => c.table === 'reserve_submissions' && (c.op === 'insert' || c.op === 'update'))).toBe(false)
+  })
+
+  it('accepts a guest sign-up on a run with no guild when its creator is active in a pro guild', async () => {
+    const fixture = baseFixture()
+    const SECOND_GUILD_ID = id(2)
+    fixture.guilds = [{ id: SECOND_GUILD_ID, name: 'Second Guild', subscription_tier: 'pro' }]
+    fixture.characters.push({ id: 'char-solo', user_id: SOLO_ID, name: 'Solo', is_main: true, class: { name: 'Hunter', color_hex: '#fff' }, spec: { name: 'BM' } })
+    fixture.character_guild_memberships.push({ id: 'mem-solo', guild_id: SECOND_GUILD_ID, character_id: 'char-solo', is_active: true })
+    const calls = setClient(fixture)
+    const res = await POST(postRequest(SHARE_SOLO, body()), { params: Promise.resolve({ token: SHARE_SOLO }) })
+    expect(res.status).toBe(200)
+    expect(calls.some((c) => c.table === 'reserve_submissions' && c.op === 'insert')).toBe(true)
+  })
+
+  it('still gives a missing character name the existing 400 before any guilds read', async () => {
+    const calls = setClient(freeFixture())
+    const res = await POST(postRequest(SHARE_OPEN, body({ character_name: '' })), { params: Promise.resolve({ token: SHARE_OPEN }) })
+    expect(res.status).toBe(400)
+    expect(calls.some((c) => c.table === 'guilds')).toBe(false)
+  })
+
+  it('still gives an unknown token the existing 404 before any guilds read', async () => {
+    const calls = setClient(freeFixture())
+    const res = await POST(postRequest(SHARE_UNKNOWN, body()), { params: Promise.resolve({ token: SHARE_UNKNOWN }) })
+    expect(res.status).toBe(404)
+    expect(calls.some((c) => c.table === 'guilds')).toBe(false)
+  })
+
+  it('answers 500 with nothing written when the guilds read errors', async () => {
+    const fixture = baseFixture()
+    fixture.errorOn = { guilds: 'db down' }
+    const calls = setClient(fixture)
+    const res = await POST(postRequest(SHARE_OPEN, body()), { params: Promise.resolve({ token: SHARE_OPEN }) })
+    const json = await res.json()
+    expect(res.status).toBe(500)
+    expect(json.error).toBe('Internal server error')
+    expect(calls.some((c) => c.table === 'reserve_submissions' && (c.op === 'insert' || c.op === 'update'))).toBe(false)
   })
 })
 

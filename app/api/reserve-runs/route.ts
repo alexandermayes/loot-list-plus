@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { trackEvent } from '@/utils/analytics/server'
-import { requireReserveAccess } from '@/utils/feature-gate'
+import { requireReserveAccess, guildHasPaidAccess } from '@/utils/feature-gate'
 import { hasActiveGuildMembership } from '@/utils/reserve-access'
 
 // Explicit column list: every field the Reserve page's ReserveRun type
@@ -14,7 +14,9 @@ const RUN_LIST_COLUMNS =
  * GET /api/reserve-runs?guild_id=X
  *
  * List reserve runs for a guild. Active members of the guild only; never
- * returns the raid leader token.
+ * returns the raid leader token. reserve_access says whether the guild
+ * can create runs and change them (Premium or grandfathered), or null
+ * when that could not be read.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -69,7 +71,15 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({ success: true, runs: runsWithCounts })
+    let reserveAccess: boolean | null
+    try {
+      reserveAccess = await guildHasPaidAccess(serviceSupabase, guildId, 'reserve_runs')
+    } catch (accessErr) {
+      console.error('Reserve runs GET: reserve access read failed:', accessErr)
+      reserveAccess = null
+    }
+
+    return NextResponse.json({ success: true, runs: runsWithCounts, reserve_access: reserveAccess })
   } catch (err) {
     console.error('Reserve runs GET error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

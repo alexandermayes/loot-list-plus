@@ -36,7 +36,7 @@ const UNKNOWN_RUN = id(199)
 
 type Row = Record<string, unknown>
 type Op = 'select' | 'insert' | 'update' | 'delete'
-type Filter = ['eq' | 'in', string, unknown]
+type Filter = ['eq' | 'in' | 'lt', string, unknown]
 interface Call { table: string; op: Op; filters: Filter[]; selectCols?: string; payload?: unknown }
 
 interface Fixture {
@@ -47,6 +47,7 @@ interface Fixture {
   reserve_awards: Row[]
   loot_items: Row[]
   raid_tiers: Row[]
+  guilds: Row[]
   errorOn?: Partial<Record<string, string>>
 }
 
@@ -55,6 +56,7 @@ function applyFilters(rows: Row[], filters: Filter[]) {
     filters.every(([kind, col, val]) => {
       if (kind === 'eq') return row[col] === val
       if (kind === 'in') return Array.isArray(val) && (val as unknown[]).includes(row[col])
+      if (kind === 'lt') return typeof row[col] === 'string' && (row[col] as string) < (val as string)
       return true
     })
   )
@@ -88,6 +90,7 @@ function makeClient(fixture: Fixture) {
     reserve_awards: fixture.reserve_awards.map((r) => ({ ...r })),
     loot_items: fixture.loot_items.map((r) => ({ ...r })),
     raid_tiers: fixture.raid_tiers.map((r) => ({ ...r })),
+    guilds: fixture.guilds.map((r) => ({ ...r })),
   }
 
   function respond(call: Call): { data: unknown; error: { message: string } | null } {
@@ -124,6 +127,7 @@ function makeClient(fixture: Fixture) {
         delete: () => { call.op = 'delete'; return builder },
         eq: (col: string, val: unknown) => { call.filters.push(['eq', col, val]); return builder },
         in: (col: string, val: unknown) => { call.filters.push(['in', col, val]); return builder },
+        lt: (col: string, val: unknown) => { call.filters.push(['lt', col, val]); return builder },
         order: () => builder,
         limit: () => builder,
         single: () => {
@@ -204,6 +208,7 @@ function baseFixture(): Fixture {
     ],
     loot_items: [],
     raid_tiers: [{ id: TIER_ID, name: 'Tier 1' }],
+    guilds: [{ id: GUILD_ID, subscription_tier: 'pro' }],
   }
 }
 
@@ -414,6 +419,15 @@ describe('GET /api/reserve-runs/[id]', () => {
     const res = await GET(request(RUN_RG), { params: Promise.resolve({ id: RUN_RG }) })
     expect(res.status).toBe(500)
   })
+
+  it('stays open (D-05): an active member can still view a run on a free non-grandfathered guild', async () => {
+    setUser(MEMBER_ID)
+    const fixture = baseFixture()
+    fixture.guilds = [{ id: GUILD_ID, subscription_tier: 'free' }]
+    setClient(fixture)
+    const res = await GET(request(RUN_RG), { params: Promise.resolve({ id: RUN_RG }) })
+    expect(res.status).toBe(200)
+  })
 })
 
 describe('PATCH /api/reserve-runs/[id]', () => {
@@ -445,6 +459,126 @@ describe('PATCH /api/reserve-runs/[id]', () => {
     const res = await PATCH(patchRequest(RUN_RG, { action: 'lock' }, { token: 'TOK_G' }), { params: Promise.resolve({ id: RUN_RG }) })
     expect(res.status).toBe(200)
   })
+
+  // D-02/D-07: the run's guild needs Premium or reserve grandfathering.
+  function freeFixture(): Fixture {
+    const fixture = baseFixture()
+    fixture.guilds = [{ id: GUILD_ID, subscription_tier: 'free' }]
+    return fixture
+  }
+
+  it('refuses the creator on a free non-grandfathered guild with C-2, no update, no audit', async () => {
+    setUser(CREATOR_ID)
+    const calls = setClient(freeFixture())
+    const res = await PATCH(patchRequest(RUN_RG, { action: 'lock' }), { params: Promise.resolve({ id: RUN_RG }) })
+    const json = await res.json()
+    expect(res.status).toBe(403)
+    expect(json).toEqual({
+      error: 'Reserve runs are a LootList+ Premium feature, so this run is read only until its guild upgrades.',
+      code: 'premium_required',
+    })
+    expect(runUpdateCalls(calls)).toHaveLength(0)
+    expect(logReserveAudit).not.toHaveBeenCalled()
+  })
+
+  it('refuses an officer with Manage reserves on a free non-grandfathered guild with C-2, no update', async () => {
+    setUser(OFFICER_ID)
+    vi.mocked(verifyPermission).mockImplementation(async (_sb, userId, guildId) =>
+      userId === OFFICER_ID && guildId === GUILD_ID ? { hasPermission: true } : { hasPermission: false }
+    )
+    const calls = setClient(freeFixture())
+    const res = await PATCH(patchRequest(RUN_RG, { action: 'lock' }), { params: Promise.resolve({ id: RUN_RG }) })
+    expect(res.status).toBe(403)
+    const json = await res.json()
+    expect(json.code).toBe('premium_required')
+    expect(runUpdateCalls(calls)).toHaveLength(0)
+  })
+
+  it('refuses the leader token on a free non-grandfathered guild with C-2, no update', async () => {
+    setUser(null)
+    const calls = setClient(freeFixture())
+    const res = await PATCH(patchRequest(RUN_RG, { action: 'lock' }, { token: 'TOK_G' }), { params: Promise.resolve({ id: RUN_RG }) })
+    expect(res.status).toBe(403)
+    const json = await res.json()
+    expect(json.code).toBe('premium_required')
+    expect(runUpdateCalls(calls)).toHaveLength(0)
+  })
+
+  it('allows the creator when the guild is free but has a pre-cutoff run (grandfathered)', async () => {
+    setUser(CREATOR_ID)
+    const fixture = freeFixture()
+    fixture.reserve_runs.push({
+      id: 'old-run',
+      guild_id: GUILD_ID,
+      created_by: CREATOR_ID,
+      raid_leader_token: 'TOK_OLD',
+      status: 'open',
+      created_at: '2026-08-01T00:00:00.000Z',
+      raid_tier_id: TIER_ID,
+    })
+    const calls = setClient(fixture)
+    const res = await PATCH(patchRequest(RUN_RG, { action: 'lock' }), { params: Promise.resolve({ id: RUN_RG }) })
+    expect(res.status).toBe(200)
+    expect(runUpdateCalls(calls)).toHaveLength(1)
+  })
+
+  it('refuses a run with no guild when its creator has no Premium guild, with C-2', async () => {
+    setUser(SOLO_ID)
+    const fixture = baseFixture()
+    fixture.guilds = []
+    const calls = setClient(fixture)
+    const res = await PATCH(patchRequest(RUN_RN, { action: 'lock' }), { params: Promise.resolve({ id: RUN_RN }) })
+    expect(res.status).toBe(403)
+    const json = await res.json()
+    expect(json.code).toBe('premium_required')
+    expect(runUpdateCalls(calls)).toHaveLength(0)
+  })
+
+  it('allows a run with no guild when its creator is active in a second pro guild', async () => {
+    setUser(SOLO_ID)
+    const SECOND_GUILD_ID = id(2)
+    const fixture = baseFixture()
+    fixture.guilds = [{ id: SECOND_GUILD_ID, subscription_tier: 'pro' }]
+    fixture.character_guild_memberships.push({
+      id: 'mem-solo-second',
+      guild_id: SECOND_GUILD_ID,
+      character_id: 'char-solo',
+      is_active: true,
+    })
+    const calls = setClient(fixture)
+    const res = await PATCH(patchRequest(RUN_RN, { action: 'lock' }), { params: Promise.resolve({ id: RUN_RN }) })
+    expect(res.status).toBe(200)
+    expect(runUpdateCalls(calls)).toHaveLength(1)
+  })
+
+  it('returns 500 with no update when the guilds read errors', async () => {
+    setUser(CREATOR_ID)
+    const fixture = baseFixture()
+    fixture.errorOn = { guilds: 'db down' }
+    const calls = setClient(fixture)
+    const res = await PATCH(patchRequest(RUN_RG, { action: 'lock' }), { params: Promise.resolve({ id: RUN_RG }) })
+    const json = await res.json()
+    expect(res.status).toBe(500)
+    expect(json.error).toBe('Internal server error')
+    expect(runUpdateCalls(calls)).toHaveLength(0)
+  })
+
+  it('still refuses a non-manager on a free guild with Forbidden, not premium_required', async () => {
+    setUser(OUTSIDER_ID)
+    const calls = setClient(freeFixture())
+    const res = await PATCH(patchRequest(RUN_RG, { action: 'lock' }), { params: Promise.resolve({ id: RUN_RG }) })
+    const json = await res.json()
+    expect(res.status).toBe(403)
+    expect(json.error).toBe('Forbidden')
+    expect(runUpdateCalls(calls)).toHaveLength(0)
+  })
+
+  it('still returns 404 for an unknown run before the gate, on a free guild', async () => {
+    setUser(CREATOR_ID)
+    setClient(freeFixture())
+    const res = await PATCH(patchRequest(UNKNOWN_RUN, { action: 'lock' }), { params: Promise.resolve({ id: UNKNOWN_RUN }) })
+    expect(res.status).toBe(404)
+  })
 })
 
 describe('DELETE /api/reserve-runs/[id]', () => {
@@ -466,6 +600,16 @@ describe('DELETE /api/reserve-runs/[id]', () => {
     setUser(SOLO_ID)
     const calls = setClient(baseFixture())
     const res = await DELETE(request(RUN_RN), { params: Promise.resolve({ id: RUN_RN }) })
+    expect(res.status).toBe(200)
+    expect(runDeleteCalls(calls)).toHaveLength(1)
+  })
+
+  it('stays open (D-05): deletes a run on a free non-grandfathered guild for its creator', async () => {
+    setUser(CREATOR_ID)
+    const fixture = baseFixture()
+    fixture.guilds = [{ id: GUILD_ID, subscription_tier: 'free' }]
+    const calls = setClient(fixture)
+    const res = await DELETE(request(RUN_RG), { params: Promise.resolve({ id: RUN_RG }) })
     expect(res.status).toBe(200)
     expect(runDeleteCalls(calls)).toHaveLength(1)
   })

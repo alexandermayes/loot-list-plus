@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { logReserveAudit } from '@/utils/reserve-audit'
 import { verifyReserveRunAccess } from '@/utils/reserve-access'
+import { requireReserveRunPremium } from '@/utils/feature-gate'
 
 interface RouteParams {
   params: Promise<{ id: string; subId: string }>
@@ -26,8 +27,9 @@ async function loadSubmission(
 /**
  * PATCH /api/reserve-runs/[id]/submissions/[subId]
  *
- * Officer-only edit of a single submission. Allows fixing character
- * name/class/spec typos and editing the reserved item list.
+ * Run managers only; the run's guild needs Premium or reserve
+ * grandfathering. Allows fixing character name/class/spec typos and
+ * editing the reserved item list.
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
@@ -42,10 +44,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       request,
       userId: user?.id ?? null,
     })
-    if (!access.allowed) {
+    if (!access.allowed || !access.run) {
       const status = access.reason === 'Run not found' ? 404 : access.reason === 'Unauthorized' ? 401 : 403
       return NextResponse.json({ error: access.reason ?? 'Forbidden' }, { status })
     }
+
+    const premiumAccess = await requireReserveRunPremium(serviceSupabase, access.run, 'manager')
+    if (!premiumAccess.allowed) return premiumAccess.error
+
     const submission = await loadSubmission(serviceSupabase, id, subId)
     if (!submission) {
       return NextResponse.json({ error: 'Submission not found' }, { status: 404 })
@@ -105,7 +111,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 /**
  * DELETE /api/reserve-runs/[id]/submissions/[subId]
  *
- * Officer (or raid leader token) removal of a single submission.
+ * Run managers only (officer or raid leader token); the run's guild
+ * needs Premium or reserve grandfathering.
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
@@ -119,10 +126,14 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       request,
       userId: user?.id ?? null,
     })
-    if (!access.allowed) {
+    if (!access.allowed || !access.run) {
       const status = access.reason === 'Run not found' ? 404 : access.reason === 'Unauthorized' ? 401 : 403
       return NextResponse.json({ error: access.reason ?? 'Forbidden' }, { status })
     }
+
+    const premiumAccess = await requireReserveRunPremium(serviceSupabase, access.run, 'manager')
+    if (!premiumAccess.allowed) return premiumAccess.error
+
     const submission = await loadSubmission(serviceSupabase, id, subId)
     if (!submission) {
       return NextResponse.json({ error: 'Submission not found' }, { status: 404 })
