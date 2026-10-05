@@ -538,6 +538,62 @@ describe('GH-284: Classic raid recipes visible to every class', () => {
   })
 })
 
+// ─── GH-388: Dragonstalker's Greaves shows to classes that can wear mail ──
+
+// The seeder stores no armor type, so the picker falls back to ITEM_TYPES and
+// then to a guess from the name; "greaves" was read as plate, hiding the
+// piece from Hunters and Shamans (GH #388).
+describe('GH-388: Dragonstalker\'s Greaves shows to classes that can wear mail', () => {
+  const bwlGreavesRow = classicRaids
+    .find((raid) => raid.name === 'Blackwing Lair')
+    ?.bosses.find((boss) => boss.name === 'Broodlord Lashlayer')
+    ?.items.find((raidItem) => raidItem.wowhead_id === 16941)
+
+  it('the catalog has Dragonstalker\'s Greaves at wowhead_id 16941, slot Feet, under Blackwing Lair / Broodlord Lashlayer', () => {
+    expect(bwlGreavesRow).toBeDefined()
+    expect(bwlGreavesRow?.name).toBe("Dragonstalker's Greaves")
+    expect(bwlGreavesRow?.slot).toBe('Feet')
+  })
+
+  const GH388_CLASS_EXPECTATIONS: Array<{ className: string; visible: boolean }> = [
+    { className: 'Warrior', visible: true },
+    { className: 'Paladin', visible: true },
+    { className: 'Hunter', visible: true },
+    { className: 'Shaman', visible: true },
+    { className: 'Rogue', visible: false },
+    { className: 'Druid', visible: false },
+    { className: 'Priest', visible: false },
+    { className: 'Mage', visible: false },
+    { className: 'Warlock', visible: false },
+  ]
+
+  it.each(GH388_CLASS_EXPECTATIONS)(
+    'with no stored armor or weapon type, $className sees Dragonstalker\'s Greaves: $visible',
+    async ({ className, visible }) => {
+      const row = item('bwl-16941', {
+        name: "Dragonstalker's Greaves",
+        item_slot: 'Feet',
+        wowhead_id: 16941,
+        armor_type: null,
+        weapon_type: null,
+      })
+      const supabase = makeMockSupabase({
+        loot_items: [row],
+        wow_classes: allClasses,
+        class_specs: allSpecs,
+      })
+      const character = warrior({ class_name: className, class_id: `class-${className.toLowerCase()}` })
+      const result = (await fetchFilteredLootItems(supabase, character, ['tier-1'])) as Array<{ id: string }>
+      const ids = result.map((r) => r.id)
+      if (visible) {
+        expect(ids).toContain('bwl-16941')
+      } else {
+        expect(ids).not.toContain('bwl-16941')
+      }
+    },
+  )
+})
+
 // ─── resolveTierIdsForPhases ────────────────────────────────────
 
 describe('resolveTierIdsForPhases', () => {

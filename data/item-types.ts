@@ -906,6 +906,16 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   21837: { weapon_type: 'One-Handed Mace' },  // Anubisath Warhammer
 
   // ============================================================================
+  // CLASSIC GH-388 ADDITIONS (every other Classic raid armor piece). Types
+  // from the wow-classic-items package subclass, so no Classic raid armor
+  // piece falls back to a guess from its name. Back items (class-agnostic
+  // in the picker), tokens, quest items and recipes need none.
+  // ============================================================================
+
+  // Blackwing Lair
+  16941: { armor_type: 'Mail' },              // Dragonstalker's Greaves (Broodlord Lashlayer)
+
+  // ============================================================================
   // MISTS OF PANDARIA — Siege of Orgrimmar "Shared Boss Loot"
   // ============================================================================
   // The shared loot pool drops one glove per armor type. Their names are
