@@ -1148,9 +1148,9 @@ export function inferArmorType(slot: string, name: string): ArmorType | undefine
   }
 
   // Plate indicators
-  // Note: "gauntlets" excluded — used across all armor types (Mail, Leather, Plate).
-  // "breastplate", "greaves", "sabatons" and "vambraces" excluded too (GH #388):
-  // those words name mail and plate pieces alike, so a bare "plate" is the
+  // Note: "gauntlets" excluded — used across all armor types (Mail, Leather, Plate)
+  // "breastplate", "greaves", "sabatons" and "vambraces" excluded too (GH #388),
+  // since those words name mail and plate pieces alike; a bare "plate" is the
   // only reliable signal, and only when the name is not "breastplate".
   if (nameLower.includes('plate') && !nameLower.includes('breastplate')) {
     return 'Plate'
