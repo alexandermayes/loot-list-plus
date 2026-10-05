@@ -18,12 +18,16 @@
  * route answers 403 { error: 'rankings_hidden' } instead of a false "nobody ranked
  * this". Every query here checks its error; a failed read returns 500, never an
  * empty or unfiltered list.
+ *
+ * Guilds without LootList+ Premium get 403 { error: 'premium_required',
+ * guild_name, premium_url } before any guild data is read
+ * (requireBotLookupAccess).
  */
 
 import { NextResponse } from 'next/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { trackApiError } from '@/utils/analytics/server'
-import { checkBotAuth, resolveGuildFromDiscord } from '../_helpers'
+import { checkBotAuth, resolveGuildFromDiscord, requireBotLookupAccess } from '../_helpers'
 import { findInvalidCharacterIds } from '@/lib/loot/guild-award-refs'
 import { fetchReceivedCounts } from '@/lib/addon/member-ranked-items'
 import { splitBotTiers, collectItemCandidates, orderItemCandidates } from '@/domain/loot/bot-item-priority'
@@ -81,6 +85,8 @@ export async function GET(request: Request) {
     if (!guild) {
       return NextResponse.json({ error: 'no_guild_linked' }, { status: 404 })
     }
+    const blocked = await requireBotLookupAccess(supabase, guild)
+    if (blocked) return blocked
     if (!guild.active_expansion_id) {
       return NextResponse.json({ error: 'no_active_expansion' }, { status: 404 })
     }

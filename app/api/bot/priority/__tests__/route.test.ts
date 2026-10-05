@@ -192,6 +192,7 @@ function baseTables(overrides: Partial<Record<string, Row[]>> = {}): Record<stri
         is_active: true,
         created_at: '2020-01-01T00:00:00Z',
         active_expansion_id: EXP,
+        subscription_tier: 'pro',
       },
     ],
     raid_tiers: [{ id: TIER, expansion_id: EXP, is_guild_active: true, master_sheet_visible: true }],
@@ -302,6 +303,7 @@ function scenario(overrides: Partial<Record<string, Row[]>> = {}): Record<string
         is_active: true,
         created_at: '2020-01-01T00:00:00Z',
         active_expansion_id: EXP,
+        subscription_tier: 'pro',
       },
     ],
     raid_tiers: [{ id: TIER, expansion_id: EXP, is_guild_active: true, master_sheet_visible: true }],
@@ -685,6 +687,7 @@ describe('GH #325: basic answers', () => {
           is_active: true,
           created_at: '2020-01-01T00:00:00Z',
           active_expansion_id: null,
+          subscription_tier: 'pro',
         },
       ],
     })
@@ -821,5 +824,108 @@ describe('GH #325: D-09 auth runs before any database call', () => {
     expect(wrong.status).toBe(401)
 
     expect(createServiceRoleClient).not.toHaveBeenCalled()
+  })
+})
+
+describe('UE3: Premium required (discord_bot)', () => {
+  const CONTRACT_BODY = {
+    error: 'premium_required',
+    guild_name: 'Test Guild',
+    premium_url: 'https://www.getlootlist.com/premium',
+  }
+
+  function guildRow(patch: Partial<Row> = {}): Row {
+    return {
+      id: GUILD,
+      name: 'Test Guild',
+      discord_server_id: DISCORD,
+      is_active: true,
+      created_at: '2020-01-01T00:00:00Z',
+      active_expansion_id: EXP,
+      subscription_tier: 'free',
+      ...patch,
+    }
+  }
+
+  it('a free guild answers 403 with the contract body, reading only guilds', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_URL', '')
+    const { client, calls } = makeClient(scenario({ guilds: [guildRow()] }))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await GET(request({ discord_guild_id: DISCORD, item_query: 'bilegrip' }))
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body).toEqual(CONTRACT_BODY)
+    expect(calls.every((c) => c.table === 'guilds')).toBe(true)
+    expect(calls.some((c) => c.table === 'raid_tiers')).toBe(false)
+    expect(calls.some((c) => c.table === 'loot_items')).toBe(false)
+    expect(calls.some((c) => c.table === 'loot_submissions')).toBe(false)
+  })
+
+  it('a null subscription_tier answers the same', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_URL', '')
+    const { client } = makeClient(scenario({ guilds: [guildRow({ subscription_tier: null })] }))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await GET(request({ discord_guild_id: DISCORD, item_query: 'bilegrip' }))
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body).toEqual(CONTRACT_BODY)
+  })
+
+  it('a free guild with no active expansion answers premium_required, not no_active_expansion', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_URL', '')
+    const { client } = makeClient(scenario({ guilds: [guildRow({ active_expansion_id: null })] }))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await GET(request({ discord_guild_id: DISCORD, item_query: 'bilegrip' }))
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body.error).toBe('premium_required')
+  })
+
+  it('uses the stubbed app origin for premium_url, with a trailing slash removed', async () => {
+    vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://preview.example.test/')
+    const { client } = makeClient(scenario({ guilds: [guildRow()] }))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await GET(request({ discord_guild_id: DISCORD, item_query: 'bilegrip' }))
+    const body = await res.json()
+    expect(body.premium_url).toBe('https://preview.example.test/premium')
+  })
+
+  it('answers 500 when the tier read fails, with no raid_tiers call recorded', async () => {
+    const { client, calls } = makeClient(scenario({ guilds: [guildRow({ subscription_tier: 'pro' })] }), {
+      fail: [{ table: 'guilds', select: 'subscription_tier' }],
+    })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await GET(request({ discord_guild_id: DISCORD, item_query: 'bilegrip' }))
+    expect(res.status).toBe(500)
+    const body = await res.json()
+    expect(body).toEqual({ error: 'Internal server error' })
+    expect(vi.mocked(trackApiError)).toHaveBeenCalled()
+    expect(calls.some((c) => c.table === 'raid_tiers')).toBe(false)
+  })
+
+  it('an unknown server answers 404 no_guild_linked with no subscription_tier read recorded', async () => {
+    const { client, calls } = makeClient(scenario({ guilds: [guildRow()] }))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await GET(request({ discord_guild_id: 'unknown-server', item_query: 'bilegrip' }))
+    expect(res.status).toBe(404)
+    const body = await res.json()
+    expect(body.error).toBe('no_guild_linked')
+    expect(calls.some((c) => c.select === 'subscription_tier')).toBe(false)
+  })
+
+  it('a pro guild records exactly one subscription_tier read and no guild_subscriptions call', async () => {
+    const { client, calls } = makeClient(readyScenario())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await GET(request({ discord_guild_id: DISCORD, item_query: 'bilegrip' }))
+    expect(res.status).toBe(200)
+    expect(calls.filter((c) => c.select === 'subscription_tier')).toHaveLength(1)
+    expect(calls.some((c) => c.table === 'guild_subscriptions')).toBe(false)
   })
 })
