@@ -8,7 +8,7 @@ const APP_URL = 'https://www.lootlistplus.com'
 export const metadata: Metadata = {
   title: 'LootList+ Pricing: Free Core Plan and $4.99 Premium',
   description:
-    'Run ranked loot lists, attendance, and transparent item priority free. Premium adds multiple raid teams and officer activity for $4.99/month.',
+    'Run ranked loot lists, attendance, and transparent item priority free. Premium adds raid teams, reserve runs, and Discord bot lookups for $4.99/month.',
   alternates: {
     canonical: 'https://www.getlootlist.com/pricing',
   },
@@ -20,7 +20,7 @@ const FREE_FEATURES = [
   'Attendance tracking and score weighting',
   'Bad-luck protection and configurable modifiers',
   'Loot history, submissions, and Master Sheet',
-  'Discord and raid-tool workflows',
+  'Discord announcements and raid-tool workflows',
   'WoW Forever and WoW Classic, from Classic Era through Mists of Pandaria',
 ]
 
@@ -29,13 +29,14 @@ const PREMIUM_FEATURES = [
   'Separate schedules, attendance, and loot views per team',
   'Officer activity feed for loot awards, roster changes, and settings',
   'Reserve runs for pugs and one-off raids',
+  'Discord bot lookups with /score and /priority',
   'One subscription for the entire guild',
 ]
 
 const FAQ = [
   {
     q: 'Is LootList+ actually free?',
-    a: 'Yes. The core system for loot lists, attendance, priority scores, and raid distribution is available without a subscription. Premium adds multi-team support, the officer activity feed, and reserve runs.',
+    a: 'Yes. The core system for loot lists, attendance, priority scores, and raid distribution is available without a subscription. Premium adds multi-team support, the officer activity feed, reserve runs, and Discord bot lookups.',
   },
   {
     q: 'Does every officer or raider pay?',

@@ -32,6 +32,7 @@ export default function PremiumItemTooltip({
             <p className="font-poppins text-13 text-white">+ Multiple Raid Teams</p>
             <p className="font-poppins text-13 text-white">+ Officer Activity Feed</p>
             <p className="font-poppins text-13 text-white">+ Reserve Runs</p>
+            <p className="font-poppins text-13 text-white">+ Discord Bot Lookups</p>
           </div>
           <div className="mt-3 space-y-2">
             <p className="font-poppins text-13 leading-snug text-quality-uncommon">
@@ -42,6 +43,9 @@ export default function PremiumItemTooltip({
             </p>
             <p className="font-poppins text-13 leading-snug text-quality-uncommon">
               Equip: Unlocks soft-reserve runs for pugs and one-off raids, with shareable join links.
+            </p>
+            <p className="font-poppins text-13 leading-snug text-quality-uncommon">
+              Equip: Answers /score and /priority in your Discord server.
             </p>
             <p className="font-poppins text-13 leading-snug text-quality-uncommon">
               Use: Summons priority support in the LootList+ Discord.
