@@ -94,7 +94,11 @@ export async function POST(request: NextRequest) {
     } else {
       existingQuery = existingQuery.is('raid_team_id', null)
     }
-    const { data: existing } = await existingQuery
+    const { data: existing, error: existingError } = await existingQuery
+    if (existingError) {
+      console.error('Failed to check for an existing raid event:', existingError)
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
     const collision = (existing || []).find(e => !e.is_bonus)
     if (collision) {
       return NextResponse.json(

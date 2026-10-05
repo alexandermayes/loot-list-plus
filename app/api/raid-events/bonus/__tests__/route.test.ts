@@ -480,6 +480,18 @@ describe('POST /api/raid-events/bonus', () => {
     expect(eventInserts(calls)).toHaveLength(0)
   })
 
+  it('B-8 (A2): a collision read error returns 500 with no insert', async () => {
+    const fixture = baseFixture()
+    fixture.errors = { 'raid_events:select': 'boom' }
+    const { res, json, calls } = await run(fixture, {
+      expansion_id: XA,
+      raid_date: '2026-09-01',
+    })
+    expect(res.status).toBe(500)
+    expect(json.error).toBe('Internal server error')
+    expect(eventInserts(calls)).toHaveLength(0)
+  })
+
   it('B-9: hasPermission false returns 403 with no expansions lookup', async () => {
     const { res, json, calls } = await run(baseFixture(), {
       expansion_id: XA,
