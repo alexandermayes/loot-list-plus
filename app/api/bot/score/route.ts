@@ -7,6 +7,10 @@
  * Scope (v1): attendance only. Rank/role/trial modifiers are computed in
  * the master sheet today; bringing them here means duplicating the per-spec
  * lookups. Punted until users ask for them.
+ *
+ * Guilds without LootList+ Premium get 403 { error: 'premium_required',
+ * guild_name, premium_url } before any guild data is read
+ * (requireBotLookupAccess).
  */
 
 import { NextResponse } from 'next/server'
@@ -15,7 +19,7 @@ import { computeAttendance } from '@/domain/scoring'
 import { resolveRaidDays, resolveRollingWeeks } from '@/domain/raid-team/settings'
 import type { RaidDaysOverride } from '@/domain/raid-team/types'
 import { trackApiError } from '@/utils/analytics/server'
-import { checkBotAuth, resolveGuildFromDiscord } from '../_helpers'
+import { checkBotAuth, resolveGuildFromDiscord, requireBotLookupAccess } from '../_helpers'
 
 export async function GET(request: Request) {
   try {
@@ -38,6 +42,8 @@ export async function GET(request: Request) {
     if (!guild) {
       return NextResponse.json({ error: 'no_guild_linked' }, { status: 404 })
     }
+    const blocked = await requireBotLookupAccess(supabase, guild)
+    if (blocked) return blocked
 
     // Find character by name within this guild (case-insensitive)
     const { data: memberships } = await supabase

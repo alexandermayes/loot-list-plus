@@ -238,6 +238,32 @@ describe('guildHasPaidAccess', () => {
   })
 })
 
+describe('guildHasPaidAccess discord_bot', () => {
+  it('a pro guild gives true with no reserve_runs call', async () => {
+    const { client, calls } = makeTableClient(baseTables())
+    await expect(guildHasPaidAccess(client as never, GUILD_PRO, 'discord_bot')).resolves.toBe(true)
+    expect(calls.some((c) => c.table === 'reserve_runs')).toBe(false)
+  })
+
+  it('a free guild with a pre-cutoff reserve run gives false with no reserve_runs call recorded for this check', async () => {
+    const { client, calls } = makeTableClient(baseTables())
+    await expect(guildHasPaidAccess(client as never, GUILD_FREE_GRANDFATHERED, 'discord_bot')).resolves.toBe(false)
+    expect(calls.some((c) => c.table === 'reserve_runs')).toBe(false)
+  })
+
+  it('a null tier gives false', async () => {
+    const tables = baseTables()
+    tables.guilds.push({ id: 'null-tier-guild', subscription_tier: null })
+    const { client } = makeTableClient(tables)
+    await expect(guildHasPaidAccess(client as never, 'null-tier-guild', 'discord_bot')).resolves.toBe(false)
+  })
+
+  it('rejects on a guilds read error', async () => {
+    const { client } = makeTableClient(baseTables(), 'guilds')
+    await expect(guildHasPaidAccess(client as never, GUILD_FREE_NEW, 'discord_bot')).rejects.toThrow()
+  })
+})
+
 describe('userHasReserveAccess', () => {
   it('with a guildId follows guildHasPaidAccess', async () => {
     const { client } = makeTableClient(baseTables())
