@@ -131,7 +131,7 @@ export function normalizeCatalogName(value: unknown): string | null {
 /**
  * Built once, at module level: the normalized catalog raid name to its
  * normalized in-game instance names (GH #307). A Map, never a plain-object
- * index \u2014 a database tier named 'constructor' or '__proto__' must never
+ * index: a database tier named 'constructor' or '__proto__' must never
  * resolve through Object.prototype instead of a real miss.
  */
 const RAID_INSTANCE_NAME_MAP: ReadonlyMap<string, readonly string[]> = new Map(
