@@ -322,8 +322,6 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   30019: { armor_type: 'Mail' },              // Area 52 Defender's Pants
   30020: { armor_type: 'Cloth' },             // Fire-Cord of the Magus
   30021: { weapon_type: 'Staff' },           // Wildfury Greatstaff
-  30022: { armor_type: 'Mail' },              // Pendant of the Perilous
-  30023: { armor_type: 'Plate' },             // Totem of the Maelstrom
   30024: { armor_type: 'Cloth' },             // Mantle of the Elven Kings
   30027: { armor_type: 'Plate' },             // Boots of Courage Unending
   // 30028: Seventh Ring of the Tirisfalen — removed (class-agnostic slot, no type needed)
@@ -441,7 +439,6 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   32326: { weapon_type: 'Thrown' },            // Twisted Blades of Zarak
   32325: { weapon_type: 'Gun' },               // Rifle of the Stoic Guardian
   32254: { weapon_type: 'One-Handed Axe' },   // The Brutalizer
-  32330: { armor_type: 'Leather' },           // Totem of Ancestral Guidance
   32345: { armor_type: 'Plate' },             // Dreadboots of the Legion
   32352: { armor_type: 'Leather' },           // Naturewarden's Treads
   32353: { armor_type: 'Cloth' },             // Gloves of Unfailing Faith
@@ -481,7 +478,6 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   34208: { armor_type: 'Mail' },             // Equilibrium Epaulets
   34190: { armor_type: 'Cloth' },             // Crimson Paragon's Cover
   34165: { weapon_type: 'Dagger' },           // Fang of Kalecgos
-  34206: { armor_type: 'Plate' },             // Book of Highborne Hymns
   34210: { armor_type: 'Cloth' },             // Amice of the Convoker
   34176: { weapon_type: 'One-Handed Mace' },  // Reign of Misery
   34188: { armor_type: 'Leather' },           // Leggings of the Immortal Night
@@ -810,9 +806,6 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   30862: { armor_type: 'Plate' },             // Blessed Adamantite Bracers
   30026: { armor_type: 'Mail' },              // Bands of the Celestial Archer
   29996: { weapon_type: 'One-Handed Mace' },  // Rod of the Sun King
-
-  // Additional TK items
-  30236: { armor_type: 'Leather' },           // Chestguard of the Vanquished Champion
 
   // ============================================================================
   // ZUL'GURUB (Classic)
