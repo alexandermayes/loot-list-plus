@@ -547,6 +547,29 @@ describe('POST /api/addon/import-string', () => {
       expect(insertPayload(calls).raid_tier_id).toBe('tier-b-aq40')
     })
 
+    // GH #307: the addon records a session's instance name as the game
+    // reports it (GetInstanceInfo), and on Classic Era names AQ40 kills
+    // from its own NPC table, so neither "Ahn'Qiraj Temple" nor "Princess
+    // Yauj" is a catalog name. Before GH #307's instance names the import
+    // kept the addon's cached AQ20 row.
+    it('files an AQ formula from a live AQ40 session under Temple of Ahn\'Qiraj when the game names the instance Ahn\'Qiraj Temple', async () => {
+      const { client, calls } = makeClient(aqFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const eraAq40Session = {
+        ...aq40Session,
+        raidName: "Ahn'Qiraj Temple",
+        bossKills: [{ bossName: 'Princess Yauj', killTime: '2026-09-21T00:45:00Z', roster: [] }],
+      }
+      const res = await POST(request({ importString: importString(payloadWith([cachedAward], [eraAq40Session])) }))
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(body.data.awards).toEqual({ processed: 1, errors: 0, already_recorded: 0 })
+      expect(insertPayload(calls).loot_item_id).toBe(AQ40_ITEM)
+      expect(insertPayload(calls).raid_tier_id).toBe('tier-b-aq40')
+    })
+
     it('keeps the cached lootItemId when there is no session', async () => {
       const { client, calls } = makeClient(aqFixture())
       vi.mocked(createServiceRoleClient).mockReturnValue(client as never)

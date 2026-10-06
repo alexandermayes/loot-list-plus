@@ -366,6 +366,8 @@ describe('resolveGuildLootItem hints (GH #307)', () => {
     ['Shared Boss Loot'],
     ['shared boss loot'],
     ['Trash'],
+    ['Crafting Materials'],
+    ['Tier 3 Tokens'],
     ['Unknown'],
     [''],
     ['   '],
@@ -448,6 +450,52 @@ describe('resolveGuildLootItem hints (GH #307)', () => {
     const result = await resolve(client, 20727, { bossName: "C'Thun", raidName: "Ruins of Ahn'Qiraj" })
     expect(result?.raid_tier_id).toBe(AQ40)
     expect(result?.matched_by).toBe('boss_tier')
+  })
+
+  it('uses the in-game instance name Ahn\'Qiraj Temple as the raid hint', async () => {
+    const { client } = makeClient(aqFixture())
+    const result = await resolve(client, 20727, { raidName: "Ahn'Qiraj Temple" })
+    expect(result?.id).toBe('aq40-20727')
+    expect(result?.matched_by).toBe('raid')
+
+    const { client: client2 } = makeClient(aqFixture())
+    const padded = await resolve(client2, 20727, { raidName: '  ahn’qiraj temple  ' })
+    expect(padded?.id).toBe('aq40-20727')
+    expect(padded?.matched_by).toBe('raid')
+  })
+
+  it('tier names that are Object prototype keys neither throw nor take an instance name', async () => {
+    const { client } = makeClient({
+      activeExpansionId: 'exp-proto',
+      expansions: [{ id: 'exp-proto', guild_id: GUILD_A }],
+      tiers: [
+        { id: 'tier-ctor', expansion_id: 'exp-proto', name: 'constructor' },
+        { id: 'tier-proto', expansion_id: 'exp-proto', name: '__proto__' },
+      ],
+      items: [
+        { id: 'ctor-19003', name: 'Head', raid_tier_id: 'tier-ctor', wowhead_id: 19003, boss_name: 'Boss One' },
+        { id: 'proto-19003', name: 'Head', raid_tier_id: 'tier-proto', wowhead_id: 19003, boss_name: 'Boss Two' },
+      ],
+    })
+
+    const noThrow = await resolve(client, 19003, { raidName: "Ahn'Qiraj Temple" })
+    expect(noThrow?.matched_by).toBe('fallback')
+
+    const { client: client2 } = makeClient({
+      activeExpansionId: 'exp-proto',
+      expansions: [{ id: 'exp-proto', guild_id: GUILD_A }],
+      tiers: [
+        { id: 'tier-ctor', expansion_id: 'exp-proto', name: 'constructor' },
+        { id: 'tier-proto', expansion_id: 'exp-proto', name: '__proto__' },
+      ],
+      items: [
+        { id: 'ctor-19003', name: 'Head', raid_tier_id: 'tier-ctor', wowhead_id: 19003, boss_name: 'Boss One' },
+        { id: 'proto-19003', name: 'Head', raid_tier_id: 'tier-proto', wowhead_id: 19003, boss_name: 'Boss Two' },
+      ],
+    })
+    const ownName = await resolve(client2, 19003, { raidName: 'constructor' })
+    expect(ownName?.id).toBe('ctor-19003')
+    expect(ownName?.matched_by).toBe('raid')
   })
 
   it('a single-tier item resolves as single_tier with the original query sequence', async () => {
