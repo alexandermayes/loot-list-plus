@@ -2,11 +2,12 @@ import { describe, it, expect } from 'vitest'
 import { Items } from 'wow-classic-items'
 import { classicRaids } from '../classic-wow-raids'
 import { canClassUseToken, getTokenClasses, isTokenSlot } from '../token-class-mapping'
-import { canUseWeaponType, isClassAgnosticSlot, type WeaponType, type WowClassName } from '../class-proficiencies'
+import { canUseWeaponType, isClassAgnosticSlot, type WowClassName } from '../class-proficiencies'
 import { ITEM_ICONS } from '../item-icons'
-import { ITEM_TYPES, type ItemTypeInfo, inferArmorType, inferWeaponType, ARMOR_SLOTS } from '../item-types'
+import { ITEM_TYPES, inferArmorType, inferWeaponType, ARMOR_SLOTS } from '../item-types'
 import { GH273_CORE } from './fixtures/classic-gh273-core'
 import { GH284_RECIPES, GH284_RESEARCH } from './fixtures/classic-gh284-recipes'
+import { packageWeaponType, packageTypeInfo } from './fixtures/package-item-types'
 import { ITEM_CLASSIFICATIONS } from '../classic-wow-item-classifications'
 import { CLASSIC_ITEM_ROLES } from '../classic-item-roles'
 import { FACTION_ITEM_ALIASES } from '@/domain/loot/faction-item-aliases'
@@ -107,39 +108,6 @@ function sorted(values: readonly string[]): string[] {
 function tooltipClasses(item: PackageItem): string[] | null {
   const line = item.tooltip?.find(t => t.label.startsWith('Classes: '))
   return line ? line.label.slice('Classes: '.length).split(', ') : null
-}
-
-/** Map a package weapon (or shield) to the WeaponType the proficiency table uses. */
-function packageWeaponType(item: PackageItem): WeaponType | null {
-  if (item.class === 'Armor' && item.subclass === 'Shield') return 'Shield'
-  if (item.class !== 'Weapon') return null
-  const hand = item.slot === 'Two-Hand' ? 'Two-Handed' : 'One-Handed'
-  switch (item.subclass) {
-    case 'Axe': return `${hand} Axe`
-    case 'Mace': return `${hand} Mace`
-    case 'Sword': return `${hand} Sword`
-    case 'Dagger':
-    case 'Staff':
-    case 'Polearm':
-    case 'Fist Weapon':
-    case 'Bow':
-    case 'Crossbow':
-    case 'Gun':
-    case 'Wand':
-    case 'Thrown':
-      return item.subclass
-    default:
-      return null
-  }
-}
-
-/** The ITEM_TYPES entry the package implies for an armor piece or weapon. */
-function packageTypeInfo(item: PackageItem): ItemTypeInfo | null {
-  if (item.class === 'Armor' && ['Cloth', 'Leather', 'Mail', 'Plate'].includes(item.subclass)) {
-    return { armor_type: item.subclass as ItemTypeInfo['armor_type'] }
-  }
-  const weaponType = packageWeaponType(item)
-  return weaponType ? { weapon_type: weaponType } : null
 }
 
 /**
