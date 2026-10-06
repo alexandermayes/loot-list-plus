@@ -4,7 +4,7 @@ import { classicRaids } from '../classic-wow-raids'
 import { tbcRaids } from '../tbc-raids'
 import { wrathRaids } from '../wrath-raids'
 import { getItemTypeInfo, inferArmorType, ARMOR_SLOTS, ITEM_TYPES } from '../item-types'
-import { packageTypeInfo } from './fixtures/package-item-types'
+import { packageTypeInfo, uniqueArmorSlotPieces } from './fixtures/package-item-types'
 
 // GH-388: with no stored armor type, the picker falls back first to
 // ITEM_TYPES and then to inferArmorType's guess from the item's name and
@@ -100,12 +100,32 @@ describe('no Classic, TBC or Wrath raid armor piece resolves heavier than its re
 describe.each([
   { expansion: 'TBC', raids: tbcRaids, armorSlotCount: 330 },
   { expansion: 'Wrath', raids: wrathRaids, armorSlotCount: 664 },
-])('$expansion raid catalog item types (#388)', ({ expansion, raids }) => {
+])('$expansion raid catalog item types (#388)', ({ expansion, raids, armorSlotCount }) => {
   const expansionCatalogEntries = raids.flatMap((raid) =>
     raid.bosses.flatMap((boss) =>
       boss.items.map((raidItem) => ({ raid: raid.name, ...raidItem }))
     )
   )
+
+  it(`has exactly ${armorSlotCount} ${expansion} raid armor-slot pieces`, () => {
+    expect(uniqueArmorSlotPieces(raids)).toHaveLength(armorSlotCount)
+  })
+
+  it(`every ${expansion} raid armor-slot piece has an ITEM_TYPES entry that agrees with the package`, () => {
+    const failures = uniqueArmorSlotPieces(raids)
+      .map((piece) => {
+        const packageItem = packageById.get(piece.wowhead_id)
+        const expected = packageItem ? packageTypeInfo(packageItem) : null
+        const actual = ITEM_TYPES[piece.wowhead_id]
+        return { piece, actual, expected }
+      })
+      .filter(({ actual, expected }) => JSON.stringify(actual ?? null) !== JSON.stringify(expected))
+      .map(
+        ({ piece, actual, expected }) =>
+          `${piece.raid} | ${piece.name} (${piece.wowhead_id}): ITEM_TYPES ${actual ? JSON.stringify(actual) : 'none'}, package ${expected ? JSON.stringify(expected) : 'none'}`
+      )
+    expect(failures).toEqual([])
+  })
 
   it(`every ITEM_TYPES entry for a ${expansion} catalog item agrees with the package`, () => {
     const failures = expansionCatalogEntries
