@@ -6,8 +6,11 @@ import {
   type LootItemCharacter,
 } from '../loot-items-query'
 import { classicRaids } from '@/data/classic-wow-raids'
+import { tbcRaids } from '@/data/tbc-raids'
+import { wrathRaids } from '@/data/wrath-raids'
 import { Items } from 'wow-classic-items'
 import { ARMOR_SLOTS } from '@/data/item-types'
+import { uniqueArmorSlotPieces } from '@/data/__tests__/fixtures/package-item-types'
 
 /**
  * Minimal in-memory Supabase client stand-in. Only implements the query
@@ -667,6 +670,140 @@ describe('GH-388: every Classic raid armor piece shows to exactly the classes th
         return armorIndex !== -1 && armorIndex <= maxIndex
       })
       .map((piece) => `classic-${piece.wowhead_id}`)
+      .sort()
+
+    expect(visibleIds).toEqual(expectedIds)
+  })
+})
+
+// ─── GH-388 (Wrath): Inexorable Sabatons shows only to classes that can ──
+// ─── wear plate ─────────────────────────────────────────────────────────
+
+// The seeder stores no armor type and no Wrath item had an ITEM_TYPES entry,
+// so the picker guessed from the name; since GH #388 narrowed the plate
+// rule, "sabatons" no longer reads as plate and this plate piece showed to
+// every class.
+describe('GH-388 (Wrath): Inexorable Sabatons shows only to classes that can wear plate', () => {
+  const sabatonsRow = wrathRaids
+    .find((raid) => raid.name === 'Naxxramas (Wrath)')
+    ?.bosses.find((boss) => boss.name === "Anub'Rekhan")
+    ?.items.find((raidItem) => raidItem.wowhead_id === 39717)
+
+  it("the catalog has Inexorable Sabatons at wowhead_id 39717, slot Feet, under Naxxramas (Wrath) / Anub'Rekhan", () => {
+    expect(sabatonsRow).toBeDefined()
+    expect(sabatonsRow?.name).toBe('Inexorable Sabatons')
+    expect(sabatonsRow?.slot).toBe('Feet')
+  })
+
+  const GH388_WRATH_CLASS_EXPECTATIONS: Array<{ className: string; visible: boolean }> = [
+    { className: 'Warrior', visible: true },
+    { className: 'Paladin', visible: true },
+    { className: 'Death Knight', visible: true },
+    { className: 'Hunter', visible: false },
+    { className: 'Shaman', visible: false },
+    { className: 'Rogue', visible: false },
+    { className: 'Druid', visible: false },
+    { className: 'Priest', visible: false },
+    { className: 'Mage', visible: false },
+    { className: 'Warlock', visible: false },
+  ]
+
+  it.each(GH388_WRATH_CLASS_EXPECTATIONS)(
+    'with no stored armor or weapon type, $className sees Inexorable Sabatons: $visible',
+    async ({ className, visible }) => {
+      const row = item('wrath-39717', {
+        name: 'Inexorable Sabatons',
+        item_slot: 'Feet',
+        wowhead_id: 39717,
+        armor_type: null,
+        weapon_type: null,
+      })
+      const supabase = makeMockSupabase({
+        loot_items: [row],
+        wow_classes: allClasses,
+        class_specs: allSpecs,
+      })
+      const character = warrior({
+        class_name: className,
+        class_id: `class-${className.toLowerCase().replace(/ /g, '-')}`,
+      })
+      const result = (await fetchFilteredLootItems(supabase, character, ['tier-1'])) as Array<{ id: string }>
+      const ids = result.map((r) => r.id)
+      if (visible) {
+        expect(ids).toContain('wrath-39717')
+      } else {
+        expect(ids).not.toContain('wrath-39717')
+      }
+    },
+  )
+})
+
+// ─── GH-388: every TBC and Wrath raid armor piece shows to exactly the ──
+// ─── classes that can wear it ───────────────────────────────────────────
+
+const WRATH_CLASSES = [...CLASSIC_CLASSES, 'Death Knight'] as const
+
+describe.each([
+  { expansion: 'TBC', raids: tbcRaids, classes: CLASSIC_CLASSES, pieceCount: 328 },
+  { expansion: 'Wrath', raids: wrathRaids, classes: WRATH_CLASSES, pieceCount: 664 },
+])('GH-388: every $expansion raid armor piece shows to exactly the classes that can wear it', ({ expansion, raids, classes, pieceCount }) => {
+  const packageItems = [...new Items({ iconSrc: false })]
+  const packageById = new Map(packageItems.map((pkgItem) => [pkgItem.itemId, pkgItem]))
+
+  const ARMOR_ORDER = ['Cloth', 'Leather', 'Mail', 'Plate'] as const
+  const CLASS_MAX_ARMOR: Record<string, (typeof ARMOR_ORDER)[number]> = {
+    Warrior: 'Plate',
+    Paladin: 'Plate',
+    'Death Knight': 'Plate',
+    Hunter: 'Mail',
+    Shaman: 'Mail',
+    Rogue: 'Leather',
+    Druid: 'Leather',
+    Priest: 'Cloth',
+    Mage: 'Cloth',
+    Warlock: 'Cloth',
+  }
+
+  const pieces = uniqueArmorSlotPieces(raids).filter((piece) => {
+    const pkgItem = packageById.get(piece.wowhead_id)
+    return pkgItem?.class === 'Armor' && (ARMOR_ORDER as readonly string[]).includes(pkgItem.subclass)
+  })
+
+  it(`has exactly ${pieceCount} ${expansion} raid armor pieces with a package armor type`, () => {
+    expect(pieces).toHaveLength(pieceCount)
+  })
+
+  it.each(classes)('shows %s exactly the pieces whose package armor type is not heavier than their heaviest armor', async (className) => {
+    const rows = pieces.map((piece) =>
+      item(`${expansion.toLowerCase()}-${piece.wowhead_id}`, {
+        name: piece.name,
+        item_slot: piece.slot,
+        wowhead_id: piece.wowhead_id,
+        armor_type: null,
+        weapon_type: null,
+      })
+    )
+    const supabase = makeMockSupabase({
+      loot_items: rows,
+      wow_classes: allClasses,
+      class_specs: allSpecs,
+    })
+    const character = warrior({
+      class_name: className,
+      class_id: `class-${className.toLowerCase().replace(/ /g, '-')}`,
+    })
+    const result = (await fetchFilteredLootItems(supabase, character, ['tier-1'])) as Array<{ id: string }>
+    const visibleIds = result.map((r) => r.id).sort()
+
+    const maxIndex = ARMOR_ORDER.indexOf(CLASS_MAX_ARMOR[className])
+    const expectedIds = pieces
+      .filter((piece) => {
+        const pkgItem = packageById.get(piece.wowhead_id)
+        const armorType = pkgItem?.class === 'Armor' ? pkgItem.subclass : undefined
+        const armorIndex = ARMOR_ORDER.indexOf(armorType as (typeof ARMOR_ORDER)[number])
+        return armorIndex !== -1 && armorIndex <= maxIndex
+      })
+      .map((piece) => `${expansion.toLowerCase()}-${piece.wowhead_id}`)
       .sort()
 
     expect(visibleIds).toEqual(expectedIds)

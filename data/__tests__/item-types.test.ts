@@ -3,7 +3,8 @@ import { Items } from 'wow-classic-items'
 import { classicRaids } from '../classic-wow-raids'
 import { tbcRaids } from '../tbc-raids'
 import { wrathRaids } from '../wrath-raids'
-import { getItemTypeInfo, inferArmorType, ARMOR_SLOTS } from '../item-types'
+import { getItemTypeInfo, inferArmorType, ARMOR_SLOTS, ITEM_TYPES } from '../item-types'
+import { packageTypeInfo, uniqueArmorSlotPieces } from './fixtures/package-item-types'
 
 // GH-388: with no stored armor type, the picker falls back first to
 // ITEM_TYPES and then to inferArmorType's guess from the item's name and
@@ -86,6 +87,67 @@ describe('no Classic, TBC or Wrath raid armor piece resolves heavier than its re
         }
       }
     }
+    expect(failures).toEqual([])
+  })
+})
+
+// Mirrors the 'Classic raid armor types (#388)' checks in
+// classic-catalog-completeness.test.ts; with no entry and an empty stored
+// type the picker guesses from the name, and since GH #388 narrowed the
+// plate rule most TBC and Wrath armor showed to every class; heroic
+// versions have their own ids; two TBC items in armor slots are fist
+// weapons in the item data.
+describe.each([
+  { expansion: 'TBC', raids: tbcRaids, armorSlotCount: 330 },
+  { expansion: 'Wrath', raids: wrathRaids, armorSlotCount: 664 },
+])('$expansion raid catalog item types (#388)', ({ expansion, raids, armorSlotCount }) => {
+  const expansionCatalogEntries = raids.flatMap((raid) =>
+    raid.bosses.flatMap((boss) =>
+      boss.items.map((raidItem) => ({ raid: raid.name, ...raidItem }))
+    )
+  )
+
+  it(`has exactly ${armorSlotCount} ${expansion} raid armor-slot pieces`, () => {
+    expect(uniqueArmorSlotPieces(raids)).toHaveLength(armorSlotCount)
+  })
+
+  it(`every ${expansion} raid armor-slot piece has an ITEM_TYPES entry that agrees with the package`, () => {
+    const failures = uniqueArmorSlotPieces(raids)
+      .map((piece) => {
+        const packageItem = packageById.get(piece.wowhead_id)
+        const expected = packageItem ? packageTypeInfo(packageItem) : null
+        const actual = ITEM_TYPES[piece.wowhead_id]
+        return { piece, actual, expected }
+      })
+      .filter(({ actual, expected }) => JSON.stringify(actual ?? null) !== JSON.stringify(expected))
+      .map(
+        ({ piece, actual, expected }) =>
+          `${piece.raid} | ${piece.name} (${piece.wowhead_id}): ITEM_TYPES ${actual ? JSON.stringify(actual) : 'none'}, package ${expected ? JSON.stringify(expected) : 'none'}`
+      )
+    expect(failures).toEqual([])
+  })
+
+  it(`every ITEM_TYPES entry for a ${expansion} catalog item agrees with the package`, () => {
+    const failures = expansionCatalogEntries
+      .filter((entry) => ITEM_TYPES[entry.wowhead_id] !== undefined)
+      .filter((entry) => {
+        const packageItem = packageById.get(entry.wowhead_id)
+        const expected = packageItem ? packageTypeInfo(packageItem) : null
+        return JSON.stringify(ITEM_TYPES[entry.wowhead_id]) !== JSON.stringify(expected)
+      })
+      .map((entry) => {
+        const packageItem = packageById.get(entry.wowhead_id)
+        const expected = packageItem ? packageTypeInfo(packageItem) : null
+        return `${entry.raid} | ${entry.name} (${entry.wowhead_id}) slot ${entry.slot}: ITEM_TYPES ${JSON.stringify(ITEM_TYPES[entry.wowhead_id])}, package ${expected ? JSON.stringify(expected) : 'none'}`
+      })
+    expect(failures).toEqual([])
+  })
+
+  it(`no ${expansion} catalog item with slot Back, Token, Quest or Recipe has an ITEM_TYPES entry`, () => {
+    const failures = expansionCatalogEntries
+      .filter((entry) => ['Back', 'Token', 'Quest', 'Recipe'].includes(entry.slot))
+      .filter((entry) => ITEM_TYPES[entry.wowhead_id] !== undefined)
+      .map((entry) => `${entry.raid} | ${entry.name} (${entry.wowhead_id})`)
     expect(failures).toEqual([])
   })
 })
