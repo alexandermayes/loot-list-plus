@@ -42,12 +42,14 @@
  * TBC T6 recipes are 'Trash' in both Black Temple and Hyjal Summit).
  * resolveGuildLootItem now takes optional hints (the award's boss, the live
  * instance name) and uses them to pick between those tiers, in this order:
- * the tier whose row has that boss, then the one tier whose 'Shared Boss
- * Loot' / 'Trash' row sits in a tier that has that boss, then the tier named
- * by the raid hint, then the deterministic fallback. Group labels ('Shared
- * Boss Loot', 'Trash', 'Unknown') are never a boss signal: the addon's
- * award bossName is the cached catalog row's label (item.itemData.bossName
- * in LootDistribution.lua), not the live encounter. Hints only ever choose
+ * the tier whose row has that boss, then the one tier whose group row
+ * (CATALOG_GROUP_LABELS in data/raid-catalog-names.ts) sits in a tier that
+ * has that boss, then the tier named by the raid hint, then the
+ * deterministic fallback. Group labels ('Shared Boss Loot', 'Trash',
+ * 'Crafting Materials', 'Tier 3 Tokens', 'Unknown') are never a boss signal:
+ * the addon's award bossName is the cached catalog row's label
+ * (item.itemData.bossName in LootDistribution.lua), not the live encounter.
+ * Hints only ever choose
  * among rows already scoped to the guild's own tiers. The raid hint matches
  * a tier's own name or one of its in-game instance names in
  * data/raid-catalog-names.ts (RAID_INSTANCE_NAMES): the game reports map
@@ -243,7 +245,7 @@ async function pickAcrossTiers(
         return pickDeterministic(byBoss, activeExpansionId, 'boss')
       }
     } else {
-      // (b) a 'Shared Boss Loot' / 'Trash' row in the one tier that has
+      // (b) a group row (CATALOG_GROUP_LABELS) in the one tier that has
       // this boss. The roster query is limited to the group rows' tiers,
       // which are always the guild's own candidate tiers (T-307-01), and
       // the comparison is done here in JS, never with like or ilike.
@@ -302,7 +304,7 @@ async function pickAcrossTiers(
  * with no extra query, exactly as before GH #307. When the matches span
  * more than one of the guild's tiers, the hints choose between them in
  * this order (GH #307 D-01): the tier whose row has hints.bossName
- * ('boss'); else the one tier whose 'Shared Boss Loot' or 'Trash' row sits
+ * ('boss'); else the one tier whose group row (CATALOG_GROUP_LABELS) sits
  * in a tier that has that boss ('boss_tier'); else the tier whose name, or
  * one of its in-game instance names in data/raid-catalog-names.ts, is
  * hints.raidName ('raid'); else the active expansion, then the lowest

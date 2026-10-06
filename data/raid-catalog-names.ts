@@ -29,13 +29,27 @@
  */
 export const RAID_INSTANCE_NAMES: Readonly<Record<string, readonly string[]>> = {
   "Temple of Ahn'Qiraj": ["Ahn'Qiraj Temple"], // InstanceID 531
+  'Serpentshrine Cavern': ['Coilfang: Serpentshrine Cavern'], // InstanceID 548
+  'Tempest Keep: The Eye': ['Tempest Keep'], // InstanceID 550
+  'Hyjal Summit': ['The Battle for Mount Hyjal'], // InstanceID 534
+  'Sunwell Plateau': ['The Sunwell'], // InstanceID 580
+  'Naxxramas (Wrath)': ['Naxxramas'], // InstanceID 533
+  'Eye of Eternity': ['The Eye of Eternity'], // InstanceID 616
+  'Obsidian Sanctum': ['The Obsidian Sanctum'], // InstanceID 615
+  "Onyxia's Lair (Wrath)": ["Onyxia's Lair"], // InstanceID 249
+  'Ruby Sanctum': ['The Ruby Sanctum'], // InstanceID 724
 }
 
 /**
  * The boss_name labels the raid catalogs use for a group of items rather
  * than naming a single encounter. Never a boss signal on its own: the
  * boss-tier rule in lib/loot/guild-scoped-lookup.ts treats a row under one
- * of these labels as a group row, decided by which of its candidate tiers
- * has the live boss, not by the label itself.
+ * of these labels as a group row (CATALOG_GROUP_LABELS), decided by which
+ * of its candidate tiers has the live boss, not by the label itself.
  */
-export const CATALOG_GROUP_LABELS: readonly string[] = ['Shared Boss Loot', 'Trash']
+export const CATALOG_GROUP_LABELS: readonly string[] = [
+  'Shared Boss Loot',
+  'Trash',
+  'Crafting Materials',
+  'Tier 3 Tokens',
+]

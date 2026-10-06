@@ -366,6 +366,8 @@ describe('resolveGuildLootItem hints (GH #307)', () => {
     ['Shared Boss Loot'],
     ['shared boss loot'],
     ['Trash'],
+    ['Crafting Materials'],
+    ['Tier 3 Tokens'],
     ['Unknown'],
     [''],
     ['   '],
