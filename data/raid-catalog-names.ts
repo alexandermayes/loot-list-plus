@@ -30,3 +30,12 @@
 export const RAID_INSTANCE_NAMES: Readonly<Record<string, readonly string[]>> = {
   "Temple of Ahn'Qiraj": ["Ahn'Qiraj Temple"], // InstanceID 531
 }
+
+/**
+ * The boss_name labels the raid catalogs use for a group of items rather
+ * than naming a single encounter. Never a boss signal on its own: the
+ * boss-tier rule in lib/loot/guild-scoped-lookup.ts treats a row under one
+ * of these labels as a group row, decided by which of its candidate tiers
+ * has the live boss, not by the label itself.
+ */
+export const CATALOG_GROUP_LABELS: readonly string[] = ['Shared Boss Loot', 'Trash']

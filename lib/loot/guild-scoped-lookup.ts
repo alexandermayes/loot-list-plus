@@ -57,7 +57,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { wowheadIdCandidates } from '@/domain/loot/faction-item-aliases'
-import { RAID_INSTANCE_NAMES } from '@/data/raid-catalog-names'
+import { RAID_INSTANCE_NAMES, CATALOG_GROUP_LABELS } from '@/data/raid-catalog-names'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type QueryClient = SupabaseClient<any, any, any>
@@ -102,8 +102,13 @@ interface GuildRaidTier {
 
 type CandidateRow = GuildLootItemRow & { expansion_id: string; boss_name: string | null }
 
-/** Catalog boss_name labels that group items rather than name a boss. */
-const GROUP_BOSS_LABELS = new Set(['shared boss loot', 'trash'])
+/** Catalog boss_name labels that group items rather than name a boss,
+ * built from CATALOG_GROUP_LABELS in data/raid-catalog-names.ts. */
+const GROUP_BOSS_LABELS = new Set(
+  CATALOG_GROUP_LABELS
+    .map(label => normalizeCatalogName(label))
+    .filter((label): label is string => label !== null)
+)
 const UNKNOWN_LABEL = 'unknown'
 
 /**
