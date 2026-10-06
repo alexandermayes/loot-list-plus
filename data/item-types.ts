@@ -27,6 +27,13 @@ export interface ItemTypeInfo {
  * class-agnostic check. Any entry here also fails the package-agreement
  * check in data/__tests__/classic-catalog-completeness.test.ts, since the
  * package attributes no armor or weapon type to a Recipe-class item.
+ *
+ * Every Classic raid armor piece (an armor slot other than Back) has an
+ * entry taken from the wow-classic-items package subclass. The 'Classic raid
+ * armor types (#388)' checks in data/__tests__/classic-catalog-completeness.test.ts
+ * fail when one is missing or disagrees with the package, whatever its
+ * source zone, so the picker never falls back to inferArmorType for Classic
+ * raid armor.
  */
 export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   // ============================================================================
@@ -906,6 +913,174 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   21837: { weapon_type: 'One-Handed Mace' },  // Anubisath Warhammer
 
   // ============================================================================
+  // CLASSIC GH-388 ADDITIONS (every other Classic raid armor piece). Types
+  // from the wow-classic-items package subclass, so no Classic raid armor
+  // piece falls back to a guess from its name. Back items (class-agnostic
+  // in the picker), tokens, quest items and recipes need none.
+  // ============================================================================
+
+  // Molten Core
+  16863: { armor_type: 'Plate' },             // Gauntlets of Might (Lucifron)
+  18861: { armor_type: 'Plate' },             // Flamewaker Legplates (Lucifron)
+  19145: { armor_type: 'Cloth' },             // Robe of Volatile Power (Lucifron)
+  16855: { armor_type: 'Plate' },             // Lawbringer Legplates (Magmadar)
+  16867: { armor_type: 'Plate' },             // Legplates of Might (Magmadar)
+  19143: { armor_type: 'Plate' },             // Flameguard Gauntlets (Magmadar)
+  19144: { armor_type: 'Mail' },              // Sabatons of the Flamewalker (Magmadar)
+  16839: { armor_type: 'Mail' },              // Earthfury Gauntlets (Gehennas)
+  16860: { armor_type: 'Plate' },             // Lawbringer Gauntlets (Gehennas)
+  16862: { armor_type: 'Plate' },             // Sabatons of Might (Gehennas)
+  16798: { armor_type: 'Cloth' },             // Arcanist Robes (Golemagg the Incinerator)
+  16809: { armor_type: 'Cloth' },             // Felheart Robes (Golemagg the Incinerator)
+  16815: { armor_type: 'Cloth' },             // Robes of Prophecy (Golemagg the Incinerator)
+  16845: { armor_type: 'Mail' },              // Giantstalker's Breastplate (Golemagg the Incinerator)
+  16865: { armor_type: 'Plate' },             // Breastplate of Might (Golemagg the Incinerator)
+  18806: { armor_type: 'Plate' },             // Core Forged Greaves (Majordomo Executus)
+  16946: { armor_type: 'Mail' },              // Legplates of Ten Storms (Ragnaros)
+  16954: { armor_type: 'Plate' },             // Judgement Legplates (Ragnaros)
+  16962: { armor_type: 'Plate' },             // Legplates of Wrath (Ragnaros)
+
+  // Blackwing Lair
+  16941: { armor_type: 'Mail' },              // Dragonstalker's Greaves (Broodlord Lashlayer)
+  16949: { armor_type: 'Mail' },              // Greaves of Ten Storms (Broodlord Lashlayer)
+  16957: { armor_type: 'Plate' },             // Judgement Sabatons (Broodlord Lashlayer)
+  16965: { armor_type: 'Plate' },             // Sabatons of Wrath (Broodlord Lashlayer)
+  16940: { armor_type: 'Mail' },              // Dragonstalker's Gauntlets (Firemaw)
+  16948: { armor_type: 'Mail' },              // Gauntlets of Ten Storms (Firemaw)
+  16956: { armor_type: 'Plate' },             // Judgement Gauntlets (Firemaw)
+  16964: { armor_type: 'Plate' },             // Gauntlets of Wrath (Firemaw)
+  19399: { armor_type: 'Cloth' },             // Black Ash Robe (Firemaw)
+  16916: { armor_type: 'Cloth' },             // Netherwind Robes (Nefarian)
+  16923: { armor_type: 'Cloth' },             // Robes of Transcendence (Nefarian)
+  16931: { armor_type: 'Cloth' },             // Nemesis Robes (Nefarian)
+  16942: { armor_type: 'Mail' },              // Dragonstalker's Breastplate (Nefarian)
+  16950: { armor_type: 'Mail' },              // Breastplate of Ten Storms (Nefarian)
+  16958: { armor_type: 'Plate' },             // Judgement Breastplate (Nefarian)
+  16966: { armor_type: 'Plate' },             // Breastplate of Wrath (Nefarian)
+
+  // Zul'Gurub
+  20032: { armor_type: 'Cloth' },             // Flowing Ritual Robes (High Priestess Mar'li)
+  19919: { armor_type: 'Mail' },              // Bloodstained Greaves (High Priestess Mar'li)
+  19913: { armor_type: 'Plate' },             // Bloodsoaked Greaves (High Priestess Arlokk)
+  19894: { armor_type: 'Plate' },             // Bloodsoaked Gauntlets (Jin'do the Hexxer)
+  19887: { armor_type: 'Mail' },              // Bloodstained Legplates (Jin'do the Hexxer)
+  20257: { armor_type: 'Mail' },              // Seafury Gauntlets (Hakkar the Soulflayer)
+  19855: { armor_type: 'Plate' },             // Bloodsoaked Legplates (Hakkar the Soulflayer)
+  20264: { armor_type: 'Plate' },             // Peacekeeper Gauntlets (Hakkar the Soulflayer)
+
+  // Ruins of Ahn'Qiraj
+  21495: { armor_type: 'Plate' },             // Legplates of the Qiraji Command (General Rajaxx)
+  21810: { armor_type: 'Cloth' },             // Treads of the Wandering Nomad (General Rajaxx)
+  21489: { armor_type: 'Cloth' },             // Quicksand Waders (Buru the Gorger)
+  21491: { armor_type: 'Leather' },           // Scaled Bracers of the Gorger (Buru the Gorger)
+  21487: { armor_type: 'Mail' },              // Slimy Scaled Gauntlets (Buru the Gorger)
+  21486: { armor_type: 'Plate' },             // Gloves of the Swarm (Buru the Gorger)
+  21490: { armor_type: 'Plate' },             // Slime Kickers (Buru the Gorger)
+  21484: { armor_type: 'Leather' },           // Helm of Regrowth (Ayamiss the Hunter)
+  21480: { armor_type: 'Mail' },              // Scaled Silithid Gauntlets (Ayamiss the Hunter)
+  21482: { armor_type: 'Mail' },              // Boots of the Fiery Sands (Ayamiss the Hunter)
+  21472: { armor_type: 'Cloth' },             // Dustwind Turban (Moam)
+  21468: { armor_type: 'Cloth' },             // Mantle of Maz'Nadir (Moam)
+  21455: { armor_type: 'Leather' },           // Southwind Helm (Moam)
+  21474: { armor_type: 'Leather' },           // Chitinous Shoulderguards (Moam)
+  21467: { armor_type: 'Leather' },           // Thick Silithid Chestguard (Moam)
+  21469: { armor_type: 'Leather' },           // Gauntlets of Southwind (Moam)
+  21479: { armor_type: 'Plate' },             // Gauntlets of the Immovable (Moam)
+  21476: { armor_type: 'Mail' },              // Obsidian Scaled Leggings (Moam)
+  21475: { armor_type: 'Plate' },             // Legplates of the Destroyer (Moam)
+  21453: { armor_type: 'Plate' },             // Mantle of the Horusath (Ossirian the Unscarred)
+  21454: { armor_type: 'Mail' },              // Runic Stone Shoulders (Ossirian the Unscarred)
+  21457: { armor_type: 'Plate' },             // Bracers of Brutality (Ossirian the Unscarred)
+  21458: { armor_type: 'Leather' },           // Gauntlets of New Life (Ossirian the Unscarred)
+  21460: { armor_type: 'Plate' },             // Helm of Domination (Ossirian the Unscarred)
+  21461: { armor_type: 'Cloth' },             // Leggings of the Black Blizzard (Ossirian the Unscarred)
+  21462: { armor_type: 'Cloth' },             // Gloves of Dark Wisdom (Ossirian the Unscarred)
+  21463: { armor_type: 'Mail' },              // Ossirian's Binding (Ossirian the Unscarred)
+  21464: { armor_type: 'Cloth' },             // Shackles of the Unscarred (Ossirian the Unscarred)
+
+  // Temple of Ahn'Qiraj
+  21814: { armor_type: 'Plate' },             // Breastplate of Annihilation (The Prophet Skeram)
+  21698: { armor_type: 'Leather' },           // Leggings of Immersion (The Prophet Skeram)
+  21708: { armor_type: 'Leather' },           // Beetle Scaled Wristguards (The Prophet Skeram)
+  21699: { armor_type: 'Mail' },              // Barrage Shoulders (The Prophet Skeram)
+  21704: { armor_type: 'Plate' },             // Boots of the Redeemed Prophecy (The Prophet Skeram)
+  21706: { armor_type: 'Plate' },             // Boots of the Unwavering Will (The Prophet Skeram)
+  21686: { armor_type: 'Cloth' },             // Mantle of Phrenic Power (Silithid Royalty)
+  21694: { armor_type: 'Cloth' },             // Ternary Mantle (Silithid Royalty)
+  21696: { armor_type: 'Cloth' },             // Robes of the Triumvirate (Silithid Royalty)
+  21683: { armor_type: 'Plate' },             // Mantle of the Desert Crusade (Silithid Royalty)
+  21692: { armor_type: 'Plate' },             // Triad Girdle (Silithid Royalty)
+  21680: { armor_type: 'Leather' },           // Vest of Swift Execution (Silithid Royalty)
+  21689: { armor_type: 'Leather' },           // Gloves of Ebru (Silithid Royalty)
+  21691: { armor_type: 'Plate' },             // Ooze-Ridden Gauntlets (Silithid Royalty)
+  21688: { armor_type: 'Plate' },             // Boots of the Fallen Hero (Silithid Royalty)
+  21669: { armor_type: 'Leather' },           // Creeping Vine Helm (Battleguard Sartura)
+  21676: { armor_type: 'Cloth' },             // Leggings of the Festering Swarm (Battleguard Sartura)
+  21648: { armor_type: 'Cloth' },             // Recomposed Boots (Battleguard Sartura)
+  21671: { armor_type: 'Cloth' },             // Robes of the Battleguard (Battleguard Sartura)
+  21672: { armor_type: 'Leather' },           // Gloves of Enforcement (Battleguard Sartura)
+  21668: { armor_type: 'Mail' },              // Scaled Leggings of Qiraji Fury (Battleguard Sartura)
+  21674: { armor_type: 'Plate' },             // Gauntlets of Steadfast Determination (Battleguard Sartura)
+  21667: { armor_type: 'Plate' },             // Legplates of Blazing Light (Battleguard Sartura)
+  21663: { armor_type: 'Cloth' },             // Robes of the Guardian Saint (Fankriss the Unyielding)
+  21665: { armor_type: 'Leather' },           // Mantle of Wicked Revenge (Fankriss the Unyielding)
+  21639: { armor_type: 'Plate' },             // Pauldrons of the Unrelenting (Fankriss the Unyielding)
+  21652: { armor_type: 'Plate' },             // Silithid Carapace Chestguard (Fankriss the Unyielding)
+  21645: { armor_type: 'Leather' },           // Hive Tunneler's Boots (Fankriss the Unyielding)
+  21651: { armor_type: 'Mail' },              // Scaled Sand Reaver Leggings (Fankriss the Unyielding)
+  21624: { armor_type: 'Mail' },              // Gauntlets of Kalimdor (Viscidus)
+  21623: { armor_type: 'Plate' },             // Gauntlets of the Righteous Champion (Viscidus)
+  21626: { armor_type: 'Mail' },              // Slime-Coated Leggings (Viscidus)
+  21619: { armor_type: 'Cloth' },             // Gloves of the Messiah (Princess Huhuran)
+  21617: { armor_type: 'Leather' },           // Wasphide Gauntlets (Princess Huhuran)
+  21618: { armor_type: 'Plate' },             // Hive Defiler Wristguards (Princess Huhuran)
+  21600: { armor_type: 'Cloth' },             // Boots of Epiphany (Twin Emperors)
+  21602: { armor_type: 'Leather' },           // Qiraji Execution Bracers (Twin Emperors)
+  21598: { armor_type: 'Plate' },             // Royal Qiraji Belt (Twin Emperors)
+  21599: { armor_type: 'Mail' },              // Vek'lor's Gloves of Devastation (Twin Emperors)
+  21604: { armor_type: 'Cloth' },             // Bracelets of Royal Redemption (Twin Emperors)
+  21605: { armor_type: 'Leather' },           // Gloves of the Hidden Temple (Twin Emperors)
+  21606: { armor_type: 'Plate' },             // Belt of the Fallen Emperor (Twin Emperors)
+  21607: { armor_type: 'Mail' },              // Grasp of the Fallen Emperor (Twin Emperors)
+  21609: { armor_type: 'Leather' },           // Regenerating Belt of Vek'nilash (Twin Emperors)
+  21611: { armor_type: 'Cloth' },             // Burrower Bracers (Ouro)
+  21615: { armor_type: 'Cloth' },             // Don Rigoberto's Lost Hat (Ouro)
+  21585: { armor_type: 'Cloth' },             // Dark Storm Gauntlets (C'Thun)
+  22730: { armor_type: 'Cloth' },             // Eyestalk Waist Cord (C'Thun)
+  21582: { armor_type: 'Cloth' },             // Grasp of the Old God (C'Thun)
+  21586: { armor_type: 'Leather' },           // Belt of Never-Ending Agony (C'Thun)
+  21581: { armor_type: 'Plate' },             // Gauntlets of Annihilation (C'Thun)
+
+  // Naxxramas
+  22936: { armor_type: 'Plate' },             // Wristguards of Vengeance (Anub'Rekhan)
+  22941: { armor_type: 'Leather' },           // Polar Shoulder Pads (Grand Widow Faerlina)
+  22940: { armor_type: 'Plate' },             // Icebane Pauldrons (Grand Widow Faerlina)
+  23220: { armor_type: 'Cloth' },             // Crystal Webbed Robe (Maexxna)
+  23035: { armor_type: 'Cloth' },             // Preceptor's Hat (Heigan the Unclean)
+  23033: { armor_type: 'Mail' },              // Icy Scale Coif (Heigan the Unclean)
+  23019: { armor_type: 'Plate' },             // Icebane Helmet (Heigan the Unclean)
+  23068: { armor_type: 'Plate' },             // Legplates of Carnage (Heigan the Unclean)
+  23219: { armor_type: 'Plate' },             // Girdle of the Mentor (Instructor Razuvious)
+  23032: { armor_type: 'Cloth' },             // Glacial Headdress (Gothik the Harvester)
+  23020: { armor_type: 'Leather' },           // Polar Helmet (Gothik the Harvester)
+  23021: { armor_type: 'Cloth' },             // The Soul Harvester's Bindings (Gothik the Harvester)
+  23073: { armor_type: 'Leather' },           // Boots of Displacement (Gothik the Harvester)
+  23071: { armor_type: 'Leather' },           // Leggings of Apocalypse (Four Horsemen)
+  22968: { armor_type: 'Cloth' },             // Glacial Mantle (Grobbulus)
+  22967: { armor_type: 'Mail' },              // Icy Scale Spaulders (Grobbulus)
+  22983: { armor_type: 'Cloth' },             // Rime Covered Mantle (Gluth)
+  23000: { armor_type: 'Plate' },             // Plated Abomination Ribcage (Thaddius)
+  23070: { armor_type: 'Cloth' },             // Leggings of Polarity (Thaddius)
+  23069: { armor_type: 'Cloth' },             // Necro-Knight's Garb (Trash)
+  23226: { armor_type: 'Leather' },           // Ghoul Skin Tunic (Trash)
+  23664: { armor_type: 'Mail' },              // Pauldrons of Elemental Fury (Trash)
+  23663: { armor_type: 'Mail' },              // Girdle of Elemental Fury (Trash)
+  23665: { armor_type: 'Mail' },              // Leggings of Elemental Fury (Trash)
+  23666: { armor_type: 'Plate' },             // Belt of the Grand Crusader (Trash)
+  23667: { armor_type: 'Plate' },             // Spaulders of the Grand Crusader (Trash)
+  23668: { armor_type: 'Plate' },             // Leggings of the Grand Crusader (Trash)
+
+  // ============================================================================
   // MISTS OF PANDARIA — Siege of Orgrimmar "Shared Boss Loot"
   // ============================================================================
   // The shared loot pool drops one glove per armor type. Their names are
@@ -940,15 +1115,28 @@ export function getItemTypeInfo(wowheadId: number): ItemTypeInfo | undefined {
 }
 
 /**
- * Infer armor type from item slot and name patterns
- * This is a fallback for items not in the mapping
+ * The slots inferArmorType and the Classic armor guard treat as armor. Back
+ * is class-agnostic in the picker, so it is not in this list.
+ */
+export const ARMOR_SLOTS = ['Head', 'Shoulder', 'Chest', 'Wrist', 'Hands', 'Waist', 'Legs', 'Feet'] as const
+
+/**
+ * A fallback for items with no ITEM_TYPES entry and no stored type. A wrong
+ * guess heavier than the real type hides the item from a class that can
+ * wear it (GH #388; the same happened with "gauntlets", removed on
+ * 2026-03-29). Checked against the wow-classic-items package for the
+ * Classic, TBC and Wrath raid catalogs, "breastplate", "greaves",
+ * "sabatons" and "vambraces" name mail and plate pieces alike (73, 57, 71
+ * and 56 percent plate), while other names containing "plate" were plate 57
+ * times out of 59 (both misses are Classic legplates that now have
+ * entries). A name with no reliable hint returns undefined, which shows the
+ * item to every class.
  */
 export function inferArmorType(slot: string, name: string): ArmorType | undefined {
   const nameLower = name.toLowerCase()
 
   // Armor slot check
-  const armorSlots = ['Head', 'Shoulder', 'Chest', 'Wrist', 'Hands', 'Waist', 'Legs', 'Feet']
-  if (!armorSlots.includes(slot)) {
+  if (!(ARMOR_SLOTS as readonly string[]).includes(slot)) {
     return undefined  // Not an armor piece
   }
 
@@ -961,9 +1149,10 @@ export function inferArmorType(slot: string, name: string): ArmorType | undefine
 
   // Plate indicators
   // Note: "gauntlets" excluded — used across all armor types (Mail, Leather, Plate)
-  if (nameLower.includes('plate') || nameLower.includes('breastplate') ||
-      nameLower.includes('sabatons') || nameLower.includes('greaves') ||
-      nameLower.includes('vambraces')) {
+  // "breastplate", "greaves", "sabatons" and "vambraces" excluded too (GH #388),
+  // since those words name mail and plate pieces alike; a bare "plate" is the
+  // only reliable signal, and only when the name is not "breastplate".
+  if (nameLower.includes('plate') && !nameLower.includes('breastplate')) {
     return 'Plate'
   }
 

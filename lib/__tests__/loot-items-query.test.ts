@@ -6,6 +6,8 @@ import {
   type LootItemCharacter,
 } from '../loot-items-query'
 import { classicRaids } from '@/data/classic-wow-raids'
+import { Items } from 'wow-classic-items'
+import { ARMOR_SLOTS } from '@/data/item-types'
 
 /**
  * Minimal in-memory Supabase client stand-in. Only implements the query
@@ -535,6 +537,139 @@ describe('GH-284: Classic raid recipes visible to every class', () => {
     if (className === 'Mage') {
       expect(ids).not.toContain('plate-control')
     }
+  })
+})
+
+// ─── GH-388: Dragonstalker's Greaves shows to classes that can wear mail ──
+
+// The seeder stores no armor type, so the picker falls back to ITEM_TYPES and
+// then to a guess from the name; "greaves" was read as plate, hiding the
+// piece from Hunters and Shamans (GH #388).
+describe('GH-388: Dragonstalker\'s Greaves shows to classes that can wear mail', () => {
+  const bwlGreavesRow = classicRaids
+    .find((raid) => raid.name === 'Blackwing Lair')
+    ?.bosses.find((boss) => boss.name === 'Broodlord Lashlayer')
+    ?.items.find((raidItem) => raidItem.wowhead_id === 16941)
+
+  it('the catalog has Dragonstalker\'s Greaves at wowhead_id 16941, slot Feet, under Blackwing Lair / Broodlord Lashlayer', () => {
+    expect(bwlGreavesRow).toBeDefined()
+    expect(bwlGreavesRow?.name).toBe("Dragonstalker's Greaves")
+    expect(bwlGreavesRow?.slot).toBe('Feet')
+  })
+
+  const GH388_CLASS_EXPECTATIONS: Array<{ className: string; visible: boolean }> = [
+    { className: 'Warrior', visible: true },
+    { className: 'Paladin', visible: true },
+    { className: 'Hunter', visible: true },
+    { className: 'Shaman', visible: true },
+    { className: 'Rogue', visible: false },
+    { className: 'Druid', visible: false },
+    { className: 'Priest', visible: false },
+    { className: 'Mage', visible: false },
+    { className: 'Warlock', visible: false },
+  ]
+
+  it.each(GH388_CLASS_EXPECTATIONS)(
+    'with no stored armor or weapon type, $className sees Dragonstalker\'s Greaves: $visible',
+    async ({ className, visible }) => {
+      const row = item('bwl-16941', {
+        name: "Dragonstalker's Greaves",
+        item_slot: 'Feet',
+        wowhead_id: 16941,
+        armor_type: null,
+        weapon_type: null,
+      })
+      const supabase = makeMockSupabase({
+        loot_items: [row],
+        wow_classes: allClasses,
+        class_specs: allSpecs,
+      })
+      const character = warrior({ class_name: className, class_id: `class-${className.toLowerCase()}` })
+      const result = (await fetchFilteredLootItems(supabase, character, ['tier-1'])) as Array<{ id: string }>
+      const ids = result.map((r) => r.id)
+      if (visible) {
+        expect(ids).toContain('bwl-16941')
+      } else {
+        expect(ids).not.toContain('bwl-16941')
+      }
+    },
+  )
+})
+
+// ─── GH-388: every Classic raid armor piece shows to exactly the classes ──
+// ─── that can wear it ──────────────────────────────────────────────────
+
+describe('GH-388: every Classic raid armor piece shows to exactly the classes that can wear it', () => {
+  const packageItems388 = [...new Items({ iconSrc: false })]
+  const packageById388 = new Map(packageItems388.map((pkgItem) => [pkgItem.itemId, pkgItem]))
+
+  const classicArmorPieces = (() => {
+    const seen = new Set<number>()
+    const pieces: Array<{ raid: string; boss: string; name: string; slot: string; wowhead_id: number }> = []
+    for (const raid of classicRaids) {
+      for (const boss of raid.bosses) {
+        for (const raidItem of boss.items) {
+          if (!(ARMOR_SLOTS as readonly string[]).includes(raidItem.slot)) continue
+          if (seen.has(raidItem.wowhead_id)) continue
+          seen.add(raidItem.wowhead_id)
+          pieces.push({ raid: raid.name, boss: boss.name, ...raidItem })
+        }
+      }
+    }
+    return pieces
+  })()
+
+  // Armor hierarchy and per-class max, kept local and independent of
+  // data/class-proficiencies.ts so this test does not share a bug with the
+  // code it is checking.
+  const ARMOR_ORDER = ['Cloth', 'Leather', 'Mail', 'Plate'] as const
+  const CLASS_MAX_ARMOR: Record<string, (typeof ARMOR_ORDER)[number]> = {
+    Warrior: 'Plate',
+    Paladin: 'Plate',
+    Hunter: 'Mail',
+    Shaman: 'Mail',
+    Rogue: 'Leather',
+    Druid: 'Leather',
+    Priest: 'Cloth',
+    Mage: 'Cloth',
+    Warlock: 'Cloth',
+  }
+
+  it('the catalog has exactly 341 unique Classic raid armor pieces', () => {
+    expect(classicArmorPieces).toHaveLength(341)
+  })
+
+  it.each(CLASSIC_CLASSES)('shows %s exactly the pieces whose package armor type is not heavier than their heaviest armor', async (className) => {
+    const rows = classicArmorPieces.map((piece) =>
+      item(`classic-${piece.wowhead_id}`, {
+        name: piece.name,
+        item_slot: piece.slot,
+        wowhead_id: piece.wowhead_id,
+        armor_type: null,
+        weapon_type: null,
+      })
+    )
+    const supabase = makeMockSupabase({
+      loot_items: rows,
+      wow_classes: allClasses,
+      class_specs: allSpecs,
+    })
+    const character = warrior({ class_name: className, class_id: `class-${className.toLowerCase()}` })
+    const result = (await fetchFilteredLootItems(supabase, character, ['tier-1'])) as Array<{ id: string }>
+    const visibleIds = result.map((r) => r.id).sort()
+
+    const maxIndex = ARMOR_ORDER.indexOf(CLASS_MAX_ARMOR[className])
+    const expectedIds = classicArmorPieces
+      .filter((piece) => {
+        const pkgItem = packageById388.get(piece.wowhead_id)
+        const armorType = pkgItem?.class === 'Armor' ? pkgItem.subclass : undefined
+        const armorIndex = ARMOR_ORDER.indexOf(armorType as (typeof ARMOR_ORDER)[number])
+        return armorIndex !== -1 && armorIndex <= maxIndex
+      })
+      .map((piece) => `classic-${piece.wowhead_id}`)
+      .sort()
+
+    expect(visibleIds).toEqual(expectedIds)
   })
 })
 
