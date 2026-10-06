@@ -48,11 +48,16 @@
  * Boss Loot', 'Trash', 'Unknown') are never a boss signal: the addon's
  * award bossName is the cached catalog row's label (item.itemData.bossName
  * in LootDistribution.lua), not the live encounter. Hints only ever choose
- * among rows already scoped to the guild's own tiers.
+ * among rows already scoped to the guild's own tiers. The raid hint matches
+ * a tier's own name or one of its in-game instance names in
+ * data/raid-catalog-names.ts (RAID_INSTANCE_NAMES): the game reports map
+ * names, and some differ from the catalog tier name (for example "Ahn'Qiraj
+ * Temple" for Temple of Ahn'Qiraj).
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { wowheadIdCandidates } from '@/domain/loot/faction-item-aliases'
+import { RAID_INSTANCE_NAMES } from '@/data/raid-catalog-names'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type QueryClient = SupabaseClient<any, any, any>
@@ -81,8 +86,9 @@ export interface ResolvedGuildLootItem extends GuildLootItemRow {
 export interface LootItemHints {
   /** The boss the item dropped from. Group labels are ignored. */
   bossName?: string | null
-  /** The live raid instance name (raid_tiers.name). Never the addon
-   * award's own raidName, which echoes the cached catalog row. */
+  /** The live raid instance name (raid_tiers.name), or one of its in-game
+   * instance names in data/raid-catalog-names.ts. Never the addon award's
+   * own raidName, which echoes the cached catalog row. */
   raidName?: string | null
 }
 
@@ -113,6 +119,36 @@ export function normalizeCatalogName(value: unknown): string | null {
     .trim()
     .toLowerCase()
   return normalized === '' ? null : normalized
+}
+
+/**
+ * Built once, at module level: the normalized catalog raid name to its
+ * normalized in-game instance names (GH #307). A Map, never a plain-object
+ * index \u2014 a database tier named 'constructor' or '__proto__' must never
+ * resolve through Object.prototype instead of a real miss.
+ */
+const RAID_INSTANCE_NAME_MAP: ReadonlyMap<string, readonly string[]> = new Map(
+  Object.entries(RAID_INSTANCE_NAMES).map(([raidName, instanceNames]) => [
+    normalizeCatalogName(raidName) ?? raidName.toLowerCase(),
+    instanceNames
+      .map(name => normalizeCatalogName(name))
+      .filter((name): name is string => name !== null),
+  ])
+)
+
+/**
+ * True when raidHint (already normalized) is tierName's own normalized
+ * name, or one of the in-game instance names data/raid-catalog-names.ts
+ * lists for that tier name (GH #307). Reads RAID_INSTANCE_NAME_MAP, never a
+ * plain object, so a tier name that collides with an Object.prototype key
+ * cannot change the result.
+ */
+function tierMatchesRaidHint(tierName: string | null, raidHint: string): boolean {
+  const normalizedTierName = normalizeCatalogName(tierName)
+  if (normalizedTierName === null) return false
+  if (normalizedTierName === raidHint) return true
+  const instanceNames = RAID_INSTANCE_NAME_MAP.get(normalizedTierName)
+  return instanceNames !== undefined && instanceNames.includes(raidHint)
 }
 
 function distinctTierIds(rows: Array<{ raid_tier_id: string }>): string[] {
@@ -233,10 +269,11 @@ async function pickAcrossTiers(
     }
   }
 
-  // (c) the tier named by the live raid hint.
+  // (c) the tier named by the live raid hint, matched by its own name or
+  // one of its in-game instance names in data/raid-catalog-names.ts.
   const raidHint = normalizeCatalogName(hints.raidName)
   if (raidHint && raidHint !== UNKNOWN_LABEL) {
-    const byRaid = matches.filter(row => normalizeCatalogName(tierNameById.get(row.raid_tier_id)) === raidHint)
+    const byRaid = matches.filter(row => tierMatchesRaidHint(tierNameById.get(row.raid_tier_id) ?? null, raidHint))
     if (byRaid.length > 0 && distinctTierIds(byRaid).length === 1) {
       return pickDeterministic(byRaid, activeExpansionId, 'raid')
     }
@@ -261,7 +298,8 @@ async function pickAcrossTiers(
  * more than one of the guild's tiers, the hints choose between them in
  * this order (GH #307 D-01): the tier whose row has hints.bossName
  * ('boss'); else the one tier whose 'Shared Boss Loot' or 'Trash' row sits
- * in a tier that has that boss ('boss_tier'); else the tier whose name is
+ * in a tier that has that boss ('boss_tier'); else the tier whose name, or
+ * one of its in-game instance names in data/raid-catalog-names.ts, is
  * hints.raidName ('raid'); else the active expansion, then the lowest
  * raid_tier_id ('fallback'). Group labels and 'Unknown' are not a boss
  * signal, because the addon sends the cached catalog row's boss label
