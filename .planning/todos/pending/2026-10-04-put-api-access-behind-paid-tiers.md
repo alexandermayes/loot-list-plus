@@ -25,6 +25,6 @@ Sequencing: after quick task 261004-29l (reserve run API access) lands, since bo
 ## Progress
 
 - Slice 1 (shared gate plus reserve runs): done in quick task 261004-jgk, PR #387 (2026-10-04). Decisions: the tier decides (trials, comped and past_due count); runs of guilds without Premium are read only; pre-2026-08-27 runs stay grandfathered.
-- Slice 2 (Discord bot /score and /priority): quick task 261004-ue3, code complete (2026-10-05). Bot PR #390 merges and the bot is redeployed on Railway, then the app PR #391 (draft) is rebased on main and merged. /help and announcements stay free; immediate cutoff for free guilds.
+- Slice 2 (Discord bot /score and /priority): done in quick task 261004-ue3 (2026-10-05). Bot PR #390 merged and the bot redeployed on Railway, then app PR #391 merged and deployed. /help and announcements stay free; immediate cutoff for free guilds.
 - Slice 3 (addon and companion sync): not started. Decided: grandfather guilds with recorded addon or companion use. Still open: whether the addon download stays free with only sync gated (OD-6 in 261004-jgk), and the addon-related marketing copy.
 - GH #271 (guild API): build Premium-only using guildHasPaidAccess(..., 'guild_api'), no grandfathering.
