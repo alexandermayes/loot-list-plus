@@ -6,6 +6,7 @@ import {
   type LootItemCharacter,
 } from '../loot-items-query'
 import { classicRaids } from '@/data/classic-wow-raids'
+import { wrathRaids } from '@/data/wrath-raids'
 import { Items } from 'wow-classic-items'
 import { ARMOR_SLOTS } from '@/data/item-types'
 
@@ -671,6 +672,68 @@ describe('GH-388: every Classic raid armor piece shows to exactly the classes th
 
     expect(visibleIds).toEqual(expectedIds)
   })
+})
+
+// ─── GH-388 (Wrath): Inexorable Sabatons shows only to classes that can ──
+// ─── wear plate ─────────────────────────────────────────────────────────
+
+// The seeder stores no armor type and no Wrath item had an ITEM_TYPES entry,
+// so the picker guessed from the name; since GH #388 narrowed the plate
+// rule, "sabatons" no longer reads as plate and this plate piece showed to
+// every class.
+describe('GH-388 (Wrath): Inexorable Sabatons shows only to classes that can wear plate', () => {
+  const sabatonsRow = wrathRaids
+    .find((raid) => raid.name === 'Naxxramas (Wrath)')
+    ?.bosses.find((boss) => boss.name === "Anub'Rekhan")
+    ?.items.find((raidItem) => raidItem.wowhead_id === 39717)
+
+  it("the catalog has Inexorable Sabatons at wowhead_id 39717, slot Feet, under Naxxramas (Wrath) / Anub'Rekhan", () => {
+    expect(sabatonsRow).toBeDefined()
+    expect(sabatonsRow?.name).toBe('Inexorable Sabatons')
+    expect(sabatonsRow?.slot).toBe('Feet')
+  })
+
+  const GH388_WRATH_CLASS_EXPECTATIONS: Array<{ className: string; visible: boolean }> = [
+    { className: 'Warrior', visible: true },
+    { className: 'Paladin', visible: true },
+    { className: 'Death Knight', visible: true },
+    { className: 'Hunter', visible: false },
+    { className: 'Shaman', visible: false },
+    { className: 'Rogue', visible: false },
+    { className: 'Druid', visible: false },
+    { className: 'Priest', visible: false },
+    { className: 'Mage', visible: false },
+    { className: 'Warlock', visible: false },
+  ]
+
+  it.each(GH388_WRATH_CLASS_EXPECTATIONS)(
+    'with no stored armor or weapon type, $className sees Inexorable Sabatons: $visible',
+    async ({ className, visible }) => {
+      const row = item('wrath-39717', {
+        name: 'Inexorable Sabatons',
+        item_slot: 'Feet',
+        wowhead_id: 39717,
+        armor_type: null,
+        weapon_type: null,
+      })
+      const supabase = makeMockSupabase({
+        loot_items: [row],
+        wow_classes: allClasses,
+        class_specs: allSpecs,
+      })
+      const character = warrior({
+        class_name: className,
+        class_id: `class-${className.toLowerCase().replace(/ /g, '-')}`,
+      })
+      const result = (await fetchFilteredLootItems(supabase, character, ['tier-1'])) as Array<{ id: string }>
+      const ids = result.map((r) => r.id)
+      if (visible) {
+        expect(ids).toContain('wrath-39717')
+      } else {
+        expect(ids).not.toContain('wrath-39717')
+      }
+    },
+  )
 })
 
 // ─── resolveTierIdsForPhases ────────────────────────────────────

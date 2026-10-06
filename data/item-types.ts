@@ -545,6 +545,17 @@ export const ITEM_TYPES: Record<number, ItemTypeInfo> = {
   33478: { weapon_type: 'Two-Handed Sword' }, // Jin'rohk, The Great Apocalypse
 
   // ============================================================================
+  // WRATH OF THE LICH KING GH-388 ADDITIONS (every Wrath raid armor piece).
+  // Types from the wow-classic-items package subclass, so no Wrath raid
+  // armor piece falls back to a guess from its name; heroic versions have
+  // their own ids and their own lines. Back items (class-agnostic in the
+  // picker) and tokens need none.
+  // ============================================================================
+
+  // Naxxramas (Wrath)
+  39717: { armor_type: 'Plate' },             // Inexorable Sabatons (Anub'Rekhan)
+
+  // ============================================================================
   // CLASSIC TIER 1 (MOLTEN CORE)
   // ============================================================================
 
