@@ -3,6 +3,7 @@
 // __tests__, so the companion typecheck never needs vitest's types.
 import { describe, it, expect } from 'vitest'
 import {
+  acceptedEntries,
   applyGuildDataToSavedVars,
   buildGuildDataLua,
   convertItemsToLuaFormat,
@@ -137,6 +138,30 @@ describe('toPendingAwardPairs and toPendingAttendancePairs (GH #320)', () => {
 
     expect(toPendingAwardPairs({})).toEqual([])
     expect(toPendingAttendancePairs(undefined)).toEqual([])
+  })
+})
+
+describe('acceptedEntries (GH #320)', () => {
+  it('R3 picks the entries at the accepted indices and ignores out-of-range, non-integer and repeated ones', () => {
+    const a = { wowheadId: 1, characterName: 'Thrall', awardedAt: '2026-09-20T20:00:00Z' }
+    const b = { wowheadId: 2, characterName: 'Thrall', awardedAt: '2026-09-20T20:01:00Z' }
+    const c = { wowheadId: 3, characterName: 'Thrall', awardedAt: '2026-09-20T20:02:00Z' }
+    const pairs = toPendingAwardPairs([a, b, c])
+
+    const picked = acceptedEntries(pairs, [2, 0])
+    expect(picked).toHaveLength(2)
+    expect(picked[0]).toBe(c)
+    expect(picked[1]).toBe(a)
+
+    const filtered = acceptedEntries(pairs, [5, -1, 1.5, 1])
+    expect(filtered).toHaveLength(1)
+    expect(filtered[0]).toBe(b)
+
+    const once = acceptedEntries(pairs, [1, 1])
+    expect(once).toHaveLength(1)
+    expect(once[0]).toBe(b)
+
+    expect(acceptedEntries(pairs, [])).toEqual([])
   })
 })
 
@@ -425,6 +450,23 @@ describe('applyGuildDataToSavedVars (FU-A of 261001-tv5, D-10)', () => {
     expect(toPendingAttendanceRequests([night])).toEqual([
       { raid_date: '2026-09-20', raid_name: "Temple of Ahn'Qiraj", attended: ['Thrall'] },
     ])
+  })
+
+  it('S9 with only the accepted entries in sent, a rejected award and a rejected night stay pending (GH #320)', () => {
+    const saved = savedFile()
+    const pending = readPendingLists(saved)
+    const awardPairs = toPendingAwardPairs(pending.awards)
+    const attendancePairs = toPendingAttendancePairs(pending.attendance)
+    // The server accepted award index 0 only and no attendance.
+    const sent = {
+      awards: acceptedEntries(awardPairs, [0]),
+      attendance: acceptedEntries(attendancePairs, []),
+    }
+    const db = applyGuildDataToSavedVars(saved, guildDataLua(), sent)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const profile = (db as any).profiles.Default
+    expect(profile.pendingAwards).toEqual([awardB])
+    expect(profile.pendingAttendance).toEqual([night])
   })
 
   it('S8 buildGuildDataLua writes the addon guildData fields with numeric item keys', () => {

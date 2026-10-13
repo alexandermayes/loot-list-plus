@@ -38,8 +38,9 @@ export interface PendingPair<T> {
   request: T
 }
 
-/** The pending lists read at the start of a sync pass, as the addon wrote
- * them. Only these entries are cleared at the end of the pass. */
+/** Raw pending entries as the addon wrote them: the lists readPendingLists
+ * returns and, at the end of a pass, the accepted subset that
+ * applyGuildDataToSavedVars clears. */
 export interface SentPending {
   awards: unknown[]
   attendance: unknown[]
@@ -119,6 +120,24 @@ export function toPendingAttendanceRequests(raw: unknown): PendingAttendanceRequ
 }
 
 /**
+ * The raw entries the server accepted in this pass, for
+ * applyGuildDataToSavedVars to clear. accepted holds indices into pairs, in
+ * the order the server accepted them; an index that is not an integer in
+ * range, or that repeats, is ignored. Rejected entries are not returned, so
+ * they stay pending (GH #320).
+ */
+export function acceptedEntries<T>(pairs: readonly PendingPair<T>[], accepted: readonly number[]): unknown[] {
+  const taken = new Set<number>()
+  const entries: unknown[] = []
+  for (const i of accepted) {
+    if (!Number.isInteger(i) || i < 0 || i >= pairs.length || taken.has(i)) continue
+    taken.add(i)
+    entries.push(pairs[i].entry)
+  }
+  return entries
+}
+
+/**
  * The pending lists of a parsed SavedVariables file (LootListPlusDB,
  * profiles.Default), as raw arrays. A missing or non-array list gives [].
  */
@@ -180,11 +199,12 @@ function tableAt(parent: Record<string, unknown>, key: string): Record<string, u
 /**
  * Applies one sync pass to a parsed SavedVariables file and returns the
  * LootListPlusDB table to write. profiles.Default.guildData is replaced.
- * With sent (the pending lists read at the start of the pass, when it had
- * any), the sent awards and attendance are removed from the file's pending
- * lists, matching awards on awardId when present, otherwise on awardedAt,
- * wowheadId and name, and attendance on raidDate, raidName and startTime.
- * Entries the addon added while the pass ran stay for the next sync.
+ * With sent (the entries the server accepted in this pass, only when the
+ * pass had pending data), those awards and attendance are removed from the
+ * file's pending lists, matching awards on awardId when present, otherwise on
+ * awardedAt, wowheadId and name, and attendance on raidDate, raidName and
+ * startTime. Entries the server rejected and entries the addon added while
+ * the pass ran both stay for the next sync (GH #320).
  *
  * The parsed tables are changed in place and every other table is kept by
  * reference, so the hidden Lua number-key markers (lua-parser.ts) survive
