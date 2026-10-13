@@ -10,10 +10,10 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Defects and privacy
 
-- [ ] **FIX-01**: Officer deleting or editing an award sees BLP recomputed for the affected item in the same request
+- [x] **FIX-01**: Officer deleting or editing an award sees BLP recomputed for the affected item in the same request
 - [ ] **FIX-02**: Companion app receives real BLP and item priorities from the addon routes (queries `blp_tracking` and `guild_item_priorities`; PostgREST errors surface instead of returning empty)
 - [ ] **FIX-03**: Every Discord item link for a Forever guild opens `wowhead.com/forever/...` (loot announcements, post-raid summary, bot interactions); bot embed titles carry no em dash
-- [ ] **FIX-04**: Award receipts keep `donationBonus` and `raiderBonus` in the audited score snapshot
+- [x] **FIX-04**: Award receipts keep `donationBonus` and `raiderBonus` in the audited score snapshot
 - [ ] **FIX-05**: The `master_loot_awarded` analytics event carries no player name and reports the item, not the review status
 - [ ] **FIX-06**: Addon and bot routes use a typed service-role client so a query against a nonexistent table fails typecheck
 
@@ -75,10 +75,12 @@ Requirements for this milestone. Each maps to roadmap phases.
 Deferred to a later milestone. Tracked but not in the current roadmap.
 
 ### Known mode transition
+
 - **KNOWN-01**: Raider can swap a generic need for a real item once Wowhead holds most of a tier (around reset 3)
 - **KNOWN-02**: Officer can close generic entries for a tier (around reset 6) with BLP carried across
 
 ### After real drops exist (Dec 9 onward)
+
 - **DROP-01**: Weekly fairness digest and drought alert
 - **DROP-02**: First-seen reveal card and auto-suggest pin on reveal
 - **DROP-03**: Forever revealed-item map pooled across guilds (at least 10 guilds per number, no guild names)
@@ -88,6 +90,7 @@ Deferred to a later milestone. Tracked but not in the current roadmap.
 - **DROP-07**: Addon auto-classify at the corpse (only after the Forever-client API spike)
 
 ### Platform
+
 - **PLAT-01**: Supabase Realtime Broadcast as the Desk change signal, polling as fallback
 - **PLAT-02**: Slot-weighted loot-cost toggle (plumbing ships at zero in v1)
 - **PLAT-03**: Zero-setup Discord-based guild creation
@@ -121,10 +124,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FIX-01 | Phase 1 | Pending |
+| FIX-01 | Phase 1 | Complete |
 | FIX-02 | Phase 1 | Pending |
 | FIX-03 | Phase 1 | Pending |
-| FIX-04 | Phase 1 | Pending |
+| FIX-04 | Phase 1 | Complete |
 | FIX-05 | Phase 1 | Pending |
 | FIX-06 | Phase 1 | Pending |
 | EXPN-01 | Phase 2 | Pending |
@@ -167,6 +170,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SIMP-05 | Phase 8 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 44 total
 - Mapped to phases: 44
 - Unmapped: 0 ✓

@@ -2,18 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: "WoW Forever Loot: Discovery to Known"
-current_phase: 1
+current_phase: 01
 current_phase_name: Forever Defect and Privacy Fixes
 status: executing
-stopped_at: Roadmap created; awaiting owner approval before commit
-last_updated: "2026-10-13T20:19:43.867Z"
-last_activity: "2026-10-12 (roadmap created: 8 phases, 44/44 requirements mapped)"
-state_head: bb26b1e56384a624e52f329adad323ba6d070bdd
+stopped_at: Completed 01-01-PLAN.md
+last_updated: "2026-10-13T20:58:18.449Z"
+last_activity: 2026-10-13
+last_activity_desc: Phase 01 execution started
+state_head: 9f695aa0f7d63d4303d86015dfedcc3f49c79f28
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 9
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -28,16 +29,16 @@ Roadmap: `.planning/workstreams/forever/ROADMAP.md` (8 phases)
 Research: `.planning/research/SUMMARY.md`
 
 **Core value:** A Forever guild can run loot from day one without knowing a single item: raiders rank generic needs, officers settle every drop in seconds from a Drop Desk, and the whole product feels like a consumer app that just works.
-**Current focus:** Phase 1 (Forever Defect and Privacy Fixes) and Phase 2 (Expansion Onboarding Manifest), in parallel
+**Current focus:** Phase 01 — Forever Defect and Privacy Fixes
 
 ## Current Position
 
-Phase: 1 (Forever Defect and Privacy Fixes) — READY TO EXECUTE
-Plan: Not started
+Phase: 01 (Forever Defect and Privacy Fixes) — EXECUTING
+Plan: 2 of 9
 Status: Ready to execute
-Last activity: 2026-10-12 (roadmap created: 8 phases, 44/44 requirements mapped)
+Last activity: 2026-10-13 — Phase 01 execution started
 
-Progress: [░░░░░░░░░░] 0/8 phases (0%)
+Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░░░] 0%)
 
 ## Hard Dates
 
@@ -64,6 +65,11 @@ Progress: [░░░░░░░░░░] 0/8 phases (0%)
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | - | - | - | - |
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 01 P01 | 10 min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -75,6 +81,8 @@ Progress: [░░░░░░░░░░] 0/8 phases (0%)
 - Owner: the simplicity audit starts Oct 26; its cuts ship after Nov 30.
 - Owner: the Known mode transition is deferred; raid assignments are out of scope.
 - Roadmap: the research's ranker-extraction phase is folded into Phase 5, and the Drop Desk is split into Phase 5 (core award path) and Phase 6 (live raid night).
+- [Phase 01]: 01-01: BLP recompute is awaited (not after()) on award DELETE and PATCH reassign; unlinking to null also recomputes — Success criterion 1 says by the time the request returns; recomputeBlpForItems returns RPC errors without throwing
+- [Phase 01]: 01-01: award receipt whitelist is Record<keyof ScoreComponents, true>; cap stays JSON.stringify length (UTF-16 units) at 4096 — A new score component is a compile error until whitelisted; changing the cap unit is outside FIX-04 (assumption A9)
 
 ### Pending Owner Inputs
 
@@ -96,6 +104,6 @@ Progress: [░░░░░░░░░░] 0/8 phases (0%)
 
 ## Session Continuity
 
-Last session: 2026-10-12 21:35
-Stopped at: Roadmap created; awaiting owner approval before commit
+Last session: 2026-10-13T20:58:18.440Z
+Stopped at: Completed 01-01-PLAN.md
 Resume file: None
