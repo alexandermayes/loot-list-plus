@@ -112,3 +112,11 @@ Codebase map in .planning/codebase/.
 - Privacy: no player or guild names in analytics or published data.
 - Any feature, pricing or positioning change triggers a full surface sweep (site, schema,
   Discord, GitHub, legal, external posts).
+
+## Corrections from research (2026-10-12, see .planning/research/SUMMARY.md)
+
+- Seeder line numbers above are stale. Registry `EXPANSION_DATA` is at app/services/expansionSeeder.ts:224-237; displayName if/else chains at :449-462 (classifications) and :470-481 (roles); name-based token lookup at :532 and at read time in lib/loot-items-query.ts:173-175.
+- The Lua addon lives in the separate repo alexandermayes/loot-list-plus-addon; there is no addon/ directory here (CLAUDE.md is stale on this).
+- Defect status on this branch: #3 fixed (PR #322); #2 query fixed (PR #363), raw-rank ordering is deliberate until the shared ranker lands; #1 still queries bad_luck_protection (should be blp_tracking) and item_priorities (should be guild_item_priorities, column item_id) with errors swallowed; #4 open (bulk/route.ts DELETE ~445-537, PATCH ~558-659); #5 open with a third site at post-raid-summary/route.ts:281 and discord-bot/interactions.js:79-81 (embed titles also carry em dashes). Extra: ALLOWED_COMPONENT_KEYS at bulk/route.ts:19 drops donationBonus and raiderBonus.
+- Privacy: app/(app)/master-loot/_client.tsx:262 sends master_loot_awarded with character_name and uses review status as item_name. Fix in Phase 1.
+- Sidebar has up to 11 entries (app/components/Sidebar.tsx:44-227), four loot-named; /master-loot renders submission review. Target for Phase 8.
