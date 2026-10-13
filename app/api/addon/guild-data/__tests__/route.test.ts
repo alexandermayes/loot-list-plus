@@ -16,7 +16,11 @@ vi.mock('@/utils/server-roles', () => ({ verifyOfficerPermissions: vi.fn() }))
 vi.mock('@/utils/analytics/server', () => ({ trackEvent: vi.fn(), trackApiError: vi.fn() }))
 
 type Filter = [string, unknown]
-type Call = { table: string; cols: string; filters: Filter[]; range?: [number, number] }
+type Order = { col: string; ascending: boolean }
+type Call = { table: string; cols: string; filters: Filter[]; orders: Order[]; range?: [number, number] }
+
+/** PostgREST's max_rows (supabase/config.toml): a read returns at most this many rows however it is asked. */
+const MAX_ROWS = 1000
 
 interface CharacterRow {
   id: string
@@ -177,14 +181,17 @@ function makeClient(fixture: Fixture, options?: { fail?: string[] }) {
   const client = {
     from(table: string) {
       if (!ALLOWED_TABLES.includes(table)) throw new Error(`fake client: unknown table ${table}`)
-      const call: Call = { table, cols: '', filters: [] }
+      const call: Call = { table, cols: '', filters: [], orders: [] }
       calls.push(call)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const builder: any = {
         select: (cols: string) => { call.cols = cols; return builder },
         eq: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         in: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
-        order: () => builder,
+        order: (col: string, opts?: { ascending?: boolean }) => {
+          call.orders.push({ col, ascending: opts?.ascending ?? true })
+          return builder
+        },
         lte: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         limit: () => builder,
         range: (from: number, to: number) => {
@@ -193,7 +200,8 @@ function makeClient(fixture: Fixture, options?: { fail?: string[] }) {
           if (table === 'loot_history' && fixture.lootHistoryError) {
             return Promise.resolve({ data: null, error: { message: 'history boom' } })
           }
-          const rows = resolveRows(table, call.filters, fixture).slice(from, to + 1)
+          // Like the server, a window never returns more than MAX_ROWS rows.
+          const rows = resolveRows(table, call.filters, fixture).slice(from, Math.min(to + 1, from + MAX_ROWS))
           return Promise.resolve({ data: rows, error: null })
         },
         single: () => {
@@ -208,7 +216,9 @@ function makeClient(fixture: Fixture, options?: { fail?: string[] }) {
         },
         then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) => {
           if (failing(table)) return Promise.resolve(failure()).then(resolve, reject)
-          const rows = resolveRows(table, call.filters, fixture)
+          // An unranged read is cut at MAX_ROWS, as on the server, so a route
+          // that forgets to page a large table fails its test instead of passing.
+          const rows = resolveRows(table, call.filters, fixture).slice(0, MAX_ROWS)
           return Promise.resolve({ data: rows, error: null, count: rows.length }).then(resolve, reject)
         },
       }
@@ -581,5 +591,326 @@ describe('FIX-02: real BLP and priorities, typed client', () => {
     const { client } = makeClient(baseFixture())
     expect(() => client.from('bad_luck_protection')).toThrow('fake client: unknown table bad_luck_protection')
     expect(() => client.from('item_priorities')).toThrow('fake client: unknown table item_priorities')
+  })
+})
+
+// ─── Task 2: paging, empty guilds, honest errors ──────────
+
+/** Raid dates on consecutive days from 2026-01-01, so each event owns its own date. */
+function raidDate(i: number): string {
+  return new Date(Date.UTC(2026, 0, 1 + i)).toISOString().slice(0, 10)
+}
+
+/** A membership row for raider `id`, with the class and spec shape guild-data reads. */
+function membership(id: string): MembershipRow {
+  return {
+    guild_id: GUILD_ID,
+    character_id: id,
+    role: 'raider',
+    membership_status: 'full',
+    is_active: true,
+    characters: { id, name: `Raider ${id}`, wow_classes: { name: 'Shaman', color_hex: '#0070DE' }, spec: null },
+  }
+}
+
+describe('FIX-02: large guilds are never cut at the 1000-row cap', () => {
+  beforeEach(() => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'u1' }, error: null } as never)
+    vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
+    vi.mocked(trackApiError).mockClear()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  function use(fixture: Fixture, options?: { fail?: string[] }) {
+    const made = makeClient(fixture, options)
+    vi.mocked(createServiceRoleClient).mockReturnValue(made.client as never)
+    return made
+  }
+
+  const rangesOf = (calls: Call[], table: string) => calls.filter(c => c.table === table).map(c => c.range)
+
+  it('P1 [E-05] returns all 1001 blp_tracking rows, read in windows (0,999) and (1000,1999)', async () => {
+    const fixture = baseFixture()
+    fixture.blp_tracking = Array.from({ length: 1001 }, (_, i) => ({
+      guild_id: GUILD_ID,
+      character_id: `bc${i}`,
+      loot_item_id: 'li-nef',
+      times_passed: i + 1,
+    }))
+    const { calls } = use(fixture)
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(Object.keys(body.blp)).toHaveLength(1001)
+    expect(body.blp.bc1000).toEqual({ 'li-nef': 1001 })
+    expect(rangesOf(calls, 'blp_tracking')).toEqual([[0, 999], [1000, 1999]])
+  })
+
+  it('P2 [E-05] builds attendance from all 1120 attendance_records rows (28 events by 40 raiders)', async () => {
+    const fixture = baseFixture()
+    const eventIds = Array.from({ length: 28 }, (_, i) => `ev${i}`)
+    fixture.raid_events = eventIds.map((id, i) => ({
+      guild_id: GUILD_ID, id, raid_date: raidDate(i), raid_team_id: null, is_bonus: false,
+    }))
+    // Event-major order: a cap at 1000 rows would drop the last 120 records (the last three events).
+    fixture.attendance_records = eventIds.flatMap(eventId =>
+      Array.from({ length: 40 }, (_, r) => ({ raid_event_id: eventId, character_id: `r${r}` })),
+    )
+    const { calls } = use(fixture)
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    for (let r = 0; r < 40; r++) {
+      expect(body.attendance[`r${r}`].records, `raider r${r}`).toHaveLength(28)
+      expect(body.attendance[`r${r}`].totalRaids).toBe(28)
+    }
+    expect(rangesOf(calls, 'attendance_records')).toEqual([[0, 999], [1000, 1999]])
+  })
+
+  it('P3 [E-05] builds members[].items from all 1001 approved loot_submissions', async () => {
+    const fixture = baseFixture()
+    // 1000 active raiders (the bounded membership read is one guild's registered
+    // characters, see the route's comment), 1001 submissions: a guild's approved
+    // submissions span phases, so raider sc0 holds an older and a newer one.
+    const ids = Array.from({ length: 1000 }, (_, i) => `sc${i}`)
+    fixture.character_guild_memberships = ids.map(membership)
+    const submission = (id: string, character: string, phase: number, itemId: string, wowheadId: number) => ({
+      id,
+      guild_id: GUILD_ID,
+      character_id: character,
+      phase,
+      status: 'approved',
+      loot_submission_items: [{ loot_item_id: itemId, rank: 5, loot_items: { wowhead_id: wowheadId } }],
+    })
+    fixture.loot_submissions = [
+      ...ids.map((id, i) => submission(`sub${i}`, id, 1, 'li-ony', 18423)),
+      // The 1001st submission: past the 1000-row cap, and the newest for sc0.
+      submission('sub1000', 'sc0', 4, 'li-nef', 19003),
+    ]
+    const { calls } = use(fixture)
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(rangesOf(calls, 'loot_submissions')).toEqual([[0, 999], [1000, 1999]])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sc0 = body.members.find((m: any) => m.character_id === 'sc0')
+    // GH #355 merges both of sc0's lists, so the 1001st submission's item
+    // (19003, past the cap) sits beside the phase 1 one; a read cut at 1000
+    // rows would leave only 18423.
+    expect(sc0.items).toEqual([
+      { wowhead_id: 18423, rank: 5 },
+      { wowhead_id: 18422, rank: 5 },
+      { wowhead_id: 19003, rank: 5 },
+      { wowhead_id: 19002, rank: 5 },
+    ])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sc1 = body.members.find((m: any) => m.character_id === 'sc1')
+    expect(sc1.items.length).toBeGreaterThan(0)
+  })
+
+  it('P4 [E-05] returns all 1001 loot_items and all 1001 guild_item_priorities rows', async () => {
+    const fixture = baseFixture()
+    fixture.loot_items = Array.from({ length: 1001 }, (_, i) => ({
+      id: `li${i}`, name: `Item ${i}`, wowhead_id: 100000 + i, boss_name: 'Boss', item_slot: 'Trinket',
+      item_type: 'trinket', classification: 'boe', raid_tier_id: 'tier-bwl',
+    }))
+    fixture.loot_submissions = []
+    fixture.guild_item_priorities = fixture.loot_items.map(item => ({
+      guild_id: GUILD_ID, raid_tier_id: 'tier-bwl', item_id: item.id,
+    }))
+    const { calls } = use(fixture)
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.items).toHaveLength(1001)
+    expect(Object.keys(body.priorities)).toHaveLength(1001)
+    expect(rangesOf(calls, 'loot_items')).toEqual([[0, 999], [1000, 1999]])
+    expect(rangesOf(calls, 'guild_item_priorities')).toEqual([[0, 999], [1000, 1999]])
+  })
+
+  it('P5 [E-07] orders every ranged read by a column list ending in id', async () => {
+    const fixture = baseFixture()
+    fixture.blp_tracking = [{ guild_id: GUILD_ID, character_id: 'c1', loot_item_id: 'li-nef', times_passed: 1 }]
+    fixture.guild_item_priorities = [{ guild_id: GUILD_ID, raid_tier_id: 'tier-bwl', item_id: 'li-nef' }]
+    fixture.raid_events = [{ guild_id: GUILD_ID, id: 'ev0', raid_date: raidDate(0), raid_team_id: null, is_bonus: false }]
+    fixture.attendance_records = [{ raid_event_id: 'ev0', character_id: 'c1' }]
+    const { calls } = use(fixture)
+    const res = await GET(request())
+    expect(res.status).toBe(200)
+    const expected: Record<string, string[]> = {
+      blp_tracking: ['id'],
+      guild_item_priorities: ['id'],
+      loot_items: ['name', 'id'],
+      loot_submissions: ['created_at', 'id'],
+      attendance_records: ['id'],
+    }
+    for (const [table, cols] of Object.entries(expected)) {
+      const tableCalls = calls.filter(c => c.table === table)
+      expect(tableCalls.length, `${table} was read`).toBeGreaterThan(0)
+      for (const call of tableCalls) {
+        expect(call.range, `${table} is read in windows`).toBeDefined()
+        expect(call.orders.map(o => o.col), table).toEqual(cols)
+        expect(call.orders.every(o => o.ascending), `${table} ascending`).toBe(true)
+      }
+    }
+  })
+
+  it('P6 a raider with two approved submissions gets both merged (GH #355), read in created_at then id order', async () => {
+    const fixture = baseFixture()
+    fixture.loot_submissions = [
+      {
+        id: 'old', guild_id: GUILD_ID, character_id: 'c1', phase: 1, status: 'approved',
+        loot_submission_items: [{ loot_item_id: 'li-ony', rank: 2, loot_items: { wowhead_id: 18423 } }],
+      },
+      {
+        id: 'new', guild_id: GUILD_ID, character_id: 'c1', phase: 4, status: 'approved',
+        loot_submission_items: [{ loot_item_id: 'li-nef', rank: 9, loot_items: { wowhead_id: 19003 } }],
+      },
+    ]
+    const { calls } = use(fixture)
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(calls.find(c => c.table === 'loot_submissions')!.orders.map(o => o.col)).toEqual(['created_at', 'id'])
+    expect(body.members[0].items).toEqual([
+      { wowhead_id: 18423, rank: 2 },
+      { wowhead_id: 18422, rank: 2 },
+      { wowhead_id: 19003, rank: 9 },
+      { wowhead_id: 19002, rank: 9 },
+    ])
+  })
+})
+
+describe('FIX-02: empty and expansion-less guilds still answer 200', () => {
+  beforeEach(() => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'u1' }, error: null } as never)
+    vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
+    vi.mocked(trackApiError).mockClear()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  function use(fixture: Fixture, options?: { fail?: string[] }) {
+    const made = makeClient(fixture, options)
+    vi.mocked(createServiceRoleClient).mockReturnValue(made.client as never)
+    return made
+  }
+
+  it('E1 [E-06] no raid_events in the window: 200, an empty records list per member, no attendance_records read', async () => {
+    const { calls } = use(baseFixture())
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.attendance).toEqual({ c1: { totalRaids: 0, records: [] } })
+    expect(calls.some(c => c.table === 'attendance_records')).toBe(false)
+  })
+
+  it('E2 [E-06] no guild_settings row: 200 with settings {}', async () => {
+    const fixture = baseFixture()
+    expect(fixture.guild_settings).toEqual([])
+    use(fixture)
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.settings).toEqual({})
+  })
+
+  it('E3 [E-06] no blp_tracking rows gives blp {} and no priority rows gives priorities {}', async () => {
+    use(baseFixture())
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.blp).toEqual({})
+    expect(body.priorities).toEqual({})
+  })
+
+  it('E4 [E-06] a null active_expansion_id: 200 with items [], and no expansions, raid_tiers, loot_items or priorities read', async () => {
+    const fixture = baseFixture()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(fixture.guilds[0] as any).active_expansion_id = null
+    const { calls } = use(fixture)
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.items).toEqual([])
+    expect(body.priorities).toEqual({})
+    for (const table of ['expansions', 'raid_tiers', 'loot_items', 'guild_item_priorities']) {
+      expect(calls.some(c => c.table === table), `${table} is not read`).toBe(false)
+    }
+  })
+
+  it('E5 the 200 body keeps its keys', async () => {
+    use(baseFixture())
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(Object.keys(body)).toEqual([
+      'guildId', 'guildName', 'expansionId', 'phase', 'settings', 'items', 'members', 'priorities', 'blp', 'attendance',
+    ])
+  })
+})
+
+describe('FIX-02: every read that fails answers 500 (owner decision 7)', () => {
+  beforeEach(() => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'u1' }, error: null } as never)
+    vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
+    vi.mocked(trackApiError).mockClear()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  /** A fixture where every table is read: attendance_records needs a raid event in the window. */
+  function fullFixture(): Fixture {
+    const fixture = baseFixture()
+    fixture.raid_events = [{ guild_id: GUILD_ID, id: 'ev0', raid_date: raidDate(0), raid_team_id: null, is_bonus: false }]
+    fixture.attendance_records = [{ raid_event_id: 'ev0', character_id: 'c1' }]
+    return fixture
+  }
+
+  it.each(ALLOWED_TABLES)('X1 a failed %s read answers 500, tracks one error and leaks no database message', async table => {
+    const fixture = fullFixture()
+    const { client, calls } = makeClient(fixture, { fail: [table] })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    const res = await GET(request())
+    expect(res.status).toBe(500)
+    expect(await res.json()).toEqual({ error: 'Internal server error' })
+    expect(trackApiError).toHaveBeenCalledTimes(1)
+    expect(calls.some(c => c.table === table), `${table} was read`).toBe(true)
+  })
+
+  it('X2 a failure on the second page of blp_tracking answers 500, not a partial list', async () => {
+    const fixture = fullFixture()
+    fixture.blp_tracking = Array.from({ length: 1000 }, (_, i) => ({
+      guild_id: GUILD_ID, character_id: `bc${i}`, loot_item_id: 'li-nef', times_passed: 1,
+    }))
+    const { client, calls } = makeClient(fixture)
+    // Fail only the second window of blp_tracking.
+    const realFrom = client.from.bind(client)
+    client.from = (table: string) => {
+      const builder = realFrom(table)
+      if (table !== 'blp_tracking') return builder
+      const realRange = builder.range
+      builder.range = (from: number, to: number) =>
+        from === 0 ? realRange(from, to) : Promise.resolve({ data: null, error: { message: 'page 2 boom' } })
+      return builder
+    }
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    const res = await GET(request())
+    expect(res.status).toBe(500)
+    expect(trackApiError).toHaveBeenCalledTimes(1)
+    expect(calls.filter(c => c.table === 'blp_tracking')).toHaveLength(2)
   })
 })

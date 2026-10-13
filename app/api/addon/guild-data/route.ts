@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateAddonRequest, authorizeAddonGuild } from '@/lib/addon/sync-tokens'
 import { createTypedServiceRoleClient } from '@/utils/supabase/typed-service-role'
+import { selectAllPagesOrThrow } from '@/utils/supabase/paginate'
 import { trackApiError } from '@/utils/analytics/server'
 import { getAttendanceWindowEnd, resolveOwnedEvents, resolveActiveRaiderModifiers } from '@/domain/scoring'
 import { toDateString } from '@/utils/date'
@@ -111,26 +112,52 @@ export async function GET(request: NextRequest) {
     // Fetch items, submissions, BLP, priorities and events in parallel.
     // Priorities are filtered by guild and raid tier, never by the full item
     // id list (URL length, Pitfall 3); an empty tier list reads nothing.
-    const [lootItemsResult, submissionsResult, blpResult, prioritiesResult, raidEventsResult] = await Promise.all([
+    //
+    // Every table that can pass 1000 rows is paged (the server caps one
+    // response at max_rows = 1000, so a single read would cut a large guild's
+    // list with a 200). Each page orders by a unique column, or a column list
+    // ending in one, so no row is skipped or repeated between pages.
+    // raid_tiers, raid_events (limit below), character_guild_memberships and
+    // raid_team_members stay single reads: they are bounded by query shape or
+    // by one guild's registered characters.
+    const [lootItems, submissions, blpRows, priorityRows, raidEventsResult] = await Promise.all([
       // OD-01 (GH #290): loot_items has no `slot` column (it's `item_slot`,
       // matching export-string's route). Selecting `slot` made PostgREST
       // reject this whole query, so `items` was always []. The output key
       // stays `slot` — the companion's GuildData type reads that name.
+      // Ordered by name (the items' display order), then id to break ties.
       raidTierIds.length === 0
-        ? Promise.resolve({ data: [], error: null })
-        : supabase.from('loot_items').select('id, name, wowhead_id, boss_name, item_slot, item_type, classification, raid_tier_id')
-            .in('raid_tier_id', raidTierIds).order('name'),
-      supabase.from('loot_submissions').select(`
-        id, character_id, expansion_id, phase, status,
-        loot_submission_items (loot_item_id, rank, slot, removed_at, loot_items (wowhead_id))
-      `).eq('guild_id', guildId).eq('status', 'approved'),
+        ? Promise.resolve([])
+        : selectAllPagesOrThrow('loot_items', (start, end) =>
+            supabase.from('loot_items').select('id, name, wowhead_id, boss_name, item_slot, item_type, classification, raid_tier_id')
+              .in('raid_tier_id', raidTierIds)
+              .order('name', { ascending: true }).order('id', { ascending: true })
+              .range(start, end)),
+      // Oldest first, then id, so pages neither skip nor repeat a row and
+      // buildMemberRankedItems, which merges every approved list in the
+      // exported expansion (GH #355), breaks rank ties in a stable read order
+      // (the read had no ORDER BY before).
+      selectAllPagesOrThrow('loot_submissions', (start, end) =>
+        supabase.from('loot_submissions').select(`
+          id, character_id, expansion_id, phase, status,
+          loot_submission_items (loot_item_id, rank, slot, removed_at, loot_items (wowhead_id))
+        `).eq('guild_id', guildId).eq('status', 'approved')
+          .order('created_at', { ascending: true }).order('id', { ascending: true })
+          .range(start, end)),
       // FIX-02: the table is blp_tracking (guild_id, character_id, loot_item_id, times_passed).
-      supabase.from('blp_tracking').select('character_id, loot_item_id, times_passed').eq('guild_id', guildId),
+      selectAllPagesOrThrow('blp_tracking', (start, end) =>
+        supabase.from('blp_tracking').select('character_id, loot_item_id, times_passed')
+          .eq('guild_id', guildId)
+          .order('id', { ascending: true })
+          .range(start, end)),
       raidTierIds.length === 0
-        ? Promise.resolve({ data: [], error: null })
-        : supabase.from('guild_item_priorities')
-            .select('item_id, role_priorities, class_priorities, character_priorities, priority_bonuses')
-            .eq('guild_id', guildId).in('raid_tier_id', raidTierIds),
+        ? Promise.resolve([])
+        : selectAllPagesOrThrow('guild_item_priorities', (start, end) =>
+            supabase.from('guild_item_priorities')
+              .select('item_id, role_priorities, class_priorities, character_priorities, priority_bonuses')
+              .eq('guild_id', guildId).in('raid_tier_id', raidTierIds)
+              .order('id', { ascending: true })
+              .range(start, end)),
       // Drop events from the in-progress reset week so the addon's score
       // preview matches the web. `computeAttendance` already enforces this
       // on the web side; the addon consumes a pre-summarized payload, so the
@@ -140,22 +167,20 @@ export async function GET(request: NextRequest) {
         .order('raid_date', { ascending: false }).limit(settings?.rolling_attendance_weeks ? settings.rolling_attendance_weeks * 7 : 28),
     ])
 
-    const lootItems = readRowsOrThrow('loot_items', lootItemsResult)
-    const submissions = readRowsOrThrow('loot_submissions', submissionsResult)
-    const blpRows = readRowsOrThrow('blp_tracking', blpResult)
-    const priorityRows = readRowsOrThrow('guild_item_priorities', prioritiesResult)
     const raidEvents = readRowsOrThrow('raid_events', raidEventsResult)
 
+    // 28 events by 40 raiders is already 1120 rows, past the server cap, so
+    // this read is paged too. No events in the window means nothing to read.
     const raidEventIds = raidEvents.map(e => e.id)
-    const attendanceRecords = readRowsOrThrow(
-      'attendance_records',
-      raidEventIds.length === 0
-        ? { data: [], error: null }
-        : await supabase
+    const attendanceRecords = raidEventIds.length === 0
+      ? []
+      : await selectAllPagesOrThrow('attendance_records', (start, end) =>
+          supabase
             .from('attendance_records')
             .select('character_id, raid_event_id, attended, signed_up, status')
-            .in('raid_event_id', raidEventIds),
-    )
+            .in('raid_event_id', raidEventIds)
+            .order('id', { ascending: true })
+            .range(start, end))
 
     // Team membership per character — drives team-aware totalRaids
     const teamMembers = readRowsOrThrow(
