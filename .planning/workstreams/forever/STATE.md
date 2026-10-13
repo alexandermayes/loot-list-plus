@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 01
 current_phase_name: Forever Defect and Privacy Fixes
 status: executing
-stopped_at: Completed 01-03-PLAN.md
-last_updated: "2026-10-13T21:25:39.981Z"
+stopped_at: Completed 01-06-PLAN.md
+last_updated: "2026-10-13T21:29:26.140Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 01 execution started
-state_head: 099f4f6ce192943280b8113215e3e56651d9a93f
+state_head: 0727f96c6af8a53255dce4c5cc7871da5ba93ce0
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 9
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 01 (Forever Defect and Privacy Fixes) — EXECUTING
-Plan: 4 of 9
+Plan: 5 of 9
 Status: Ready to execute
 Last activity: 2026-10-13 — Phase 01 execution started
 
@@ -72,6 +72,7 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 | Phase 01 P01 | 10 min | 3 tasks | 2 files |
 | Phase 01 P02 | 20 min | 2 tasks | 7 files |
 | Phase 01 P03 | 5 min | 2 tasks | 10 files |
+| Phase 01 P06 | 2 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,7 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 - [Phase 01]: guild-data pages loot_items too and reads loot_submissions oldest first (created_at, id) so the newest approved submission wins — MoP catalogs pass 1700 items; the old read had no ORDER BY so the winner was unspecified
 - [Phase 01]: createTypedServiceRoleClient delegates to createServiceRoleClient; selectAllPagesOrThrow exported from utils/supabase/paginate.ts for plans 01-04, 01-05, 01-07 — Existing test mocks of createServiceRoleClient keep working
 - [Phase 01]: 01-03: wowheadItemUrl matches the stored expansion name exactly; Forever links to wowhead.com/forever, every other guild keeps its existing link (owner decision 2) — Forever-only scope keeps known guilds byte-identical; the helper keeps the era map so era-correct links are a one-line opt-in per call site (deferred follow-up)
+- [Phase 01]: 01-06: master_loot_awarded reports loot_item_ids (ids only, list order); a failed item read is null (unknown), never zero; guild_name unregistered; posthog.identify drops email and display_name — Owner decisions 1 and 4 and Hard Constraint 3; null keeps a failed read from posing as an empty list
 
 ### Pending Owner Inputs
 
@@ -110,6 +112,6 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 
 ## Session Continuity
 
-Last session: 2026-10-13T21:25:39.970Z
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-10-13T21:29:26.130Z
+Stopped at: Completed 01-06-PLAN.md
 Resume file: None
