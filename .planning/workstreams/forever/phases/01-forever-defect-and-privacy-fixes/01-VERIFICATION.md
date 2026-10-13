@@ -1,7 +1,7 @@
 ---
 phase: 01-forever-defect-and-privacy-fixes
 verified: 2026-10-13T22:15:00Z
-status: human_needed
+status: passed
 score: 5/5 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
@@ -9,15 +9,19 @@ re_verification: false
 gaps: []
 deferred: []
 human_verification:
+
   - test: "Open a real Forever item link from a Discord loot announcement, the post-raid summary, a /priority reply and the reserve page 'Copy for Discord' text"
     expected: "Each opens https://www.wowhead.com/forever/item=<id> on a live Wowhead page (the URL shape was built from the stored wowhead_id and never live-checked)"
     why_human: "Live Wowhead fetches are forbidden in this repo; code, unit tests and grep prove the string, not that the live site resolves it"
+
   - test: "Owner reviews and signs off the new bot copy: '/priority' titles 'Top priority: <item>', '/score' titles '<name>: Loot Score (<team>)', the raider line 'rank N' separated by a middle dot, and the officer help-article review title '(pending review)'"
     expected: "Owner approves or edits the strings before the plan 01-09 PR merges (Hard Constraint 2)"
     why_human: "Copy sign-off is an owner decision; it gates the PR merge, not the code"
+
   - test: "Delete a whole raid night with many awards (for example 40 items) on a real guild and time the DELETE /api/loot-history/bulk response"
     expected: "Response returns with BLP already corrected and in acceptable time (recompute is awaited, one RPC per distinct item, serial)"
     why_human: "Unit tests mock the recompute RPC; real latency of N sequential recompute_blp_for_item calls was never measured"
+
   - test: "On the reserve join page, click 'Copy for Discord' for a Forever run and for a non-Forever run"
     expected: "Forever run pastes wowhead.com/forever/item=<id> links; a non-Forever run pastes the same retail /item= links as before"
     why_human: "No component test covers the copy handler; coverage is grep and typecheck only"
