@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
-import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { createTypedServiceRoleClient } from '@/utils/supabase/typed-service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
 import { buildSignInPath } from '@/lib/post-auth-redirect'
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const service = createServiceRoleClient()
+    const service = createTypedServiceRoleClient()
     const verification = await verifyOfficerPermissions(service, user.id, guildId)
     if (!verification.hasPermission) {
       return NextResponse.json({ error: 'Officer permissions required' }, { status: 403 })
