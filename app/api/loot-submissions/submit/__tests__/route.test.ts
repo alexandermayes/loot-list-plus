@@ -20,7 +20,7 @@ const OTHER_USER_ID = 'bbbbbbbb-0000-0000-0000-000000000005'
 
 const NOT_ACTIVE_MEMBER_ERROR = 'Your character needs to rejoin this guild.'
 
-type Call = { table: string; filters: Array<[string, unknown]>; updatePayload?: Record<string, unknown> }
+type Call = { table: string; filters: Array<[string, unknown]>; updatePayload?: Record<string, unknown>; selectArg?: string }
 
 interface Fixture {
   submission: { id: string; guild_id: string; character_id: string | null; expansion_id: string; phase: number; status: string; resubmission_count: number; submitted_at: string | null } | null
@@ -30,6 +30,8 @@ interface Fixture {
   statusUpdateError?: { code?: string; message: string } | null
   items?: SubmissionItem[]
 }
+
+type RaidTierEmbed = { is_guild_active: boolean | null }
 
 interface SubmissionItem {
   rank: number
@@ -43,6 +45,8 @@ interface SubmissionItem {
     item_slot: string | null
     wowhead_id: number | null
     allocation_cost: number | null
+    // PostgREST can return a to-one embed as an object or a one-element array.
+    raid_tier?: RaidTierEmbed | RaidTierEmbed[] | null
   }
 }
 
@@ -61,7 +65,7 @@ function makeClient(fixture: Fixture) {
       calls.push(call)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const builder: any = {
-        select: () => builder,
+        select: (columns?: string) => { call.selectArg = columns; return builder },
         update: (payload: Record<string, unknown>) => { call.updatePayload = payload; return builder },
         eq: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         in: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
@@ -154,6 +158,11 @@ function tokenRow(rank: number, lootItemId: string, name: string, wowheadId: num
 
 const bindings = (rank: number, idx: number) => tokenRow(rank, BINDINGS_IDS[idx], 'Qiraji Bindings of Command', 20928)
 const desecrated = (rank: number, idx: number) => tokenRow(rank, DESECRATED_IDS[idx], 'Desecrated Breastplate', 22349)
+
+// Copy of a row with its item's raid_tier embed set (never mutates the input).
+function withTier(row: SubmissionItem, raidTier: SubmissionItem['loot_item']['raid_tier']): SubmissionItem {
+  return { ...row, loot_item: { ...row.loot_item, raid_tier: raidTier } }
+}
 
 const submissionUpdates = (calls: Call[]) => calls.filter(c => c.table === 'loot_submissions' && c.updatePayload)
 
@@ -260,6 +269,52 @@ describe('POST /api/loot-submissions/submit', () => {
       const ok = await run({ ...baseFixture(), items: [desecrated(45, 0), desecrated(10, 1)] })
       expect(ok.res.status).toBe(200)
       expect(statusUpdates(ok.calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+    })
+  })
+
+  describe('tiers the guild turned off (GH #357)', () => {
+    const statusUpdates = (calls: Call[]) =>
+      submissionUpdates(calls).filter(u => u.updatePayload && 'status' in u.updatePayload)
+
+    // Two visible Bindings rows plus a third whose tier metadata varies.
+    const itemsWithThirdTier = (raidTier: SubmissionItem['loot_item']['raid_tier']) => [
+      bindings(50, 0),
+      bindings(40, 1),
+      withTier(bindings(30, 0), raidTier),
+    ]
+
+    it('skips a row whose tier is turned off (object join shape) and submits', async () => {
+      const { res, body, calls } = await run({ ...baseFixture(), items: itemsWithThirdTier({ is_guild_active: false }) })
+      expect(res.status).toBe(200)
+      expect(body).toEqual({ success: true })
+      expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+    })
+
+    it('still returns 422 when the extra row is from an active tier', async () => {
+      const { res, body, calls } = await run({ ...baseFixture(), items: itemsWithThirdTier({ is_guild_active: true }) })
+      expect(res.status).toBe(422)
+      expect(body.violations.map((v: { rule: string }) => v.rule)).toContain('item_copy_limit')
+      expect(statusUpdates(calls)).toHaveLength(0)
+    })
+
+    it('skips a row whose tier is turned off when the join comes back as a one-element array', async () => {
+      const { res, calls } = await run({ ...baseFixture(), items: itemsWithThirdTier([{ is_guild_active: false }]) })
+      expect(res.status).toBe(200)
+      expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+    })
+
+    it('keeps a row with no tier metadata in the count', async () => {
+      const { res, body, calls } = await run({ ...baseFixture(), items: itemsWithThirdTier(null) })
+      expect(res.status).toBe(422)
+      expect(body.violations.map((v: { rule: string }) => v.rule)).toContain('item_copy_limit')
+      expect(statusUpdates(calls)).toHaveLength(0)
+    })
+
+    it('reads the tier flag through the existing loot_submission_items select', async () => {
+      const { calls } = await run({ ...baseFixture(), items: [bindings(50, 0)] })
+      const itemCalls = calls.filter(c => c.table === 'loot_submission_items')
+      expect(itemCalls).toHaveLength(1)
+      expect(itemCalls[0].selectArg).toContain('raid_tier:raid_tiers(is_guild_active)')
     })
   })
 })
