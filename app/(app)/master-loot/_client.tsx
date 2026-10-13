@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { trackClientEvent } from '@/utils/analytics/client'
+import { buildMasterLootAwardedProps, summarizeSubmissionItems } from '@/utils/analytics/master-loot-events'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGuildContext } from '@/app/contexts/GuildContext'
@@ -39,7 +40,9 @@ interface Submission {
       color_hex: string
     }
   }
-  item_count: number
+  // null means the item read failed (unknown), not an empty list
+  item_count: number | null
+  loot_item_ids: string[] | null
 }
 
 interface RaidTierExpansion {
@@ -208,11 +211,18 @@ export default function MasterLootPage() {
           ? (Array.isArray(typedCharacter.class) ? typedCharacter.class[0] : typedCharacter.class)
           : null
 
-        const { count } = await supabase
-          .from('loot_submission_items')
-          .select('*', { count: 'exact', head: true })
-          .eq('submission_id', sub.id)
-          .is('removed_at', null)
+        // Same filters as the old head count, plus the ids in list order (the
+        // unique key order: rank descending, then slot ascending). A failed read
+        // becomes null, so the review event reports unknown instead of zero.
+        const { itemCount, lootItemIds } = summarizeSubmissionItems(
+          await supabase
+            .from('loot_submission_items')
+            .select('loot_item_id')
+            .eq('submission_id', sub.id)
+            .is('removed_at', null)
+            .order('rank', { ascending: false })
+            .order('slot', { ascending: true })
+        )
 
         return {
           ...sub,
@@ -221,7 +231,8 @@ export default function MasterLootPage() {
             role: 'Member',
             class: charClass
           } : null,
-          item_count: count || 0,
+          item_count: itemCount,
+          loot_item_ids: lootItemIds,
           user: {
             id: typedCharacter?.user_id || '',
             user_metadata: {}
@@ -259,11 +270,13 @@ export default function MasterLootPage() {
       }
 
       const submission = submissions.find(s => s.id === submissionId)
-      trackClientEvent('master_loot_awarded', {
-        guild_id: guildId,
-        item_name: status,
-        character_name: submission?.member?.character_name || 'Unknown'
-      })
+      trackClientEvent('master_loot_awarded', buildMasterLootAwardedProps({
+        guildId,
+        submissionId,
+        status,
+        itemCount: submission?.item_count,
+        lootItemIds: submission?.loot_item_ids,
+      }))
 
       const statusMessages: Record<string, string> = {
         approved: 'Submission approved. Rankings will update.',
@@ -382,7 +395,7 @@ export default function MasterLootPage() {
                     )}
                     <StatusBadge status={submission.status as SubmissionStatus} />
                     <span className="text-muted-foreground text-12 sm:text-14">
-                      {submission.item_count} items • {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'N/A'}
+                      {submission.item_count ?? 0} items • {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'N/A'}
                     </span>
                   </div>
                   <Button
