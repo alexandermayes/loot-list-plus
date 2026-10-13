@@ -315,7 +315,7 @@ export async function POST(request: NextRequest) {
     await invalidateCache(cacheKeys.userGuilds(user.id))
     revalidateUserBundle(user.id)
 
-    trackEvent({ event: 'guild_created', userId: user.id, guildId: guild.id, properties: { guild_id: guild.id, guild_name: guild.name } })
+    trackEvent({ event: 'guild_created', userId: user.id, guildId: guild.id, properties: { guild_id: guild.id } })
     setUserMilestone(user.id, 'first_guild_created_at')
     evaluateGuildFunnel(serviceSupabase, guild.id)
 
