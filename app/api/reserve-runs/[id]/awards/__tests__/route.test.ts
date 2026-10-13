@@ -9,6 +9,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyReserveRunAccess } from '@/utils/reserve-access'
 import { logReserveAudit } from '@/utils/reserve-audit'
 import { requireReserveRunPremium } from '@/utils/feature-gate'
+import { trackEvent } from '@/utils/analytics/server'
 
 // Quick task 261003-t28 amendment A1: the route now checks, before writing,
 // that a given submission_id belongs to this run and that loot_item_id is
@@ -48,6 +49,8 @@ interface Fixture {
  * membership checks (via maybeSingle), and a reserve_awards insert. */
 function makeClient(fixture: Fixture) {
   const calls: Array<{ table: string; filters: Array<[string, unknown]> }> = []
+  // Payload of every insert, per table, so a test can check what is stored.
+  const inserts: Array<{ table: string; payload: unknown }> = []
   const client = {
     from(table: string) {
       const call = { table, filters: [] as Array<[string, unknown]> }
@@ -55,7 +58,10 @@ function makeClient(fixture: Fixture) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const builder: any = {
         select: () => builder,
-        insert: () => builder,
+        insert: (payload: unknown) => {
+          inserts.push({ table, payload })
+          return builder
+        },
         delete: () => builder,
         eq: (col: string, val: unknown) => {
           call.filters.push([col, val])
@@ -89,7 +95,7 @@ function makeClient(fixture: Fixture) {
       return builder
     },
   }
-  return { client, calls }
+  return { client, calls, inserts }
 }
 
 function makeRequest(body: Record<string, unknown>) {
@@ -144,6 +150,24 @@ describe('POST /api/reserve-runs/[id]/awards (quick task 261003-t28 amendment A1
     expect(res.status).toBe(200)
     expect(json.success).toBe(true)
     expect(calls.some(c => c.table === 'reserve_awards')).toBe(true)
+  })
+
+  // Hard Constraint 3: PostHog gets ids only. The award row itself still stores
+  // the character name; only the analytics properties change.
+  it('sends reserve_item_awarded with ids only and still stores character_name on the award row', async () => {
+    const { client, inserts } = makeClient({ runSubmissionIds: new Set([SUBMISSION_ID]), tierItemIds: new Set([ITEM_ID]) })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(makeRequest({ loot_item_id: ITEM_ID, character_name: 'Raiderone', submission_id: SUBMISSION_ID }), {
+      params: Promise.resolve({ id: RUN_ID }),
+    })
+
+    expect(res.status).toBe(200)
+    const awarded = vi.mocked(trackEvent).mock.calls.filter(([arg]) => arg.event === 'reserve_item_awarded')
+    expect(awarded).toHaveLength(1)
+    expect(awarded[0][0].properties).toEqual({ run_id: RUN_ID, loot_item_id: ITEM_ID })
+    const awardInsert = inserts.find(i => i.table === 'reserve_awards')
+    expect(awardInsert?.payload).toMatchObject({ reserve_run_id: RUN_ID, loot_item_id: ITEM_ID, character_name: 'Raiderone' })
   })
 
   it('allows a NULL submission_id (a pug award) without checking reserve_submissions', async () => {
