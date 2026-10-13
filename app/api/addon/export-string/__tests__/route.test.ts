@@ -17,7 +17,11 @@ vi.mock('@/utils/server-roles', () => ({ verifyOfficerPermissions: vi.fn() }))
 vi.mock('@/utils/analytics/server', () => ({ trackEvent: vi.fn(), trackApiError: vi.fn() }))
 
 type Filter = [string, unknown]
-type Call = { table: string; cols: string; filters: Filter[]; range?: [number, number] }
+type Order = { col: string; ascending: boolean }
+type Call = { table: string; cols: string; filters: Filter[]; orders: Order[]; range?: [number, number] }
+
+/** PostgREST's max_rows (supabase/config.toml): a read returns at most this many rows however it is asked. */
+const MAX_ROWS = 1000
 
 interface LootItemRow {
   id: string
@@ -78,9 +82,17 @@ interface Fixture {
   character_guild_memberships: MembershipRow[]
   loot_items: LootItemRow[]
   loot_submissions: LootSubmissionRow[]
-  bad_luck_protection: Array<{ guild_id: string; character_id: string; loot_item_id: string; times_passed: number }>
+  blp_tracking: Array<{ guild_id: string; character_id: string; loot_item_id: string; times_passed: number }>
   raid_events: Array<{ guild_id: string; id: string; raid_date: string; raid_team_id: string | null; is_bonus: boolean }>
-  item_priorities: Array<{ loot_item_id: string }>
+  guild_item_priorities: Array<{
+    guild_id: string
+    raid_tier_id: string
+    item_id: string
+    role_priorities?: unknown
+    class_priorities?: unknown
+    character_priorities?: unknown
+    priority_bonuses?: unknown
+  }>
   attendance_records: Array<{ raid_event_id: string; character_id: string }>
   raid_team_members: Array<{ guild_id: string; character_id: string; raid_team_id: string }>
   /** FU-C of 261001-tv5: awards read for the receive skip. */
@@ -89,6 +101,23 @@ interface Fixture {
   /** GH #326: simulates a failed character_guild_memberships read. */
   membershipsError?: boolean
 }
+
+/** Every table export-string may read. The fake throws for anything else, so a misspelled or nonexistent table fails the tests. */
+const ALLOWED_TABLES = [
+  'guilds',
+  'guild_settings',
+  'expansions',
+  'raid_tiers',
+  'loot_items',
+  'character_guild_memberships',
+  'loot_submissions',
+  'guild_item_priorities',
+  'blp_tracking',
+  'raid_events',
+  'attendance_records',
+  'raid_team_members',
+  'loot_history',
+]
 
 function emptyFixture(): Fixture {
   return {
@@ -99,9 +128,9 @@ function emptyFixture(): Fixture {
     character_guild_memberships: [],
     loot_items: [],
     loot_submissions: [],
-    bad_luck_protection: [],
+    blp_tracking: [],
     raid_events: [],
-    item_priorities: [],
+    guild_item_priorities: [],
     attendance_records: [],
     raid_team_members: [],
   }
@@ -135,13 +164,15 @@ function resolveRows(table: string, filters: Filter[], fixture: Fixture): unknow
     }
     case 'loot_submissions':
       return rows.filter((r: { guild_id: string }) => r.guild_id === find('guild_id'))
-    case 'bad_luck_protection':
+    case 'blp_tracking':
       return rows.filter((r: { guild_id: string }) => r.guild_id === find('guild_id'))
     case 'raid_events':
       return rows.filter((r: { guild_id: string }) => r.guild_id === find('guild_id'))
-    case 'item_priorities': {
-      const ids = (find('loot_item_id') as string[]) ?? []
-      return rows.filter((r: { loot_item_id: string }) => ids.includes(r.loot_item_id))
+    case 'guild_item_priorities': {
+      const tierIds = (find('raid_tier_id') as string[]) ?? []
+      return rows.filter(
+        (r: { guild_id: string; raid_tier_id: string }) => r.guild_id === find('guild_id') && tierIds.includes(r.raid_tier_id),
+      )
     }
     case 'attendance_records': {
       const ids = (find('raid_event_id') as string[]) ?? []
@@ -152,42 +183,63 @@ function resolveRows(table: string, filters: Filter[], fixture: Fixture): unknow
     case 'loot_history':
       return rows.filter((r: { guild_id: string }) => r.guild_id === find('guild_id'))
     default:
-      return rows
+      throw new Error(`fake client: unknown table ${table}`)
   }
 }
 
-/** Recording fake matching the export-string query sequence. */
-function makeClient(fixture: Fixture) {
+/**
+ * Recording fake matching the export-string query sequence. options.fail lists
+ * tables whose reads resolve { data: null, error } (then, range, single and
+ * maybeSingle alike). Querying a table outside ALLOWED_TABLES throws.
+ */
+function makeClient(fixture: Fixture, options?: { fail?: string[] }) {
   const calls: Call[] = []
+  const failing = (table: string) => (options?.fail ?? []).includes(table)
+  const failure = () => ({ data: null, error: { message: 'boom' } })
   const client = {
     from(table: string) {
-      const call: Call = { table, cols: '', filters: [] }
+      if (!ALLOWED_TABLES.includes(table)) throw new Error(`fake client: unknown table ${table}`)
+      const call: Call = { table, cols: '', filters: [], orders: [] }
       calls.push(call)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const builder: any = {
         select: (cols: string) => { call.cols = cols; return builder },
         eq: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         in: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
-        order: () => builder,
+        order: (col: string, opts?: { ascending?: boolean }) => {
+          call.orders.push({ col, ascending: opts?.ascending ?? true })
+          return builder
+        },
         lte: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         limit: () => builder,
         range: (from: number, to: number) => {
           call.range = [from, to]
+          if (failing(table)) return Promise.resolve(failure())
           if (table === 'loot_history' && fixture.lootHistoryError) {
             return Promise.resolve({ data: null, error: { message: 'history boom' } })
           }
-          const rows = resolveRows(table, call.filters, fixture).slice(from, to + 1)
+          // Like the server, a window never returns more than MAX_ROWS rows.
+          const rows = resolveRows(table, call.filters, fixture).slice(from, Math.min(to + 1, from + MAX_ROWS))
           return Promise.resolve({ data: rows, error: null })
         },
         single: () => {
+          if (failing(table)) return Promise.resolve(failure())
+          const rows = resolveRows(table, call.filters, fixture)
+          return Promise.resolve({ data: rows[0] ?? null, error: null })
+        },
+        maybeSingle: () => {
+          if (failing(table)) return Promise.resolve(failure())
           const rows = resolveRows(table, call.filters, fixture)
           return Promise.resolve({ data: rows[0] ?? null, error: null })
         },
         then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) => {
+          if (failing(table)) return Promise.resolve(failure()).then(resolve, reject)
           if (table === 'character_guild_memberships' && fixture.membershipsError) {
             return Promise.resolve({ data: null, error: { message: 'cgm boom' } }).then(resolve, reject)
           }
-          const rows = resolveRows(table, call.filters, fixture)
+          // An unranged read is cut at MAX_ROWS, as on the server, so a route
+          // that forgets to page a large table fails its test instead of passing.
+          const rows = resolveRows(table, call.filters, fixture).slice(0, MAX_ROWS)
           return Promise.resolve({ data: rows, error: null, count: rows.length }).then(resolve, reject)
         },
       }
@@ -568,5 +620,103 @@ describe('GH #326: export members come from active memberships only', () => {
     expect(membershipCall).toBeDefined()
     expect(membershipCall!.filters).toContainEqual(['guild_id', GUILD_ID])
     expect(membershipCall!.filters).toContainEqual(['is_active', true])
+  })
+})
+
+describe('FIX-02: real BLP and priorities in the import string, typed client', () => {
+  beforeEach(() => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'u1' }, error: null } as never)
+    vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
+    vi.mocked(trackApiError).mockClear()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  function use(fixture: Fixture, options?: { fail?: string[] }) {
+    const made = makeClient(fixture, options)
+    vi.mocked(createServiceRoleClient).mockReturnValue(made.client as never)
+    return made
+  }
+
+  it('B1 sends blp[characterId][lootItemId] = times_passed from blp_tracking filtered by the request guild', async () => {
+    const fixture = baseFixture()
+    fixture.blp_tracking = [
+      { guild_id: GUILD_ID, character_id: 'c1', loot_item_id: 'li-nef', times_passed: 3 },
+      { guild_id: 'other-guild', character_id: 'c1', loot_item_id: 'li-ony', times_passed: 9 },
+    ]
+    const { calls } = use(fixture)
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    const payload = decodePayload(body.exportString)
+    expect(payload.blp).toEqual({ c1: { 'li-nef': 3 } })
+    expect(payload.blp.c1['li-nef']).toBe(3)
+    const blpCalls = calls.filter(c => c.table === 'blp_tracking')
+    expect(blpCalls).toHaveLength(1)
+    expect(blpCalls[0].filters).toContainEqual(['guild_id', GUILD_ID])
+    expect(blpCalls[0].orders).toEqual([{ col: 'id', ascending: true }])
+  })
+
+  it('B2 sends priorities keyed by loot item id from guild_item_priorities, with default bonuses when null', async () => {
+    const fixture = baseFixture()
+    fixture.guild_item_priorities = [
+      {
+        guild_id: GUILD_ID, raid_tier_id: 'tier-bwl', item_id: 'li-nef',
+        role_priorities: { tank: 4 }, class_priorities: { Shaman: 2 }, character_priorities: { c1: 1 },
+        priority_bonuses: null,
+      },
+      { guild_id: 'other-guild', raid_tier_id: 'tier-bwl', item_id: 'li-unrelated', priority_bonuses: null },
+    ]
+    const { calls } = use(fixture)
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    const payload = decodePayload(body.exportString)
+    expect(Object.keys(payload.priorities)).toEqual(['li-nef'])
+    expect(payload.priorities['li-nef']).toEqual({
+      role_priorities: { tank: 4 },
+      class_priorities: { Shaman: 2 },
+      character_priorities: { c1: 1 },
+      priority_bonuses: { role: 5, class: 3, character: 2 },
+    })
+    const prioCalls = calls.filter(c => c.table === 'guild_item_priorities')
+    expect(prioCalls).toHaveLength(1)
+    expect(prioCalls[0].filters).toContainEqual(['guild_id', GUILD_ID])
+    expect(prioCalls[0].filters).toContainEqual(['raid_tier_id', ['tier-ony', 'tier-bwl']])
+    expect(prioCalls[0].orders).toEqual([{ col: 'id', ascending: true }])
+  })
+
+  it('B3 keeps explicit priority_bonuses when the row has them', async () => {
+    const fixture = baseFixture()
+    fixture.guild_item_priorities = [
+      { guild_id: GUILD_ID, raid_tier_id: 'tier-bwl', item_id: 'li-nef', priority_bonuses: { role: 9, class: 8, character: 7 } },
+    ]
+    use(fixture)
+    const res = await GET(request())
+    const payload = decodePayload((await res.json()).exportString)
+    expect(payload.priorities['li-nef'].priority_bonuses).toEqual({ role: 9, class: 8, character: 7 })
+  })
+
+  it('B4 the fake client throws for a table outside its allow-list', () => {
+    const { client } = makeClient(baseFixture())
+    expect(() => client.from('bad_luck_protection')).toThrow('fake client: unknown table bad_luck_protection')
+    expect(() => client.from('item_priorities')).toThrow('fake client: unknown table item_priorities')
+  })
+
+  it('B5 the payload keeps the LLP1:1 prefix and its top-level keys', async () => {
+    use(baseFixture())
+    const res = await GET(request())
+    const body = await res.json()
+    expect(body.exportString.startsWith('LLP1:1:')).toBe(true)
+    expect(Object.keys(decodePayload(body.exportString))).toEqual([
+      'guildId', 'guildName', 'expansionId', 'phase', 'settings', 'items', 'members', 'priorities', 'blp', 'attendance',
+    ])
+    expect(Object.keys(body.stats)).toEqual([
+      'items', 'members', 'submissions', 'raidTiers', 'expansion', 'compressedSize', 'uncompressedSize',
+    ])
   })
 })
