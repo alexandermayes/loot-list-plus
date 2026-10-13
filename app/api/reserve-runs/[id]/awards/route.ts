@@ -119,7 +119,7 @@ export async function POST(
       trackEvent({
         event: 'reserve_item_awarded',
         userId: user.id,
-        properties: { run_id: id, loot_item_id, character_name },
+        properties: { run_id: id, loot_item_id },
       })
     }
 
