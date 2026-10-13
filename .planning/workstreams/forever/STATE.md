@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 01
 current_phase_name: Forever Defect and Privacy Fixes
 status: executing
-stopped_at: Completed 01-07-PLAN.md
-last_updated: "2026-10-13T21:42:15.191Z"
+stopped_at: Completed 01-08-PLAN.md
+last_updated: "2026-10-13T21:49:15.206Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 01 execution started
-state_head: 8eeee8f55d34042bec4f9b45b86ff746450d26de
+state_head: 848ef5e770d97fb302db60567ed183f25fba7290
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 9
-  completed_plans: 6
+  completed_plans: 7
   percent: 0
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 01 (Forever Defect and Privacy Fixes) — EXECUTING
-Plan: 7 of 9
+Plan: 8 of 9
 Status: Ready to execute
 Last activity: 2026-10-13 — Phase 01 execution started
 
@@ -75,6 +75,7 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 | Phase 01 P06 | 2 min | 2 tasks | 7 files |
 | Phase 01 P04 | 6 min | 2 tasks | 5 files |
 | Phase 01 P07 | 8 min | 2 tasks | 2 files |
+| Phase 01 P08 | 5 min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,7 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 - [Phase 01]: 01-06: master_loot_awarded reports loot_item_ids (ids only, list order); a failed item read is null (unknown), never zero; guild_name unregistered; posthog.identify drops email and display_name — Owner decisions 1 and 4 and Hard Constraint 3; null keeps a failed read from posing as an empty list
 - [Phase 01]: 01-04: item_url on every /priority 200 via wowheadItemUrl with no third argument (non-Forever stays retail); bot renders it only after a strict Wowhead shape check; /score typed by cast only — Additive contract, either deploy order safe; no default substitution so scores are unchanged
 - [Phase 01]: 01-07: a failed loot_history read in export-string answers 500 (owner decision 8, extends decision 7); submissions read oldest first; readOrThrow helpers copied locally into the route — A failed read must never be presented as a complete import string; the plan scoped changes to two files so the helpers were not lifted to a shared module
+- [Phase 01]: 01-08: five server analytics events (guild_created, character_created, reserve_item_awarded, character_imported, loot_item_removed_from_list) send ids and counts only; a source scan with a 50-site floor and self-checks fails on any name in an analytics call or email in an identify call — Hard Constraint 3 and owner decision 4; stored award and audit rows keep character_name; the scan reads call arguments only, so variable-built properties are caught only where passed literally
 
 ### Pending Owner Inputs
 
@@ -116,6 +118,6 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 
 ## Session Continuity
 
-Last session: 2026-10-13T21:42:15.179Z
-Stopped at: Completed 01-07-PLAN.md
+Last session: 2026-10-13T21:49:10.046Z
+Stopped at: Completed 01-08-PLAN.md
 Resume file: None
