@@ -7,6 +7,7 @@ import { GET } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { trackApiError } from '@/utils/analytics/server'
 import { FACTION_ITEM_ALIASES } from '@/domain/loot/faction-item-aliases'
 
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
@@ -67,15 +68,40 @@ interface Fixture {
   character_guild_memberships: MembershipRow[]
   loot_items: LootItemRow[]
   loot_submissions: LootSubmissionRow[]
-  bad_luck_protection: Array<{ guild_id: string; character_id: string; loot_item_id: string; times_passed: number }>
+  blp_tracking: Array<{ guild_id: string; character_id: string; loot_item_id: string; times_passed: number }>
   raid_events: Array<{ guild_id: string; id: string; raid_date: string; raid_team_id: string | null; is_bonus: boolean }>
-  item_priorities: Array<{ loot_item_id: string }>
+  guild_item_priorities: Array<{
+    guild_id: string
+    raid_tier_id: string
+    item_id: string
+    role_priorities?: unknown
+    class_priorities?: unknown
+    character_priorities?: unknown
+    priority_bonuses?: unknown
+  }>
   attendance_records: Array<{ raid_event_id: string; character_id: string }>
   raid_team_members: Array<{ guild_id: string; character_id: string; raid_team_id: string }>
   /** FU-C of 261001-tv5: awards read for the receive skip. */
   loot_history?: Array<{ guild_id: string; character_id: string | null; loot_item: { wowhead_id: number } | null }>
   lootHistoryError?: boolean
 }
+
+/** Every table guild-data may read. The fake throws for anything else, so a misspelled or nonexistent table fails the tests. */
+const ALLOWED_TABLES = [
+  'guilds',
+  'guild_settings',
+  'expansions',
+  'raid_tiers',
+  'character_guild_memberships',
+  'loot_items',
+  'loot_submissions',
+  'blp_tracking',
+  'raid_events',
+  'guild_item_priorities',
+  'attendance_records',
+  'raid_team_members',
+  'loot_history',
+]
 
 function emptyFixture(): Fixture {
   return {
@@ -86,9 +112,9 @@ function emptyFixture(): Fixture {
     character_guild_memberships: [],
     loot_items: [],
     loot_submissions: [],
-    bad_luck_protection: [],
+    blp_tracking: [],
     raid_events: [],
-    item_priorities: [],
+    guild_item_priorities: [],
     attendance_records: [],
     raid_team_members: [],
   }
@@ -115,13 +141,15 @@ function resolveRows(table: string, filters: Filter[], fixture: Fixture): unknow
     }
     case 'loot_submissions':
       return rows.filter((r: { guild_id: string }) => r.guild_id === find('guild_id'))
-    case 'bad_luck_protection':
+    case 'blp_tracking':
       return rows.filter((r: { guild_id: string }) => r.guild_id === find('guild_id'))
     case 'raid_events':
       return rows.filter((r: { guild_id: string }) => r.guild_id === find('guild_id'))
-    case 'item_priorities': {
-      const ids = (find('loot_item_id') as string[]) ?? []
-      return rows.filter((r: { loot_item_id: string }) => ids.includes(r.loot_item_id))
+    case 'guild_item_priorities': {
+      const tierIds = (find('raid_tier_id') as string[]) ?? []
+      return rows.filter(
+        (r: { guild_id: string; raid_tier_id: string }) => r.guild_id === find('guild_id') && tierIds.includes(r.raid_tier_id),
+      )
     }
     case 'attendance_records': {
       const ids = (find('raid_event_id') as string[]) ?? []
@@ -132,15 +160,22 @@ function resolveRows(table: string, filters: Filter[], fixture: Fixture): unknow
     case 'loot_history':
       return rows.filter((r: { guild_id: string }) => r.guild_id === find('guild_id'))
     default:
-      return rows
+      throw new Error(`fake client: unknown table ${table}`)
   }
 }
 
-/** Recording fake matching the guild-data query sequence. */
-function makeClient(fixture: Fixture) {
+/**
+ * Recording fake matching the guild-data query sequence. options.fail lists
+ * tables whose reads resolve { data: null, error } (then, range, single and
+ * maybeSingle alike). Querying a table outside ALLOWED_TABLES throws.
+ */
+function makeClient(fixture: Fixture, options?: { fail?: string[] }) {
   const calls: Call[] = []
+  const failing = (table: string) => (options?.fail ?? []).includes(table)
+  const failure = () => ({ data: null, error: { message: 'boom' } })
   const client = {
     from(table: string) {
+      if (!ALLOWED_TABLES.includes(table)) throw new Error(`fake client: unknown table ${table}`)
       const call: Call = { table, cols: '', filters: [] }
       calls.push(call)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -153,6 +188,7 @@ function makeClient(fixture: Fixture) {
         limit: () => builder,
         range: (from: number, to: number) => {
           call.range = [from, to]
+          if (failing(table)) return Promise.resolve(failure())
           if (table === 'loot_history' && fixture.lootHistoryError) {
             return Promise.resolve({ data: null, error: { message: 'history boom' } })
           }
@@ -160,10 +196,17 @@ function makeClient(fixture: Fixture) {
           return Promise.resolve({ data: rows, error: null })
         },
         single: () => {
+          if (failing(table)) return Promise.resolve(failure())
+          const rows = resolveRows(table, call.filters, fixture)
+          return Promise.resolve({ data: rows[0] ?? null, error: null })
+        },
+        maybeSingle: () => {
+          if (failing(table)) return Promise.resolve(failure())
           const rows = resolveRows(table, call.filters, fixture)
           return Promise.resolve({ data: rows[0] ?? null, error: null })
         },
         then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) => {
+          if (failing(table)) return Promise.resolve(failure()).then(resolve, reject)
           const rows = resolveRows(table, call.filters, fixture)
           return Promise.resolve({ data: rows, error: null, count: rows.length }).then(resolve, reject)
         },
@@ -386,8 +429,9 @@ describe('FU-3 of #331, #293 and FU-C of 261001-tv5: member items', () => {
     expect(items.filter(i => i.wowhead_id === 20928)).toEqual([{ wowhead_id: 20928, rank: 50 }])
   })
 
-  it('G4 a loot_history error still returns 200 with every entry', async () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+  it('G4 a loot_history error answers 500 and tracks the error, so entries never go out without the receive skip (owner decision 7)', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(trackApiError).mockClear()
     const fixture = baseFixture()
     fixture.loot_submissions[0].loot_submission_items.push(
       { loot_item_id: 'li-bindings', rank: 50, slot: 1, loot_items: { wowhead_id: 20928 } },
@@ -395,13 +439,12 @@ describe('FU-3 of #331, #293 and FU-C of 261001-tv5: member items', () => {
     )
     fixture.loot_history = [{ guild_id: GUILD_ID, character_id: 'c1', loot_item: { wowhead_id: 20928 } }]
     fixture.lootHistoryError = true
-    const { res, items } = await memberItems(fixture)
-    expect(res.status).toBe(200)
-    expect(items.filter(i => i.wowhead_id === 20928)).toEqual([
-      { wowhead_id: 20928, rank: 30 },
-      { wowhead_id: 20928, rank: 50 },
-    ])
-    expect(errorSpy).toHaveBeenCalledWith('Failed to read loot history for the addon export receive skip:', 'history boom')
+    const { client } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    const res = await GET(request())
+    expect(res.status).toBe(500)
+    expect(await res.json()).toEqual({ error: 'Internal server error' })
+    expect(trackApiError).toHaveBeenCalledTimes(1)
   })
 
   it('G1b selects slot and removed_at and sends each raider\'s ranks best last', async () => {
@@ -417,5 +460,78 @@ describe('FU-3 of #331, #293 and FU-C of 261001-tv5: member items', () => {
     const subCols = calls.find(c => c.table === 'loot_submissions' && c.cols.includes('loot_submission_items'))!.cols
     expect(subCols).toMatch(/slot/)
     expect(subCols).toMatch(/removed_at/)
+  })
+})
+
+describe('FIX-02: real BLP and priorities, typed client', () => {
+  beforeEach(() => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'u1' }, error: null } as never)
+    vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
+    vi.mocked(trackApiError).mockClear()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  function use(fixture: Fixture, options?: { fail?: string[] }) {
+    const made = makeClient(fixture, options)
+    vi.mocked(createServiceRoleClient).mockReturnValue(made.client as never)
+    return made
+  }
+
+  it('B1 sends blp[characterId][lootItemId] = times_passed from blp_tracking filtered by the request guild', async () => {
+    const fixture = baseFixture()
+    fixture.blp_tracking = [
+      { guild_id: GUILD_ID, character_id: 'c1', loot_item_id: 'li-nef', times_passed: 3 },
+      { guild_id: 'other-guild', character_id: 'c1', loot_item_id: 'li-ony', times_passed: 9 },
+    ]
+    const { calls } = use(fixture)
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.blp).toEqual({ c1: { 'li-nef': 3 } })
+    const blpCalls = calls.filter(c => c.table === 'blp_tracking')
+    expect(blpCalls).toHaveLength(1)
+    expect(blpCalls[0].filters).toContainEqual(['guild_id', GUILD_ID])
+  })
+
+  it('B2 sends priorities keyed by loot item id from guild_item_priorities, with default bonuses when null', async () => {
+    const fixture = baseFixture()
+    fixture.guild_item_priorities = [
+      { guild_id: GUILD_ID, raid_tier_id: 'tier-bwl', item_id: 'li-nef', role_priorities: null, class_priorities: null, character_priorities: null, priority_bonuses: null },
+      { guild_id: 'other-guild', raid_tier_id: 'tier-bwl', item_id: 'li-unrelated', priority_bonuses: null },
+    ]
+    const { calls } = use(fixture)
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(Object.keys(body.priorities)).toEqual(['li-nef'])
+    expect(body.priorities['li-nef']).toEqual({
+      role_priorities: {},
+      class_priorities: {},
+      character_priorities: {},
+      priority_bonuses: { role: 5, class: 3, character: 2 },
+    })
+    const prioCalls = calls.filter(c => c.table === 'guild_item_priorities')
+    expect(prioCalls).toHaveLength(1)
+    expect(prioCalls[0].filters).toContainEqual(['guild_id', GUILD_ID])
+    expect(prioCalls[0].filters).toContainEqual(['raid_tier_id', ['tier-ony', 'tier-bwl']])
+  })
+
+  it.each(['blp_tracking', 'guild_item_priorities'])('B3 a %s read error answers 500 and tracks the error', async table => {
+    const { calls } = use(baseFixture(), { fail: [table] })
+    const res = await GET(request())
+    expect(res.status).toBe(500)
+    expect(await res.json()).toEqual({ error: 'Internal server error' })
+    expect(trackApiError).toHaveBeenCalledTimes(1)
+    expect(calls.some(c => c.table === table)).toBe(true)
+  })
+
+  it('B4 the fake client throws for a table outside its allow-list', () => {
+    const { client } = makeClient(baseFixture())
+    expect(() => client.from('bad_luck_protection')).toThrow('fake client: unknown table bad_luck_protection')
+    expect(() => client.from('item_priorities')).toThrow('fake client: unknown table item_priorities')
   })
 })
