@@ -1,13 +1,15 @@
 // Force recompile v3
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateAddonRequest, authorizeAddonGuild } from '@/lib/addon/sync-tokens'
-import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { createTypedServiceRoleClient } from '@/utils/supabase/typed-service-role'
+import { selectAllPagesOrThrow } from '@/utils/supabase/paginate'
 import { trackApiError } from '@/utils/analytics/server'
 import { getAttendanceWindowEnd, resolveOwnedEvents, resolveActiveRaiderModifiers } from '@/domain/scoring'
 import { toDateString } from '@/utils/date'
 import { deflateRawSync } from 'zlib'
 import { withFactionVariants } from '@/domain/loot/faction-item-aliases'
 import { buildMemberRankedItems, fetchReceivedCounts, type MemberRankedItem } from '@/lib/addon/member-ranked-items'
+import type { Json } from '@/lib/database.types'
 
 /**
  * GET /api/addon/export-string
@@ -36,7 +38,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'guild_id is required' }, { status: 400 })
     }
 
-    const supabase = createServiceRoleClient()
+    const supabase = createTypedServiceRoleClient()
 
     // Officer check plus sync-token guild scope (GH #300 D-02)
     const access = await authorizeAddonGuild(supabase, auth.principal, guildId)
@@ -70,7 +72,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get active expansion - fall back by tracing from guild's loot items
-    let expansion: { id: string; name: string; current_phase: number } | null = null
+    let expansion: { id: string; name: string; current_phase: number | null } | null = null
     let expansionId = guild.active_expansion_id
 
     if (expansionId) {
@@ -108,15 +110,13 @@ export async function GET(request: NextRequest) {
       .order('phase', { ascending: true })
     : { data: null, error: null }
 
-    const raidTiers = (tiersWithItems.data || []).map((t: { id: string; name: string; phase: number }) => ({ id: t.id, name: t.name, phase: t.phase }))
+    const raidTiers = (tiersWithItems.data || []).map(t => ({ id: t.id, name: t.name, phase: t.phase }))
     const raidTierIds = raidTiers.map((rt: { id: string }) => rt.id)
 
     // Flatten items from all tiers
-    type LootItemRow = { id: string; name: string; wowhead_id: number; boss_name: string; item_slot: string | null; item_type: string | null; classification: string | null; raid_tier_id: string }
-    const lootItems: LootItemRow[] = []
+    const lootItems: BuildPayloadArgs['lootItems'] = []
     for (const tier of tiersWithItems.data || []) {
-      const items = (tier as { loot_items: LootItemRow[] }).loot_items || []
-      for (const item of items) {
+      for (const item of tier.loot_items || []) {
         lootItems.push(item)
       }
     }
@@ -151,10 +151,7 @@ export async function GET(request: NextRequest) {
       throw new Error('Failed to read guild memberships for the addon export')
     }
 
-    const memberships: Array<{
-      character_id: string; role: string; membership_status: string;
-      characters: unknown
-    }> = activeMemberships ?? []
+    const memberships: BuildPayloadArgs['memberships'] = activeMemberships ?? []
 
     console.log('[addon/export-string] character_guild_memberships:', memberships.length)
 
@@ -174,17 +171,26 @@ export async function GET(request: NextRequest) {
     // Awards per raider and item, for the receive skip (null on a failed read)
     const receivedCounts = await fetchReceivedCounts(supabase, guildId)
 
-    // Fetch priority lists
-    const { data: priorities } = await supabase
-      .from('item_priorities')
-      .select('loot_item_id, role_priorities, class_priorities, character_priorities, priority_bonuses')
-      .in('loot_item_id', lootItems?.map(i => i.id) || [])
+    // Priority lists (FIX-02: the table is guild_item_priorities). Filtered by
+    // guild and raid tier, never by the full item id list (URL length,
+    // Pitfall 3); a guild with no raid tiers reads nothing. Paged and ordered
+    // by the primary key so a large guild is never cut at the 1000-row cap.
+    const priorities = raidTierIds.length === 0
+      ? []
+      : await selectAllPagesOrThrow('guild_item_priorities', (start, end) =>
+          supabase.from('guild_item_priorities')
+            .select('item_id, role_priorities, class_priorities, character_priorities, priority_bonuses')
+            .eq('guild_id', guildId).in('raid_tier_id', raidTierIds)
+            .order('id', { ascending: true })
+            .range(start, end))
 
-    // Fetch BLP data
-    const { data: blpData } = await supabase
-      .from('bad_luck_protection')
-      .select('character_id, loot_item_id, times_passed')
-      .eq('guild_id', guildId)
+    // BLP (FIX-02: the table is blp_tracking), paged the same way.
+    const blpData = await selectAllPagesOrThrow('blp_tracking', (start, end) =>
+      supabase.from('blp_tracking')
+        .select('character_id, loot_item_id, times_passed')
+        .eq('guild_id', guildId)
+        .order('id', { ascending: true })
+        .range(start, end))
 
     // Fetch attendance records. Drop events from the in-progress reset week
     // so the addon's score preview matches the web (see computeAttendance).
@@ -214,11 +220,14 @@ export async function GET(request: NextRequest) {
     // the addon's in-game score preview matches the website. Each raider gets
     // their own `totalRaids` (denominator restricted to their team + null
     // events) and a filtered record set.
-    const recordsByCharacter = new Map<string, NonNullable<typeof attendanceRecords>>()
+    type AttendanceRow = NonNullable<typeof attendanceRecords>[number] & { raid_event_id: string }
+    const recordsByCharacter = new Map<string, AttendanceRow[]>()
     for (const rec of attendanceRecords || []) {
-      if (!rec.character_id) continue
+      // The read filters raid_event_id with .in(), so a null id cannot occur;
+      // the guard only narrows the type.
+      if (!rec.character_id || !rec.raid_event_id) continue
       const arr = recordsByCharacter.get(rec.character_id) ?? []
-      arr.push(rec)
+      arr.push({ ...rec, raid_event_id: rec.raid_event_id })
       recordsByCharacter.set(rec.character_id, arr)
     }
     const characterIds = new Set<string>([
@@ -268,9 +277,14 @@ export async function GET(request: NextRequest) {
       lootItems: lootItems || [],
       raidNameMap,
       memberships: memberships || [],
-      memberItems: buildMemberRankedItems(submissions || [], receivedCounts),
-      priorities: priorities || [],
-      blpData: blpData || [],
+      // Rows without a character cannot belong to a member, so leaving them
+      // out changes no output (members only look up real ids).
+      memberItems: buildMemberRankedItems(
+        (submissions || []).filter((sub): sub is typeof sub & { character_id: string } => sub.character_id !== null),
+        receivedCounts,
+      ),
+      priorities,
+      blpData,
       attendanceByCharacter,
     })
 
@@ -309,25 +323,26 @@ export async function GET(request: NextRequest) {
 }
 
 interface BuildPayloadArgs {
-  guild: { id: string; name: string; active_expansion_id: string }
+  guild: { id: string; name: string; active_expansion_id: string | null }
   settings: Record<string, unknown> | null
-  expansion: { id: string; name: string; current_phase: number } | null
+  expansion: { id: string; name: string; current_phase: number | null } | null
   lootItems: Array<{
-    id: string; name: string; wowhead_id: number; boss_name: string;
+    id: string; name: string; wowhead_id: number | null; boss_name: string | null;
     item_slot: string | null; item_type: string | null; classification: string | null;
-    raid_tier_id: string
+    raid_tier_id: string | null
   }>
   raidNameMap: Record<string, string>
   memberships: Array<{
-    character_id: string; role: string; membership_status: string;
+    character_id: string; role: string | null; membership_status: string | null;
     characters: unknown
   }>
   /** characterId -> ranked items, from buildMemberRankedItems. */
   memberItems: Record<string, MemberRankedItem[]>
+  // Json columns, as the typed client reports them; passed through unchanged.
   priorities: Array<{
-    loot_item_id: string; role_priorities: Record<string, number>;
-    class_priorities: Record<string, number>; character_priorities: Record<string, number>;
-    priority_bonuses: { role: number; class: number; character: number }
+    item_id: string; role_priorities: Json | null;
+    class_priorities: Json | null; character_priorities: Json | null;
+    priority_bonuses: Json | null
   }>
   blpData: Array<{ character_id: string; loot_item_id: string; times_passed: number }>
   /**
@@ -356,7 +371,7 @@ function buildExportPayload(args: BuildPayloadArgs) {
     name: item.name,
     wowhead_id: item.wowhead_id,
     boss_name: item.boss_name,
-    raid_name: raidNameMap[item.raid_tier_id] || 'Unknown',
+    raid_name: (item.raid_tier_id ? raidNameMap[item.raid_tier_id] : undefined) || 'Unknown',
     classification: item.classification,
     slot: item.item_slot,
     item_type: item.item_type,
@@ -394,13 +409,13 @@ function buildExportPayload(args: BuildPayloadArgs) {
 
   // Build priorities map
   const prioritiesMap: Record<string, {
-    role_priorities: Record<string, number>;
-    class_priorities: Record<string, number>;
-    character_priorities: Record<string, number>;
-    priority_bonuses: { role: number; class: number; character: number };
+    role_priorities: Json;
+    class_priorities: Json;
+    character_priorities: Json;
+    priority_bonuses: Json;
   }> = {}
   for (const p of priorities) {
-    prioritiesMap[p.loot_item_id] = {
+    prioritiesMap[p.item_id] = {
       role_priorities: p.role_priorities || {},
       class_priorities: p.class_priorities || {},
       character_priorities: p.character_priorities || {},
