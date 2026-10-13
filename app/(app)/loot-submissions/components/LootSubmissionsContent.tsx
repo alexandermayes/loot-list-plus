@@ -531,12 +531,10 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
         guild_id: guildId,
         submission_id: submissionId,
         new_status: status,
-        character_name: submission?.member?.character_name,
       })
       trackClientEvent(status === 'approved' ? 'pending_submission_approved' : 'pending_submission_rejected', {
         guild_id: guildId,
         submission_id: submissionId,
-        character_name: submission?.member?.character_name,
       })
 
       // Show undo toast instead of regular notification
