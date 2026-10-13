@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 01
 current_phase_name: Forever Defect and Privacy Fixes
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-10-13T20:58:18.449Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-10-13T21:20:58.385Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 01 execution started
-state_head: 9f695aa0f7d63d4303d86015dfedcc3f49c79f28
+state_head: 221c917847e6d038a14e754486d2666075bff00f
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 9
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 01 (Forever Defect and Privacy Fixes) — EXECUTING
-Plan: 2 of 9
+Plan: 3 of 9
 Status: Ready to execute
 Last activity: 2026-10-13 — Phase 01 execution started
 
@@ -70,6 +70,7 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 01 P01 | 10 min | 3 tasks | 2 files |
+| Phase 01 P02 | 20 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,9 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 - Roadmap: the research's ranker-extraction phase is folded into Phase 5, and the Drop Desk is split into Phase 5 (core award path) and Phase 6 (live raid night).
 - [Phase 01]: 01-01: BLP recompute is awaited (not after()) on award DELETE and PATCH reassign; unlinking to null also recomputes — Success criterion 1 says by the time the request returns; recomputeBlpForItems returns RPC errors without throwing
 - [Phase 01]: 01-01: award receipt whitelist is Record<keyof ScoreComponents, true>; cap stays JSON.stringify length (UTF-16 units) at 4096 — A new score component is a compile error until whitelisted; changing the cap unit is outside FIX-04 (assumption A9)
+- [Phase 01]: Owner decision 7: a failed loot_history read in guild-data answers 500 like every other read (route throws; member-ranked-items unchanged) — A failed read must never be presented as a complete list
+- [Phase 01]: guild-data pages loot_items too and reads loot_submissions oldest first (created_at, id) so the newest approved submission wins — MoP catalogs pass 1700 items; the old read had no ORDER BY so the winner was unspecified
+- [Phase 01]: createTypedServiceRoleClient delegates to createServiceRoleClient; selectAllPagesOrThrow exported from utils/supabase/paginate.ts for plans 01-04, 01-05, 01-07 — Existing test mocks of createServiceRoleClient keep working
 
 ### Pending Owner Inputs
 
@@ -104,6 +108,6 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 
 ## Session Continuity
 
-Last session: 2026-10-13T20:58:18.440Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-10-13T21:20:58.375Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
