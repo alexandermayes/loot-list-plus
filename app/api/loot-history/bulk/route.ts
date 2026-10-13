@@ -12,11 +12,24 @@ import { resolveGuildLootItemIds, formatInvalidLootItemIdsError } from '@/lib/lo
 import { normalizeRefId, findInvalidRaidEventIds, findInvalidCharacterIds, formatInvalidAwardRefsError } from '@/lib/loot/guild-award-refs'
 import { buildBulkAwardRow } from '@/lib/loot/loot-history-rows'
 import { assignAwardCopies, isValidAwardCopy, nextAwardCopy } from '@/domain/loot/award-copies'
-import type { AwardReason, AwardOutcomeType } from '@/domain/types'
+import type { AwardReason, AwardOutcomeType, ScoreComponents } from '@/domain/types'
 
 const AWARD_REASON_VALUES = new Set<AwardReason>(['', 'score', 'loot_council', 'override', 'offspec', 'roll'])
 const OUTCOME_TYPE_VALUES = new Set<AwardOutcomeType>(['score', 'roll', 'loot_council', 'override', 'offspec'])
-const ALLOWED_COMPONENT_KEYS = ['itemRank', 'attendanceScore', 'rankModifier', 'roleBonus', 'priorityBonus', 'trialPenalty', 'badLuckBonus'] as const
+// The Record type makes a ScoreComponents key missing from this map a compile
+// error, so a future score component cannot be silently dropped from receipts again.
+const COMPONENT_KEY_MAP: Record<keyof ScoreComponents, true> = {
+  itemRank: true,
+  attendanceScore: true,
+  rankModifier: true,
+  roleBonus: true,
+  badLuckBonus: true,
+  priorityBonus: true,
+  trialPenalty: true,
+  donationBonus: true,
+  raiderBonus: true,
+}
+const ALLOWED_COMPONENT_KEYS = Object.keys(COMPONENT_KEY_MAP) as Array<keyof ScoreComponents>
 const REASON_LABELS: Record<Exclude<AwardReason, '' | 'score'> | 'score', string> = {
   score: 'Score winner',
   loot_council: 'Loot council decision',

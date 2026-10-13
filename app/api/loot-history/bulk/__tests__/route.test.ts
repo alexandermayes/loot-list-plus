@@ -1207,3 +1207,144 @@ describe('PATCH /api/loot-history/bulk BLP recompute (FIX-01)', () => {
     }
   })
 })
+
+describe('POST /api/loot-history/bulk award receipt (FIX-04)', () => {
+  const NINE_KEYS = [
+    'itemRank', 'attendanceScore', 'rankModifier', 'roleBonus', 'badLuckBonus',
+    'priorityBonus', 'trialPenalty', 'donationBonus', 'raiderBonus',
+  ]
+  const LONG_FLOAT = -1.2345678901234567e-300
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: USER_ID }, error: null } as never)
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: true } as never)
+    vi.mocked(routeRecordsToTeamEvents).mockImplementation(async (_s, _g, records) => records)
+  })
+
+  const allNine = (value: number) => Object.fromEntries(NINE_KEYS.map((k) => [k, value]))
+
+  /** A decision_context holding exactly the keys the sanitizer keeps, valid values only. */
+  function contextWith(ids: string[], names: string[], value: number): Record<string, unknown> {
+    return {
+      outcome_type: 'score',
+      was_score_winner: true,
+      tied_at_top: false,
+      gap_to_next: value,
+      awarded_character_id: ids[0],
+      winner_score: value,
+      winner_components: allNine(value),
+      top_candidates: [0, 1, 2].map((i) => ({
+        character_id: ids[i + 1],
+        player_name: names[i],
+        loot_score: value,
+        is_trial: false,
+        is_eligible: true,
+        has_received: false,
+        bad_luck_bonus: value,
+        components: allNine(value),
+      })),
+    }
+  }
+
+  /**
+   * Build a context whose JSON.stringify length is exactly `target`. Seven
+   * strings of 64 UTF-16 units hold the padding: U+0001 serializes as six
+   * characters (+5 over a plain one) and a double quote as two (+1), so coarse
+   * steps use the former and the remainder the latter.
+   */
+  function contextOfLength(target: number): Record<string, unknown> {
+    const plain = 'a'.repeat(64)
+    const baseline = JSON.stringify(contextWith(Array(4).fill(plain), Array(3).fill(plain), LONG_FLOAT)).length
+    const extra = target - baseline
+    const coarse = Math.floor(extra / 5)
+    const fine = extra - coarse * 5
+    expect(extra).toBeGreaterThanOrEqual(0)
+    expect(coarse + fine).toBeLessThanOrEqual(7 * 64)
+    const chars = [
+      ...Array<string>(coarse).fill('\u0001'),
+      ...Array<string>(fine).fill('"'),
+    ]
+    while (chars.length < 7 * 64) chars.push('a')
+    const strings = Array.from({ length: 7 }, (_, i) => chars.slice(i * 64, (i + 1) * 64).join(''))
+    const context = contextWith(strings.slice(0, 4), strings.slice(4), LONG_FLOAT)
+    expect(JSON.stringify(context).length).toBe(target)
+    return context
+  }
+
+  async function postWithContext(decision_context: unknown) {
+    const { client } = makeClient(singleItemFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    const res = await POST(request({
+      guild_id: GUILD_ID,
+      items: [{ loot_item_id: ITEM_ID, character_id: CHARACTER_ID, character_name: 'Thrall', decision_context }],
+    }))
+    expect(res.status).toBe(200)
+    const insertCall = vi.mocked(logAudit).mock.calls.map((c) => c[0]).find((c) => c.action === 'INSERT')
+    return (insertCall?.newData as { decision_context: Record<string, unknown> | null }).decision_context
+  }
+
+  it('stores all nine score components for the winner and every top candidate', async () => {
+    const stored = await postWithContext(contextWith(
+      ['winner', 'c1', 'c2', 'c3'],
+      ['Thrall', 'Jaina', 'Sylvanas'],
+      1.5,
+    ))
+
+    expect(stored).not.toBeNull()
+    expect(new Set(Object.keys(stored!.winner_components as object))).toEqual(new Set(NINE_KEYS))
+    const candidates = stored!.top_candidates as Array<{ components: Record<string, number> }>
+    expect(candidates).toHaveLength(3)
+    for (const candidate of candidates) {
+      expect(new Set(Object.keys(candidate.components))).toEqual(new Set(NINE_KEYS))
+    }
+    expect((stored!.winner_components as Record<string, number>).donationBonus).toBe(1.5)
+    expect((stored!.winner_components as Record<string, number>).raiderBonus).toBe(1.5)
+  })
+
+  it('a worst-case receipt (64-character ids and names, full-precision floats) is stored under the cap with no _truncated', async () => {
+    const plain = 'a'.repeat(64)
+    const stored = await postWithContext(contextWith(Array(4).fill(plain), Array(3).fill(plain), LONG_FLOAT))
+
+    expect(stored).not.toHaveProperty('_truncated')
+    expect(JSON.stringify(stored).length).toBeLessThan(4096)
+    expect((stored!.winner_components as Record<string, number>).raiderBonus).toBe(LONG_FLOAT)
+  })
+
+  it('E-12 component values are stored exactly as sent, and non-finite or non-number values are dropped per key', async () => {
+    // JSON has no NaN or Infinity: the request body turns both into null, so the
+    // route sees null for them. The sanitizer drops them either way.
+    const stored = await postWithContext({
+      outcome_type: 'score',
+      awarded_character_id: 'winner',
+      winner_components: {
+        donationBonus: 0.30000000000000004,
+        roleBonus: 2,
+        raiderBonus: Infinity,
+        attendanceScore: NaN,
+        itemRank: '5',
+      },
+      top_candidates: [],
+    })
+
+    expect(stored!.winner_components).toEqual({ donationBonus: 0.30000000000000004, roleBonus: 2 })
+  })
+
+  it.each([4095, 4096])('E-11 a sanitized receipt of exactly %i characters is stored intact', async (target) => {
+    const stored = await postWithContext(contextOfLength(target))
+
+    expect(stored).not.toHaveProperty('_truncated')
+    expect(JSON.stringify(stored).length).toBe(target)
+  })
+
+  it('E-11 a sanitized receipt of exactly 4097 characters is stored as the _truncated stub', async () => {
+    const context = contextOfLength(4097)
+    const stored = await postWithContext(context)
+
+    expect(stored).toEqual({
+      outcome_type: 'score',
+      awarded_character_id: context.awarded_character_id,
+      _truncated: true,
+    })
+  })
+})
