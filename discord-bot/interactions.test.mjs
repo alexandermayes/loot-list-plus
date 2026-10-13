@@ -162,6 +162,96 @@ describe('priorityReply', () => {
   })
 })
 
+describe('priorityReply item link (FIX-03)', () => {
+  function okBody(extra) {
+    return {
+      item_name: 'Bilegrip Boots',
+      item_wowhead_id: 1001,
+      raiders: [{ name: 'Active', class: 'Mage', rank: 40 }],
+      ...extra,
+    }
+  }
+  const firstLine = (embed) => embed.description.split('\n')[0]
+
+  it('links the item to the server-decided forever item_url', () => {
+    const embed = priorityReply(
+      { ok: true, status: 200, body: okBody({ item_url: 'https://www.wowhead.com/forever/item=1001' }) },
+      'bilegrip'
+    )
+    expect(firstLine(embed)).toBe('[**Bilegrip Boots**](https://www.wowhead.com/forever/item=1001)')
+  })
+
+  it('links the empty state to item_url too', () => {
+    const embed = priorityReply(
+      {
+        ok: true,
+        status: 200,
+        body: { item_name: 'Bilegrip Boots', item_wowhead_id: 1001, item_url: 'https://www.wowhead.com/forever/item=1001', raiders: [] },
+      },
+      'bilegrip'
+    )
+    expect(firstLine(embed)).toBe('[**Bilegrip Boots**](https://www.wowhead.com/forever/item=1001)')
+  })
+
+  it('builds today\'s retail link from item_wowhead_id when the payload has no item_url', () => {
+    const embed = priorityReply({ ok: true, status: 200, body: okBody() }, 'bilegrip')
+    expect(firstLine(embed)).toBe('[**Bilegrip Boots**](https://www.wowhead.com/item=1001)')
+  })
+
+  it('uses a retail item_url as sent', () => {
+    const embed = priorityReply(
+      { ok: true, status: 200, body: okBody({ item_url: 'https://www.wowhead.com/item=1001' }) },
+      'bilegrip'
+    )
+    expect(firstLine(embed)).toBe('[**Bilegrip Boots**](https://www.wowhead.com/item=1001)')
+  })
+
+  it('ignores a non-Wowhead item_url and falls back to the item_wowhead_id link', () => {
+    const embed = priorityReply(
+      { ok: true, status: 200, body: okBody({ item_url: 'https://evil.example/item=1' }) },
+      'bilegrip'
+    )
+    expect(firstLine(embed)).toBe('[**Bilegrip Boots**](https://www.wowhead.com/item=1001)')
+  })
+
+  it('ignores an item_url that tries to close the link and open another', () => {
+    const embed = priorityReply(
+      {
+        ok: true,
+        status: 200,
+        body: okBody({ item_url: 'https://www.wowhead.com/item=1)[x](https://evil.example' }),
+      },
+      'bilegrip'
+    )
+    expect(firstLine(embed)).toBe('[**Bilegrip Boots**](https://www.wowhead.com/item=1001)')
+    expect(embed.description).not.toContain('evil.example')
+  })
+
+  it('ignores a non-string item_url', () => {
+    const embed = priorityReply(
+      { ok: true, status: 200, body: okBody({ item_url: { href: 'https://www.wowhead.com/item=1' } }) },
+      'bilegrip'
+    )
+    expect(firstLine(embed)).toBe('[**Bilegrip Boots**](https://www.wowhead.com/item=1001)')
+  })
+
+  it('renders the bold name with no link when there is no item_url and no item_wowhead_id', () => {
+    const embed = priorityReply(
+      { ok: true, status: 200, body: okBody({ item_wowhead_id: null, item_url: null }) },
+      'bilegrip'
+    )
+    expect(firstLine(embed)).toBe('**Bilegrip Boots**')
+  })
+
+  it('renders the bold name with no link when item_url is null but an older item_wowhead_id is absent', () => {
+    const embed = priorityReply(
+      { ok: true, status: 200, body: { item_name: 'Bilegrip Boots', item_url: null, raiders: [] } },
+      'bilegrip'
+    )
+    expect(firstLine(embed)).toBe('**Bilegrip Boots**')
+  })
+})
+
 describe('scoreReply', () => {
   it('returns the existing notLinkedEmbed for no_guild_linked', () => {
     const embed = scoreReply({ ok: false, status: 404, body: { error: 'no_guild_linked' } }, 'Thrall')
