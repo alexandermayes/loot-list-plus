@@ -59,6 +59,22 @@ describe('ForeverAnnouncementModal, eligible user', () => {
     expect(screen.getByRole('button', { name: APPROVED.dismiss })).toBeInTheDocument()
   })
 
+  it('renders exactly one dialog, named by the title and described by the body', async () => {
+    render(<ForeverAnnouncementModal delayMs={0} />)
+    const dialog = await screen.findByRole('dialog', { name: APPROVED.title })
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
+    expect(dialog).toHaveAccessibleName(APPROVED.title)
+
+    const describedBy = dialog.getAttribute('aria-describedby')
+    expect(describedBy).toBeTruthy()
+    // getElementById, not querySelector: React useId values contain
+    // characters that would need CSS escaping.
+    const description = document.getElementById(describedBy as string)
+    expect(description).not.toBeNull()
+    expect(description).toHaveTextContent(APPROVED.paragraph1)
+    expect(description).toHaveTextContent(APPROVED.paragraph2)
+  })
+
   it('fires announcement_viewed exactly once with the app_modal payload', async () => {
     render(<ForeverAnnouncementModal delayMs={0} />)
     await screen.findByRole('dialog', { name: APPROVED.title })
@@ -68,10 +84,11 @@ describe('ForeverAnnouncementModal, eligible user', () => {
     expect(viewedCalls[0][1]).toEqual({ announcement: 'wow-forever', surface: 'app_modal' })
   })
 
-  it('focuses the dialog container after open', async () => {
+  it('focuses the Not now button after open', async () => {
     render(<ForeverAnnouncementModal delayMs={0} />)
-    const dialog = await screen.findByRole('dialog', { name: APPROVED.title })
-    await waitFor(() => expect(dialog).toHaveFocus())
+    await screen.findByRole('dialog', { name: APPROVED.title })
+    const dismissButton = screen.getByRole('button', { name: APPROVED.dismiss })
+    await waitFor(() => expect(dismissButton).toHaveFocus())
   })
 
   it('traps focus: Tab from the last element wraps to the first, Shift+Tab from the first wraps to the last', async () => {
@@ -99,6 +116,24 @@ describe('ForeverAnnouncementModal, eligible user', () => {
       announcement: 'wow-forever',
       surface: 'app_modal',
     })
+  })
+
+  it('returns focus to the previously focused element after Not now', async () => {
+    render(
+      <>
+        <button type="button">Trigger</button>
+        <ForeverAnnouncementModal delayMs={0} />
+      </>
+    )
+    // Focus the trigger synchronously, before the 0ms open timer fires, so it
+    // is the element Modal records as the one to restore.
+    const trigger = screen.getByRole('button', { name: 'Trigger' })
+    trigger.focus()
+
+    await screen.findByRole('dialog', { name: APPROVED.title })
+    fireEvent.click(screen.getByRole('button', { name: APPROVED.dismiss }))
+    // Modal restores focus when it unmounts, 150ms after close.
+    await waitFor(() => expect(trigger).toHaveFocus())
   })
 
   it('Escape closes the dialog, writes the per-user seen key and fires announcement_dismissed', async () => {
