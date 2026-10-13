@@ -19,6 +19,7 @@
 import { memo, useContext, useState, useEffect } from 'react'
 import { ExpansionDataContext } from '@/app/contexts/ExpansionContext'
 import { QUALITY_COLORS } from '@/lib/design-system/quality-colors'
+import { getWowheadDomain } from '@/domain/expansion/wowhead'
 
 // Lazy-load the 190KB item-icons module. Cache the getter once loaded.
 let _getItemIconUrl: ((id: number, size: 'small' | 'medium' | 'large') => string | null) | null = null
@@ -39,27 +40,10 @@ function getIconUrl(wowheadId: number, size: 'small' | 'medium' | 'large' = 'sma
   return _getItemIconUrl ? _getItemIconUrl(wowheadId, size) : null
 }
 
-/** Map expansion display names to wowhead URL/tooltip domains */
-const EXPANSION_TO_WOWHEAD_DOMAIN: Record<string, string> = {
-  'Classic': 'classic',
-  'Classic WoW': 'classic',
-  'The Burning Crusade': 'tbc',
-  'Wrath of the Lich King': 'wotlk',
-  'Cataclysm': 'cata',
-  'Mists of Pandaria': 'mop-classic',
-  'Forever': 'forever',
-  'Warlords of Draenor': 'wow',
-  'Legion': 'wow',
-  'Battle for Azeroth': 'wow',
-  'Shadowlands': 'wow',
-  'Dragonflight': 'wow',
-  'The War Within': 'wow',
-}
-
-export function getWowheadDomain(expansionName: string | undefined | null): string | null {
-  if (!expansionName) return null
-  return EXPANSION_TO_WOWHEAD_DOMAIN[expansionName] ?? null
-}
+// The expansion-to-domain map lives in domain/expansion/wowhead.ts (single map,
+// shared with Discord and server code). Re-exported so existing importers and
+// tests keep working.
+export { getWowheadDomain }
 
 interface ItemLinkProps {
   name: string
