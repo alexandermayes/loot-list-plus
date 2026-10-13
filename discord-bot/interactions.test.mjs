@@ -69,8 +69,8 @@ describe('priorityReply', () => {
       },
       'bilegrip'
     )
-    expect(embed.title).toBe('Top priority \u2014 Bilegrip Boots')
-    expect(embed.description).toContain('`#1` **Active** *(Mage)* \u2014 rank 40')
+    expect(embed.title).toBe('Top priority: Bilegrip Boots')
+    expect(embed.description).toContain('`#1` **Active** *(Mage)* \u00b7 rank 40')
     expect(embed.footer).toEqual({ text: 'Sorted by loot list rank. Loot Scores are on the Master Sheet.' })
   })
 
@@ -79,6 +79,7 @@ describe('priorityReply', () => {
       { ok: true, status: 200, body: { item_name: 'Bilegrip Boots', item_wowhead_id: 1001, raiders: [] } },
       'bilegrip'
     )
+    expect(embed.title).toBe('Top priority: Bilegrip Boots')
     expect(embed.description).toContain('_No raiders have ranked this item._')
     expect(embed.footer).toBeUndefined()
   })
@@ -294,8 +295,70 @@ describe('scoreReply', () => {
       },
       'Active'
     )
-    expect(embed.title).toBe('Active \u2014 Loot Score')
+    expect(embed.title).toBe('Active: Loot Score')
     expect(embed.description).toBe('**Attendance credit:** 2 / 4 (50%)\n**Raids attended:** 3 of 4 tracked (last 4 weeks)')
     expect(embed.footer).toEqual({ text: 'Test Guild \u00b7 LootList+' })
   })
+
+  it('puts the team name in parentheses after the title when the score is for a team', () => {
+    const embed = scoreReply(
+      {
+        ok: true,
+        status: 200,
+        body: {
+          character_name: 'Active',
+          guild_name: 'Test Guild',
+          team_name: 'Raid A',
+          attendance: { score: 2, max_score: 4, score_percent: 50, raids_attended: 3, raids_in_window: 4 },
+          rolling_weeks: 4,
+        },
+      },
+      'Active'
+    )
+    expect(embed.title).toBe('Active: Loot Score (Raid A)')
+    expect(embed.footer).toEqual({ text: 'Test Guild \u00b7 LootList+' })
+  })
+})
+
+describe('no em dash in /priority and /score replies (FIX-03, Hard Constraint 2)', () => {
+  const EM_DASH = '\u2014'
+  const score = { score: 2, max_score: 4, score_percent: 50, raids_attended: 3, raids_in_window: 4 }
+  const embeds = {
+    'priority ranked': priorityReply(
+      {
+        ok: true,
+        status: 200,
+        body: { item_name: 'Bilegrip Boots', item_wowhead_id: 1001, raiders: [{ name: 'Active', class: 'Mage', rank: 40 }] },
+      },
+      'bilegrip'
+    ),
+    'priority empty': priorityReply(
+      { ok: true, status: 200, body: { item_name: 'Bilegrip Boots', item_wowhead_id: 1001, raiders: [] } },
+      'bilegrip'
+    ),
+    'score without team': scoreReply(
+      {
+        ok: true,
+        status: 200,
+        body: { character_name: 'Active', guild_name: 'Test Guild', team_name: null, attendance: score, rolling_weeks: 4 },
+      },
+      'Active'
+    ),
+    'score with team': scoreReply(
+      {
+        ok: true,
+        status: 200,
+        body: { character_name: 'Active', guild_name: 'Test Guild', team_name: 'Raid A', attendance: score, rolling_weeks: 4 },
+      },
+      'Active'
+    ),
+  }
+
+  for (const [name, embed] of Object.entries(embeds)) {
+    it(`${name}: title and description carry no em dash`, () => {
+      expect(embed.title).toBeTruthy()
+      expect(embed.title).not.toContain(EM_DASH)
+      expect(embed.description).not.toContain(EM_DASH)
+    })
+  }
 })
