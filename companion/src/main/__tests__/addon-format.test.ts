@@ -8,7 +8,9 @@ import {
   convertItemsToLuaFormat,
   convertMembersToLuaFormat,
   readPendingLists,
+  toPendingAttendancePairs,
   toPendingAttendanceRequests,
+  toPendingAwardPairs,
   toPendingAwardRequests,
 } from '../addon-format'
 import { parseLuaTable } from '../lua-parser'
@@ -89,6 +91,52 @@ describe('toPendingAwardRequests (FU-A of 261001-tv5, D-07)', () => {
         award.awardId ? `addon2:${AWARD_ID}:20928:thrall` : `addon:${AWARDED_AT}:20928:thrall`,
       )
     }
+  })
+})
+
+describe('toPendingAwardPairs and toPendingAttendancePairs (GH #320)', () => {
+  const nightRaw = (startTime: string) => ({
+    raidDate: '2026-09-20',
+    raidName: "Temple of Ahn'Qiraj",
+    startTime,
+    attended: ['Thrall'],
+  })
+
+  it('R1 pairs keep each raw entry by reference next to the request built from it', () => {
+    const raw = [{ wowheadId: 20928, characterName: 'Thrall', awardedAt: AWARDED_AT, awardId: AWARD_ID }]
+    const awardPairs = toPendingAwardPairs(raw)
+    expect(awardPairs[0].entry).toBe(raw[0])
+    expect(awardPairs[0].request).toEqual(toPendingAwardRequests(raw)[0])
+
+    const nights = [nightRaw('2026-09-20T19:00:00Z')]
+    const attendancePairs = toPendingAttendancePairs(nights)
+    expect(attendancePairs[0].entry).toBe(nights[0])
+    expect(attendancePairs[0].request).toEqual({
+      raid_date: '2026-09-20',
+      raid_name: "Temple of Ahn'Qiraj",
+      attended: ['Thrall'],
+    })
+  })
+
+  it('R2 a non-record entry is skipped without shifting the pairing', () => {
+    const first = { wowheadId: 20928, characterName: 'Thrall', awardedAt: AWARDED_AT }
+    const second = { wowheadId: 16921, characterName: 'Jaina', awardedAt: '2026-09-20T21:00:00Z' }
+    const raw = [first, 'junk', null, 7, second]
+    const pairs = toPendingAwardPairs(raw)
+    expect(pairs).toHaveLength(2)
+    expect(pairs[0].entry).toBe(raw[0])
+    expect(pairs[1].entry).toBe(raw[4])
+    expect(pairs[1].request.character_name).toBe('Jaina')
+
+    const night = nightRaw('2026-09-20T19:00:00Z')
+    const night2 = nightRaw('2026-09-21T19:00:00Z')
+    const rawNights = [night, [], night2]
+    const nightPairs = toPendingAttendancePairs(rawNights)
+    expect(nightPairs).toHaveLength(2)
+    expect(nightPairs[1].entry).toBe(rawNights[2])
+
+    expect(toPendingAwardPairs({})).toEqual([])
+    expect(toPendingAttendancePairs(undefined)).toEqual([])
   })
 })
 

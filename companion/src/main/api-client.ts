@@ -43,6 +43,19 @@ export interface GuildData {
   attendance: Record<string, unknown>
 }
 
+/**
+ * accepted holds the indices, into the array that was submitted, of the
+ * requests that got a 2xx. A 200 with already_recorded is a repeat the
+ * server already has and counts as accepted; any other status or a thrown
+ * fetch is a reject, which the sync engine keeps in SavedVariables for the
+ * next pass (GH #320).
+ */
+export interface SubmitResult {
+  processed: number
+  errors: number
+  accepted: number[]
+}
+
 export class ApiClient {
   private baseUrl: string
   private auth: SyncTokenAuth | null = null
@@ -106,14 +119,17 @@ export class ApiClient {
   /**
    * Submit loot awards from the addon. Each award is posted as is, so
    * awarded_at and award_id reach the server when the addon recorded them.
+   * The result lists the indices of the accepted awards (GH #320).
    */
-  async submitAwards(awards: PendingAwardRequest[]): Promise<{ processed: number; errors: number }> {
+  async submitAwards(awards: PendingAwardRequest[]): Promise<SubmitResult> {
     if (!this.auth) throw new Error('Not authenticated')
 
     let processed = 0
     let errors = 0
+    const accepted: number[] = []
 
-    for (const award of awards) {
+    for (let i = 0; i < awards.length; i++) {
+      const award = awards[i]
       try {
         const res = await fetch(`${this.baseUrl}/api/addon/loot-award`, {
           method: 'POST',
@@ -123,31 +139,38 @@ export class ApiClient {
             ...award,
           }),
         })
-        if (res.ok) processed++
-        else errors++
+        if (res.ok) {
+          processed++
+          accepted.push(i)
+        } else {
+          errors++
+        }
       } catch {
         errors++
       }
     }
 
-    return { processed, errors }
+    return { processed, errors, accepted }
   }
 
   /**
-   * Submit attendance from the addon
+   * Submit attendance from the addon. The result lists the indices of the
+   * accepted records (GH #320).
    */
   async submitAttendance(records: Array<{
     raid_date: string
     raid_name: string
     attended: string[]
     boss_kills?: Array<{ boss_name: string }>
-  }>): Promise<{ processed: number; errors: number }> {
+  }>): Promise<SubmitResult> {
     if (!this.auth) throw new Error('Not authenticated')
 
     let processed = 0
     let errors = 0
+    const accepted: number[] = []
 
-    for (const record of records) {
+    for (let i = 0; i < records.length; i++) {
+      const record = records[i]
       try {
         const res = await fetch(`${this.baseUrl}/api/addon/attendance`, {
           method: 'POST',
@@ -157,13 +180,17 @@ export class ApiClient {
             ...record,
           }),
         })
-        if (res.ok) processed++
-        else errors++
+        if (res.ok) {
+          processed++
+          accepted.push(i)
+        } else {
+          errors++
+        }
       } catch {
         errors++
       }
     }
 
-    return { processed, errors }
+    return { processed, errors, accepted }
   }
 }
