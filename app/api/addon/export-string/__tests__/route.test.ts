@@ -496,6 +496,7 @@ describe('GH #326: export members come from active memberships only', () => {
   beforeEach(() => {
     vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'u1' }, error: null } as never)
     vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
+    vi.mocked(trackApiError).mockClear()
     vi.spyOn(console, 'log').mockImplementation(() => {})
   })
 

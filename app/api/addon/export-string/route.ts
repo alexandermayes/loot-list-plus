@@ -24,10 +24,28 @@ import type { Json } from '@/lib/database.types'
  * each raider's ranks best last (buildMemberRankedItems), so the addon's
  * last-wins import keeps the best rank. One listed entry per award of the
  * item to the raider is left out too, best rank first, as on the master
- * sheet and in the Gargul export (FU-C of 261001-tv5); a failed loot
- * history read sends every entry. The payload shape and the LLP1:1 prefix
- * are unchanged.
+ * sheet and in the Gargul export (FU-C of 261001-tv5). The payload shape and
+ * the LLP1:1 prefix are unchanged.
+ *
+ * Every read checks its PostgREST error. A failed read, the loot history read
+ * behind the receive skip included, answers 500 { error: 'Internal server
+ * error' } rather than an import string that looks complete but is not
+ * (FIX-02, owner decisions 7 and 8). A missing guild_settings row, an absent
+ * BLP or priority row, or a guild with no raid tiers is not an error: those
+ * answer 200 with empty values.
  */
+
+/** Unwraps a PostgREST result, throwing into the route's catch (500 plus trackApiError) on error. */
+function readOrThrow<T>(label: string, result: { data: T; error: { message: string } | null }): T {
+  if (result.error) throw new Error(`Failed to read ${label}: ${result.error.message}`)
+  return result.data
+}
+
+/** readOrThrow for list reads: with the error ruled out, a null list can only be empty. */
+function readRowsOrThrow<T>(label: string, result: { data: T[] | null; error: { message: string } | null }): T[] {
+  return readOrThrow(label, result) ?? []
+}
+
 export async function GET(request: NextRequest) {
   try {
     const auth = await authenticateAddonRequest(request)
@@ -44,23 +62,22 @@ export async function GET(request: NextRequest) {
     const access = await authorizeAddonGuild(supabase, auth.principal, guildId)
     if (!access.ok) return access.response
 
-    // Fetch guild info
-    const { data: guild } = await supabase
-      .from('guilds')
-      .select('id, name, active_expansion_id')
-      .eq('id', guildId)
-      .single()
+    // Fetch guild info. maybeSingle: a missing guild is a 404, a failed read a 500.
+    const guild = readOrThrow(
+      'guilds',
+      await supabase.from('guilds').select('id, name, active_expansion_id').eq('id', guildId).maybeSingle(),
+    )
 
     if (!guild) {
       return NextResponse.json({ error: 'Guild not found' }, { status: 404 })
     }
 
-    // Fetch guild settings
-    const { data: settings } = await supabase
-      .from('guild_settings')
-      .select('*')
-      .eq('guild_id', guildId)
-      .single()
+    // Fetch guild settings. maybeSingle: a guild with no settings row has no
+    // settings (Pitfall 4), which is not an error.
+    const settings = readOrThrow(
+      'guild_settings',
+      await supabase.from('guild_settings').select('*').eq('guild_id', guildId).maybeSingle(),
+    )
 
     // Collapse per-raider modifier entries into a flat active map so the Lua
     // engine reads a simple { characterId: amount } map and stays date-free.
@@ -76,51 +93,55 @@ export async function GET(request: NextRequest) {
     let expansionId = guild.active_expansion_id
 
     if (expansionId) {
-      const { data } = await supabase
-        .from('expansions')
-        .select('id, name, current_phase')
-        .eq('id', expansionId)
-        .single()
-      expansion = data
+      expansion = readOrThrow(
+        'expansions',
+        await supabase.from('expansions').select('id, name, current_phase').eq('id', expansionId).maybeSingle(),
+      )
     }
 
     // If no active expansion, get the guild's current expansion via the RPC
     if (!expansion) {
-      const { data: guildExpansions } = await supabase
-        .rpc('get_guild_expansions', { p_guild_id: guildId })
+      const guildExpansions = readOrThrow(
+        'get_guild_expansions',
+        await supabase.rpc('get_guild_expansions', { p_guild_id: guildId }),
+      )
 
       if (guildExpansions && guildExpansions.length > 0) {
         // Find the "current" one first, fall back to first
-        const current = guildExpansions.find((e: { is_current: boolean }) => e.is_current) || guildExpansions[0]
+        const current = guildExpansions.find(e => e.is_current) || guildExpansions[0]
         expansionId = current.expansion_id
-        const { data } = await supabase
-          .from('expansions')
-          .select('id, name, current_phase')
-          .eq('id', expansionId)
-          .single()
-        expansion = data
+        expansion = readOrThrow(
+          'expansions',
+          await supabase.from('expansions').select('id, name, current_phase').eq('id', expansionId).maybeSingle(),
+        )
       }
     }
 
-    // Fetch raid tiers and their items in one joined query
-    const tiersWithItems = expansionId ? await supabase
-      .from('raid_tiers')
-      .select('id, name, phase, loot_items(id, name, wowhead_id, boss_name, item_slot, item_type, classification, raid_tier_id)')
-      .eq('expansion_id', expansionId)
-      .order('phase', { ascending: true })
-    : { data: null, error: null }
+    // Fetch raid tiers and their items in one joined query. Not paged: one
+    // expansion's tiers are a handful of rows, and PostgREST's max_rows cap
+    // applies to the top-level rows (tiers), not to the embedded loot_items.
+    const tierRows = expansionId
+      ? readRowsOrThrow(
+          'raid_tiers',
+          await supabase
+            .from('raid_tiers')
+            .select('id, name, phase, loot_items(id, name, wowhead_id, boss_name, item_slot, item_type, classification, raid_tier_id)')
+            .eq('expansion_id', expansionId)
+            .order('phase', { ascending: true }),
+        )
+      : []
 
-    const raidTiers = (tiersWithItems.data || []).map(t => ({ id: t.id, name: t.name, phase: t.phase }))
+    const raidTiers = tierRows.map(t => ({ id: t.id, name: t.name, phase: t.phase }))
     const raidTierIds = raidTiers.map((rt: { id: string }) => rt.id)
 
     // Flatten items from all tiers
     const lootItems: BuildPayloadArgs['lootItems'] = []
-    for (const tier of tiersWithItems.data || []) {
+    for (const tier of tierRows) {
       for (const item of tier.loot_items || []) {
         lootItems.push(item)
       }
     }
-    console.log('[addon/export] tiers:', raidTiers.length, 'items:', lootItems.length, 'expId:', expansionId, 'error:', tiersWithItems.error?.message)
+    console.log('[addon/export] tiers:', raidTiers.length, 'items:', lootItems.length, 'expId:', expansionId)
 
     // Build raid name lookup
     const raidNameMap: Record<string, string> = {}
@@ -155,21 +176,34 @@ export async function GET(request: NextRequest) {
 
     console.log('[addon/export-string] character_guild_memberships:', memberships.length)
 
-    // Fetch approved submissions for active expansion
-    const { data: submissions } = await supabase
-      .from('loot_submissions')
-      .select(`
-        id, character_id, phase, status,
-        loot_submission_items (
-          loot_item_id, rank, slot, removed_at,
-          loot_items (wowhead_id)
-        )
-      `)
-      .eq('guild_id', guildId)
-      .eq('status', 'approved')
+    // Fetch approved submissions for active expansion. Paged (the server caps
+    // one response at max_rows = 1000), oldest first with id breaking ties, so
+    // no row is skipped or repeated between pages and the newest approved
+    // submission wins buildMemberRankedItems' keep-the-last rule (the read had
+    // no ORDER BY before, so the winner was unspecified).
+    const submissions = await selectAllPagesOrThrow('loot_submissions', (start, end) =>
+      supabase
+        .from('loot_submissions')
+        .select(`
+          id, character_id, phase, status,
+          loot_submission_items (
+            loot_item_id, rank, slot, removed_at,
+            loot_items (wowhead_id)
+          )
+        `)
+        .eq('guild_id', guildId)
+        .eq('status', 'approved')
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
+        .range(start, end))
 
-    // Awards per raider and item, for the receive skip (null on a failed read)
+    // Awards per raider and item, for the receive skip. Owner decision 8: a
+    // failed read (null) is a 500 like every other read, so members[].items
+    // never go out without the receive skip.
     const receivedCounts = await fetchReceivedCounts(supabase, guildId)
+    if (receivedCounts === null) {
+      throw new Error('Failed to read loot_history for the receive skip')
+    }
 
     // Priority lists (FIX-02: the table is guild_item_priorities). Filtered by
     // guild and raid tier, never by the full item id list (URL length,
@@ -194,27 +228,42 @@ export async function GET(request: NextRequest) {
 
     // Fetch attendance records. Drop events from the in-progress reset week
     // so the addon's score preview matches the web (see computeAttendance).
-    const { data: raidEvents } = await supabase
-      .from('raid_events')
-      .select('id, raid_date, raid_team_id, is_bonus')
-      .eq('guild_id', guildId)
-      .lte('raid_date', getAttendanceWindowEnd(toDateString(new Date()), (settings as { week_reset_day?: number | null } | null)?.week_reset_day))
-      .order('raid_date', { ascending: false })
-      .limit(settings?.rolling_attendance_weeks ? settings.rolling_attendance_weeks * 7 : 28)
+    // Bounded by .limit (28 events by default), so one read suffices.
+    const raidEvents = readRowsOrThrow(
+      'raid_events',
+      await supabase
+        .from('raid_events')
+        .select('id, raid_date, raid_team_id, is_bonus')
+        .eq('guild_id', guildId)
+        .lte('raid_date', getAttendanceWindowEnd(toDateString(new Date()), (settings as { week_reset_day?: number | null } | null)?.week_reset_day))
+        .order('raid_date', { ascending: false })
+        .limit(settings?.rolling_attendance_weeks ? settings.rolling_attendance_weeks * 7 : 28),
+    )
 
-    const raidEventIds = (raidEvents || []).map(e => e.id)
-    const { data: attendanceRecords } = await supabase
-      .from('attendance_records')
-      .select('character_id, raid_event_id, attended, signed_up, status')
-      .in('raid_event_id', raidEventIds)
+    // 28 events by 40 raiders is already 1120 rows, past the server cap, so
+    // this read is paged too. No events in the window means nothing to read.
+    const raidEventIds = raidEvents.map(e => e.id)
+    const attendanceRecords = raidEventIds.length === 0
+      ? []
+      : await selectAllPagesOrThrow('attendance_records', (start, end) =>
+          supabase
+            .from('attendance_records')
+            .select('character_id, raid_event_id, attended, signed_up, status')
+            .in('raid_event_id', raidEventIds)
+            .order('id', { ascending: true })
+            .range(start, end))
 
     // Look up raid team membership per character for team-aware denominator.
-    const { data: teamMembers } = await supabase
-      .from('raid_team_members')
-      .select('character_id, raid_team_id')
-      .eq('guild_id', guildId)
+    // Bounded by one guild's registered characters (unique on guild and character).
+    const teamMembers = readRowsOrThrow(
+      'raid_team_members',
+      await supabase
+        .from('raid_team_members')
+        .select('character_id, raid_team_id')
+        .eq('guild_id', guildId),
+    )
     const teamIdByCharacterId = new Map<string, string>()
-    for (const m of teamMembers ?? []) teamIdByCharacterId.set(m.character_id, m.raid_team_id)
+    for (const m of teamMembers) teamIdByCharacterId.set(m.character_id, m.raid_team_id)
 
     // Pre-build per-character attendance summary using resolveOwnedEvents so
     // the addon's in-game score preview matches the website. Each raider gets
