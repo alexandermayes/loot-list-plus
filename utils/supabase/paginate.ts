@@ -37,3 +37,32 @@ export async function paginatedSelect<T>(
   }
   return out
 }
+
+/**
+ * Read every page of a query, checking the error on each page.
+ *
+ * Unlike `paginatedSelect`, which ignores errors and stops quietly, this
+ * throws `Failed to read ${label}: ${message}` on any page's error so a route's
+ * catch can answer 500 instead of an undercounted list that looks complete.
+ * Pages of `pageSize`, stopping as soon as a page comes back short; a page of
+ * exactly `pageSize` rows requests one more page.
+ *
+ * The caller MUST order by a unique column (or a column list ending in one),
+ * or successive `.range()` calls can skip or repeat rows.
+ */
+export async function selectAllPagesOrThrow<T>(
+  label: string,
+  fetchPage: (start: number, end: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+  pageSize = 1000,
+): Promise<T[]> {
+  const all: T[] = []
+  for (let start = 0; ; start += pageSize) {
+    const { data, error } = await fetchPage(start, start + pageSize - 1)
+    if (error) {
+      throw new Error(`Failed to read ${label}: ${error.message}`)
+    }
+    const rows = data ?? []
+    all.push(...rows)
+    if (rows.length < pageSize) return all
+  }
+}
