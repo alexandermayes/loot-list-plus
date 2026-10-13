@@ -437,7 +437,6 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       properties: {
         character_id: character.id,
-        character_name: character.name,
         source: 'battlenet',
         gear_count: gearCount,
         version,
