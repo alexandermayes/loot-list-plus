@@ -2,7 +2,7 @@
 // jsdom (the global vitest.config.ts environment) does not provide the web
 // Response/Request globals that next/server relies on.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { POST, PATCH } from '../route'
+import { POST, PATCH, DELETE } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyPermission } from '@/utils/server-roles'
@@ -51,6 +51,17 @@ type Call = {
   insertPayload?: Record<string, unknown>
   updatePayload?: Record<string, unknown>
   order?: [string, boolean]
+  /** Set when the call went through `.delete()`, so the fake can tell the
+   * DELETE's pre-read select from the delete itself. */
+  deleted?: boolean
+}
+
+type DeleteRow = {
+  id: string
+  loot_item_id: string | null
+  character_id: string | null
+  character_name: string | null
+  raid_event_id: string | null
 }
 
 interface Fixture {
@@ -66,6 +77,13 @@ interface Fixture {
    * by the next_award_copy and reassign lookups (absent: none stored). */
   highestCopies?: Record<string, number>
   highestCopyError?: boolean
+  /** FIX-01: rows the DELETE pre-read returns, filtered by the recorded id (in)
+   * and raid_event_id (eq) filters. */
+  deleteRows?: DeleteRow[]
+  /** FIX-01: the DELETE pre-read fails. */
+  deleteReadError?: boolean
+  /** FIX-01: the delete itself fails. */
+  deleteError?: boolean
 }
 
 /**
@@ -86,7 +104,7 @@ function makeClient(fixture: Fixture) {
         select: () => builder,
         insert: (payload: Record<string, unknown>) => { call.insertPayload = payload; return builder },
         update: (payload: Record<string, unknown>) => { call.updatePayload = payload; return builder },
-        delete: () => builder,
+        delete: () => { call.deleted = true; return builder },
         eq: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         in: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         order: (col: string, opts: { ascending: boolean }) => { call.order = [col, opts.ascending]; return builder },
@@ -158,6 +176,21 @@ function makeClient(fixture: Fixture) {
             )
             return Promise.resolve({ data: rows, error: null }).then(resolve)
           }
+          if (table === 'loot_history') {
+            if (call.deleted) {
+              return Promise.resolve({ data: null, error: fixture.deleteError ? { message: 'delete boom' } : null }).then(resolve)
+            }
+            // The DELETE pre-read select.
+            if (fixture.deleteReadError) {
+              return Promise.resolve({ data: null, error: { message: 'read boom' } }).then(resolve)
+            }
+            const idFilter = call.filters.find(([col]) => col === 'id')?.[1] as string[] | undefined
+            const raidEventFilter = call.filters.find(([col]) => col === 'raid_event_id')?.[1]
+            const rows = (fixture.deleteRows ?? []).filter(r =>
+              (!idFilter || idFilter.includes(r.id)) && (raidEventFilter === undefined || r.raid_event_id === raidEventFilter)
+            )
+            return Promise.resolve({ data: rows, error: null }).then(resolve)
+          }
           return Promise.resolve({ data: null, error: null }).then(resolve)
         },
       }
@@ -189,6 +222,13 @@ function patchRequest(body: unknown) {
     method: 'PATCH',
     body: JSON.stringify(body),
   }) as unknown as Parameters<typeof PATCH>[0]
+}
+
+function deleteRequest(body: unknown) {
+  return new Request('http://localhost/api/loot-history/bulk', {
+    method: 'DELETE',
+    body: JSON.stringify(body),
+  }) as unknown as Parameters<typeof DELETE>[0]
 }
 
 const lootHistoryInserts = (calls: Call[]) => calls.filter(c => c.table === 'loot_history' && c.insertPayload)
@@ -812,5 +852,62 @@ describe('PATCH /api/loot-history/bulk', () => {
       await PATCH(patchRequest({ guild_id: GUILD_ID, id: RECORD_ID, updates: { character_id: OTHER_CHARACTER_ID } }))
       expect(vi.mocked(logAudit).mock.calls[0][0].oldData).toEqual({ character_id: CHARACTER_ID, character_name: 'Thrall', notes: null })
     })
+  })
+})
+
+describe('DELETE /api/loot-history/bulk (FIX-01)', () => {
+  const HIST_ID = 'hist-1'
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // clearAllMocks keeps implementations; drop the pending promise the await test installs.
+    vi.mocked(recomputeBlpForItems).mockReset()
+    vi.mocked(recomputeBlpForItems).mockResolvedValue(undefined)
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: USER_ID }, error: null } as never)
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: true } as never)
+  })
+
+  const linkedRow = (extra: Partial<DeleteRow> = {}): DeleteRow => ({
+    id: HIST_ID,
+    loot_item_id: ITEM_ID,
+    character_id: CHARACTER_ID,
+    character_name: 'Thrall',
+    raid_event_id: RAID_EVENT_ID,
+    ...extra,
+  })
+
+  it('deleting one linked award by id answers 200 and recomputes BLP once for that item', async () => {
+    const { client } = makeClient({ ...singleItemFixture(), deleteRows: [linkedRow()] })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await DELETE(deleteRequest({ guild_id: GUILD_ID, ids: [HIST_ID] }))
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ success: true })
+    expect(recomputeBlpForItems).toHaveBeenCalledTimes(1)
+    expect(recomputeBlpForItems).toHaveBeenCalledWith(client, GUILD_ID, [ITEM_ID])
+  })
+
+  it('the response waits for the recompute (it is awaited, not deferred with after())', async () => {
+    const { client } = makeClient({ ...singleItemFixture(), deleteRows: [linkedRow()] })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    let release: () => void = () => {}
+    vi.mocked(recomputeBlpForItems).mockImplementation(() => new Promise<void>((resolve) => { release = resolve }))
+
+    let settled = false
+    const pending = DELETE(deleteRequest({ guild_id: GUILD_ID, ids: [HIST_ID] })).then((res) => {
+      settled = true
+      return res
+    })
+    // Flush a macrotask so every awaited step that does not depend on the recompute has run.
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(recomputeBlpForItems).toHaveBeenCalledTimes(1)
+    expect(settled).toBe(false)
+
+    release()
+    const res = await pending
+    expect(settled).toBe(true)
+    expect(res.status).toBe(200)
   })
 })
