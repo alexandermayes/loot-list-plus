@@ -125,6 +125,20 @@ function composeNotesFromReason(reason: AwardReason | null | undefined, note: st
 }
 
 /**
+ * The distinct loot_item_id values whose BLP a delete of these rows can change.
+ * Rows without a raid_event_id are skipped on purpose: the SQL behind
+ * recompute_blp_for_item reads only history rows that have a raid_event_id, so
+ * they cannot affect BLP.
+ */
+function blpItemsToRecompute(rows: ReadonlyArray<{ loot_item_id: string | null; raid_event_id: string | null }> | null): string[] {
+  const ids = new Set<string>()
+  for (const row of rows ?? []) {
+    if (row.loot_item_id && row.raid_event_id) ids.add(row.loot_item_id)
+  }
+  return [...ids]
+}
+
+/**
  * POST /api/loot-history/bulk
  *
  * Bulk insert loot history entries. Uses service role to bypass RLS
@@ -498,12 +512,17 @@ export async function DELETE(request: NextRequest) {
         })
       }
     } else if (ids) {
-      // Read what we're about to delete for the audit log
-      const { data: toDelete } = await serviceSupabase
+      // Read what we're about to delete for the audit log and the BLP recompute.
+      // A failed read stops here: deleting without it would skip the recompute.
+      const { data: toDelete, error: readError } = await serviceSupabase
         .from('loot_history')
-        .select('id, loot_item_id, character_id, character_name')
+        .select('id, loot_item_id, character_id, character_name, raid_event_id')
         .in('id', ids)
         .eq('guild_id', guild_id)
+
+      if (readError) {
+        return NextResponse.json({ error: readError.message }, { status: 500 })
+      }
 
       const { error } = await serviceSupabase
         .from('loot_history')
@@ -526,6 +545,16 @@ export async function DELETE(request: NextRequest) {
           userId: user.id,
           oldData: entry,
         })
+      }
+
+      // BLP is derived from history, so rebuild the affected items now that the
+      // rows are gone. Awaited (not after()) so the officer's next read is
+      // already correct. guild_id is the permission-verified request value.
+      // recomputeBlpForItems logs RPC failures and never throws, so this cannot
+      // fail a delete that already committed.
+      const blpItems = blpItemsToRecompute(toDelete)
+      if (blpItems.length > 0) {
+        await recomputeBlpForItems(serviceSupabase, guild_id, blpItems)
       }
     }
 
