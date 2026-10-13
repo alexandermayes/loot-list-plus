@@ -121,12 +121,56 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| FIX-01 | Phase 1 | Pending |
+| FIX-02 | Phase 1 | Pending |
+| FIX-03 | Phase 1 | Pending |
+| FIX-04 | Phase 1 | Pending |
+| FIX-05 | Phase 1 | Pending |
+| FIX-06 | Phase 1 | Pending |
+| EXPN-01 | Phase 2 | Pending |
+| EXPN-02 | Phase 2 | Pending |
+| EXPN-03 | Phase 2 | Pending |
+| EXPN-04 | Phase 2 | Pending |
+| EXPN-05 | Phase 2 | Pending |
+| EXPN-06 | Phase 2 | Pending |
+| DISC-01 | Phase 3 | Pending |
+| DISC-02 | Phase 4 | Pending |
+| DISC-03 | Phase 4 | Pending |
+| DISC-04 | Phase 4 | Pending |
+| DISC-05 | Phase 4 | Pending |
+| DISC-06 | Phase 3 | Pending |
+| DISC-07 | Phase 3 | Pending |
+| DISC-08 | Phase 4 | Pending |
+| DISC-09 | Phase 6 | Pending |
+| DISC-10 | Phase 4 | Pending |
+| DISC-11 | Phase 4 | Pending |
+| DISC-12 | Phase 3 | Pending |
+| DESK-01 | Phase 5 | Pending |
+| DESK-02 | Phase 5 | Pending |
+| DESK-03 | Phase 5 | Pending |
+| DESK-04 | Phase 6 | Pending |
+| DESK-05 | Phase 5 | Pending |
+| DESK-06 | Phase 5 | Pending |
+| DESK-07 | Phase 6 | Pending |
+| DESK-08 | Phase 5 | Pending |
+| DESK-09 | Phase 6 | Pending |
+| DESK-10 | Phase 6 | Pending |
+| DESK-11 | Phase 5 | Pending |
+| DESK-12 | Phase 5 | Pending |
+| REH-01 | Phase 7 | Pending |
+| REH-02 | Phase 7 | Pending |
+| REH-03 | Phase 7 | Pending |
+| SIMP-01 | Phase 8 | Pending |
+| SIMP-02 | Phase 8 | Pending |
+| SIMP-03 | Phase 8 | Pending |
+| SIMP-04 | Phase 8 | Pending |
+| SIMP-05 | Phase 8 | Pending |
 
 **Coverage:**
 - v1 requirements: 44 total
-- Mapped to phases: 0
-- Unmapped: 44 ⚠️
+- Mapped to phases: 44
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-10-12*
-*Last updated: 2026-10-12 after initial definition*
+*Last updated: 2026-10-12 after roadmap creation (8 phases, 44/44 mapped)*
