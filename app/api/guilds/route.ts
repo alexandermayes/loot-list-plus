@@ -226,19 +226,8 @@ export async function POST(request: NextRequest) {
       // Continue anyway - settings can be created later
     }
 
-    // Create default guild roles
-    const { error: rolesError } = await serviceSupabase
-      .from('guild_roles')
-      .insert([
-        { guild_id: guild.id, name: 'Member', color_hex: '#a1a1a1', position: 0, is_default: true },
-        { guild_id: guild.id, name: 'Officer', color_hex: '#fbbf24', position: 50, is_default: true },
-        { guild_id: guild.id, name: 'Guild Master', color_hex: '#ff8000', position: 100, is_default: true }
-      ])
-
-    if (rolesError) {
-      console.error('Error creating guild roles:', rolesError)
-      // Continue anyway - roles can be created later via trigger or manually
-    }
+    // The create_guild_default_roles trigger already inserts Member, Officer and Guild Master
+    // when the guild row is inserted, so a second insert here only hit unique_role_per_guild (GH #351).
 
     // Auto-generate an invite code so the admin can share immediately
     const inviteCode = Math.random().toString(36).substring(2, 10).toUpperCase()
