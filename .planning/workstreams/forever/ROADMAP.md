@@ -32,6 +32,7 @@ Forever hides item stats until an item drops, so named loot lists cannot exist w
 ## Phases
 
 **Phase Numbering:**
+
 - Integer phases (1, 2, 3): planned milestone work
 - Decimal phases (2.1, 2.2): urgent insertions (marked with INSERTED)
 
@@ -47,6 +48,7 @@ Forever hides item stats until an item drops, so named loot lists cannot exist w
 ## Phase Details
 
 ### Phase 1: Forever Defect and Privacy Fixes
+
 **Goal**: Officers and raiders can trust every award, BLP number, item link and analytics event before the first Forever award is announced
 **Window**: 2026-10-12 to 2026-10-16
 **Depends on**: Nothing (first phase)
@@ -54,27 +56,39 @@ Forever hides item stats until an item drops, so named loot lists cannot exist w
 **Dependency note**: Phase 3 and the Drop Desk build on correct award and BLP writes. Award DELETE and PATCH recompute (FIX-01) is a prerequisite for Desk undo (DESK-07), and Forever links must be correct before any Forever award reaches Discord.
 **Requirements**: FIX-01, FIX-02, FIX-03, FIX-04, FIX-05, FIX-06
 **Success Criteria** (what must be TRUE):
+
   1. An officer who deletes or edits an award sees bad-luck protection for that item recomputed by the time the request returns
   2. The companion app shows real BLP and item priorities from the addon routes, and a database error reaches the companion as an error instead of an empty list
   3. Pointing an addon or bot route at a table that does not exist fails `npm run typecheck`
   4. In a Forever guild, every item link in loot announcements, the post-raid summary and bot replies opens `wowhead.com/forever/...`, and no bot embed title contains an em dash
   5. An award receipt's audited score snapshot includes donation and raider bonuses, and the `master_loot_awarded` event reports the item and carries no player name
+
 **Plans**: 9 plans in 3 waves
 
 Plans:
+**Wave 1**
+
 - [ ] 01-01-PLAN.md (wave 1): awaited BLP recompute on award DELETE and PATCH (FIX-01); receipt keeps donation and raider bonus (FIX-04)
 - [ ] 01-02-PLAN.md (wave 1): typed service-role client and shared paged reader; companion guild-data reads blp_tracking and guild_item_priorities, pages BLP, priority, item, submission and attendance reads past 1000 rows, and fails loudly on every read, loot_history included (FIX-02, FIX-06)
 - [ ] 01-03-PLAN.md (wave 1): `domain/expansion/wowhead.ts`; Forever-only links in loot announcements, post-raid summary and reserve Discord copy (FIX-03)
-- [ ] 01-04-PLAN.md (wave 2): bot `/priority` sends `item_url`; bot renders it; bot routes typed (FIX-03, FIX-06)
-- [ ] 01-05-PLAN.md (wave 3): remaining addon routes on the typed client plus a scan guard (FIX-06)
 - [ ] 01-06-PLAN.md (wave 1): `master_loot_awarded` reports the reviewed list's item ids with no names (null, not 0, on a failed item read); browser analytics drop player and guild names and identify drops email (FIX-05)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 01-04-PLAN.md (wave 2): bot `/priority` sends `item_url`; bot renders it; bot routes typed (FIX-03, FIX-06)
 - [ ] 01-07-PLAN.md (wave 2): in-game import string (export-string) reads blp_tracking and guild_item_priorities on the typed client, pages BLP, priority, submission and attendance reads, and fails loudly (FIX-02, FIX-06)
 - [ ] 01-08-PLAN.md (wave 2): server analytics drop player and guild names; scan guard keeps names and identify email out of every analytics call (FIX-05)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 01-05-PLAN.md (wave 3): remaining addon routes on the typed client plus a scan guard (FIX-06)
 - [ ] 01-09-PLAN.md (wave 3): em-dash-free bot embed titles and `/priority` raider line, gated on owner copy sign-off in its own PR (FIX-03)
+
 **Research**: Standard; skip `--research-phase`. Re-verify each defect against current code before planning, because the defect todo is partly stale (#3 fixed in #322 and can be closed; #1 slot fixed in #290 and #301; #2 items select fixed in #363).
 **Defaults applied**: bot `/priority` stays ordered by raw list rank and is labelled "by list rank" (Decision 10). FIX-05 changes what existing PostHog dashboards see on `master_loot_awarded` (Decision 19).
 
 ### Phase 2: Expansion Onboarding Manifest
+
 **Goal**: A new Forever guild gets its raids and bosses from a verified manifest keyed by `wowhead_id`, and every expansion, old and new, seeds through one registry
 **Window**: 2026-10-13 to 2026-10-21
 **Depends on**: Nothing
@@ -82,43 +96,51 @@ Plans:
 **Dependency note**: Phase 3 seeds need rows per Forever raid tier, so the Forever tiers must come from the manifest first.
 **Requirements**: EXPN-01, EXPN-02, EXPN-03, EXPN-04, EXPN-05, EXPN-06
 **Success Criteria** (what must be TRUE):
+
   1. An officer creating a Forever guild gets Barrow Deeps, Hyjal Summit and Onyxia's Lair with their bosses, and any boss not yet confirmed is visibly marked provisional
   2. Creating a guild in any of the five existing expansions produces byte-identical rows (golden-row snapshot test passes unchanged), and the seeder resolves every expansion through one registry with no display-name if/else chains left
   3. A manifest with a duplicate id, a missing token class, a phase or raid gap, or a name mismatch fails the Vitest gate before merge
   4. Running the Forever catalog sync twice changes nothing the second time, and the sync never deletes or renames a row that a list, award or BLP record points at
   5. wago.tools snapshots are committed with their provenance, and a test fails if any runtime or test code fetches wago.tools or Wowhead live
+
 **Plans**: TBD
 **Research**: Light; skip `--research-phase`. Confirm wago CSV headers on the first pull (array columns flatten with `_N` suffixes). wago.tools returned 503 on every probe on 2026-10-12, so the snapshot script needs retry and backoff. Use the corrected seeder line numbers from research (registry at `app/services/expansionSeeder.ts:224-237`, chains at 449 to 462 and 470 to 481), not the brief's.
 **Owner input**: Forever boss names for Barrow Deeps and Hyjal by Oct 21 (Decision 26). Until then those bosses ship as provisional.
 
 ### Phase 3: Discovery Schema and Need Pipeline
+
 **Goal**: A raid tier can run in Discovery mode, with need rows that flow through every existing reader and earn BLP, while every Known guild stays exactly as it is
 **Window**: 2026-10-19 to 2026-10-23
 **Depends on**: Phase 1, Phase 2
 **Dependency note**: Forever raid tiers must exist (Phase 2) before need rows are seeded per tier. Award and BLP routes are fixed first (Phase 1) so the reader audit starts from correct code. Inside the phase, the migration-only PR deploys before any code PR that reads the new columns. Phase 4 cannot ship reader-dependent code until this phase's migration is live.
 **Requirements**: DISC-01, DISC-06, DISC-07, DISC-12
 **Success Criteria** (what must be TRUE):
+
   1. The Discovery migration ships on its own expand-only PR and is live in production before any code that reads it merges; it applies cleanly in a PGlite migration test, and every new table passes a raider, officer, non-member and ex-member RLS matrix
   2. An officer can switch a raid tier to Discovery, and the tier then holds its seeded need rows; every tier that existed before stays Known, and the Loot Score golden fixtures are byte-identical
   3. A need-ranked submission moves through approval, snapshot, master sheet, exports and BLP without being silently dropped or crashing any reader; every reader has a tested mode branch, and addon exports contain item rows only
   4. A raider ranked on a need who attends a raid accrues bad-luck protection for that need before any item for it exists, and recomputing BLP twice gives the same result
+
 **Plans**: TBD
 **Research**: Needs `/gsd-plan-phase 3 --research-phase`. Topics: the reader audit (every reader of `loot_submission_items` and `loot_history`, including BLP SQL, `buildMemberRankedItems`, export, `/priority`, master sheet, `gargul-dft.ts`); BLP keying for need awards (`loot_history.loot_item_id` is the need row, `awarded_item_id` is the real item, recompute SQL unchanged); need key format and stat-family names, settled once.
 **Defaults applied**: per-raid-tier need rows with one picker fanning out (owner decision); `list_mode` values `known` and `discovery`; pins in a `loot_item_need_pins` table; stat families keep Healing and Spell damage separate (Decision 2); "Tier piece" off the default picker (Decision 3); separate lists per raid size off (Decision 4); loot-cost columns ship at zero.
 **Risk**: Biggest blast radius in the milestone. Between this phase and Phase 4, a Discovery tier has need rows but raiders have no picker yet. Plan-phase decides whether the officer switch is held back until the Phase 4 picker merges. Research gives two cost schemes for need rows: an allocation cost of 1/1/0 by restriction class, and a 10-point budget at Big 3, Medium 2, Standard 1. Settle which one the seeded rows carry here, because Phase 4's budget reads it.
 
 ### Phase 4: Discovery Lists and Score Split
+
 **Goal**: A raider in a Discovery guild sets their needs in under a minute on a phone and sees a score they understand, so Forever lists are usable by Oct 31
 **Window**: 2026-10-21 to 2026-10-30 (Discovery lists usable gate: 2026-10-31)
 **Depends on**: Phase 3
 **Dependency note**: Picker and preset UI can start on Oct 21 against the frozen need taxonomy, but code that reads `list_mode`, `kind` or need rows merges only after the Phase 3 migration is live. The standing and interest split is a hard input to the Drop Desk ordering (Phase 5).
 **Requirements**: DISC-02, DISC-03, DISC-04, DISC-05, DISC-08, DISC-10, DISC-11
 **Success Criteria** (what must be TRUE):
+
   1. On a phone, a raider in a Discovery guild fills a one-column, five-row need picker (slot, armour class where it matters, stat family) in under 60 seconds, and one save ranks those needs in every Discovery raid tier of the expansion
   2. The raider sees the points budget as one sentence and cannot save a list that goes over it
   3. A raider sees a default list for their spec and can accept it with one "Looks right" tap, and can open the picker straight from a Discord "Set your 5" link
   4. An officer setting up a guild picks one of three loot style presets, with Fine-tune behind a disclosure
   5. Every score shows standing and interest separately, each with a one-sentence explanation, and score totals for Known guilds are unchanged (golden and Lua fixtures byte-identical)
+
 **Plans**: TBD
 **UI hint**: yes
 **Research**: None needed for the score split (golden fixtures define it). Run `/gsd-ui-phase 4` for the picker and presets.
@@ -126,17 +148,20 @@ Plans:
 **Defaults applied**: 10-point budget, Big 3, Medium 2, Standard 1, trinkets Big (Decision 6); standing and interest shown separately (Decision 8). Discovery lists are free.
 
 ### Phase 5: Drop Desk Core
+
 **Goal**: An officer settles any drop on raid night from the browser in seconds, correctly and exactly once, with no addon and no master loot
 **Window**: 2026-11-02 to 2026-11-16
 **Depends on**: Phase 4
 **Dependency note**: The Desk reuses the Phase 4 need picker for classification and the standing and interest split for ordering. It also relies on the Phase 3 pin table and Phase 1's award recompute. The first plan extracts the shared candidate ranker from `MasterSheetContent.tsx` with no change to master sheet behaviour. The Desk schema (`loot_drops`, append-only `drop_decisions`, `loot_history.drop_id`, `loot_history.source` allowing `desk`, and the guild-level Desk setting) then ships as its own expand-only PR before any Desk code.
 **Requirements**: DESK-01, DESK-02, DESK-03, DESK-05, DESK-06, DESK-08, DESK-11, DESK-12
 **Success Criteria** (what must be TRUE):
+
   1. Once a server-side guild setting turns the Desk on (free for every guild, with no Premium check and no PostHog flag), an officer can record a drop in the browser by pasting an item link or typing a name, even when the boss or the item is unknown, with no addon and no master loot
   2. The officer classifies the drop with the same need picker raiders use; a revealed item can be pinned to its need, and unpinning removes the mapping without changing anyone's BLP credit totals
   3. The officer sees candidates ordered by response (main spec, then off spec, then pass or absent), then total, then standing, each with a one-sentence verdict, and the master sheet's ordering is unchanged
   4. The officer can award, send to council with a reason, or mark disenchanted. The award, its decision record and the BLP recompute land together or not at all, a repeated click never awards twice, and a second officer acting on the same drop sees who claimed it
   5. An addon award for an item the guild has no row for lands in the Desk inbox instead of returning a 404
+
 **Plans**: TBD
 **UI hint**: yes
 **Research**: Needs `/gsd-plan-phase 5 --research-phase`. Topics: the split between one `SECURITY DEFINER` award RPC (claim, history insert, decision insert, single-bucket BLP recompute in one transaction) and the TypeScript writer around it (team routing, copy numbering, audit, Discord); the addon inbox contract (the companion never retries, so today a Forever award is lost); Desk snapshot latency (a drop should open in under 2 seconds). Run `/gsd-ui-phase 5` for the Desk inside Raid Mode.
@@ -144,38 +169,45 @@ Plans:
 **Defaults applied**: the Desk is free for all guilds (owner decision); off-spec interest ranks below every main-spec need (Decision 16); candidates are ranked in the browser through the shared pure function, and the server checks the top candidate at award time.
 
 ### Phase 6: Live Raid Night
+
 **Goal**: The whole raid takes part on raid night: raiders say who is interested, the guild's Discord shows every decision with its reason, raiders see what it would take to move up, and any mistake can be undone
 **Window**: 2026-11-16 to 2026-11-24
 **Depends on**: Phase 5
 **Dependency note**: Undo reverses the award, decision record and BLP recompute that Phase 5 writes. The "What would it take" line uses the shared ranker Phase 5 extracts. Phase 7 rehearses this phase's Discord thread and undo on real data.
 **Requirements**: DESK-04, DESK-07, DESK-09, DESK-10, DISC-09
 **Success Criteria** (what must be TRUE):
+
   1. A raider responds Need, Off-spec or Pass from their phone or from Discord, and the officer's Desk reorders within 5 seconds, including after the officer's connection drops and comes back
   2. The guild's Discord channel shows one message per raid night, edited as drops are settled, with a reason on every award
   3. An officer can undo an award: the drop reopens, BLP is recomputed, and the raid-night Discord message is edited to match
   4. A chase-item or legendary drop opens a council card, and the council's decision publishes a one-line reason
   5. Every score a raider sees carries a "What would it take" line
+
 **Plans**: TBD
 **UI hint**: yes
 **Research**: Needs `/gsd-plan-phase 6 --research-phase`. Topics: Discord batching and rate limits (debounced edits of one message, limits read from response headers rather than hard-coded); undo semantics across award, BLP and the Discord message; the Desk's own SWR config (poll every 5 seconds only while the Desk is open and visible, revalidate on focus and reconnect; do not reuse the global `swrConfig`).
 **Defaults applied**: polling only in v1, with Realtime Broadcast deferred to PLAT-01 (Decision 17); one edited message per raid night (Decision 12); "Count me in for rare drops" defaults on (Decision 15).
 
 ### Phase 7: Rehearsal and Launch Readiness
+
 **Goal**: The Drop Desk is proven on a real past raid, its copy is signed off, and it works on a phone, so it can go live by Nov 30
 **Window**: 2026-11-23 to 2026-11-28 (Drop Desk live gate: 2026-11-30)
 **Depends on**: Phase 6
 **Dependency note**: The rehearsal covers everything Phases 4 to 6 built (picker, presets, Desk, Discord thread, undo). Nothing gets rehearsed or signed off before it exists. The em dash test can land earlier and protect Phases 4 to 6, but REH-02 closes here, once the full copy sheet is signed.
 **Requirements**: REH-01, REH-02, REH-03
 **Success Criteria** (what must be TRUE):
+
   1. A past raid's real award log replays on a staging guild through the Desk, and `loot_history`, BLP and the Discord post reconcile with the original night
   2. The owner has signed off the copy for the picker, presets, Desk and Discord, and an automated test fails the build if any on-screen text contains an em dash
   3. The picker and the Desk pass 375px mobile checks: every action is reachable, nothing is cut off, and nothing scrolls sideways
+
 **Plans**: TBD
 **UI hint**: yes
 **Research**: Standard; skip `--research-phase`.
 **Owner inputs**: beta guild and beta night (the brief suggests Big Yikes), the named officer authorised to fall back to paper, and the rule for voiding rows, all by Nov 9 (Decision 13). The surface sweep for the free Drop Desk launch runs in this phase.
 
 ### Phase 8: Simplicity Pass
+
 **Goal**: Officers and raiders see only what guilds use, in a consumer-grade app that needs no manual, and every power feature stays reachable
 **Window**: audit 2026-10-26 to 2026-11-13, alongside Phases 4 to 6; cuts from 2026-12-01. Set the end date at plan time; Forever raids open on Dec 9, so consider freezing navigation for raid-opening week if the cuts are not done by then.
 **Depends on**: Phase 7
@@ -183,11 +215,13 @@ Plans:
 **Dependency note**: The cuts (SIMP-02 to SIMP-05) ship only after Nov 30 (owner decision): cutting before the Desk is stable risks the Nov 30 date, and the officer sidebar needs the Drop Desk entry from Phase 5. The cuts change no scoring formula.
 **Requirements**: SIMP-01, SIMP-02, SIMP-03, SIMP-04, SIMP-05
 **Success Criteria** (what must be TRUE):
+
   1. The owner has a keep, move or remove decision for every officer and raider surface, backed by aggregated PostHog usage with no player or guild names
   2. Raiders see a three-entry sidebar (My list, Raid night, History) and officers see those plus Drop Desk, Roster and Settings, in place of today's up to 11 entries
   3. Every retained setting is reachable under Advanced, and no power feature (PPR, priority lists, reserves, Warcraft Logs import, Gargul export) is removed without the owner's sign-off
   4. `LootListContent`, `DashboardContent` and raid tracking are restructured only after characterization tests pin their current behaviour, and those tests still pass afterwards
   5. Help content changes in the same PR as each cut, so no help text describes a screen that has moved or gone
+
 **Plans**: TBD
 **UI hint**: yes
 **Research**: Needs `/gsd-plan-phase 8 --research-phase`. Navigation needs a UX research pass, because the sidebar proposal is LOW confidence. Run `/gsd-ui-phase 8` before the cuts.
