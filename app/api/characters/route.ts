@@ -202,7 +202,7 @@ export async function POST(request: Request) {
     await invalidateCache(cacheKeys.userCharacters(user.id))
     revalidateUserBundle(user.id)
 
-    trackEvent({ event: 'character_created', userId: user.id, properties: { character_id: enrichedCharacter.id, character_name: enrichedCharacter.name } })
+    trackEvent({ event: 'character_created', userId: user.id, properties: { character_id: enrichedCharacter.id } })
 
     return NextResponse.json({ character: enrichedCharacter }, { status: 201 })
   } catch (error) {
