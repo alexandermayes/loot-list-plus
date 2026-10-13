@@ -63,7 +63,7 @@ Forever hides item stats until an item drops, so named loot lists cannot exist w
   4. In a Forever guild, every item link in loot announcements, the post-raid summary and bot replies opens `wowhead.com/forever/...`, and no bot embed title contains an em dash
   5. An award receipt's audited score snapshot includes donation and raider bonuses, and the `master_loot_awarded` event reports the item and carries no player name
 
-**Plans**: 7/9 plans executed in 3 waves
+**Plans**: 8/9 plans executed in 3 waves
 
 Plans:
 **Wave 1**
@@ -81,7 +81,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-05-PLAN.md (wave 3): remaining addon routes on the typed client plus a scan guard (FIX-06)
+- [x] 01-05-PLAN.md (wave 3): remaining addon routes on the typed client plus a scan guard (FIX-06)
 - [ ] 01-09-PLAN.md (wave 3): em-dash-free bot embed titles and `/priority` raider line, gated on owner copy sign-off in its own PR (FIX-03)
 
 **Research**: Standard; skip `--research-phase`. Re-verify each defect against current code before planning, because the defect todo is partly stale (#3 fixed in #322 and can be closed; #1 slot fixed in #290 and #301; #2 items select fixed in #363).
@@ -252,7 +252,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Forever Defect and Privacy Fixes | 7/9 | In Progress|  |
+| 1. Forever Defect and Privacy Fixes | 8/9 | In Progress|  |
 | 2. Expansion Onboarding Manifest | 0/TBD | Not started | - |
 | 3. Discovery Schema and Need Pipeline | 0/TBD | Not started | - |
 | 4. Discovery Lists and Score Split | 0/TBD | Not started | - |

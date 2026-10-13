@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 01
 current_phase_name: Forever Defect and Privacy Fixes
 status: executing
-stopped_at: Completed 01-08-PLAN.md
-last_updated: "2026-10-13T21:49:15.206Z"
+stopped_at: Completed 01-05-PLAN.md
+last_updated: "2026-10-13T21:53:41.453Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 01 execution started
-state_head: 848ef5e770d97fb302db60567ed183f25fba7290
+state_head: dbe5d1896200a2dc2f34a2c8dbd4634383b360ce
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 9
-  completed_plans: 7
+  completed_plans: 8
   percent: 0
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 01 (Forever Defect and Privacy Fixes) — EXECUTING
-Plan: 8 of 9
+Plan: 9 of 9
 Status: Ready to execute
 Last activity: 2026-10-13 — Phase 01 execution started
 
@@ -76,6 +76,7 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 | Phase 01 P04 | 6 min | 2 tasks | 5 files |
 | Phase 01 P07 | 8 min | 2 tasks | 2 files |
 | Phase 01 P08 | 5 min | 2 tasks | 10 files |
+| Phase 01 P05 | 6 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,7 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 - [Phase 01]: 01-04: item_url on every /priority 200 via wowheadItemUrl with no third argument (non-Forever stays retail); bot renders it only after a strict Wowhead shape check; /score typed by cast only — Additive contract, either deploy order safe; no default substitution so scores are unchanged
 - [Phase 01]: 01-07: a failed loot_history read in export-string answers 500 (owner decision 8, extends decision 7); submissions read oldest first; readOrThrow helpers copied locally into the route — A failed read must never be presented as a complete import string; the plan scoped changes to two files so the helpers were not lifted to a shared module
 - [Phase 01]: 01-08: five server analytics events (guild_created, character_created, reserve_item_awarded, character_imported, loot_item_removed_from_list) send ids and counts only; a source scan with a 50-site floor and self-checks fails on any name in an analytics call or email in an identify call — Hard Constraint 3 and owner decision 4; stored award and audit rows keep character_name; the scan reads call arguments only, so variable-built properties are caught only where passed literally
+- [Phase 01]: 01-05: all ten addon and bot routes on createTypedServiceRoleClient with no casts; scan test (typed-client-usage.test.ts) enforces it — FIX-06; lib/addon/sync-tokens.ts stays untyped (library, accepted debt); E-17 select-string columns left for human review
 
 ### Pending Owner Inputs
 
@@ -118,6 +120,6 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 
 ## Session Continuity
 
-Last session: 2026-10-13T21:49:10.046Z
-Stopped at: Completed 01-08-PLAN.md
+Last session: 2026-10-13T21:53:41.437Z
+Stopped at: Completed 01-05-PLAN.md
 Resume file: None

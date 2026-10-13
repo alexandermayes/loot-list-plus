@@ -15,7 +15,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **FIX-03**: Every Discord item link for a Forever guild opens `wowhead.com/forever/...` (loot announcements, post-raid summary, bot interactions); bot embed titles carry no em dash
 - [x] **FIX-04**: Award receipts keep `donationBonus` and `raiderBonus` in the audited score snapshot
 - [x] **FIX-05**: The `master_loot_awarded` analytics event carries no player name and reports the item, not the review status
-- [ ] **FIX-06**: Addon and bot routes use a typed service-role client so a query against a nonexistent table fails typecheck
+- [x] **FIX-06**: Addon and bot routes use a typed service-role client so a query against a nonexistent table fails typecheck
 
 ### Expansion format (SEED-001)
 
@@ -129,7 +129,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FIX-03 | Phase 1 | Pending |
 | FIX-04 | Phase 1 | Complete |
 | FIX-05 | Phase 1 | Complete |
-| FIX-06 | Phase 1 | Pending |
+| FIX-06 | Phase 1 | Complete |
 | EXPN-01 | Phase 2 | Pending |
 | EXPN-02 | Phase 2 | Pending |
 | EXPN-03 | Phase 2 | Pending |
