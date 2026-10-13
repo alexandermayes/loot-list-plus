@@ -75,9 +75,22 @@ function scoreEmbed(payload) {
   };
 }
 
+// The server decides the item link (GET /api/bot/priority sends item_url: a
+// Forever guild gets wowhead.com/forever). This strict shape check keeps
+// anything else out of a public markdown embed (same idea as
+// premiumRequiredEmbed's https check). An older app that sends no item_url
+// still works: the link is then built from item_wowhead_id as before.
+const WOWHEAD_ITEM_URL = /^https:\/\/www\.wowhead\.com\/(?:[a-z0-9-]+\/)?item=\d+$/;
+
 function priorityEmbed(payload) {
-  const itemLine = payload.item_wowhead_id
-    ? `[**${payload.item_name}**](https://www.wowhead.com/item=${payload.item_wowhead_id})`
+  const itemUrl =
+    typeof payload.item_url === 'string' && WOWHEAD_ITEM_URL.test(payload.item_url)
+      ? payload.item_url
+      : payload.item_wowhead_id
+        ? `https://www.wowhead.com/item=${payload.item_wowhead_id}`
+        : null;
+  const itemLine = itemUrl
+    ? `[**${payload.item_name}**](${itemUrl})`
     : `**${payload.item_name}**`;
   if (!payload.raiders || payload.raiders.length === 0) {
     return {

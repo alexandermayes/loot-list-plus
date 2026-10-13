@@ -195,6 +195,7 @@ function baseTables(overrides: Partial<Record<string, Row[]>> = {}): Record<stri
         subscription_tier: 'pro',
       },
     ],
+    expansions: [{ id: EXP, name: 'Mists of Pandaria' }],
     raid_tiers: [{ id: TIER, expansion_id: EXP, is_guild_active: true, master_sheet_visible: true }],
     loot_items: [
       { id: ITEM, raid_tier_id: TIER, name: 'Bilegrip Boots', wowhead_id: 1001 },
@@ -240,6 +241,7 @@ describe('GET /api/bot/priority (tracer, GH #325)', () => {
     const body = await res.json()
     expect(body.item_name).toBe('Bilegrip Boots')
     expect(body.item_wowhead_id).toBe(1001)
+    expect(body.item_url).toBe('https://www.wowhead.com/item=1001')
     expect(body.raiders).toEqual([{ name: 'Active', class: 'Mage', rank: 40 }])
   })
 
@@ -306,6 +308,7 @@ function scenario(overrides: Partial<Record<string, Row[]>> = {}): Record<string
         subscription_tier: 'pro',
       },
     ],
+    expansions: [{ id: EXP, name: 'Mists of Pandaria' }],
     raid_tiers: [{ id: TIER, expansion_id: EXP, is_guild_active: true, master_sheet_visible: true }],
     loot_items: [{ id: ITEM, raid_tier_id: TIER, name: 'Bilegrip Boots', wowhead_id: 1001 }],
     loot_submissions: [],
@@ -777,6 +780,7 @@ describe('GH #325: D-04 every query error returns 500 and calls trackApiError', 
   const cases: Array<{ label: string; fail: FailSpec[] }> = [
     { label: 'guilds', fail: [{ table: 'guilds' }] },
     { label: 'raid_tiers', fail: [{ table: 'raid_tiers' }] },
+    { label: 'expansions', fail: [{ table: 'expansions' }] },
     { label: 'loot_items search', fail: [{ table: 'loot_items', select: 'id, name, wowhead_id' }] },
     { label: 'same-wowhead loot_items read', fail: [{ table: 'loot_items', select: 'id' }] },
     { label: 'loot_submissions', fail: [{ table: 'loot_submissions' }] },
@@ -799,6 +803,99 @@ describe('GH #325: D-04 every query error returns 500 and calls trackApiError', 
       expect(vi.mocked(trackApiError)).toHaveBeenCalled()
     })
   }
+})
+
+describe('FIX-03: item_url on /priority answers (plan 01-04)', () => {
+  function expansionTables(name: string, overrides: Partial<Record<string, Row[]>> = {}): Record<string, Row[]> {
+    return readyScenario({ expansions: [{ id: EXP, name }], ...overrides })
+  }
+
+  it('a Forever guild gets the forever item_url and keeps item_wowhead_id', async () => {
+    const { client } = makeClient(expansionTables('Forever'))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await GET(request({ discord_guild_id: DISCORD, item_query: 'bilegrip' }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.item_url).toBe('https://www.wowhead.com/forever/item=1001')
+    expect(body.item_wowhead_id).toBe(1001)
+  })
+
+  it('a Mists of Pandaria guild gets the unchanged retail item_url', async () => {
+    const { client } = makeClient(expansionTables('Mists of Pandaria'))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await GET(request({ discord_guild_id: DISCORD, item_query: 'bilegrip' }))
+    const body = await res.json()
+    expect(body.item_url).toBe('https://www.wowhead.com/item=1001')
+    expect(body.item_wowhead_id).toBe(1001)
+  })
+
+  it('the empty-state 200 (no active rankers) also carries item_url', async () => {
+    const { client } = makeClient(scenario({ expansions: [{ id: EXP, name: 'Forever' }] }))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await GET(request({ discord_guild_id: DISCORD, item_query: 'bilegrip' }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toEqual({
+      item_name: 'Bilegrip Boots',
+      item_wowhead_id: 1001,
+      item_url: 'https://www.wowhead.com/forever/item=1001',
+      raiders: [],
+    })
+  })
+
+  it('an item with a null wowhead_id gets item_url null', async () => {
+    const { client } = makeClient(
+      expansionTables('Forever', {
+        loot_items: [{ id: ITEM, raid_tier_id: TIER, name: 'Bilegrip Boots', wowhead_id: null }],
+      })
+    )
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await GET(request({ discord_guild_id: DISCORD, item_query: 'bilegrip' }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.item_url).toBeNull()
+    expect(body.item_wowhead_id).toBeNull()
+  })
+
+  it('the 403 rankings_hidden body is unchanged and carries no item_url', async () => {
+    const { client } = makeClient(
+      baseTables({
+        expansions: [{ id: EXP, name: 'Forever' }],
+        raid_tiers: [{ id: TIER, expansion_id: EXP, is_guild_active: true, master_sheet_visible: false }],
+      })
+    )
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await GET(request({ discord_guild_id: DISCORD, item_query: 'bilegrip' }))
+    expect(res.status).toBe(403)
+    const body = await res.json()
+    expect(body).toEqual({ error: 'rankings_hidden', item_name: 'Bilegrip Boots', item_wowhead_id: 1001 })
+  })
+
+  it('a guild whose expansion row is missing falls back to the retail item_url', async () => {
+    const { client } = makeClient(expansionTables('Forever', { expansions: [] }))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await GET(request({ discord_guild_id: DISCORD, item_query: 'bilegrip' }))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.item_url).toBe('https://www.wowhead.com/item=1001')
+  })
+
+  it('reads the active expansion name filtered by the guild active_expansion_id', async () => {
+    const { client, calls } = makeClient(expansionTables('Forever'))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    await GET(request({ discord_guild_id: DISCORD, item_query: 'bilegrip' }))
+    const expansionCalls = calls.filter((c) => c.table === 'expansions')
+    expect(expansionCalls).toHaveLength(1)
+    expect(expansionCalls[0].select).toBe('name')
+    expect(expansionCalls[0].filters).toEqual([{ type: 'eq', col: 'id', val: EXP }])
+  })
 })
 
 describe('GH #325: D-09 auth runs before any database call', () => {

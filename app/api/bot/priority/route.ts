@@ -31,6 +31,7 @@ import { checkBotAuth, resolveGuildFromDiscord, requireBotLookupAccess } from '.
 import { findInvalidCharacterIds } from '@/lib/loot/guild-award-refs'
 import { fetchReceivedCounts } from '@/lib/addon/member-ranked-items'
 import { splitBotTiers, collectItemCandidates, orderItemCandidates } from '@/domain/loot/bot-item-priority'
+import { wowheadItemUrl } from '@/domain/expansion/wowhead'
 
 const MAX_RAIDERS = 5
 const PAGE_SIZE = 1000
@@ -150,6 +151,19 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'item_not_found', item_query: itemQuery }, { status: 404 })
     }
 
+    // The server decides the item link (Forever guilds get wowhead.com/forever);
+    // the bot is a separate deploy that cannot import app code, so it renders
+    // item_url after a shape check. A missing expansion row keeps today's retail link.
+    const { data: expansion, error: expansionError } = await supabase
+      .from('expansions')
+      .select('name')
+      .eq('id', guild.active_expansion_id)
+      .maybeSingle()
+    if (expansionError) {
+      throw new Error(`Failed to read the active expansion: ${expansionError.message}`)
+    }
+    const itemUrl = item.wowhead_id != null ? wowheadItemUrl(expansion?.name, item.wowhead_id) : null
+
     // Same real item can have several loot_items rows (several bosses or tiers)
     // sharing a wowhead_id. Only rows in ranked (visible) tiers count toward the
     // answer; `item` itself always counts.
@@ -206,7 +220,12 @@ export async function GET(request: Request) {
     }
 
     const emptyAnswer = () =>
-      NextResponse.json({ item_name: item!.name, item_wowhead_id: item!.wowhead_id, raiders: [] })
+      NextResponse.json({
+        item_name: item!.name,
+        item_wowhead_id: item!.wowhead_id,
+        item_url: itemUrl,
+        raiders: [],
+      })
 
     if (referencedCharacterIds.size === 0) {
       return emptyAnswer()
@@ -261,6 +280,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       item_name: item.name,
       item_wowhead_id: item.wowhead_id,
+      item_url: itemUrl,
       raiders: ordered.map((r) => ({ name: r.name, class: r.className, rank: r.rank })),
     })
   } catch (error) {
