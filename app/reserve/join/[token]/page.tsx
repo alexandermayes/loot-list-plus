@@ -19,6 +19,7 @@ import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { getRaidIcon } from '@/utils/raidIcons'
 import { canClassReserveItem } from '@/utils/wowClassRestrictions'
 import { getExpansionClassNames } from '@/domain/expansion/classes'
+import { wowheadItemUrl } from '@/domain/expansion/wowhead'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import ManagementToolbar from './components/ManagementToolbar'
@@ -679,7 +680,7 @@ export default function ReserveJoinPage() {
       ? `${characterName} (${characterSpec} ${characterClass}) reserved for ${run.title}:`
       : `${characterName} (${characterClass}) reserved for ${run.title}:`
     const lines = reservedItems.map(
-      (item) => `- ${item.name}: https://www.wowhead.com/item=${item.wowhead_id}`
+      (item) => `- ${item.name}: ${wowheadItemUrl(run.expansion_name, item.wowhead_id)}`
     )
     const text = [header, ...lines].join('\n')
     try {

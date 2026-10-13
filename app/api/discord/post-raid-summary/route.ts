@@ -7,6 +7,7 @@ import { discordFetch } from '@/lib/discord'
 import { fetchWclReportForDate, getWclReportUrl } from '@/lib/warcraftlogs'
 import { parseDate } from '@/utils/date'
 import { resolveStatus } from '@/domain/scoring'
+import { formatRaidSummaryLootLine } from '@/lib/discord-raid-summary'
 
 const EMBED_FIELD_LIMIT = 1024
 
@@ -111,13 +112,16 @@ export async function POST(request: NextRequest) {
     // Get raid title from current phase tiers
     let raidTitle = 'Raid'
     let raidTierNames: string[] | undefined
+    // Active expansion name drives the Wowhead link domain for loot lines (null when none)
+    let expansionName: string | null = null
     if (guild.active_expansion_id) {
       const { data: expansion } = await supabase
         .from('expansions')
-        .select('current_phase')
+        .select('current_phase, name')
         .eq('id', guild.active_expansion_id)
         .single()
 
+      expansionName = (expansion?.name as string | undefined) ?? null
       const currentPhase = expansion?.current_phase || 1
 
       const { data: phaseTiers } = await supabase
@@ -277,10 +281,12 @@ export async function POST(request: NextRequest) {
       const lootLines = lootRows.map(row => {
         const item = row.loot_items
         const charName = (row.character_id && charNameMap.get(row.character_id)) || row.character_name || 'Unknown'
-        if (item?.wowhead_id) {
-          return `[${item.name}](https://www.wowhead.com/classic/item=${item.wowhead_id}) → ${charName}`
-        }
-        return `${item?.name || 'Unknown Item'} → ${charName}`
+        return formatRaidSummaryLootLine({
+          itemName: item?.name ?? null,
+          wowheadId: item?.wowhead_id ?? null,
+          characterName: charName,
+          expansionName,
+        })
       })
 
       // Split loot into multiple fields if needed (Discord 1024 char limit per field)
