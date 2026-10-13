@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: "WoW Forever Loot: Discovery to Known"
-current_phase: 01
-current_phase_name: Forever Defect and Privacy Fixes
-status: verifying
-stopped_at: Completed 01-09-PLAN.md (owner copy sign-off pending)
-last_updated: "2026-10-13T21:57:24.801Z"
+current_phase: 2
+current_phase_name: Expansion Onboarding Manifest
+status: planning
+stopped_at: Phase 01 complete, ready to plan Phase 2
+last_updated: "2026-10-13T23:52:58.468Z"
 last_activity: 2026-10-13
-last_activity_desc: Phase 01 execution started
-state_head: f9db035b1585348a748d912c123cfccaa503fe49
+last_activity_desc: Phase 01 complete, transitioned to Phase 2
+state_head: f43963b5491da0fa0e08de005c717c3f5d5fa891
 progress:
   total_phases: 8
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 9
   completed_plans: 9
-  percent: 0
+  percent: 13
 ---
 
 # Project State
@@ -29,16 +29,16 @@ Roadmap: `.planning/workstreams/forever/ROADMAP.md` (8 phases)
 Research: `.planning/research/SUMMARY.md`
 
 **Core value:** A Forever guild can run loot from day one without knowing a single item: raiders rank generic needs, officers settle every drop in seconds from a Drop Desk, and the whole product feels like a consumer app that just works.
-**Current focus:** Phase 01 — Forever Defect and Privacy Fixes
+**Current focus:** Phase 2 — Expansion Onboarding Manifest
 
 ## Current Position
 
-Phase: 01 (Forever Defect and Privacy Fixes) — EXECUTING
-Plan: 9 of 9
-Status: Phase complete — ready for verification
-Last activity: 2026-10-13 — Phase 01 execution started
+Phase: 2 — Expansion Onboarding Manifest
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-13 — Phase 01 complete, transitioned to Phase 2
 
-Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░░░] 0%)
+Progress: [██░░░░░░░░] 1/8 phases (13%); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed
 
 ## Hard Dates
 
@@ -58,13 +58,13 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 
 **Velocity:**
 
-- Total plans completed: 0
+- Total plans completed: 9
 - Average duration: -
 - Total execution time: 0 hours
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01 | 9 | - | - |
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
@@ -110,6 +110,8 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 
 ### Blockers/Concerns
 
+- [Phase 1 follow-up] `lib/addon/sync-tokens.ts` stays on the untyped service-role client (accepted library debt) and the E-17 select-string columns were left for human review; neither blocks Phase 2.
+
 - Phase 3: research lists two cost schemes for need rows (an allocation cost of 1/1/0, and a budget at Big 3, Medium 2, Standard 1). Settle which one the seeded rows carry before Phase 4 reads it.
 - Phase 3 to 4 gap: a Discovery tier can have need rows before raiders have a picker.
 - Research flags: Phases 3, 5, 6 and 8 need `/gsd-plan-phase N --research-phase`.
@@ -122,6 +124,6 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 
 ## Session Continuity
 
-Last session: 2026-10-13T21:57:24.785Z
-Stopped at: Completed 01-09-PLAN.md (owner copy sign-off pending)
+Last session: 2026-10-13T23:55:00Z
+Stopped at: Phase 01 complete, ready to plan Phase 2
 Resume file: None

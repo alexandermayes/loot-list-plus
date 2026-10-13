@@ -36,7 +36,7 @@ Forever hides item stats until an item drops, so named loot lists cannot exist w
 - Integer phases (1, 2, 3): planned milestone work
 - Decimal phases (2.1, 2.2): urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Forever Defect and Privacy Fixes** - Awards, BLP, item links and analytics are correct and private before any Forever loot is announced (runs in parallel with Phase 2)
+- [x] **Phase 1: Forever Defect and Privacy Fixes** - Awards, BLP, item links and analytics are correct and private before any Forever loot is announced (runs in parallel with Phase 2) (completed 2026-10-13)
 - [ ] **Phase 2: Expansion Onboarding Manifest** - Forever gets its raids and bosses from a verified manifest keyed by `wowhead_id`, and every expansion seeds through one registry (runs in parallel with Phase 1)
 - [ ] **Phase 3: Discovery Schema and Need Pipeline** - A raid tier can run in Discovery mode, with need rows that every existing reader handles and that earn BLP
 - [ ] **Phase 4: Discovery Lists and Score Split** - Raiders set their needs in under a minute on a phone and see a score they understand (Oct 31 gate)
@@ -252,7 +252,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Forever Defect and Privacy Fixes | 9/9 | In Progress|  |
+| 1. Forever Defect and Privacy Fixes | 9/9 | Complete    | 2026-10-13 |
 | 2. Expansion Onboarding Manifest | 0/TBD | Not started | - |
 | 3. Discovery Schema and Need Pipeline | 0/TBD | Not started | - |
 | 4. Discovery Lists and Score Split | 0/TBD | Not started | - |
