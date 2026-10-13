@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 01
 current_phase_name: Forever Defect and Privacy Fixes
 status: executing
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-10-13T21:20:58.385Z"
+stopped_at: Completed 01-03-PLAN.md
+last_updated: "2026-10-13T21:25:39.981Z"
 last_activity: 2026-10-13
 last_activity_desc: Phase 01 execution started
-state_head: 221c917847e6d038a14e754486d2666075bff00f
+state_head: 099f4f6ce192943280b8113215e3e56651d9a93f
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 9
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 01 (Forever Defect and Privacy Fixes) — EXECUTING
-Plan: 3 of 9
+Plan: 4 of 9
 Status: Ready to execute
 Last activity: 2026-10-13 — Phase 01 execution started
 
@@ -71,6 +71,7 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 |------|----------|-------|-------|
 | Phase 01 P01 | 10 min | 3 tasks | 2 files |
 | Phase 01 P02 | 20 min | 2 tasks | 7 files |
+| Phase 01 P03 | 5 min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,7 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 - [Phase 01]: Owner decision 7: a failed loot_history read in guild-data answers 500 like every other read (route throws; member-ranked-items unchanged) — A failed read must never be presented as a complete list
 - [Phase 01]: guild-data pages loot_items too and reads loot_submissions oldest first (created_at, id) so the newest approved submission wins — MoP catalogs pass 1700 items; the old read had no ORDER BY so the winner was unspecified
 - [Phase 01]: createTypedServiceRoleClient delegates to createServiceRoleClient; selectAllPagesOrThrow exported from utils/supabase/paginate.ts for plans 01-04, 01-05, 01-07 — Existing test mocks of createServiceRoleClient keep working
+- [Phase 01]: 01-03: wowheadItemUrl matches the stored expansion name exactly; Forever links to wowhead.com/forever, every other guild keeps its existing link (owner decision 2) — Forever-only scope keeps known guilds byte-identical; the helper keeps the era map so era-correct links are a one-line opt-in per call site (deferred follow-up)
 
 ### Pending Owner Inputs
 
@@ -108,6 +110,6 @@ Progress: [░░░░░░░░░░] 0/8 phases ([░░░░░░░░
 
 ## Session Continuity
 
-Last session: 2026-10-13T21:20:58.375Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-10-13T21:25:39.970Z
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None

@@ -63,14 +63,14 @@ Forever hides item stats until an item drops, so named loot lists cannot exist w
   4. In a Forever guild, every item link in loot announcements, the post-raid summary and bot replies opens `wowhead.com/forever/...`, and no bot embed title contains an em dash
   5. An award receipt's audited score snapshot includes donation and raider bonuses, and the `master_loot_awarded` event reports the item and carries no player name
 
-**Plans**: 2/9 plans executed in 3 waves
+**Plans**: 3/9 plans executed in 3 waves
 
 Plans:
 **Wave 1**
 
 - [x] 01-01-PLAN.md (wave 1): awaited BLP recompute on award DELETE and PATCH (FIX-01); receipt keeps donation and raider bonus (FIX-04)
 - [x] 01-02-PLAN.md (wave 1): typed service-role client and shared paged reader; companion guild-data reads blp_tracking and guild_item_priorities, pages BLP, priority, item, submission and attendance reads past 1000 rows, and fails loudly on every read, loot_history included (FIX-02, FIX-06)
-- [ ] 01-03-PLAN.md (wave 1): `domain/expansion/wowhead.ts`; Forever-only links in loot announcements, post-raid summary and reserve Discord copy (FIX-03)
+- [x] 01-03-PLAN.md (wave 1): `domain/expansion/wowhead.ts`; Forever-only links in loot announcements, post-raid summary and reserve Discord copy (FIX-03)
 - [ ] 01-06-PLAN.md (wave 1): `master_loot_awarded` reports the reviewed list's item ids with no names (null, not 0, on a failed item read); browser analytics drop player and guild names and identify drops email (FIX-05)
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -252,7 +252,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Forever Defect and Privacy Fixes | 2/9 | In Progress|  |
+| 1. Forever Defect and Privacy Fixes | 3/9 | In Progress|  |
 | 2. Expansion Onboarding Manifest | 0/TBD | Not started | - |
 | 3. Discovery Schema and Need Pipeline | 0/TBD | Not started | - |
 | 4. Discovery Lists and Score Split | 0/TBD | Not started | - |
