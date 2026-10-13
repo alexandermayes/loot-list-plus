@@ -39,6 +39,7 @@ const OTHER_GUILD_ID = 'bbbbbbbb-0000-0000-0000-000000000001'
 const FOREIGN_RAID_EVENT_ID = 'bbbbbbbb-0000-0000-0000-000000000002'
 const FOREIGN_CHARACTER_ID = 'bbbbbbbb-0000-0000-0000-000000000003'
 const INACTIVE_CHARACTER_ID = 'aaaaaaaa-0000-0000-0000-00000000000f'
+const SECOND_CHARACTER_ID = 'aaaaaaaa-0000-0000-0000-000000000012'
 
 type ExpansionRow = { id: string; guild_id: string }
 type TierRow = { id: string; expansion_id: string }
@@ -84,6 +85,8 @@ interface Fixture {
   deleteReadError?: boolean
   /** FIX-01: the delete itself fails. */
   deleteError?: boolean
+  /** FIX-01: PATCH's before-read fails with this error (PGRST116 is the no-row code). */
+  patchBeforeError?: { code?: string; message: string }
 }
 
 /**
@@ -132,6 +135,7 @@ function makeClient(fixture: Fixture) {
               return Promise.resolve({ data: { id: `hist-${insertCounter}` }, error: null })
             }
             // PATCH's before-read (no insert payload on this call).
+            if (fixture.patchBeforeError) return Promise.resolve({ data: null, error: fixture.patchBeforeError })
             return Promise.resolve({
               data: fixture.patchBefore ?? { character_id: CHARACTER_ID, character_name: 'Thrall', notes: null },
               error: null,
@@ -909,5 +913,297 @@ describe('DELETE /api/loot-history/bulk (FIX-01)', () => {
     const res = await pending
     expect(settled).toBe(true)
     expect(res.status).toBe(200)
+  })
+
+  const nightRows = (): DeleteRow[] => [
+    linkedRow({ id: 'hist-1', loot_item_id: ITEM_ID }),
+    linkedRow({ id: 'hist-2', loot_item_id: ITEM_ID }),
+    linkedRow({ id: 'hist-3', loot_item_id: ITEM_ID_2 }),
+  ]
+
+  it('E-03 deleting a whole night by raid_event_id recomputes each distinct item once, in any order', async () => {
+    const { client } = makeClient({ ...singleItemFixture(), deleteRows: nightRows() })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await DELETE(deleteRequest({ guild_id: GUILD_ID, raid_event_id: RAID_EVENT_ID }))
+
+    expect(res.status).toBe(200)
+    expect(recomputeBlpForItems).toHaveBeenCalledTimes(1)
+    const [passedClient, passedGuild, passedIds] = vi.mocked(recomputeBlpForItems).mock.calls[0]
+    expect(passedClient).toBe(client)
+    expect(passedGuild).toBe(GUILD_ID)
+    expect(passedIds).toHaveLength(2)
+    expect(new Set(passedIds)).toEqual(new Set([ITEM_ID, ITEM_ID_2]))
+  })
+
+  it('E-03 the by-night recompute is awaited before the response returns', async () => {
+    const { client } = makeClient({ ...singleItemFixture(), deleteRows: nightRows() })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    let release: () => void = () => {}
+    vi.mocked(recomputeBlpForItems).mockImplementation(() => new Promise<void>((resolve) => { release = resolve }))
+
+    let settled = false
+    const pending = DELETE(deleteRequest({ guild_id: GUILD_ID, raid_event_id: RAID_EVENT_ID })).then((res) => {
+      settled = true
+      return res
+    })
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(recomputeBlpForItems).toHaveBeenCalledTimes(1)
+    expect(settled).toBe(false)
+
+    release()
+    expect((await pending).status).toBe(200)
+  })
+
+  it('E-01 deleting two awards of the same item in one request recomputes that item once', async () => {
+    const rows = [linkedRow({ id: 'hist-1' }), linkedRow({ id: 'hist-2' })]
+    const { client } = makeClient({ ...singleItemFixture(), deleteRows: rows })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await DELETE(deleteRequest({ guild_id: GUILD_ID, ids: ['hist-1', 'hist-2'] }))
+
+    expect(res.status).toBe(200)
+    expect(recomputeBlpForItems).toHaveBeenCalledTimes(1)
+    expect(recomputeBlpForItems).toHaveBeenCalledWith(client, GUILD_ID, [ITEM_ID])
+  })
+
+  it('E-02 ids that match no rows answer 200 and make no recompute call', async () => {
+    const { client } = makeClient({ ...singleItemFixture(), deleteRows: [] })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await DELETE(deleteRequest({ guild_id: GUILD_ID, ids: ['missing'] }))
+
+    expect(res.status).toBe(200)
+    expect(recomputeBlpForItems).not.toHaveBeenCalled()
+  })
+
+  it('E-02 a raid night with no awards answers 200 and makes no recompute call', async () => {
+    const { client } = makeClient({ ...singleItemFixture(), deleteRows: [] })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await DELETE(deleteRequest({ guild_id: GUILD_ID, raid_event_id: RAID_EVENT_ID }))
+
+    expect(res.status).toBe(200)
+    expect(recomputeBlpForItems).not.toHaveBeenCalled()
+  })
+
+  it('E-02 rows with a null raid_event_id or a null loot_item_id answer 200 and make no recompute call', async () => {
+    const rows = [
+      linkedRow({ id: 'hist-1', raid_event_id: null }),
+      linkedRow({ id: 'hist-2', loot_item_id: null }),
+    ]
+    const { client } = makeClient({ ...singleItemFixture(), deleteRows: rows })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await DELETE(deleteRequest({ guild_id: GUILD_ID, ids: ['hist-1', 'hist-2'] }))
+
+    expect(res.status).toBe(200)
+    expect(recomputeBlpForItems).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['ids', { ids: [HIST_ID] }],
+    ['raid_event_id', { raid_event_id: RAID_EVENT_ID }],
+  ])('a failed pre-read (%s) answers 500, deletes nothing and recomputes nothing', async (_branch, selector) => {
+    const { client, calls } = makeClient({ ...singleItemFixture(), deleteRows: [linkedRow()], deleteReadError: true })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await DELETE(deleteRequest({ guild_id: GUILD_ID, ...selector }))
+
+    expect(res.status).toBe(500)
+    expect(calls.some((c) => c.deleted)).toBe(false)
+    expect(recomputeBlpForItems).not.toHaveBeenCalled()
+    expect(logAudit).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['ids', { ids: [HIST_ID] }],
+    ['raid_event_id', { raid_event_id: RAID_EVENT_ID }],
+  ])('a failed delete (%s) answers 500 and recomputes nothing', async (_branch, selector) => {
+    const { client } = makeClient({ ...singleItemFixture(), deleteRows: [linkedRow()], deleteError: true })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await DELETE(deleteRequest({ guild_id: GUILD_ID, ...selector }))
+
+    expect(res.status).toBe(500)
+    expect(recomputeBlpForItems).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['ids', { ids: [HIST_ID] }],
+    ['raid_event_id', { raid_event_id: RAID_EVENT_ID }],
+  ])('every loot_history call on the %s branch is scoped to the request guild', async (_branch, selector) => {
+    const { client, calls } = makeClient({ ...singleItemFixture(), deleteRows: [linkedRow()] })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    await DELETE(deleteRequest({ guild_id: GUILD_ID, ...selector }))
+
+    const lootHistoryCalls = calls.filter((c) => c.table === 'loot_history')
+    // One pre-read and one delete.
+    expect(lootHistoryCalls).toHaveLength(2)
+    expect(lootHistoryCalls.some((c) => c.deleted)).toBe(true)
+    for (const c of lootHistoryCalls) {
+      expect(c.filters).toContainEqual(['guild_id', GUILD_ID])
+    }
+  })
+})
+
+describe('PATCH /api/loot-history/bulk BLP recompute (FIX-01)', () => {
+  const RECORD_ID = 'aaaaaaaa-0000-0000-0000-000000000010'
+  const linkedBefore = { character_id: CHARACTER_ID, character_name: 'Thrall', notes: null, loot_item_id: ITEM_ID, raid_event_id: RAID_EVENT_ID, award_copy: 1 }
+
+  function patchFixture(extra: Partial<Fixture> = {}): Fixture {
+    const base = singleItemFixture()
+    return {
+      ...base,
+      memberships: [...(base.memberships ?? []), { character_id: SECOND_CHARACTER_ID, guild_id: GUILD_ID, is_active: true }],
+      patchBefore: linkedBefore,
+      ...extra,
+    }
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(recomputeBlpForItems).mockReset()
+    vi.mocked(recomputeBlpForItems).mockResolvedValue(undefined)
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: USER_ID }, error: null } as never)
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: true } as never)
+  })
+
+  it('moving a linked award to another raider recomputes BLP for that item', async () => {
+    const { client } = makeClient(patchFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await PATCH(patchRequest({ guild_id: GUILD_ID, id: RECORD_ID, updates: { character_id: SECOND_CHARACTER_ID } }))
+
+    expect(res.status).toBe(200)
+    expect(recomputeBlpForItems).toHaveBeenCalledTimes(1)
+    expect(recomputeBlpForItems).toHaveBeenCalledWith(client, GUILD_ID, [ITEM_ID])
+  })
+
+  it('the reassign response waits for the recompute', async () => {
+    const { client } = makeClient(patchFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    let release: () => void = () => {}
+    vi.mocked(recomputeBlpForItems).mockImplementation(() => new Promise<void>((resolve) => { release = resolve }))
+
+    let settled = false
+    const pending = PATCH(patchRequest({ guild_id: GUILD_ID, id: RECORD_ID, updates: { character_id: SECOND_CHARACTER_ID } })).then((res) => {
+      settled = true
+      return res
+    })
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(recomputeBlpForItems).toHaveBeenCalledTimes(1)
+    expect(settled).toBe(false)
+
+    release()
+    expect((await pending).status).toBe(200)
+  })
+
+  it('unlinking a linked award (character_id null) recomputes BLP for that item', async () => {
+    const { client } = makeClient(patchFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await PATCH(patchRequest({ guild_id: GUILD_ID, id: RECORD_ID, updates: { character_id: null } }))
+
+    expect(res.status).toBe(200)
+    expect(recomputeBlpForItems).toHaveBeenCalledTimes(1)
+    expect(recomputeBlpForItems).toHaveBeenCalledWith(client, GUILD_ID, [ITEM_ID])
+  })
+
+  it.each([
+    ['the same character_id (E-01)', { character_id: CHARACTER_ID }],
+    ['notes only', { notes: 'n' }],
+    ['character_name only', { character_name: 'Jaina' }],
+  ])('%s makes no recompute call', async (_label, updates) => {
+    const { client } = makeClient(patchFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await PATCH(patchRequest({ guild_id: GUILD_ID, id: RECORD_ID, updates }))
+
+    expect(res.status).toBe(200)
+    expect(recomputeBlpForItems).not.toHaveBeenCalled()
+  })
+
+  it('a row with a null raid_event_id makes no recompute call', async () => {
+    const { client } = makeClient(patchFixture({ patchBefore: { ...linkedBefore, raid_event_id: null } }))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await PATCH(patchRequest({ guild_id: GUILD_ID, id: RECORD_ID, updates: { character_id: SECOND_CHARACTER_ID } }))
+
+    expect(res.status).toBe(200)
+    expect(recomputeBlpForItems).not.toHaveBeenCalled()
+  })
+
+  it('a row with a null loot_item_id makes no recompute call', async () => {
+    const { client } = makeClient(patchFixture({ patchBefore: { ...linkedBefore, loot_item_id: null } }))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await PATCH(patchRequest({ guild_id: GUILD_ID, id: RECORD_ID, updates: { character_id: SECOND_CHARACTER_ID } }))
+
+    expect(res.status).toBe(200)
+    expect(recomputeBlpForItems).not.toHaveBeenCalled()
+  })
+
+  it('a failed before-read answers 500, updates nothing and recomputes nothing', async () => {
+    const { client, calls } = makeClient(patchFixture({ patchBeforeError: { code: 'XX000', message: 'read boom' } }))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await PATCH(patchRequest({ guild_id: GUILD_ID, id: RECORD_ID, updates: { character_id: SECOND_CHARACTER_ID } }))
+
+    expect(res.status).toBe(500)
+    expect(lootHistoryUpdates(calls)).toHaveLength(0)
+    expect(recomputeBlpForItems).not.toHaveBeenCalled()
+    expect(logAudit).not.toHaveBeenCalled()
+  })
+
+  it('a before-read with no row (PGRST116) keeps today\'s behaviour: update attempted, 200, no recompute', async () => {
+    const { client, calls } = makeClient(patchFixture({ patchBeforeError: { code: 'PGRST116', message: 'no rows' } }))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await PATCH(patchRequest({ guild_id: GUILD_ID, id: RECORD_ID, updates: { character_id: SECOND_CHARACTER_ID } }))
+
+    expect(res.status).toBe(200)
+    expect(lootHistoryUpdates(calls)).toHaveLength(1)
+    expect(recomputeBlpForItems).not.toHaveBeenCalled()
+  })
+
+  it('a failed update answers 500 and recomputes nothing', async () => {
+    const { client, calls } = makeClient(patchFixture())
+    // Make the update itself fail: the fake resolves loot_history updates with no error, so wrap `then`.
+    const originalFrom = client.from.bind(client)
+    client.from = (table: string) => {
+      const builder = originalFrom(table)
+      if (table === 'loot_history') {
+        const originalThen = builder.then
+        builder.then = (resolve: (v: unknown) => unknown) => {
+          const call = calls[calls.length - 1]
+          if (call.updatePayload) return Promise.resolve({ data: null, error: { message: 'update boom' } }).then(resolve)
+          return originalThen(resolve)
+        }
+      }
+      return builder
+    }
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await PATCH(patchRequest({ guild_id: GUILD_ID, id: RECORD_ID, updates: { character_id: SECOND_CHARACTER_ID } }))
+
+    expect(res.status).toBe(500)
+    expect(recomputeBlpForItems).not.toHaveBeenCalled()
+  })
+
+  it('the before-read and the update both carry the request guild filter', async () => {
+    const { client, calls } = makeClient(patchFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    await PATCH(patchRequest({ guild_id: GUILD_ID, id: RECORD_ID, updates: { character_id: SECOND_CHARACTER_ID } }))
+
+    const lootHistoryCalls = calls.filter((c) => c.table === 'loot_history' && !c.order)
+    expect(lootHistoryCalls.length).toBeGreaterThanOrEqual(2)
+    for (const c of lootHistoryCalls) {
+      expect(c.filters).toContainEqual(['guild_id', GUILD_ID])
+    }
   })
 })

@@ -482,12 +482,17 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (raid_event_id) {
-      // Read what we're about to delete for the audit log
-      const { data: toDelete } = await serviceSupabase
+      // Read what we're about to delete for the audit log and the BLP recompute.
+      // A failed read stops here: deleting without it would skip the recompute.
+      const { data: toDelete, error: readError } = await serviceSupabase
         .from('loot_history')
-        .select('id, loot_item_id, character_id, character_name')
+        .select('id, loot_item_id, character_id, character_name, raid_event_id')
         .eq('raid_event_id', raid_event_id)
         .eq('guild_id', guild_id)
+
+      if (readError) {
+        return NextResponse.json({ error: readError.message }, { status: 500 })
+      }
 
       const { error } = await serviceSupabase
         .from('loot_history')
@@ -510,6 +515,13 @@ export async function DELETE(request: NextRequest) {
           userId: user.id,
           oldData: { ...entry, raid_event_id },
         })
+      }
+
+      // Same awaited recompute as the ids branch, once per distinct item of the
+      // night (order does not matter: each item is rebuilt from history).
+      const nightItems = blpItemsToRecompute(toDelete)
+      if (nightItems.length > 0) {
+        await recomputeBlpForItems(serviceSupabase, guild_id, nightItems)
       }
     } else if (ids) {
       // Read what we're about to delete for the audit log and the BLP recompute.
@@ -631,12 +643,18 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Read current state for audit log
-    const { data: beforeRow } = await serviceSupabase
+    const { data: beforeRow, error: beforeError } = await serviceSupabase
       .from('loot_history')
       .select('character_id, character_name, notes, loot_item_id, raid_event_id, award_copy')
       .eq('id', id)
       .eq('guild_id', guild_id)
       .single()
+    // PGRST116 is PostgREST's no-row code for .single(): a missing id keeps
+    // today's 200. Any other read failure stops before the write, since the
+    // BLP recompute below depends on this row.
+    if (beforeError && beforeError.code !== 'PGRST116') {
+      return NextResponse.json({ error: beforeError.message }, { status: 500 })
+    }
     const before = beforeRow
       ? { character_id: beforeRow.character_id, character_name: beforeRow.character_name, notes: beforeRow.notes }
       : beforeRow
@@ -679,6 +697,20 @@ export async function PATCH(request: NextRequest) {
       oldData: before,
       newData: sanitized,
     })
+
+    // BLP is keyed on character_id, so moving a linked award to another raider,
+    // or unlinking it to null, changes that raider's history. Unlike the
+    // award-copy guard above, unlinking is included on purpose. Name-only and
+    // notes-only edits cannot change BLP and do not recompute. Awaited so the
+    // next read is correct; recomputeBlpForItems never throws.
+    if (
+      'character_id' in sanitized &&
+      sanitized.character_id !== beforeRow?.character_id &&
+      beforeRow?.loot_item_id &&
+      beforeRow.raid_event_id
+    ) {
+      await recomputeBlpForItems(serviceSupabase, guild_id, [beforeRow.loot_item_id])
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {
