@@ -546,6 +546,7 @@ describe('GH #326: export members come from active memberships only', () => {
   beforeEach(() => {
     vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'u1' }, error: null } as never)
     vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
+    vi.mocked(trackApiError).mockClear()
     vi.spyOn(console, 'log').mockImplementation(() => {})
   })
 
@@ -882,8 +883,12 @@ describe('FIX-02: large guilds are never cut at the 1000-row cap', () => {
     expect(rangesOf(calls, 'loot_submissions')).toEqual([[0, 999], [1000, 1999]])
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sc0 = payload.members.find((m: any) => m.character_id === 'sc0')
-    // Last wins: the 1001st submission replaces the phase 1 one, so a read cut at 1000 rows would show 18423.
+    // GH #355 merges both of sc0's lists, so the 1001st submission's item
+    // (19003, past the cap) sits beside the phase 1 one; a read cut at 1000
+    // rows would leave only 18423.
     expect(sc0.items).toEqual([
+      { wowhead_id: 18423, rank: 5 },
+      { wowhead_id: 18422, rank: 5 },
       { wowhead_id: 19003, rank: 5 },
       { wowhead_id: 19002, rank: 5 },
     ])
@@ -918,7 +923,7 @@ describe('FIX-02: large guilds are never cut at the 1000-row cap', () => {
     }
   })
 
-  it('P5 a raider with two approved submissions keeps the newest (created_at then id order)', async () => {
+  it('P5 a raider with two approved submissions gets both merged (GH #355), read in created_at then id order', async () => {
     const fixture = baseFixture()
     fixture.loot_submissions = [
       {
@@ -936,6 +941,8 @@ describe('FIX-02: large guilds are never cut at the 1000-row cap', () => {
     expect(res.status).toBe(200)
     expect(calls.find(c => c.table === 'loot_submissions')!.orders.map(o => o.col)).toEqual(['created_at', 'id'])
     expect(payload.members[0].items).toEqual([
+      { wowhead_id: 18423, rank: 2 },
+      { wowhead_id: 18422, rank: 2 },
       { wowhead_id: 19003, rank: 9 },
       { wowhead_id: 19002, rank: 9 },
     ])
