@@ -59,15 +59,17 @@ Forever hides item stats until an item drops, so named loot lists cannot exist w
   3. Pointing an addon or bot route at a table that does not exist fails `npm run typecheck`
   4. In a Forever guild, every item link in loot announcements, the post-raid summary and bot replies opens `wowhead.com/forever/...`, and no bot embed title contains an em dash
   5. An award receipt's audited score snapshot includes donation and raider bonuses, and the `master_loot_awarded` event reports the item and carries no player name
-**Plans**: 6 plans in 3 waves
+**Plans**: 8 plans in 3 waves
 
 Plans:
 - [ ] 01-01-PLAN.md (wave 1): awaited BLP recompute on award DELETE and PATCH (FIX-01); receipt keeps donation and raider bonus (FIX-04)
-- [ ] 01-02-PLAN.md (wave 1): typed service-role client; addon guild-data and export-string read blp_tracking and guild_item_priorities, page past 1000 rows, and fail loudly (FIX-02, FIX-06)
-- [ ] 01-03-PLAN.md (wave 1): `domain/expansion/wowhead.ts`; Forever links in loot announcements, post-raid summary and reserve Discord copy (FIX-03)
+- [ ] 01-02-PLAN.md (wave 1): typed service-role client and shared paged reader; companion guild-data reads blp_tracking and guild_item_priorities, pages past 1000 rows, and fails loudly (FIX-02, FIX-06)
+- [ ] 01-03-PLAN.md (wave 1): `domain/expansion/wowhead.ts`; Forever-only links in loot announcements, post-raid summary and reserve Discord copy (FIX-03)
 - [ ] 01-04-PLAN.md (wave 2): bot `/priority` sends `item_url`; bot renders it; em-dash-free bot titles pending owner copy sign-off; bot routes typed (FIX-03, FIX-06)
 - [ ] 01-05-PLAN.md (wave 3): remaining addon routes on the typed client plus a scan guard (FIX-06)
-- [ ] 01-06-PLAN.md (wave 1): `master_loot_awarded` ids and counts only; player and guild names removed from every analytics call, with a scan guard (FIX-05)
+- [ ] 01-06-PLAN.md (wave 1): `master_loot_awarded` reports the reviewed list's item ids with no names; browser analytics drop player and guild names and identify drops email (FIX-05)
+- [ ] 01-07-PLAN.md (wave 2): in-game import string (export-string) reads blp_tracking and guild_item_priorities on the typed client and fails loudly (FIX-02, FIX-06)
+- [ ] 01-08-PLAN.md (wave 2): server analytics drop player and guild names; scan guard keeps names and identify email out of every analytics call (FIX-05)
 **Research**: Standard; skip `--research-phase`. Re-verify each defect against current code before planning, because the defect todo is partly stale (#3 fixed in #322 and can be closed; #1 slot fixed in #290 and #301; #2 items select fixed in #363).
 **Defaults applied**: bot `/priority` stays ordered by raw list rank and is labelled "by list rank" (Decision 10). FIX-05 changes what existing PostHog dashboards see on `master_loot_awarded` (Decision 19).
 

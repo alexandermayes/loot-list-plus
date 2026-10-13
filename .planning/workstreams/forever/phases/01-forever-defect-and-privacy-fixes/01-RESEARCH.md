@@ -489,7 +489,7 @@ void typed.from('loot_items').select('id').eq('slot', 'x')
 | # | Claim | Section | Risk if Wrong |
 |---|-------|---------|---------------|
 | A1 | Awaiting `recomputeBlpForItems` inside DELETE and PATCH stays within the serverless time limit for a whole-night delete (one sequential RPC per distinct item); no `maxDuration` is set in the route and the Vercel plan limit was not checked | FIX-01 | A very large night times out the delete response after the delete already committed; mitigation is `after()` for the by-event branch only |
-| A2 | The owner accepts Classic-era guilds' Discord links changing from retail or `/classic/` to the era-specific domain (alternative: Forever-only change) | FIX-03, Pitfall 8 | Visible link change for every guild; easy to narrow to Forever-only in `wowheadItemUrl` |
+| A2 | The owner accepts Classic-era guilds' Discord links changing from retail or `/classic/` to the era-specific domain (alternative: Forever-only change). **Resolved 2026-10-13: the owner chose Forever-only (Open Question 3).** | FIX-03, Pitfall 8 | Visible link change for every guild; easy to narrow to Forever-only in `wowheadItemUrl` |
 | A3 | `https://www.wowhead.com/forever/item=<id>` is the correct public URL (brief states it; not live-checked because live Wowhead fetches are forbidden; SUMMARY recorded a bot-challenge 202 for that page) | FIX-03 | Links 404; trivially fixable in one helper |
 | A4 | Replacement bot title and description separators (colon, middle dot) are acceptable copy; they are proposals needing owner sign-off | FIX-03 | Copy rewrite only |
 | A5 | Worst-case `decision_context` JSON after adding two keys stays under 4096 bytes (estimate about 2.5 KB) | FIX-04 | Snapshot silently replaced by the `_truncated` stub; covered by the planned test |
@@ -497,21 +497,30 @@ void typed.from('loot_items').select('id').eq('slot', 'x')
 | A7 | PostHog dashboards that read `item_name` or `character_name` on `master_loot_awarded` exist (Decision 19 says dashboards are affected); their contents cannot be inspected from the repo | FIX-05 | Dashboard breakage is already accepted by Decision 19 |
 | A8 | Other `loot_history` deletion paths (raid event deletion cascade, `user/delete-account`) were not audited for BLP; they are outside FIX-01's wording | FIX-01 | Stale BLP after those paths; separate bug |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+All seven questions are resolved (owner answers recorded 2026-10-13; the rest resolved during planning). Each resolution names its owning plan.
 
 1. **What should `master_loot_awarded` report as "the item"? (needs owner)**
    - Known: the event fires on submission review, with `item_name` set to `'approved'` or `'rejected'` and a player name; there is no single item at that site.
    - Unclear: whether the owner meant "stop mislabelling" or wants an item identity.
    - Recommendation: keep the event name, drop the name, send `{ guild_id, submission_id, new_status, item_count }`. If a real item is wanted, move item-level reporting to the award path and retire this event.
+   - **RESOLVED (owner decision 1, 2026-10-13; plan 01-06):** keep the event name and send `{ guild_id, submission_id, new_status, item_count, loot_item_ids }`, where `loot_item_ids` are the ids of the reviewed submission's live loot items (ids only, no names). This satisfies success criterion 5 "reports the item" as written; ROADMAP and REQUIREMENTS wording are not amended.
 2. **Await or `after()` for DELETE and PATCH recompute?**
    - Known: criterion 1 says "by the time the request returns"; `after()` returns first.
    - Unclear: Vercel function limit for the by-event delete on large nights.
    - Recommendation: await for `ids` DELETE and PATCH (one item); await for the by-event DELETE too unless a cap is known, with `after()` as the fallback for that branch only.
+   - **RESOLVED (plan 01-01):** await on all three paths (DELETE by `ids`, DELETE by `raid_event_id`, PATCH). `after()` for the by-event branch only stays the documented fallback if assumption A1 fails on a real night.
 3. **Classic-era guild links:** change to era-specific domains (recommended, matches `ItemLink`) or Forever-only?
+   - **RESOLVED (owner decision 2, 2026-10-13; plan 01-03, consumed by plan 01-04):** Forever-only. Every non-Forever guild's links stay byte-identical to today. Era-correct links for older expansions are an opt-in follow-up, recorded as deferred and not planned.
 4. **Other em dashes in bot output:** only the `/score` and `/priority` titles are in the roadmap criterion. `help.js:267` (ops-channel embed title) and many non-title strings (`help.js`, `digest.js`, `feedback.js`, `closures.js`) contain em dashes. Fix just the raider-facing `interactions.js` strings (recommended; REH-02's em-dash test in Phase 7 sweeps the rest) or include `help.js:267`?
+   - **RESOLVED (owner decision 3, 2026-10-13; plan 01-04):** fix every bot embed title this phase (both `interactions.js` titles, `help.js:267`, and the `/priority` raider line). The remaining user-facing bot em dashes (`feedback.js:327`, `help.js:344` and `:352`, `commands.js:24`, `digest.js:126`) are deferred to Phase 7 REH-02 as an owner-accepted exception to Hard Constraint 2, recorded in plan 01-04. The four replacement strings still need owner sign-off before plan 01-04 merges. Planning also found `feedback.js:324`, `help-review.js:94` and `help.js:129`, proposed for the same deferral and flagged for the owner to confirm.
 5. **Other analytics call sites that send names:** `LootSubmissionsContent.tsx:533,538` (`character_name`), `app/api/characters/route.ts:205` (`character_name`), `app/api/reserve-runs/[id]/awards/route.ts:122` (`character_name`), `app/api/battlenet/characters/import/route.ts:438` (`character_name`), `CreateGuildModal.tsx:385` and `app/api/guilds/route.ts:318` (`guild_name`). Hard Constraint 3 binds new events, and FIX-05 names one event. Sweep them in this phase or log as a follow-up?
+   - **RESOLVED (plans 01-06 and 01-08):** sweep in this phase. Plan 01-06 cleans the browser sites and the PostHog super, group and person properties; plan 01-08 cleans the server sites and adds the scan guard. Per owner decision 4 (2026-10-13), `email` is dropped from `posthog.identify` in `app/components/PostHogProvider.tsx` and `discord_id` stays.
 6. **Reserve "Copy for Discord" (`app/reserve/join/[token]/page.tsx:682`)** builds retail links a raider pastes into Discord; not in the roadmap's list of three sites. Include (needs the run's expansion name on a public token page) or defer?
+   - **RESOLVED (plan 01-03):** included. `run.expansion_name` is already loaded on the public token page, so the fix is one line.
 7. **Row-cap scope in `guild-data`:** include paging for `loot_items` (MoP 1700+ items) as part of FIX-02, or only for BLP and priorities?
+   - **RESOLVED (plan 01-02):** page `loot_items` in guild-data too (ordered by name then id). export-string (plan 01-07) reads items through an embedded select that the top-level row cap does not truncate, so it pages only BLP and priorities.
 
 ## Environment Availability
 
