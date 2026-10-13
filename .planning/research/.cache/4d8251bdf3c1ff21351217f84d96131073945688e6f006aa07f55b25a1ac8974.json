@@ -1,0 +1,1 @@
+{"content":"Discord bot send-message limit is commonly cited as 5 per 5 seconds per channel, ~50 req/s global; read X-RateLimit headers rather than hardcoding; edits have separate buckets.","source":"web","provider":"websearch","confidence":"MEDIUM","fetched_at":"2026-10-13T00:41:15.913Z","ttl":86400000,"kind":"web"}
