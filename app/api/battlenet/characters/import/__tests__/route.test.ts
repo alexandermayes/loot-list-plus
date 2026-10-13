@@ -9,6 +9,7 @@ import { getBattlenetAccount, battlenetFetch, getWowProfileNamespaces } from '@/
 import { getDefaultRoleName } from '@/domain/guild/default-role'
 import { resolveGuildJoinAccess, consumeGuildJoinGrant } from '@/domain/guild/join-grants'
 import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
+import { trackEvent } from '@/utils/analytics/server'
 
 vi.mock('@/utils/supabase/server', () => ({
   createClient: vi.fn(),
@@ -184,6 +185,24 @@ describe('POST /api/battlenet/characters/import applies the guild rule before cr
     expect(consumeGuildJoinGrant).toHaveBeenCalledWith(service.client, { userId: USER, guildId: GUILD })
     expect(events).toEqual(['characters:insert', 'character_guild_memberships:upsert', 'consume'])
     expect(evaluateGuildFunnel).toHaveBeenCalledWith(service.client, GUILD)
+  })
+
+  // Hard Constraint 3: PostHog gets ids and counts only. The imported
+  // character is named 'Thrall' (PROFILE), so a name leak would show here.
+  it('sends character_imported with ids and counts only, no character name', async () => {
+    setup()
+
+    const res = await POST(request({ guildId: GUILD }))
+
+    expect(res.status).toBe(201)
+    const imported = vi.mocked(trackEvent).mock.calls.filter(([arg]) => arg.event === 'character_imported')
+    expect(imported).toHaveLength(1)
+    expect(imported[0][0].properties).toEqual({
+      character_id: CHARACTER,
+      source: 'battlenet',
+      gear_count: 0,
+      version: 'classic-era',
+    })
   })
 
   it('still returns 201 and consumes nothing when the membership upsert fails', async () => {
