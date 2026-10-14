@@ -2382,20 +2382,6 @@ export type Database = {
         Args: { p_guild_id: string }
         Returns: undefined
       }
-      update_guild_icon: {
-        Args: { p_guild_id: string; p_icon_url: string }
-        Returns: undefined
-      }
-      update_guild_info: {
-        Args: {
-          p_discord_server_id: string
-          p_faction: string
-          p_guild_id: string
-          p_name: string
-          p_realm: string
-        }
-        Returns: undefined
-      }
     }
     Enums: {
       [_ in never]: never
