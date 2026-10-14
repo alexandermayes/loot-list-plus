@@ -1940,7 +1940,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                         <span className="px-1.5 py-0.5 rounded bg-accent/20 text-accent text-11 font-bold">P{phase}</span>
                         {iconTier && (
                           <img
-                            src={getRaidIcon(iconTier.name)}
+                            src={getRaidIcon(iconTier.name, getGuildGame(activeGuild))}
                             alt=""
                             className="w-4 h-4 rounded border border-border/50"
                           />

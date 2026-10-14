@@ -1,3 +1,5 @@
+import type { GameVersion } from '@/domain/expansion/game'
+
 // Mapping of raid names to their Wowhead icon names
 const raidIconMap: Record<string, string> = {
   // Classic
@@ -82,13 +84,23 @@ const raidIconMap: Record<string, string> = {
   'SoO': 'achievement_boss_garrosh',
 }
 
-export function getRaidIcon(raidName: string): string {
-  const iconName = raidIconMap[raidName] || 'inv_misc_questionmark'
+/**
+ * The neutral icon every Forever raid uses (D-04). Forever raid names collide
+ * with Classic and TBC raid names ("Onyxia's Lair", "Hyjal Summit"), so the
+ * Forever path never reads the name map. A Forever-specific icon is a one-line
+ * change to this constant.
+ */
+export const FOREVER_RAID_ICON = 'inv_misc_questionmark'
+
+// game is optional so call sites not yet wired by plan 02-13 keep compiling;
+// omitted means the Classic line, exactly as before.
+export function getRaidIcon(raidName: string, game?: GameVersion): string {
+  const iconName = game === 'forever' ? FOREVER_RAID_ICON : raidIconMap[raidName] || 'inv_misc_questionmark'
   return `https://wow.zamimg.com/images/wow/icons/medium/${iconName}.jpg`
 }
 
-export function getRaidIconLarge(raidName: string): string {
-  const iconName = raidIconMap[raidName] || 'inv_misc_questionmark'
+export function getRaidIconLarge(raidName: string, game?: GameVersion): string {
+  const iconName = game === 'forever' ? FOREVER_RAID_ICON : raidIconMap[raidName] || 'inv_misc_questionmark'
   return `https://wow.zamimg.com/images/wow/icons/large/${iconName}.jpg`
 }
 
