@@ -31,7 +31,7 @@ created: 2026-10-13
 ## Sampling Rate
 
 - **After every task commit:** Run the task's scoped `npx vitest run <paths>` (all under 10 seconds)
-- **After every plan wave:** Run `npx vitest run data app/services app/api/reserve-runs utils "app/(app)/overview" scripts` plus `npm run typecheck`
+- **After every plan wave:** Run `npx vitest run data app/services app/api/reserve-runs utils "app/(app)/overview" "app/(app)/reserve" "app/(app)/master-sheet" scripts` plus `npm run typecheck`
 - **Before `/gsd-verify-work`:** Full suite must be green: `npm run lint && npm run typecheck && npm run test`
 - **Max feedback latency:** 60 seconds
 
@@ -39,7 +39,7 @@ created: 2026-10-13
 
 ## Per-Task Verification Map
 
-Filled from the final eleven plans on 2026-10-14 (plan check revision). Task ID is `<plan>-T<n>`. Commands are each task's `<automated>` verify (typecheck and lint steps omitted for width). `nyquist_compliant` stays false and `status` stays draft until the executor confirms the map against the built tests.
+Filled from the final thirteen plans on 2026-10-14 (plan check revisions: the first split two plans; the second moved the raid-icon task out of 02-11 into plan 02-12 and added plan 02-13). Task ID is `<plan>-T<n>`. Commands are each task's `<automated>` verify (typecheck and lint steps omitted for width). `nyquist_compliant` stays false and `status` stays draft until the executor confirms the map against the built tests.
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
@@ -58,16 +58,21 @@ Filled from the final eleven plans on 2026-10-14 (plan check revision). Task ID 
 | 02-07-T1 | 02-07 | 2 | EXPN-06 | T-02-07-01, T-02-07-02 | Strict snapshot schema; canonical hash excludes fetchedAt | unit | `npx vitest run data/expansions/__tests__/forever-reference.test.ts` | ❌ W0 | ⬜ pending |
 | 02-07-T2 | 02-07 | 2 | EXPN-01, EXPN-06 | T-02-07-03, T-02-07-04 | Shrink-only allowlist; forced promotion | unit | `npx vitest run data/expansions/__tests__/forever-reference.test.ts` | ✅ extend (T1) | ⬜ pending |
 | 02-08-T1 | 02-08 | 3 | EXPN-06 | T-02-08-01, T-02-08-03 | Injected fetch only; global fetch stubbed and unused; validate before write | unit plus CLI help run | `npx vitest run scripts/lib/__tests__/wago-snapshot.test.ts data/expansions/__tests__/forever-reference.test.ts && npx tsx scripts/expansions/snapshot-reference.ts --help` | ❌ W0 | ⬜ pending |
-| 02-08-T2 | 02-08 | 3 | EXPN-06 | T-02-08-02, T-02-08-04, T-02-08-06 | Outage set (403 after User-Agent retry, 429, 5xx, network, timeout) exits 0; 404, header, build and schema failures exit 1 | unit (injected fetch and sleep) | `npx vitest run scripts/lib/__tests__/wago-snapshot.test.ts && npx tsx scripts/expansions/snapshot-reference.ts --help` | ✅ extend (T1) | ⬜ pending |
+| 02-08-T2 | 02-08 | 3 | EXPN-06 | T-02-08-02, T-02-08-04, T-02-08-06 | Outage set (403, 429, 5xx, network, timeout after retries; identifying User-Agent only) exits 0; 404, header, build and schema failures exit 1 | unit (injected fetch and sleep) | `npx vitest run scripts/lib/__tests__/wago-snapshot.test.ts && npx tsx scripts/expansions/snapshot-reference.ts --help` | ✅ extend (T1) | ⬜ pending |
 | 02-09-T1 | 02-09 | 4 | EXPN-06 | T-02-09-04 | No live network to wago or Wowhead from runtime or tests | source scan (700-file floor, self-checks) | `npx vitest run data/expansions/__tests__/no-live-fetch.test.ts` | ❌ W0 | ⬜ pending |
 | 02-09-T2 | 02-09 | 4 | EXPN-06 | T-02-09-01, T-02-09-03 | Least-privilege token; outage stays green; never a required check | plain-text workflow check (no YAML parser) plus manual first dispatch | comment-stripped `grep` chain over `.github/workflows/refresh-wago-snapshot.yml` and `refresh-item-data.yml` (exact command in 02-09 Task 2 `<verify>`) | ❌ W0 | ⬜ pending |
 | 02-10-T1 | 02-10 | 3 | EXPN-05 | T-02-10-01, T-02-10-02 | Dry run by default; ids and counts only | unit plus CLI help run | `npx vitest run scripts/lib/__tests__/forever-sync.test.ts && npm run sync:forever -- --help` | ❌ W0 | ⬜ pending |
 | 02-10-T2 | 02-10 | 3 | EXPN-05 | T-02-10-03, T-02-10-04, T-02-10-05 | Insert-only apply; duplicates reported, never deleted; no request-path sync | unit (stateful fake) plus source scan | `npx vitest run scripts/lib/__tests__/forever-sync.test.ts app/services/__tests__/expansionCatalogSync.test.ts` | ✅ extend (T1) | ⬜ pending |
 | 02-11-T1 | 02-11 | 3 | EXPN-01 | T-02-11-01, T-02-11-02 | React-escaped manifest strings; Unconfirmed carried by text | component | `npx vitest run "app/(app)/overview/components/__tests__/SetupGuide.test.tsx"` | ✅ extend | ⬜ pending |
 | 02-11-T2 | 02-11 | 3 | EXPN-01 | T-02-11-03, T-02-11-04, T-02-11-05 | Visibility gating; copy held for sign-off; importer scan | component plus source scan | `npx vitest run "app/(app)/overview/components/__tests__/SetupGuide.test.tsx" app/services/__tests__/expansionCatalogSync.test.ts` | ✅ extend | ⬜ pending |
-| 02-11-T3 | 02-11 | 3 | EXPN-01 (D-04) | T-02-11-06 | Forever icon path never reads the name map | unit plus source scan (call-site inventory) | `npx vitest run utils/__tests__/raidIcons.test.ts "app/(app)/overview" "app/(app)/reserve" "app/(app)/master-sheet" "app/(app)/loot-submissions"` | ❌ W0 | ⬜ pending |
+| 02-12-T1 | 02-12 | 1 | EXPN-01 (D-04) | T-02-12-01, T-02-12-02 | Forever icon path never reads the name map; Classic icons unchanged | unit (lookup) | `npx vitest run utils/__tests__/raidIcons.test.ts "app/(app)/overview"` | ❌ W0 | ⬜ pending |
+| 02-12-T2 | 02-12 | 1 | EXPN-01 (D-04) | T-02-12-01 | Five guild tier surfaces pass the guild's game | typecheck plus grep (glue; inventory in T3) | `npx vitest run utils/__tests__/raidIcons.test.ts "app/(app)/master-sheet" "app/(app)/loot-submissions"` | ✅ extend (T1) | ⬜ pending |
+| 02-12-T3 | 02-12 | 1 | EXPN-01 (D-04) | T-02-12-01 | Every game-less raid-icon call is on an explicit, self-checking allowlist | source scan (call-site inventory, synthetic self-checks) | `npx vitest run utils/__tests__/raidIcons.test.ts` | ✅ extend (T1) | ⬜ pending |
+| 02-13-T1 | 02-13 | 2 | EXPN-01 (D-04) | T-02-13-01, T-02-13-02 | Run payload adds only the public expansion name; viewer allow-list unchanged | route unit plus inventory | `npx vitest run app/api/reserve-runs utils/__tests__/raidIcons.test.ts` | ✅ extend route test | ⬜ pending |
+| 02-13-T2 | 02-13 | 2 | EXPN-01 (D-04) | T-02-13-05 | Reserve run list and master sheet tier header pass the guild's game (required prop) | typecheck plus inventory | `npx vitest run utils/__tests__/raidIcons.test.ts "app/(app)/master-sheet" "app/(app)/reserve"` | ✅ extend | ⬜ pending |
+| 02-13-T3 | 02-13 | 2 | EXPN-01 (D-04) | T-02-13-02, T-02-13-03, T-02-13-04, T-02-13-05 | Modal, join page and OG card resolve by game; allowlist empty | component plus inventory | `npx vitest run utils/__tests__/raidIcons.test.ts "app/(app)/reserve"` | ✅ extend modal test | ⬜ pending |
 
-Sampling continuity: 23 tasks; only 02-02-T1 (the blocking-human checkpoint) has no automated command, and its neighbours 02-01-T2 and 02-02-T2 both do, so no three consecutive tasks lack automated verify.
+Sampling continuity: 28 tasks; only 02-02-T1 (the blocking-human checkpoint) has no automated command, and its neighbours 02-01-T2 and 02-02-T2 both do, so no three consecutive tasks lack automated verify.
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -80,7 +85,7 @@ Sampling continuity: 23 tasks; only 02-02-T1 (the blocking-human checkpoint) has
 - [ ] `app/services/__tests__/expansionCatalogSync.test.ts` with a stateful in-memory fake for `raid_tiers` (select, insert, throwing update or delete) — EXPN-05 (02-03)
 - [ ] `app/services/__tests__/expansionSeeder-registry.test.ts` and `app/api/reserve-runs/raid-tiers/__tests__/route.test.ts` — EXPN-02 (02-05)
 - [ ] `scripts/lib/__tests__/wago-snapshot.test.ts` (02-08), `scripts/lib/__tests__/forever-sync.test.ts` (02-10) — EXPN-05, EXPN-06
-- [ ] `utils/__tests__/raidIcons.test.ts` — D-04 expansion-scoped raid icons and call-site inventory (02-11)
+- [ ] `utils/__tests__/raidIcons.test.ts` — D-04 game-scoped raid icons and call-site inventory (02-12; allowlist emptied in 02-13)
 - [ ] Update `expansionSeeder.test.ts` (Forever now seeds three tiers, 02-03) and `raid-phase-coverage.test.ts` (slug via registry, 02-04)
 - [ ] Framework install: none. Dependencies: `npm install --save-exact zod@4.6.5` and `npm install --save-dev --save-exact csv-parse@7.0.2` (human-verify checkpoint first, 02-02)
 
@@ -90,7 +95,7 @@ Sampling continuity: 23 tasks; only 02-02-T1 (the blocking-human checkpoint) has
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
-| Staging Forever guild shows three raids with Unconfirmed badges in the setup guide, and Forever tiers show the neutral raid icon (not Classic Onyxia or TBC Archimonde art) on the overview, loot list and master sheet | EXPN-01, D-04 | Visual copy check and owner sign-off on copy (02-11) | Create a Forever guild on staging, open Overview, confirm raids, bosses, badges and lines match the signed-off copy; open the loot list and master sheet and confirm the Forever tier icons are neutral |
+| Staging Forever guild shows three raids with Unconfirmed badges in the setup guide, and Forever tiers show the neutral raid icon (not Classic Onyxia or TBC Archimonde art) on the overview, loot list, master sheet and in the reserve flow | EXPN-01, D-02, D-04 | Visual copy and placement check and owner sign-off on copy (02-11); icons (02-12, 02-13) | Create a Forever guild on staging, open Overview, confirm raids, bosses, badges, lines and the section placement match the signed-off copy; open the loot list, master sheet, create a reserve run and open its join link, and confirm the Forever tier icons are neutral |
 | Admin sync dry-run output on the real database | EXPN-05 | Needs production data and owner eyeballing (02-10) | Run the sync script in dry-run (default), confirm per-guild tier names and counts, then run with `--apply` once |
 | First `workflow_dispatch` run of "Refresh wago snapshot" after PR 5 merges | EXPN-06 (SC5) | Needs the default-branch workflow and live wago; SC5 is conditionally met until it succeeds (02-07, 02-09 verifier notes) | Run the workflow once from the Actions tab; expect a green run with either an outage notice (no PR) or a PR from `chore/refresh-wago-snapshot` carrying the GITHUB_TOKEN note and the promotable list |
 

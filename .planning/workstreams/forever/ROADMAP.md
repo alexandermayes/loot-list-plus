@@ -103,25 +103,27 @@ Plans:
   4. Running the Forever catalog sync twice changes nothing the second time, and the sync never deletes or renames a row that a list, award or BLP record points at
   5. wago.tools snapshots are committed with their provenance, and a test fails if any runtime or test code fetches wago.tools or Wowhead live
 
-**Plans**: 11 plans in 4 waves (revised 2026-10-14 after the plan check: the registry plan and the snapshot plan were each split in two and later plans renumbered)
+**Plans**: 13 plans in 4 waves (revised 2026-10-14 after the plan check: the registry plan and the snapshot plan were each split in two and later plans renumbered; second revision 2026-10-14: raid-icon scoping moved out of 02-11 into its own plan 02-12, merged before PR 3, and plan 02-13 wires the remaining six raid-icon call sites)
 
 Plans:
 **Wave 1**
 
 - [ ] 02-01-PLAN.md (wave 1): golden-row files for the five legacy expansions, captured from the unmodified seeder (EXPN-03)
 - [ ] 02-02-PLAN.md (wave 1): owner-vetted zod and csv-parse at exact versions; zod manifest schema and the native Forever manifest with provisional bosses (EXPN-01, EXPN-04, EXPN-06)
+- [ ] 02-12-PLAN.md (wave 1): raid icons resolve by game, so Forever tiers never show Classic or TBC art; six guild tier surfaces wired; call-site inventory; its own PR, merged before PR 3 (EXPN-01, D-04)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [ ] 02-03-PLAN.md (wave 2): tracer: Forever phases entry, alias lookup, insert-only syncExpansionCatalog and the seeder's Forever branch, so a new Forever guild gets its three tiers (EXPN-01, EXPN-05)
-- [ ] 02-07-PLAN.md (wave 2): committed wago snapshot placeholder with provenance fields, provisional-boss allowlist ratchet and forced-promotion check (EXPN-06, EXPN-01)
+- [ ] 02-07-PLAN.md (wave 2): committed wago snapshot placeholder with provenance fields, provisional-boss allowlist ratchet (one reviewed growth exception per D-15) and forced-promotion check (EXPN-06, EXPN-01)
+- [ ] 02-13-PLAN.md (wave 2): the six remaining raid-icon call sites (reserve run list, run detail, create-run modal, public join page, share card, master sheet tier header) resolve by game; allowlist empty (EXPN-01, D-04)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 02-04-PLAN.md (wave 3): one client-safe registry plus server-only legacy adapters; display-name chains removed; golden files unchanged; phase coverage through registry slugs (EXPN-02, EXPN-03)
-- [ ] 02-08-PLAN.md (wave 3): offline wago snapshot library and CLI with retry, backoff, the 403 User-Agent retry and the owner-confirmed outage-green set (EXPN-06)
+- [ ] 02-04-PLAN.md (wave 3): one client-safe registry plus server-only legacy adapters sharing `data/expansions/types.ts`; display-name chains removed; golden files unchanged; phase coverage through registry slugs (EXPN-02, EXPN-03)
+- [ ] 02-08-PLAN.md (wave 3): offline wago snapshot library and CLI with retry and backoff under one identifying User-Agent and the owner-confirmed outage-green set (EXPN-06)
 - [ ] 02-10-PLAN.md (wave 3): owner-run sync:forever admin script, dry run by default, --apply idempotent with duplicate report (EXPN-05)
-- [ ] 02-11-PLAN.md (wave 3): setup guide lists Forever raids and bosses with Unconfirmed badges (copy sign-off in its own PR); expansion-scoped raid icons so Forever tiers never show Classic or TBC art (EXPN-01, D-04)
+- [ ] 02-11-PLAN.md (wave 3): setup guide lists Forever raids and bosses with Unconfirmed badges in a "Your raids" section after the steps list (copy and placement sign-off in its own PR) (EXPN-01)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 

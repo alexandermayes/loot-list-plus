@@ -587,22 +587,30 @@ These are the discrete values the plan depends on, each read with `Read` this se
 | A8 | Parsing zod at runtime in the seeder is unnecessary | Standard Stack alternatives | Low; parse-once is cheap if the planner prefers it |
 | A9 | `getRaidPhase` style phase lookup via `EXPANSION_PHASES.forever` is the right single source (manifest carries no `phase`) | Pattern 3 | If the owner wants phase in the manifest, add a gate equality check instead |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+Resolutions recorded 2026-10-14 during plan revision; each names the plan that carries it.
 
 1. **Slug resolution for Forever (recommended: registry owns it).**
    - What we know: `getExpansionSlug('Forever')` is `null`; the phase-coverage test and the seeder's `getRaidPhase` need a slug; the reserve-run route uses the same map.
    - What's unclear: whether the owner wants Forever reserve runs to light up now.
    - Recommendation: registry entry carries `slug: 'forever'`; seeder and coverage test resolve through it; leave `EXPANSION_NAME_TO_SLUG` and the reserve-run route unchanged; add one test that the route still answers 400 for `expansion=Forever`.
+   - **RESOLVED:** as recommended. The registry entry carries `slug: 'forever'` (02-04), Forever phases resolve through `getRaidPhase('forever', ...)` (02-03), the coverage test reads the registry slug (02-04 Task 2), and `EXPANSION_NAME_TO_SLUG` plus the reserve-run route stay unchanged with the Forever 400 pinned (02-05 Task 2).
 
 2. **Dry-run default for the admin script.** CONTEXT requires a dry-run mode; the repo precedent defaults to dry-run with `--apply`. Recommendation: follow the precedent.
+   - **RESOLVED:** dry run is the default and `--apply` writes (02-10).
 
 3. **wago CSV headers and build list shape.** Unknown until the first successful pull (wago was 503 on every 2026-10-12 probe). The script must validate expected headers (`ID`, `Name_lang`, `MapID`, `OrderIndex`, `DifficultyID` for DungeonEncounter; `ID`, `MapName_lang`, `InstanceType`, `ExpansionID`, `Directory` for Map; `ID` plus the columns the manifest needs for ItemSparse) and fail loudly. Column names are from WoWDBDefs `DungeonEncounter.dbd` and `Map.dbd` (fetched this session from raw.githubusercontent.com, which is not wago or Wowhead); array flattening (`_N`) is not confirmed. [CITED: github.com/wowdev/WoWDBDefs definitions]
+   - **RESOLVED (owner-accepted open assumption, 2026-10-14):** the headers and the build-list shape are confirmed on the first successful pull (02-08). Until then they stay a flagged assumption (02-08 "Assumptions and Flagged Items", EXPN-06 edge probe): the script checks the expected headers, accepts the three candidate build-list shapes, and exits 1 on a missing header or an unknown shape, and nothing in the phase waits on the pull (D-14).
 
 4. **Owner input (Oct 21):** Hyjal Summit boss names (none exist), whether "Well of Sorrow" is a boss, Onyxia's Lair boss. Until then: Hyjal empty ("Bosses to be announced"), everything else provisional.
+   - **RESOLVED:** the manifest ships these defaults with a source note per provisional boss (02-02, D-12); the setup guide shows "Bosses to be announced" for Hyjal (02-11); the Oct 21 input lands as a manifest edit, and any new provisional boss enters through the reviewed `PROVISIONAL_CEILING` exception to D-15 (02-07).
 
 5. **What the trimmed snapshot contains while Forever has no items and unknown map ids.** Recommendation: `DungeonEncounter` rows whose normalized `Name_lang` matches any manifest boss name (any map) plus rows for any manifest `mapId`; `Map` rows for manifest `mapId`s or whose normalized `MapName_lang` matches a manifest raid name; `ItemSparse` rows only for manifest item ids (empty today). Commit a placeholder `reference/wago.json` with `build: null` so imports never fail (D-14).
+   - **RESOLVED:** as recommended. The trim rules are `trimToManifest` (02-08) and the placeholder snapshot is committed with `build: null` (02-07).
 
 6. **Requirement wording vs D-01.** EXPN-01 says "bosses seeded from a manifest keyed on `wowhead_id`"; D-01 makes bosses manifest-only (no rows) and items are the `wowhead_id`-keyed part (empty for Forever). The verifier should accept manifest-resolved bosses as satisfying EXPN-01.
+   - **RESOLVED:** owner decision D-16 (2026-10-14): the `wowhead_id` key applies to items and bosses are manifest entries keyed by name/slug, so manifest-resolved bosses satisfy EXPN-01 (02-03 seeds the tiers; 02-11 shows the bosses).
 
 ## Environment Availability
 
