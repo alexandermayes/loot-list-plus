@@ -178,7 +178,13 @@ function canonicalLines(calls: RecordedCall[]): string {
 }
 
 // Stored expansion name and the golden file slug.
-const LEGACY_EXPANSIONS: Array<[string, string]> = [['Classic', 'classic']]
+const LEGACY_EXPANSIONS: Array<[string, string]> = [
+  ['Classic', 'classic'],
+  ['The Burning Crusade', 'tbc'],
+  ['Wrath of the Lich King', 'wrath'],
+  ['Cataclysm', 'cata'],
+  ['Mists of Pandaria', 'mop'],
+]
 
 describe('legacy expansion seeding is frozen to golden rows', () => {
   it.each(LEGACY_EXPANSIONS)('%s seeds exactly the committed rows', async (name, slug) => {
@@ -229,5 +235,17 @@ describe('legacy expansion seeding is frozen to golden rows', () => {
     }
 
     await expect(text).toMatchFileSnapshot(`./__golden__/${slug}.rows.txt`)
+  })
+})
+
+describe('golden recorder', () => {
+  it('records identical lines for two fresh recorders (a later diff is never the recorder)', async () => {
+    const first = createSeederRecorder()
+    const second = createSeederRecorder()
+
+    await seedExpansionForGuild(first.supabase, 'g1', 'Classic', true, true)
+    await seedExpansionForGuild(second.supabase, 'g1', 'Classic', true, true)
+
+    expect(canonicalLines(first.calls)).toBe(canonicalLines(second.calls))
   })
 })
