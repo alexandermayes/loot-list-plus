@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 02
 current_phase_name: Expansion Onboarding Manifest
 status: executing
-stopped_at: Phase 2 context gathered
-last_updated: "2026-10-14T21:13:39.889Z"
-last_activity: 2026-10-13
-last_activity_desc: Phase 01 complete, transitioned to Phase 2
-state_head: ab3b81a558b9258b285a65cdb9df8761f86e733d
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-10-14T21:49:07.738Z"
+last_activity: 2026-10-14
+last_activity_desc: Phase 02 execution started
+state_head: 201b0e1c214aedd3242d116855aa5b58da3135f0
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 22
-  completed_plans: 9
+  completed_plans: 10
   percent: 13
 ---
 
@@ -29,16 +29,16 @@ Roadmap: `.planning/workstreams/forever/ROADMAP.md` (8 phases)
 Research: `.planning/research/SUMMARY.md`
 
 **Core value:** A Forever guild can run loot from day one without knowing a single item: raiders rank generic needs, officers settle every drop in seconds from a Drop Desk, and the whole product feels like a consumer app that just works.
-**Current focus:** Phase 2 — Expansion Onboarding Manifest
+**Current focus:** Phase 02 — Expansion Onboarding Manifest
 
 ## Current Position
 
-Phase: 02 (Expansion Onboarding Manifest) — READY TO EXECUTE
-Plan: Not started
+Phase: 02 (Expansion Onboarding Manifest) — EXECUTING
+Plan: 2 of 13
 Status: Ready to execute
-Last activity: 2026-10-13 — Phase 01 complete, transitioned to Phase 2
+Last activity: 2026-10-14 — Phase 02 execution started
 
-Progress: [██░░░░░░░░] 1/8 phases (13%); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed
+Progress: [██░░░░░░░░] 1/8 phases ([█░░░░░░░░░] 13%); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed
 
 ## Hard Dates
 
@@ -78,6 +78,7 @@ Progress: [██░░░░░░░░] 1/8 phases (13%); Phase 01: 9/9 plans
 | Phase 01 P08 | 5 min | 2 tasks | 10 files |
 | Phase 01 P05 | 6 min | 2 tasks | 7 files |
 | Phase 01 P09 | 4 min | 2 tasks | 4 files |
+| Phase 02 P01 | 8 min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,7 @@ Progress: [██░░░░░░░░] 1/8 phases (13%); Phase 01: 9/9 plans
 - [Phase 01]: 01-08: five server analytics events (guild_created, character_created, reserve_item_awarded, character_imported, loot_item_removed_from_list) send ids and counts only; a source scan with a 50-site floor and self-checks fails on any name in an analytics call or email in an identify call — Hard Constraint 3 and owner decision 4; stored award and audit rows keep character_name; the scan reads call arguments only, so variable-built properties are caught only where passed literally
 - [Phase 01]: 01-05: all ten addon and bot routes on createTypedServiceRoleClient with no casts; scan test (typed-client-usage.test.ts) enforces it — FIX-06; lib/addon/sync-tokens.ts stays untyped (library, accepted debt); E-17 select-string columns left for human review
 - [Phase 01]: 01-09: bot embed titles use a colon, the /priority raider line a middle dot, the review post title parentheses; copy is proposed and awaits owner sign-off before PR 6 merges — FIX-03 and Hard Constraint 2; remaining user-facing bot em dashes are the owner-accepted Phase 7 REH-02 deferrals (decision 3), raider line fixed now (decision 5)
+- [Phase 02]: Golden-row files for the five legacy expansions are captured once from the unmodified seeder and never regenerated with -u; later plans run the suite with CI=true — A mismatch means the plan changed legacy rows (EXPN-03)
 
 ### Pending Owner Inputs
 
@@ -124,6 +126,6 @@ Progress: [██░░░░░░░░] 1/8 phases (13%); Phase 01: 9/9 plans
 
 ## Session Continuity
 
-Last session: 2026-10-14T04:52:33.488Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/workstreams/forever/phases/02-expansion-onboarding-manifest/02-CONTEXT.md
+Last session: 2026-10-14T21:49:07.663Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None

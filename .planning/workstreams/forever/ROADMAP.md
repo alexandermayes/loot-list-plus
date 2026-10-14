@@ -103,12 +103,12 @@ Plans:
   4. Running the Forever catalog sync twice changes nothing the second time, and the sync never deletes or renames a row that a list, award or BLP record points at
   5. wago.tools snapshots are committed with their provenance, and a test fails if any runtime or test code fetches wago.tools or Wowhead live
 
-**Plans**: 13 plans in 4 waves (revised 2026-10-14 after the plan check: the registry plan and the snapshot plan were each split in two and later plans renumbered; second revision 2026-10-14: raid-icon scoping moved out of 02-11 into its own plan 02-12, merged before PR 3, and plan 02-13 wires the remaining six raid-icon call sites)
+**Plans**: 1/13 plans executed in 4 waves (revised 2026-10-14 after the plan check: the registry plan and the snapshot plan were each split in two and later plans renumbered; second revision 2026-10-14: raid-icon scoping moved out of 02-11 into its own plan 02-12, merged before PR 3, and plan 02-13 wires the remaining six raid-icon call sites)
 
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md (wave 1): golden-row files for the five legacy expansions, captured from the unmodified seeder (EXPN-03)
+- [x] 02-01-PLAN.md (wave 1): golden-row files for the five legacy expansions, captured from the unmodified seeder (EXPN-03)
 - [ ] 02-02-PLAN.md (wave 1): owner-vetted zod and csv-parse at exact versions; zod manifest schema and the native Forever manifest with provisional bosses (EXPN-01, EXPN-04, EXPN-06)
 - [ ] 02-12-PLAN.md (wave 1): raid icons resolve by game, so Forever tiers never show Classic or TBC art; six guild tier surfaces wired; call-site inventory; its own PR, merged before PR 3 (EXPN-01, D-04)
 
@@ -280,7 +280,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Forever Defect and Privacy Fixes | 9/9 | Complete    | 2026-10-13 |
-| 2. Expansion Onboarding Manifest | 0/11 | Planned | - |
+| 2. Expansion Onboarding Manifest | 1/13 | In Progress|  |
 | 3. Discovery Schema and Need Pipeline | 0/TBD | Not started | - |
 | 4. Discovery Lists and Score Split | 0/TBD | Not started | - |
 | 5. Drop Desk Core | 0/TBD | Not started | - |
