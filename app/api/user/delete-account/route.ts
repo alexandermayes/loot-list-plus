@@ -106,17 +106,8 @@ export async function POST() {
         console.error('Error deleting attendance_records:', attendanceError)
       }
 
-      // 4. Delete loot submission items (if table exists)
-      const { error: submissionItemsError } = await serviceClient
-        .from('loot_submission_items')
-        .delete()
-        .in('character_id', characterIds)
-
-      if (submissionItemsError && !submissionItemsError.message.includes('does not exist')) {
-        console.error('Error deleting loot_submission_items:', submissionItemsError)
-      }
-
-      // 5. Delete loot submissions for user's characters
+      // 4. Delete loot submissions for user's characters
+      // Its loot_submission_items rows go with it via loot_submission_items_submission_id_fkey ON DELETE CASCADE (GH #351).
       const { error: submissionsError } = await serviceClient
         .from('loot_submissions')
         .delete()
@@ -126,7 +117,7 @@ export async function POST() {
         console.error('Error deleting loot_submissions:', submissionsError)
       }
 
-      // 6. Delete loot history for user's characters
+      // 5. Delete loot history for user's characters
       const { error: historyError } = await serviceClient
         .from('loot_history')
         .delete()
@@ -136,7 +127,7 @@ export async function POST() {
         console.error('Error deleting loot_history:', historyError)
       }
 
-      // 7. Delete character guild memberships
+      // 6. Delete character guild memberships
       const { error: membershipsError } = await serviceClient
         .from('character_guild_memberships')
         .delete()
@@ -146,7 +137,7 @@ export async function POST() {
         console.error('Error deleting character_guild_memberships:', membershipsError)
       }
 
-      // 8. Delete characters
+      // 7. Delete characters
       const { error: deleteCharsError } = await serviceClient
         .from('characters')
         .delete()
@@ -161,9 +152,9 @@ export async function POST() {
       }
     }
 
-    // 9. (guild_members cleanup handled by trigger from character_guild_memberships delete)
+    // 8. (guild_members cleanup handled by trigger from character_guild_memberships delete)
 
-    // 10. Delete user preferences
+    // 9. Delete user preferences
     const { error: prefsError } = await serviceClient
       .from('user_preferences')
       .delete()
@@ -173,7 +164,7 @@ export async function POST() {
       console.error('Error deleting user_preferences:', prefsError)
     }
 
-    // 11. Delete the auth user using admin API
+    // 10. Delete the auth user using admin API
     const { error: deleteUserError } = await serviceClient.auth.admin.deleteUser(userId)
 
     if (deleteUserError) {

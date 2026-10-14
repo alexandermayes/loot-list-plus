@@ -41,10 +41,12 @@ vi.mock('@/lib/discord-server-access', async (importOriginal) => ({
  * createServiceRoleClient(). maybeSingle on user_preferences always resolves
  * discord_verified: true; single() after an insert on guilds resolves a
  * fresh guild row; every other awaited chain resolves an empty list. Insert
- * payloads are recorded per table.
+ * payloads are recorded per table, and every from() table name is recorded in
+ * call order.
  */
 function createMockSupabase(opts: { failGuildsLinkUpdate?: boolean } = {}) {
   const insertPayloads: Record<string, unknown[]> = {}
+  const fromCalls: string[] = []
   // Every update and delete, in call order, with the eq filters applied to it.
   const writes: { table: string; op: 'update' | 'delete'; payload?: unknown; filters: [string, unknown][] }[] = []
 
@@ -105,8 +107,13 @@ function createMockSupabase(opts: { failGuildsLinkUpdate?: boolean } = {}) {
     return builder
   }
 
-  const supabase = { from: (table: string) => buildBuilder(table) }
-  return { supabase, insertPayloads, writes }
+  const supabase = {
+    from: (table: string) => {
+      fromCalls.push(table)
+      return buildBuilder(table)
+    },
+  }
+  return { supabase, fromCalls, insertPayloads, writes }
 }
 
 function request(body: unknown) {
@@ -338,5 +345,28 @@ describe('POST /api/guilds Discord server link', () => {
 
     expect(res.status).toBe(200)
     expect(fetchMock).toHaveBeenCalledWith('https://discord.com/api/v10/guilds/123', expect.anything())
+  })
+})
+
+describe('POST /api/guilds default roles (GH #351)', () => {
+  beforeEach(() => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'user-1' }, error: null } as never)
+    vi.mocked(seedExpansionForGuild).mockReset()
+    vi.mocked(seedExpansionForGuild).mockResolvedValue({ expansionId: 'exp-1' } as never)
+  })
+
+  it('never writes guild_roles, since the create_guild_default_roles trigger seeds the default roles', async () => {
+    const user = createMockSupabase()
+    const service = createMockSupabase()
+    vi.mocked(createClient).mockResolvedValue(user.supabase as never)
+    vi.mocked(createServiceRoleClient).mockReturnValue(service.supabase as never)
+
+    const res = await POST(request({ ...baseBody, expansion: 'Classic', realm: 'Arugal' }))
+
+    expect(res.status).toBe(200)
+    // Proves the recorder works and the route ran past the removed block.
+    expect(user.fromCalls).toContain('guild_settings')
+    expect(service.fromCalls).toContain('guild_invite_codes')
+    expect([...user.fromCalls, ...service.fromCalls]).not.toContain('guild_roles')
   })
 })
