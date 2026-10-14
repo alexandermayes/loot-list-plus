@@ -102,6 +102,22 @@ describe('buildImportStringAwardRow', () => {
     expect(row.awarded_date).toBe('2026-09-15')
   })
 
+  it('awardedDate (the zoned raid night, GH #355) wins over the date part of awardedAt', () => {
+    const row = buildImportStringAwardRow({
+      guildId: 'guild-1', item: ITEM, characterId: null, characterName: 'Thrall',
+      awardedBy: 'user-1', today: '2026-09-21', awardedAt: '2026-09-15T02:00:00Z', awardedDate: '2026-09-14',
+    })
+    expect(row.awarded_date).toBe('2026-09-14')
+  })
+
+  it('a null awardedDate falls back to the date part of awardedAt', () => {
+    const row = buildImportStringAwardRow({
+      guildId: 'guild-1', item: ITEM, characterId: null, characterName: 'Thrall',
+      awardedBy: 'user-1', today: '2026-09-21', awardedAt: '2026-09-15T02:00:00Z', awardedDate: null,
+    })
+    expect(row.awarded_date).toBe('2026-09-15')
+  })
+
   it('falls back to today when awardedAt is absent', () => {
     const row = buildImportStringAwardRow({
       guildId: 'guild-1', item: ITEM, characterId: null, characterName: 'Thrall',

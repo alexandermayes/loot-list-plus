@@ -4,11 +4,14 @@ import { authenticateAddonRequest, authorizeAddonGuild } from '@/lib/addon/sync-
 import { trackApiError } from '@/utils/analytics/server'
 import { recomputeBlpForEvents } from '@/utils/blp/recompute'
 import { importAttendanceByTeam } from '@/utils/raid-events/team-routing'
+import { guildRaidTimeZone, isUtcTimestamp, raidNightDate } from '@/lib/addon/raid-night'
 
 interface AttendanceRequest {
   guild_id: string
   raid_date: string
   raid_name: string
+  /** The session's raw UTC start time, optional (GH #355). */
+  start_time?: unknown
   attended: string[]  // Character names who attended
   boss_kills?: Array<{
     boss_name: string
@@ -22,6 +25,14 @@ interface AttendanceRequest {
  *
  * Submits attendance data from a raid session.
  * Creates or updates raid_events and attendance_records.
+ *
+ * GH #355: the raid night comes from the session's start_time in the guild's
+ * raid time zone (lib/addon/raid-night.ts), so a 22:30 EDT session lands on
+ * that evening's night and not on the next UTC date. A local time from 00:00
+ * to 05:59 belongs to the previous night (D1). A missing or malformed
+ * start_time keeps raid_date, which is what companion 1.1.0 sends, and a
+ * failed time zone read does the same. Nights an older sync created on a UTC
+ * date are not moved.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -29,7 +40,7 @@ export async function POST(request: NextRequest) {
     if (!auth.ok) return auth.response
 
     const body: AttendanceRequest = await request.json()
-    const { guild_id, raid_date, raid_name, attended, boss_kills } = body
+    const { guild_id, raid_date, raid_name, start_time, attended, boss_kills } = body
 
     if (!guild_id || !raid_date || !raid_name || !attended) {
       return NextResponse.json({
@@ -42,6 +53,18 @@ export async function POST(request: NextRequest) {
     // Officer check plus sync-token guild scope (GH #300 D-02)
     const access = await authorizeAddonGuild(supabase, auth.principal, guild_id)
     if (!access.ok) return access.response
+
+    // GH #355: the night in the guild's raid time zone. A failed zone read
+    // carries on with the UTC raid_date, as before.
+    let raidNight = raid_date
+    if (isUtcTimestamp(start_time)) {
+      try {
+        raidNight = raidNightDate(start_time, await guildRaidTimeZone(supabase, guild_id)) ?? raid_date
+      } catch (zoneError) {
+        console.error('Failed to read the raid time zone for addon attendance:', zoneError)
+        trackApiError('unknown', 'POST /api/addon/attendance', zoneError instanceof Error ? zoneError : new Error(String(zoneError)))
+      }
+    }
 
     // Resolve character names to IDs (+ names for attendance matching)
     const { data: memberships } = await supabase
@@ -67,7 +90,7 @@ export async function POST(request: NextRequest) {
     // event for non-team guilds). raid_events has no raid_name column, so the
     // night is keyed on (guild, date, team).
     const { eventIds, attendedCount, absentCount } = await importAttendanceByTeam(
-      supabase, guild_id, raid_date, members, attendedSet,
+      supabase, guild_id, raidNight, members, attendedSet,
     )
 
     if (eventIds.length === 0) {
@@ -86,6 +109,7 @@ export async function POST(request: NextRequest) {
       data: {
         raid_event_ids: eventIds,
         raid_event_id: eventIds[0],
+        raid_date: raidNight,
         records_created: attendedCount,
         records_updated: absentCount,
         unmatched_names: unmatched,
