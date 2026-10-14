@@ -103,7 +103,30 @@ Plans:
   4. Running the Forever catalog sync twice changes nothing the second time, and the sync never deletes or renames a row that a list, award or BLP record points at
   5. wago.tools snapshots are committed with their provenance, and a test fails if any runtime or test code fetches wago.tools or Wowhead live
 
-**Plans**: TBD
+**Plans**: 9 plans in 4 waves
+
+Plans:
+**Wave 1**
+
+- [ ] 02-01-PLAN.md (wave 1): golden-row files for the five legacy expansions, captured from the unmodified seeder (EXPN-03)
+- [ ] 02-02-PLAN.md (wave 1): owner-vetted zod and csv-parse at exact versions; zod manifest schema and the native Forever manifest with provisional bosses (EXPN-01, EXPN-04, EXPN-06)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-03-PLAN.md (wave 2): tracer: Forever phases entry, alias lookup, insert-only syncExpansionCatalog and the seeder's Forever branch, so a new Forever guild gets its three tiers (EXPN-01, EXPN-05)
+- [ ] 02-06-PLAN.md (wave 2): committed wago snapshot placeholder with provenance, provisional-boss allowlist ratchet, offline snapshot script with retry and outage-green exit (EXPN-06, EXPN-01)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 02-04-PLAN.md (wave 3): one client-safe registry plus server-only legacy adapters; display-name chains removed; golden files unchanged; reserve-run Forever 400 pinned (EXPN-02, EXPN-03)
+- [ ] 02-07-PLAN.md (wave 3): no-live-fetch source scan; weekly refresh-wago-snapshot workflow; item-data workflow watches data/expansions (EXPN-06)
+- [ ] 02-08-PLAN.md (wave 3): owner-run sync:forever admin script, dry run by default, --apply idempotent with duplicate report (EXPN-05)
+- [ ] 02-09-PLAN.md (wave 3): setup guide lists Forever raids and bosses with Unconfirmed badges, gated on owner copy sign-off in its own PR (EXPN-01)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 02-05-PLAN.md (wave 4): Vitest manifest gate: strict native rules, ratcheted legacy exceptions, frozen shipped names, dates-in-data scan (EXPN-04)
+
 **Research**: Light; skip `--research-phase`. Confirm wago CSV headers on the first pull (array columns flatten with `_N` suffixes). wago.tools returned 503 on every probe on 2026-10-12, so the snapshot script needs retry and backoff. Use the corrected seeder line numbers from research (registry at `app/services/expansionSeeder.ts:224-237`, chains at 449 to 462 and 470 to 481), not the brief's.
 **Owner input**: Forever boss names for Barrow Deeps and Hyjal by Oct 21 (Decision 26). Until then those bosses ship as provisional.
 
@@ -253,7 +276,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Forever Defect and Privacy Fixes | 9/9 | Complete    | 2026-10-13 |
-| 2. Expansion Onboarding Manifest | 0/TBD | Not started | - |
+| 2. Expansion Onboarding Manifest | 0/9 | Planned | - |
 | 3. Discovery Schema and Need Pipeline | 0/TBD | Not started | - |
 | 4. Discovery Lists and Score Split | 0/TBD | Not started | - |
 | 5. Drop Desk Core | 0/TBD | Not started | - |
