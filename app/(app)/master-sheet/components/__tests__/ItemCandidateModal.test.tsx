@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -73,7 +74,11 @@ function stubFetch(postResults: Array<Record<string, unknown>>) {
   return { posts }
 }
 
-function renderModal(rankings: PlayerRanking[] = [ranking()], onAwardComplete = vi.fn()) {
+function renderModal(
+  rankings: PlayerRanking[] = [ranking()],
+  onAwardComplete = vi.fn(),
+  guildSettings: ComponentProps<typeof ItemCandidateModal>['guildSettings'] = {},
+) {
   render(
     <ItemCandidateModal
       open
@@ -82,7 +87,7 @@ function renderModal(rankings: PlayerRanking[] = [ranking()], onAwardComplete = 
       rankings={rankings}
       priority={null}
       receivedCharacterIds={new Set()}
-      guildSettings={{}}
+      guildSettings={guildSettings}
       guildId="guild-1"
       isOfficer
       mostRecentRaidEventId="ev-1"
@@ -216,5 +221,41 @@ describe('ItemCandidateModal second copy on one raid night', () => {
     expect(screen.queryByRole('button', { name: C2 })).not.toBeInTheDocument()
     expect(toasts('error')).toEqual([])
     expect(onAwardComplete).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('ItemCandidateModal raider bonus reasons (GH #357)', () => {
+  const settingsFor = (characterKey: string) => ({
+    single_raider_overall_bonus: true,
+    single_raider_modifiers: {
+      [characterKey]: [{ amount: 2, label: 'Full enchants', expires_at: '2026-10-12' }],
+    },
+  })
+  // Match the whole inline span so the text and its nested value span read as one string.
+  const inlineLine = (text: string) =>
+    screen.findByText((_, el) => el?.tagName === 'SPAN' && el.textContent === text)
+
+  beforeEach(() => {
+    showNotification.mockReset()
+    stubFetch([])
+    // Only Date is faked so Testing Library timers stay real.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 10, 12))
+  })
+
+  afterEach(() => {
+    cleanup()
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  it('M6 the inline breakdown lists the reason and end date after the raider bonus', async () => {
+    renderModal([ranking({ raider_bonus: 2, loot_score: 12 })], vi.fn(), settingsFor('char-thrall'))
+    expect(await inlineLine('Raider bonus: +2.00 (Full enchants: +2 until Oct 12)')).toBeInTheDocument()
+  })
+
+  it('M7 the inline breakdown shows only the number when the entry belongs to another raider', async () => {
+    renderModal([ranking({ raider_bonus: 2, loot_score: 12 })], vi.fn(), settingsFor('char-other'))
+    expect(await inlineLine('Raider bonus: +2.00')).toBeInTheDocument()
   })
 })

@@ -14,15 +14,28 @@ import { withDefaults } from './defaults'
 import { getRoleModifierWithLabel, getActiveRaiderBonusEntries } from './modifiers'
 import { describeRaiderBonusEntries } from './raider-bonus'
 
+/** Raider bonus detail when the active entries are unknown (no character id, or a legacy flat number). */
+export const RAIDER_BONUS_GENERIC_DETAIL = 'Officer-assigned modifier for this raider'
+
+/** Extra context for config-only callers such as the master sheet. */
+export interface ExplainScoreOptions {
+  /** Character the result belongs to, so the raider bonus line can list each reason and end date. */
+  characterId?: string | null
+  /** YYYY-MM-DD date the score was computed for. Omit it and dated bonus entries are left out. */
+  asOfDate?: string
+}
+
 /**
  * Generate a human-readable explanation of a score result.
  *
  * @param result - Output from computeScore()
  * @param configOrInput - Either a partial ScoringConfig (legacy) or the full ScoreInput for richer context
+ * @param opts - Used only when configOrInput is a config; the ScoreInput path ignores it
  */
 export function explainScore(
   result: ScoreResult,
-  configOrInput: Partial<ScoringConfig> | ScoreInput = {}
+  configOrInput: Partial<ScoringConfig> | ScoreInput = {},
+  opts: ExplainScoreOptions = {}
 ): ScoreExplanation {
   // Determine if we got a full ScoreInput or just config
   const isScoreInput = 'itemRank' in configOrInput && 'character' in configOrInput
@@ -87,13 +100,14 @@ export function explainScore(
 
   if (s.raiderBonus !== 0) {
     // With the full input, list each active entry's reason and end date (#329).
+    // Config-only callers can pass opts with the character id and date to get the same text (GH #357).
     const entries = input
       ? getActiveRaiderBonusEntries(input.character.characterId, input.config, input.asOfDate)
-      : []
+      : getActiveRaiderBonusEntries(opts.characterId ?? null, config, opts.asOfDate)
     lines.push({
       label: 'Raider bonus',
       value: s.raiderBonus,
-      detail: entries.length > 0 ? describeRaiderBonusEntries(entries) : 'Officer-assigned modifier for this raider',
+      detail: entries.length > 0 ? describeRaiderBonusEntries(entries) : RAIDER_BONUS_GENERIC_DETAIL,
       key: 'raiderBonus',
     })
   }

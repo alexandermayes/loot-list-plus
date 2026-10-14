@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { computeScore } from '../engine'
-import { explainScore } from '../explain'
+import { explainScore, RAIDER_BONUS_GENERIC_DETAIL } from '../explain'
 import { calculateLootScore } from '../loot-score'
 import type { ScoreInput, ItemPriority } from '../../types'
 import { LOOT_SCORE_FIXTURES } from './fixtures'
@@ -456,6 +456,34 @@ describe('explainScore', () => {
       const result = computeScore(makeInput({ character: char, config }))
       const line = explainScore(result, config).lines.find(l => l.label === 'Raider bonus')
       expect(line?.detail).toBe('Officer-assigned modifier for this raider')
+    })
+
+    describe('config-only callers with opts (GH #357)', () => {
+      const config = {
+        single_raider_overall_bonus: true,
+        single_raider_modifiers: { 'char-1': [{ amount: 2, label: 'Full enchants', expires_at: '2026-10-12' }] },
+      }
+      const result = computeScore(makeInput({ character: char, config, asOfDate: '2026-10-10' }))
+      const detailFor = (cfg: typeof config, opts?: Parameters<typeof explainScore>[2]) =>
+        explainScore(result, cfg, opts).lines.find(l => l.label === 'Raider bonus')?.detail
+
+      it('lists the reason and end date when given a character id and date', () => {
+        expect(result.components.raiderBonus).toBe(2)
+        expect(detailFor(config, { characterId: 'char-1', asOfDate: '2026-10-10' })).toBe('Full enchants: +2 until Oct 12')
+      })
+
+      it('keeps the generic detail when the character id is null', () => {
+        expect(detailFor(config, { characterId: null, asOfDate: '2026-10-10' })).toBe(RAIDER_BONUS_GENERIC_DETAIL)
+      })
+
+      it('keeps the generic detail when the raider bonus setting is off', () => {
+        expect(detailFor({ ...config, single_raider_overall_bonus: false }, { characterId: 'char-1', asOfDate: '2026-10-10' }))
+          .toBe(RAIDER_BONUS_GENERIC_DETAIL)
+      })
+
+      it('keeps the generic detail without asOfDate, since dated entries count as inactive', () => {
+        expect(detailFor(config, { characterId: 'char-1' })).toBe(RAIDER_BONUS_GENERIC_DETAIL)
+      })
     })
   })
 
