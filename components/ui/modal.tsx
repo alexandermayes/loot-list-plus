@@ -231,6 +231,8 @@ interface ModalProps extends VariantProps<typeof modalContainerVariants> {
   className?: string
   maxHeight?: string
   zIndex?: number
+  /** Id of the element that describes the dialog, forwarded to the dialog container so consumers do not need to nest their own dialog (GH #304). */
+  "aria-describedby"?: string
 }
 
 const Modal = ({
@@ -241,6 +243,7 @@ const Modal = ({
   className,
   maxHeight,
   zIndex = 50,
+  "aria-describedby": ariaDescribedBy,
 }: ModalProps) => {
   // Two-phase state: `mounted` controls whether the DOM exists, `visible`
   // controls the CSS transition. When closing, we drop `visible` first,
@@ -416,6 +419,7 @@ const Modal = ({
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
+            aria-describedby={ariaDescribedBy}
             tabIndex={-1}
             size={size}
             className={className}

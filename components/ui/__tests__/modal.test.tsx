@@ -210,4 +210,30 @@ describe('Modal', () => {
     expect(onCloseB).toHaveBeenCalledOnce()
     expect(onCloseA).not.toHaveBeenCalled()
   })
+
+  it('forwards aria-describedby to the dialog element when passed, and omits it otherwise', () => {
+    const { rerender } = render(
+      <Modal open={true} onClose={() => {}} aria-describedby="modal-description">
+        <ModalHeader showCloseButton={false}>
+          <ModalTitle>Modal heading</ModalTitle>
+        </ModalHeader>
+        <ModalBody id="modal-description">Body copy</ModalBody>
+      </Modal>
+    )
+
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toHaveAttribute('aria-describedby', 'modal-description')
+    expect(dialog).toHaveAccessibleDescription('Body copy')
+
+    rerender(
+      <Modal open={true} onClose={() => {}}>
+        <ModalHeader showCloseButton={false}>
+          <ModalTitle>Modal heading</ModalTitle>
+        </ModalHeader>
+        <ModalBody id="modal-description">Body copy</ModalBody>
+      </Modal>
+    )
+
+    expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-describedby')
+  })
 })
