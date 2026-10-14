@@ -20,6 +20,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 ### Expansion format (SEED-001)
 
 - [ ] **EXPN-01**: Officer creating a Forever guild gets Barrow Deeps, Hyjal Summit and Onyxia's Lair with bosses seeded from a manifest keyed on `wowhead_id`; unverified bosses are marked provisional
+  - Clarified 2026-10-14 (D-16): the `wowhead_id` key applies to items; bosses are manifest entries keyed by name/slug until an encounter id is confirmed.
 - [ ] **EXPN-02**: The seeder resolves every expansion through one registry; no displayName if/else chains remain
 - [ ] **EXPN-03**: The five existing expansions seed byte-identical rows through adapters (golden-row snapshot test)
 - [ ] **EXPN-04**: A Vitest manifest gate rejects duplicate ids, missing token classes, phase or raid gaps, and name mismatches before merge

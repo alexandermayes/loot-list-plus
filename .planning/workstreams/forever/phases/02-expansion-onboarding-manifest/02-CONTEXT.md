@@ -40,6 +40,9 @@ Requirements: EXPN-01 to EXPN-06. Window: 2026-10-13 to 2026-10-21. Owner input 
 - **D-14:** If no wago snapshot has been committed yet (wago was 503 on every 2026-10-12 probe), the Forever reference test passes with every boss provisional and the allowlist holding all of them. Nothing in this phase waits on wago. The first successful pull commits the snapshot and starts shrinking the allowlist.
 - **D-15:** The provisional allowlist can only shrink. If an allowlisted boss appears in the pinned DungeonEncounter fixture, the gate fails until the manifest entry is promoted (a one-line edit in the same PR as the snapshot).
 
+### Requirement wording
+- **D-16:** EXPN-01's `wowhead_id` key applies to items (Forever has none yet); bosses are manifest entries keyed by name/slug under D-01 until an encounter id is confirmed. EXPN-01 is satisfied by manifest-resolved bosses (tier name to manifest raid to bosses). Recorded 2026-10-14 from the plan check. — **Reversibility:** reversible — an `encounterId` key can be populated per boss later from the DungeonEncounter snapshot.
+
 ### Claude's Discretion
 - Exact zod schema shape for the manifest (research sketch in `.planning/research/STACK.md` lines 126 to 136 is the starting point), including how `previousNames`, `opens_on`, `verification` and per-entry `source` are modelled.
 - Snapshot provenance fields (build, fetchedAt, sha256, source URL, tables pinned) and which wago tables are trimmed and committed (research suggests ItemSparse, DungeonEncounter, Map at minimum).
@@ -122,6 +125,7 @@ Requirements: EXPN-01 to EXPN-06. Window: 2026-10-13 to 2026-10-21. Owner input 
 - `manifest_key` column on `raid_tiers` for stable matching. Belongs with PLAT-06 (legacy id conversion, after Nov 30).
 - Listing bosses on the loot management raid tier screen and the master sheet `BossSection` for Forever. Setup guide only for now.
 - An `opens_on`-driven tier activation. Dates stay data-only; tier state is Phase 1 active and visible.
+- Forever boss art in `utils/bossImages.ts` (name-keyed, so 'Onyxia' resolves to Classic art). Tied to Phase 5 loot rows: boss images render beside loot rows and Forever has none until then; resolve by expansion plus name (D-04) when Phase 5 adds Forever loot. Recorded 2026-10-14 (owner decision on the plan check).
 
 </deferred>
 
