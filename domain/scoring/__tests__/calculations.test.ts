@@ -495,6 +495,8 @@ describe('getDefaultSettings', () => {
     expect(defaults.max_attendance_bonus).toBe(4)
     expect(defaults.blp_enabled).toBe(false)
     expect(defaults.trial_penalty_enabled).toBe(false)
+    // GH #357: matches the guild_settings column default
+    expect(defaults.single_raider_overall_bonus).toBe(true)
   })
 })
 

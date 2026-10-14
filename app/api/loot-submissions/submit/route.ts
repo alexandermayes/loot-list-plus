@@ -30,7 +30,9 @@ const NOT_ACTIVE_MEMBER_ERROR = 'Your character needs to rejoin this guild.'
  * 3. Read current items + item metadata from DB
  * 4. Read guild enforce_slot_restrictions setting
  * 5. Validate bracket rules and item copy limits (the same per-item rule the
- *    loot list applies; see domain/loot/item-copies.ts)
+ *    loot list applies; see domain/loot/item-copies.ts). Rows whose item is
+ *    from a raid tier the guild turned off (raid_tiers.is_guild_active = false)
+ *    are skipped, because the loot list page never shows them (GH #357)
  * 6. If valid: snapshot previous items, set status to 'pending'
  * 7. If invalid: return violations, status stays as-is
  */
@@ -87,7 +89,7 @@ export async function POST(request: NextRequest) {
         rank,
         slot,
         loot_item_id,
-        loot_item:loot_items(id, name, classification, item_type, item_slot, wowhead_id, allocation_cost)
+        loot_item:loot_items(id, name, classification, item_type, item_slot, wowhead_id, allocation_cost, raid_tier:raid_tiers(is_guild_active))
       `)
       .eq('submission_id', submission_id)
       .is('removed_at', null)
@@ -122,10 +124,24 @@ export async function POST(request: NextRequest) {
         item_type?: string | null
         item_slot?: string | null
         allocation_cost?: number | null
+        // PostgREST can return a to-one embed as an object or a one-element array.
+        raid_tier?: { is_guild_active?: boolean | null } | Array<{ is_guild_active?: boolean | null }> | null
       } | null
     }
     const itemRows = (submissionItems || []) as unknown as SubmissionItemRow[]
-    const validationItems = itemRows.map((si) => ({
+
+    // GH #357: the loot list page only receives items from raid tiers with
+    // is_guild_active = true (resolveTierIdsForPhases in lib/loot-items-query.ts),
+    // so a saved row from a turned-off tier is invisible there and not counted.
+    // Validating the same rows keeps the server from blocking a raider on rows
+    // they cannot see or fix. Rows are still saved and promoted; only validation
+    // skips them. Missing or malformed tier metadata keeps the row (fails closed).
+    const checkedRows = itemRows.filter((si) => {
+      const tier = si.loot_item?.raid_tier
+      const flag = Array.isArray(tier) ? tier[0]?.is_guild_active : tier?.is_guild_active
+      return flag !== false
+    })
+    const validationItems = checkedRows.map((si) => ({
       rank: si.rank,
       slot: si.slot,
       item: {
@@ -144,7 +160,7 @@ export async function POST(request: NextRequest) {
         enforceSlotRestrictions,
         bracketLimits
       ),
-      ...validateItemCopyLimits(itemRows.map((si) => ({
+      ...validateItemCopyLimits(checkedRows.map((si) => ({
         rank: si.rank,
         item: {
           id: si.loot_item_id,
@@ -206,7 +222,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       oldStatus: submission.status,
       newStatus: 'pending',
-      additionalData: { character_id: submission.character_id, item_count: validationItems.length },
+      additionalData: { character_id: submission.character_id, item_count: itemRows.length },
     })
 
     // Analytics
@@ -217,7 +233,7 @@ export async function POST(request: NextRequest) {
       properties: {
         guild_id: submission.guild_id,
         submission_id,
-        item_count: validationItems.length,
+        item_count: itemRows.length,
         is_resubmission: !!submission.submitted_at,
       },
     })

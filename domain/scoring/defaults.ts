@@ -13,7 +13,8 @@ export const DEFAULT_SETTINGS: Partial<ScoringConfig> = {
   bottom_attendance_threshold: 0.25,
   raid_roles_overall_bonus_priority: false,
   role_modifiers: {},
-  single_raider_overall_bonus: false,
+  // GH #357: matches the guild_settings column default and the settings GET fallback in app/api/guild-settings/route.ts
+  single_raider_overall_bonus: true,
   single_raider_modifiers: {},
   guild_rank_bonuses_enabled: true,
   rank_modifiers: {
