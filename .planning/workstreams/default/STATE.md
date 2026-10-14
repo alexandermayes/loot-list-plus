@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 Phase: 06 (Week-4 Review & Next Bet) — EXECUTING
 Plan: 6 of 9
 Status: Ready to execute
-Last activity: 2026-10-13 - Completed quick task 261013-nga: migration drops unused update_guild_icon and update_guild_info (GH #351 item 3, PR #407 open)
+Last activity: 2026-10-13 - Completed quick task 261013-ngb: master sheet hovers show raider bonus reason and end date (GH #357 item 2, PR #409 open)
 
 Progress: [████████████████████] 23/23 plans ([███████░░░] 67%)
 
@@ -250,6 +250,7 @@ Recent decisions affecting current work:
 | 261013-jsj | Fix GH #304: ForeverAnnouncementModal no longer nests its own dialog, Tab trap and focus restore inside the design-system Modal; ModalTitle takes the Modal context id so the single dialog is named by the title, Modal gains an optional aria-describedby passthrough so the body is announced, initial focus lands on Not now. Approved copy unchanged. 3 new tests. No migration. PR #403 | 2026-10-13 | cdd83b49 | Needs Review | [261013-jsj-fix-gh-304-foreverannouncementmodal-reli](./quick/261013-jsj-fix-gh-304-foreverannouncementmodal-reli/) |
 | 261013-jzw | Fix GH #320 (companion only): pending awards and attendance the server rejected per entry stay in SavedVariables for the next pass instead of being cleared with the accepted ones; submitAwards and submitAttendance return accepted indices, pending pairs keep the raw entries, stuck counts and a sentence go into the sync status and tray text (copy needs sign-off). 19 new tests. No server change, no migration. PR #405 | 2026-10-13 | 2bd9934e | Needs Review | [261013-jzw-fix-gh-320-the-companion-keeps-pending-a](./quick/261013-jzw-fix-gh-320-the-companion-keeps-pending-a/) |
 | 261013-nga | Fix GH #351 item 3: migration 20261013120000 drops the unused SECURITY DEFINER functions update_guild_icon and update_guild_info by exact signature with a DO guard; the two entries leave lib/database.types.ts; a shape test pins the file and proves no caller. Normal PR (types change, CI runs). PR #407 | 2026-10-13 | 01281449 | Needs Review | [261013-nga-fix-gh-351-item-3-migration-dropping-unu](./quick/261013-nga-fix-gh-351-item-3-migration-dropping-unu/) |
+| 261013-ngb | Fix GH #357 item 2: explainScore takes optional { characterId, asOfDate } so config-only callers get the raider bonus reasons; the master sheet officer popover and the candidate modal inline explanation show each active entry as "reason: +N until Mon D". 8 new tests, no new copy. PR #409 | 2026-10-13 | 667f8d5d | Needs Review | [261013-ngb-fix-gh-357-item-3-master-sheet-hover-and](./quick/261013-ngb-fix-gh-357-item-3-master-sheet-hover-and/) |
 
 ## Deferred Items
 
