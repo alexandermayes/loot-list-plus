@@ -5,14 +5,19 @@ import chokidar from 'chokidar'
 import { ApiClient, GuildData } from './api-client'
 import { parseLuaTable } from './lua-parser'
 import {
+  acceptedEntries,
   applyGuildDataToSavedVars,
   buildGuildDataLua,
   readPendingLists,
+  toPendingAttendancePairs,
   toPendingAttendanceRequests,
+  toPendingAwardPairs,
   toPendingAwardRequests,
   type SentPending,
 } from './addon-format'
 import { toLuaTable } from './lua-writer'
+import { describeRejected, statusText } from './sync-status'
+import type { SyncStatus } from './sync-status'
 import { WowFinder } from './wow-finder'
 
 export interface SyncConfig {
@@ -23,13 +28,7 @@ export interface SyncConfig {
   token?: string
 }
 
-export interface SyncStatus {
-  state: 'idle' | 'syncing' | 'watching' | 'error'
-  lastSync: string | null
-  lastError: string | null
-  pendingAwards: number
-  pendingAttendance: number
-}
+export type { SyncStatus }
 
 /**
  * Orchestrates data flow between LootList+ API and WoW addon SavedVariables.
@@ -38,10 +37,16 @@ export interface SyncStatus {
  * 1. Read pending awards/attendance from SavedVariables
  * 2. Push attendance, then awards, to the API
  * 3. Fetch guild data from the API (it now includes what was just pushed)
- * 4. In one SavedVariables write, replace guildData and remove the pending
- *    entries that were sent (addon reads the file on login or /reload)
- * If step 3 fails nothing is written, so pending data is sent again on the
- * next pass (awards dedupe by key, attendance upserts).
+ * 4. In one SavedVariables write, replace guildData and remove only the
+ *    pending entries the server accepted (a 2xx, including a repeat it
+ *    already had); the addon reads the file on login or /reload. Rejected
+ *    entries stay in the file and are sent again on the next pass, and their
+ *    counts and a sentence go into the status (GH #320).
+ * If step 3 fails nothing is written, so all pending data is sent again on
+ * the next pass (awards dedupe by key, attendance upserts).
+ * A rejection the server will always give (for example a 404 for an item it
+ * does not know) is retried every pass; the status count is what makes it
+ * visible.
  * Between passes, SavedVariables is watched for changes (the addon writes
  * on logout or /reload) and new pending data triggers a pass.
  */
@@ -111,19 +116,25 @@ export class SyncEngine extends EventEmitter {
       // Step 1: Read pending data from SavedVariables
       const svPath = this.getSavedVarsPath()
       const saved = this.readSavedVars(svPath)
-      const sent: SentPending = saved ? readPendingLists(saved) : { awards: [], attendance: [] }
-      const awards = toPendingAwardRequests(sent.awards)
-      const attendance = toPendingAttendanceRequests(sent.attendance)
+      const pending: SentPending = saved ? readPendingLists(saved) : { awards: [], attendance: [] }
+      const awardPairs = toPendingAwardPairs(pending.awards)
+      const attendancePairs = toPendingAttendancePairs(pending.attendance)
+      let acceptedAttendance: number[] = []
+      let acceptedAwards: number[] = []
 
       // Step 2: Push pending data to API. Attendance goes first: its import
-      // creates the raid night that the awards then link to (#295).
-      if (attendance.length > 0) {
-        const result = await this.api.submitAttendance(attendance)
+      // creates the raid night that the awards then link to (#295). The
+      // request arrays are exactly pairs.map(p => p.request), so the accepted
+      // indices index into the pairs.
+      if (attendancePairs.length > 0) {
+        const result = await this.api.submitAttendance(attendancePairs.map(p => p.request))
+        acceptedAttendance = result.accepted
         console.log('Synced attendance records:', result.processed, 'errors:', result.errors)
       }
 
-      if (awards.length > 0) {
-        const result = await this.api.submitAwards(awards)
+      if (awardPairs.length > 0) {
+        const result = await this.api.submitAwards(awardPairs.map(p => p.request))
+        acceptedAwards = result.accepted
         console.log('Synced awards:', result.processed, 'errors:', result.errors)
       }
 
@@ -131,16 +142,24 @@ export class SyncEngine extends EventEmitter {
       // written, so the pending data stays in the file for the next pass.
       const guildData = await this.api.getGuildData()
 
-      // Step 4: One write: guild data in, sent pending entries out
-      const hadPending = sent.awards.length > 0 || sent.attendance.length > 0
+      // Step 4: One write: guild data in, accepted pending entries out. Only
+      // accepted entries are removed; rejected ones stay in the file for the
+      // next pass (GH #320).
+      const sent: SentPending = {
+        awards: acceptedEntries(awardPairs, acceptedAwards),
+        attendance: acceptedEntries(attendancePairs, acceptedAttendance),
+      }
+      const hadPending = pending.awards.length > 0 || pending.attendance.length > 0
       this.writeSyncResult(svPath, guildData, hadPending ? sent : null)
 
+      const stuckAwards = awardPairs.length - sent.awards.length
+      const stuckAttendance = attendancePairs.length - sent.attendance.length
       this.updateStatus({
         state: 'watching',
         lastSync: new Date().toISOString(),
-        lastError: null,
-        pendingAwards: 0,
-        pendingAttendance: 0,
+        lastError: describeRejected(stuckAwards, stuckAttendance),
+        pendingAwards: stuckAwards,
+        pendingAttendance: stuckAttendance,
       })
 
       return true
@@ -163,10 +182,7 @@ export class SyncEngine extends EventEmitter {
   }
 
   getStatusText(): string {
-    if (this.status.state === 'syncing') return 'Syncing...'
-    if (this.status.state === 'error') return `Error: ${this.status.lastError}`
-    if (this.status.lastSync) return `Last sync: ${this.status.lastSync}`
-    return 'Not synced yet'
+    return statusText(this.status)
   }
 
   // ---- Private methods ----

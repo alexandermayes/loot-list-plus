@@ -28,8 +28,19 @@ export interface PendingAttendanceRequest {
   attended: string[]
 }
 
-/** The pending lists read at the start of a sync pass, as the addon wrote
- * them. Only these entries are cleared at the end of the pass. */
+/**
+ * The raw SavedVariables entry (the same object, not a copy) next to the
+ * request built from it, so the sync engine can clear only the entries the
+ * server accepted (GH #320).
+ */
+export interface PendingPair<T> {
+  entry: unknown
+  request: T
+}
+
+/** Raw pending entries as the addon wrote them: the lists readPendingLists
+ * returns and, at the end of a pass, the accepted subset that
+ * applyGuildDataToSavedVars clears. */
 export interface SentPending {
   awards: unknown[]
   attendance: unknown[]
@@ -42,49 +53,88 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 }
 
 /**
- * Maps the addon's profile.pendingAwards list to loot-award requests.
+ * Maps the addon's profile.pendingAwards list to loot-award pairs, each the
+ * raw entry next to the request built from it.
  * awardedAt and awardId are forwarded raw when they are strings, so the
  * server builds the same key it builds from the export string for the same
  * in-game award. Absent values stay undefined, so JSON.stringify drops them.
- * A missing or non-array list gives [].
+ * A missing or non-array list gives []. Non-record entries are skipped, so
+ * pair i and request i always describe the same entry.
  */
-export function toPendingAwardRequests(raw: unknown): PendingAwardRequest[] {
+export function toPendingAwardPairs(raw: unknown): PendingPair<PendingAwardRequest>[] {
   if (!Array.isArray(raw)) return []
-  const requests: PendingAwardRequest[] = []
+  const pairs: PendingPair<PendingAwardRequest>[] = []
   for (const entry of raw) {
     const a = asRecord(entry)
     if (!a) continue
     const awardedAt = typeof a['awardedAt'] === 'string' ? (a['awardedAt'] as string) : undefined
     const awardId = typeof a['awardId'] === 'string' ? (a['awardId'] as string) : undefined
-    requests.push({
-      wowhead_id: a['wowheadId'] as number,
-      character_name: a['characterName'] as string,
-      boss_name: a['bossName'] as string | undefined,
-      awarded_date: awardedAt ? awardedAt.split('T')[0] : undefined,
-      awarded_at: awardedAt,
-      award_id: awardId,
+    pairs.push({
+      entry,
+      request: {
+        wowhead_id: a['wowheadId'] as number,
+        character_name: a['characterName'] as string,
+        boss_name: a['bossName'] as string | undefined,
+        awarded_date: awardedAt ? awardedAt.split('T')[0] : undefined,
+        awarded_at: awardedAt,
+        award_id: awardId,
+      },
     })
   }
-  return requests
+  return pairs
+}
+
+/** The loot-award requests alone (used to count pending data). */
+export function toPendingAwardRequests(raw: unknown): PendingAwardRequest[] {
+  return toPendingAwardPairs(raw).map(p => p.request)
 }
 
 /**
- * Maps the addon's profile.pendingAttendance list to attendance requests.
+ * Maps the addon's profile.pendingAttendance list to attendance pairs, each
+ * the raw entry next to the request built from it.
  * A missing or non-array list (an empty Lua table parses as {}) gives [].
+ * Non-record entries are skipped, so pair i and request i always describe
+ * the same entry.
  */
-export function toPendingAttendanceRequests(raw: unknown): PendingAttendanceRequest[] {
+export function toPendingAttendancePairs(raw: unknown): PendingPair<PendingAttendanceRequest>[] {
   if (!Array.isArray(raw)) return []
-  const requests: PendingAttendanceRequest[] = []
+  const pairs: PendingPair<PendingAttendanceRequest>[] = []
   for (const entry of raw) {
     const a = asRecord(entry)
     if (!a) continue
-    requests.push({
-      raid_date: a['raidDate'] as string,
-      raid_name: a['raidName'] as string,
-      attended: Array.isArray(a['attended']) ? (a['attended'] as string[]) : [],
+    pairs.push({
+      entry,
+      request: {
+        raid_date: a['raidDate'] as string,
+        raid_name: a['raidName'] as string,
+        attended: Array.isArray(a['attended']) ? (a['attended'] as string[]) : [],
+      },
     })
   }
-  return requests
+  return pairs
+}
+
+/** The attendance requests alone (used to count pending data). */
+export function toPendingAttendanceRequests(raw: unknown): PendingAttendanceRequest[] {
+  return toPendingAttendancePairs(raw).map(p => p.request)
+}
+
+/**
+ * The raw entries the server accepted in this pass, for
+ * applyGuildDataToSavedVars to clear. accepted holds indices into pairs, in
+ * the order the server accepted them; an index that is not an integer in
+ * range, or that repeats, is ignored. Rejected entries are not returned, so
+ * they stay pending (GH #320).
+ */
+export function acceptedEntries<T>(pairs: readonly PendingPair<T>[], accepted: readonly number[]): unknown[] {
+  const taken = new Set<number>()
+  const entries: unknown[] = []
+  for (const i of accepted) {
+    if (!Number.isInteger(i) || i < 0 || i >= pairs.length || taken.has(i)) continue
+    taken.add(i)
+    entries.push(pairs[i].entry)
+  }
+  return entries
 }
 
 /**
@@ -149,11 +199,12 @@ function tableAt(parent: Record<string, unknown>, key: string): Record<string, u
 /**
  * Applies one sync pass to a parsed SavedVariables file and returns the
  * LootListPlusDB table to write. profiles.Default.guildData is replaced.
- * With sent (the pending lists read at the start of the pass, when it had
- * any), the sent awards and attendance are removed from the file's pending
- * lists, matching awards on awardId when present, otherwise on awardedAt,
- * wowheadId and name, and attendance on raidDate, raidName and startTime.
- * Entries the addon added while the pass ran stay for the next sync.
+ * With sent (the entries the server accepted in this pass, only when the
+ * pass had pending data), those awards and attendance are removed from the
+ * file's pending lists, matching awards on awardId when present, otherwise on
+ * awardedAt, wowheadId and name, and attendance on raidDate, raidName and
+ * startTime. Entries the server rejected and entries the addon added while
+ * the pass ran both stay for the next sync (GH #320).
  *
  * The parsed tables are changed in place and every other table is kept by
  * reference, so the hidden Lua number-key markers (lua-parser.ts) survive
