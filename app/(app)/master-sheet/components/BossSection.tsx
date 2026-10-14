@@ -15,7 +15,8 @@ async function loadBossQuote(boss: string): Promise<string | null> {
   return _bossQuotes.getBossQuote(boss)
 }
 import type { ScoreResult, ScoreComponents, ScoringConfig } from '@/domain/types'
-import { explainScore } from '@/domain/scoring/explain'
+import { explainScore, RAIDER_BONUS_GENERIC_DETAIL } from '@/domain/scoring/explain'
+import { toDateString } from '@/utils/date'
 
 
 interface LootItem {
@@ -72,7 +73,7 @@ function rankingToScoreResult(r: PlayerRanking): ScoreResult {
   return { total: r.loot_score, components }
 }
 
-/** Officer-only score breakdown popover — shows explainScore() lines on hover */
+/** Officer-only score breakdown popover: shows explainScore() lines on hover */
 function ScoreBreakdownPopover({
   ranking,
   config,
@@ -104,13 +105,17 @@ function ScoreBreakdownPopover({
   if (!position) return null
 
   const result = rankingToScoreResult(ranking)
-  const explanation = explainScore(result, config)
+  // Pass the character and today so the raider bonus line lists each reason and end date (GH #357).
+  const explanation = explainScore(result, config, {
+    characterId: ranking.character_id,
+    asOfDate: toDateString(new Date()),
+  })
 
   return createPortal(
     <Card
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className="fixed z-[9999] shadow-lg p-3 w-56"
+      className="fixed z-[9999] shadow-lg p-3 w-64"
       style={{ top: position.top, left: position.left, transform: 'translateX(-50%)' }}
     >
       <div className="flex items-center justify-between mb-2">
@@ -121,11 +126,16 @@ function ScoreBreakdownPopover({
       </div>
       <div className="space-y-1">
         {explanation.lines.map(line => (
-          <div key={line.key} className="flex items-center justify-between">
-            <span className="text-11 text-foreground-secondary">{line.label}</span>
-            <span className={`text-11 font-medium tabular-nums ${line.value >= 0 ? 'text-foreground' : 'text-destructive'}`}>
-              {line.value >= 0 ? '+' : ''}{line.value.toFixed(decimalPlaces)}
-            </span>
+          <div key={line.key}>
+            <div className="flex items-center justify-between">
+              <span className="text-11 text-foreground-secondary">{line.label}</span>
+              <span className={`text-11 font-medium tabular-nums ${line.value >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+                {line.value >= 0 ? '+' : ''}{line.value.toFixed(decimalPlaces)}
+              </span>
+            </div>
+            {line.key === 'raiderBonus' && line.detail !== RAIDER_BONUS_GENERIC_DETAIL && (
+              <p className="text-11 text-muted-foreground leading-snug mt-0.5">{line.detail}</p>
+            )}
           </div>
         ))}
       </div>

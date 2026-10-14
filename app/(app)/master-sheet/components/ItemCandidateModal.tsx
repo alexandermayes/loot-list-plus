@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Text } from '@/components/ui/typography'
 import ItemLink from '@/app/components/ItemLink'
 import { useNotification } from '@/app/contexts/NotificationContext'
-import { explainScore } from '@/domain/scoring/explain'
+import { explainScore, RAIDER_BONUS_GENERIC_DETAIL } from '@/domain/scoring/explain'
 import { toDateString } from '@/utils/date'
 import type {
   ScoringConfig,
@@ -138,7 +138,11 @@ function formatDate(dateStr: string): string {
 
 /** Reconstruct ScoreResult from flat PlayerRanking for explainScore() */
 function rankingToExplanation(r: PlayerRanking, config?: Partial<ScoringConfig>) {
-  return explainScore({ total: r.loot_score, components: rankingToComponents(r) }, config)
+  // Pass the character and today so the raider bonus line lists each reason and end date (GH #357).
+  return explainScore({ total: r.loot_score, components: rankingToComponents(r) }, config, {
+    characterId: r.character_id,
+    asOfDate: toDateString(new Date()),
+  })
 }
 
 export const ItemCandidateModal = memo(function ItemCandidateModal({
@@ -618,6 +622,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                                 {line.label}: <span className={`font-medium tabular-nums ${line.value > 0 ? 'text-foreground-secondary' : line.value < 0 ? 'text-destructive' : ''}`}>
                                   {line.value > 0 ? '+' : ''}{line.value.toFixed(decimalPlaces)}
                                 </span>
+                                {line.key === 'raiderBonus' && line.detail !== RAIDER_BONUS_GENERIC_DETAIL ? ` (${line.detail})` : ''}
                                 {line.context ? ` (${line.context})` : ''}
                               </span>
                             ))}
