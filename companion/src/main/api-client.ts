@@ -160,6 +160,7 @@ export class ApiClient {
   async submitAttendance(records: Array<{
     raid_date: string
     raid_name: string
+    start_time?: string
     attended: string[]
     boss_kills?: Array<{ boss_name: string }>
   }>): Promise<SubmitResult> {

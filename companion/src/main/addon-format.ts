@@ -25,6 +25,11 @@ export interface PendingAwardRequest {
 export interface PendingAttendanceRequest {
   raid_date: string
   raid_name: string
+  /**
+   * The session's raw UTC start time. The server picks the raid night from it
+   * in the guild's time zone (GH #355). Absent when the session has none.
+   */
+  start_time?: string
   attended: string[]
 }
 
@@ -94,7 +99,8 @@ export function toPendingAwardRequests(raw: unknown): PendingAwardRequest[] {
  * the raw entry next to the request built from it.
  * A missing or non-array list (an empty Lua table parses as {}) gives [].
  * Non-record entries are skipped, so pair i and request i always describe
- * the same entry.
+ * the same entry. The session's startTime is forwarded as start_time when it
+ * is a string (GH #355); raid_date is unchanged.
  */
 export function toPendingAttendancePairs(raw: unknown): PendingPair<PendingAttendanceRequest>[] {
   if (!Array.isArray(raw)) return []
@@ -102,11 +108,13 @@ export function toPendingAttendancePairs(raw: unknown): PendingPair<PendingAtten
   for (const entry of raw) {
     const a = asRecord(entry)
     if (!a) continue
+    const startTime = typeof a['startTime'] === 'string' ? (a['startTime'] as string) : undefined
     pairs.push({
       entry,
       request: {
         raid_date: a['raidDate'] as string,
         raid_name: a['raidName'] as string,
+        start_time: startTime,
         attended: Array.isArray(a['attended']) ? (a['attended'] as string[]) : [],
       },
     })

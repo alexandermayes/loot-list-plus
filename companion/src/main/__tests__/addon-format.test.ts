@@ -115,6 +115,7 @@ describe('toPendingAwardPairs and toPendingAttendancePairs (GH #320)', () => {
     expect(attendancePairs[0].request).toEqual({
       raid_date: '2026-09-20',
       raid_name: "Temple of Ahn'Qiraj",
+      start_time: '2026-09-20T19:00:00Z',
       attended: ['Thrall'],
     })
   })
@@ -448,8 +449,22 @@ describe('applyGuildDataToSavedVars (FU-A of 261001-tv5, D-10)', () => {
     expect(readPendingLists(saved)).toEqual({ awards: [], attendance: [] })
     expect(toPendingAttendanceRequests({})).toEqual([])
     expect(toPendingAttendanceRequests([night])).toEqual([
-      { raid_date: '2026-09-20', raid_name: "Temple of Ahn'Qiraj", attended: ['Thrall'] },
+      { raid_date: '2026-09-20', raid_name: "Temple of Ahn'Qiraj", start_time: '2026-09-20T19:00:00Z', attended: ['Thrall'] },
     ])
+  })
+
+  it('S10 a night with no startTime, or a non-string one, sends no start_time (GH #355)', () => {
+    const { startTime: _unused, ...withoutStart } = night
+    void _unused
+    for (const raw of [withoutStart, { ...night, startTime: 12345 }]) {
+      const [request] = toPendingAttendanceRequests([raw])
+      expect(JSON.stringify(request)).not.toContain('start_time')
+      expect(request).toEqual({
+        raid_date: '2026-09-20',
+        raid_name: "Temple of Ahn'Qiraj",
+        attended: ['Thrall'],
+      })
+    }
   })
 
   it('S9 with only the accepted entries in sent, a rejected award and a rejected night stay pending (GH #320)', () => {
