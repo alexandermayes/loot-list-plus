@@ -70,7 +70,7 @@ Filled from the final thirteen plans on 2026-10-14 (plan check revisions: the fi
 | 02-12-T3 | 02-12 | 1 | EXPN-01 (D-04) | T-02-12-01 | Every game-less raid-icon call is on an explicit, self-checking allowlist | source scan (call-site inventory, synthetic self-checks) | `npx vitest run utils/__tests__/raidIcons.test.ts` | ✅ extend (T1) | ⬜ pending |
 | 02-13-T1 | 02-13 | 2 | EXPN-01 (D-04) | T-02-13-01, T-02-13-02 | Run payload adds only the public expansion name; viewer allow-list unchanged | route unit plus inventory | `npx vitest run app/api/reserve-runs utils/__tests__/raidIcons.test.ts` | ✅ extend route test | ⬜ pending |
 | 02-13-T2 | 02-13 | 2 | EXPN-01 (D-04) | T-02-13-05 | Reserve run list and master sheet tier header pass the guild's game (required prop) | typecheck plus inventory | `npx vitest run utils/__tests__/raidIcons.test.ts "app/(app)/master-sheet" "app/(app)/reserve"` | ✅ extend | ⬜ pending |
-| 02-13-T3 | 02-13 | 2 | EXPN-01 (D-04) | T-02-13-02, T-02-13-03, T-02-13-04, T-02-13-05 | Modal, join page and OG card resolve by game; allowlist empty | component plus inventory | `npx vitest run utils/__tests__/raidIcons.test.ts "app/(app)/reserve"` | ✅ extend modal test | ⬜ pending |
+| 02-13-T3 | 02-13 | 2 | EXPN-01 (D-04) | T-02-13-02, T-02-13-03, T-02-13-04, T-02-13-05 | Modal, join page and OG card resolve by game; allowlist empty | component (modal, join page render) plus OG image call plus inventory | `npx vitest run utils/__tests__/raidIcons.test.ts "app/(app)/reserve" "app/reserve/join"` | ✅ extend modal test; ❌ W0 `app/reserve/join/[token]/__tests__/raid-icon-game.test.tsx` | ⬜ pending |
 
 Sampling continuity: 28 tasks; only 02-02-T1 (the blocking-human checkpoint) has no automated command, and its neighbours 02-01-T2 and 02-02-T2 both do, so no three consecutive tasks lack automated verify.
 
@@ -86,6 +86,7 @@ Sampling continuity: 28 tasks; only 02-02-T1 (the blocking-human checkpoint) has
 - [ ] `app/services/__tests__/expansionSeeder-registry.test.ts` and `app/api/reserve-runs/raid-tiers/__tests__/route.test.ts` — EXPN-02 (02-05)
 - [ ] `scripts/lib/__tests__/wago-snapshot.test.ts` (02-08), `scripts/lib/__tests__/forever-sync.test.ts` (02-10) — EXPN-05, EXPN-06
 - [ ] `utils/__tests__/raidIcons.test.ts` — D-04 game-scoped raid icons and call-site inventory (02-12; allowlist emptied in 02-13)
+- [ ] `app/reserve/join/[token]/__tests__/raid-icon-game.test.tsx` — D-04 public join page and OG share card resolve the raid icon from the run's expansion (02-13)
 - [ ] Update `expansionSeeder.test.ts` (Forever now seeds three tiers, 02-03) and `raid-phase-coverage.test.ts` (slug via registry, 02-04)
 - [ ] Framework install: none. Dependencies: `npm install --save-exact zod@4.6.5` and `npm install --save-dev --save-exact csv-parse@7.0.2` (human-verify checkpoint first, 02-02)
 
