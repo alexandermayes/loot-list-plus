@@ -7,7 +7,7 @@ import { getAttendanceWindowEnd, resolveOwnedEvents, resolveActiveRaiderModifier
 import { toDateString } from '@/utils/date'
 import { deflateRawSync } from 'zlib'
 import { withFactionVariants } from '@/domain/loot/faction-item-aliases'
-import { buildMemberRankedItems, fetchReceivedCounts, type MemberRankedItem } from '@/lib/addon/member-ranked-items'
+import { buildMemberRankedItems, fetchReceivedCounts, inExportExpansion, type MemberRankedItem } from '@/lib/addon/member-ranked-items'
 
 /**
  * GET /api/addon/export-string
@@ -24,7 +24,8 @@ import { buildMemberRankedItems, fetchReceivedCounts, type MemberRankedItem } fr
  * item to the raider is left out too, best rank first, as on the master
  * sheet and in the Gargul export (FU-C of 261001-tv5); a failed loot
  * history read sends every entry. The payload shape and the LLP1:1 prefix
- * are unchanged.
+ * are unchanged. members[].items merge every approved list the raider has in
+ * the exported expansion (GH #355); lists with no expansion_id still go out.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -159,10 +160,10 @@ export async function GET(request: NextRequest) {
     console.log('[addon/export-string] character_guild_memberships:', memberships.length)
 
     // Fetch approved submissions for active expansion
-    const { data: submissions } = await supabase
+    const { data: submissionRows } = await supabase
       .from('loot_submissions')
       .select(`
-        id, character_id, phase, status,
+        id, character_id, expansion_id, phase, status,
         loot_submission_items (
           loot_item_id, rank, slot, removed_at,
           loot_items (wowhead_id)
@@ -170,6 +171,11 @@ export async function GET(request: NextRequest) {
       `)
       .eq('guild_id', guildId)
       .eq('status', 'approved')
+
+    // Only the exported expansion's lists go out, so a raider's lists from
+    // another expansion do not leak in (GH #355). Lists with no expansion_id
+    // are kept: the column is nullable and those rows were exported before.
+    const submissions = inExportExpansion(submissionRows ?? [], expansionId)
 
     // Awards per raider and item, for the receive skip (null on a failed read)
     const receivedCounts = await fetchReceivedCounts(supabase, guildId)

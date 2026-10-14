@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { buildMemberRankedItems, fetchReceivedCounts, type RankedSubmission } from '../member-ranked-items'
+import { buildMemberRankedItems, fetchReceivedCounts, inExportExpansion, type RankedSubmission } from '../member-ranked-items'
 
 type Item = NonNullable<RankedSubmission['loot_submission_items']>[number]
 
@@ -80,16 +80,55 @@ describe('buildMemberRankedItems', () => {
     expect(buildMemberRankedItems(subs, null)).toEqual({ c1: [{ wowhead_id: 20928, rank: 30 }] })
   })
 
-  it('M7 a second approved submission for the same character replaces the first', () => {
-    const subs = [sub('c1', [item(20928, 50)]), sub('c2', [item(16921, 5)]), sub('c1', [item(20929, 7)])]
-    expect(buildMemberRankedItems(subs, null)).toEqual({
-      c1: [{ wowhead_id: 20929, rank: 7 }],
+  it('M7 two approved lists for one raider merge; the same item and slot keeps the best rank; one award skips it once', () => {
+    const subs = [
+      sub('c1', [item(20928, 30), item(16921, 10)]),
+      sub('c2', [item(16921, 5)]),
+      sub('c1', [item(20928, 50), item(20929, 7)]),
+    ]
+    const merged = {
+      c1: [
+        { wowhead_id: 20929, rank: 7 },
+        { wowhead_id: 16921, rank: 10 },
+        { wowhead_id: 20928, rank: 50 },
+      ],
       c2: [{ wowhead_id: 16921, rank: 5 }],
-    })
-    // A submission with no items list does not replace (today's behaviour).
+    }
+    expect(buildMemberRankedItems(subs, null)).toEqual(merged)
+    // Read order does not change which rank wins.
+    expect(buildMemberRankedItems([...subs].reverse(), null).c1).toEqual(merged.c1)
+    // One award of 20928 skips the single merged entry (rank 50) once.
+    expect(buildMemberRankedItems(subs, new Map([['c1-20928', 1]])).c1).toEqual([
+      { wowhead_id: 20929, rank: 7 },
+      { wowhead_id: 16921, rank: 10 },
+    ])
+    // A submission with no items list adds nothing and does not replace.
     expect(buildMemberRankedItems([sub('c1', [item(20928, 50)]), sub('c1', null)], null)).toEqual({
       c1: [{ wowhead_id: 20928, rank: 50 }],
     })
+    expect(buildMemberRankedItems([sub('c1', null)], null)).toEqual({})
+  })
+
+  it('M7c a second copy in slot 2 stays separate', () => {
+    const subs = [
+      sub('c1', [item(20928, 50), item(20928, 40, { slot: 2 })]),
+      sub('c1', [item(20928, 45)]),
+    ]
+    expect(buildMemberRankedItems(subs, null).c1).toEqual([
+      { wowhead_id: 20928, rank: 40 },
+      { wowhead_id: 20928, rank: 50 },
+    ])
+  })
+
+  it('M7d two entries for one item and slot on one list stay two after a merge', () => {
+    const subs = [
+      sub('c1', [item(30183, 20), item(30183, 10)]),
+      sub('c1', [item(30183, 15)]),
+    ]
+    expect(buildMemberRankedItems(subs, null).c1).toEqual([
+      { wowhead_id: 30183, rank: 15 },
+      { wowhead_id: 30183, rank: 20 },
+    ])
   })
 
   it('M7b accepts loot_items as an embedded array', () => {
@@ -102,6 +141,27 @@ describe('buildMemberRankedItems', () => {
     const before = JSON.parse(JSON.stringify(subs))
     buildMemberRankedItems(subs, new Map([['c1-20928', 1]]))
     expect(subs).toEqual(before)
+  })
+})
+
+describe('inExportExpansion', () => {
+  const rows: Array<{ expansion_id?: string | null }> = [
+    { expansion_id: 'exp-1' },
+    { expansion_id: 'exp-2' },
+    { expansion_id: null },
+    {},
+  ]
+
+  it('keeps the export expansion and lists with no expansion_id', () => {
+    expect(inExportExpansion(rows, 'exp-1')).toEqual([rows[0], rows[2], rows[3]])
+  })
+
+  it('keeps every list when there is no expansion, and returns a new array', () => {
+    for (const expansionId of [null, undefined]) {
+      const kept = inExportExpansion(rows, expansionId)
+      expect(kept).toEqual(rows)
+      expect(kept).not.toBe(rows)
+    }
   })
 })
 

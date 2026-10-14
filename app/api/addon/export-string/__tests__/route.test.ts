@@ -61,6 +61,7 @@ interface LootSubmissionRow {
   character_id: string
   phase: number
   status: string
+  expansion_id?: string | null
   loot_submission_items: Array<{
     loot_item_id: string
     rank: number
@@ -71,7 +72,7 @@ interface LootSubmissionRow {
 }
 
 interface Fixture {
-  guilds: Array<{ id: string; name: string; active_expansion_id: string }>
+  guilds: Array<{ id: string; name: string; active_expansion_id: string | null }>
   guild_settings: Array<{ guild_id: string }>
   expansions: Array<{ id: string; name: string; current_phase: number }>
   raid_tiers: RaidTierRow[]
@@ -237,6 +238,7 @@ function baseFixture(): Fixture {
       character_id: 'c1',
       phase: 4,
       status: 'approved',
+      expansion_id: 'exp-1',
       loot_submission_items: [
         { loot_item_id: 'li-nef', rank: 12, loot_items: { wowhead_id: 19003 } },
         { loot_item_id: 'li-ony', rank: 7, loot_items: { wowhead_id: 18423 } },
@@ -245,6 +247,27 @@ function baseFixture(): Fixture {
     },
   ]
   return fixture
+}
+
+/** GH #355: c1's approved lists across expansions (s1 is phase 4 in exp-1). */
+function addListsAcrossExpansions(fixture: Fixture) {
+  fixture.loot_submissions.push(
+    {
+      id: 's2', guild_id: GUILD_ID, character_id: 'c1', phase: 3, status: 'approved', expansion_id: 'exp-1',
+      loot_submission_items: [
+        { loot_item_id: 'li-bindings', rank: 40, loot_items: { wowhead_id: 20928 } },
+        { loot_item_id: 'li-ony', rank: 9, loot_items: { wowhead_id: 18423 } },
+      ],
+    },
+    {
+      id: 's3', guild_id: GUILD_ID, character_id: 'c1', phase: 4, status: 'approved', expansion_id: 'exp-2',
+      loot_submission_items: [{ loot_item_id: 'li-other', rank: 60, loot_items: { wowhead_id: 99999 } }],
+    },
+    {
+      id: 's4', guild_id: GUILD_ID, character_id: 'c1', phase: 2, status: 'approved', expansion_id: null,
+      loot_submission_items: [{ loot_item_id: 'li-legacy', rank: 2, loot_items: { wowhead_id: 21000 } }],
+    },
+  )
 }
 
 function request(query = `guild_id=${GUILD_ID}`) {
@@ -361,7 +384,7 @@ describe('FU-3 of #331, #293 and FU-C of 261001-tv5: member items', () => {
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
     const res = await GET(request())
     const body = await res.json()
-    return { res, items: decodePayload(body.exportString).members[0].items as Array<{ wowhead_id: number; rank: number }>, calls }
+    return { res, body, items: decodePayload(body.exportString).members[0].items as Array<{ wowhead_id: number; rank: number }>, calls }
   }
 
   it('E1 a removed list row is left out of members[].items', async () => {
@@ -431,6 +454,33 @@ describe('FU-3 of #331, #293 and FU-C of 261001-tv5: member items', () => {
     const subCols = calls.find(c => c.table === 'loot_submissions' && c.cols.includes('loot_submission_items'))!.cols
     expect(subCols).toMatch(/slot/)
     expect(subCols).toMatch(/removed_at/)
+    expect(subCols).toMatch(/expansion_id/)
+  })
+
+  it('E5 merges the active expansion\'s lists, keeps null-expansion lists, and leaves other expansions out (GH #355)', async () => {
+    const fixture = baseFixture()
+    addListsAcrossExpansions(fixture)
+    const { res, body, items, calls } = await memberItems(fixture)
+    expect(res.status).toBe(200)
+    expect(items).toContainEqual({ wowhead_id: 20928, rank: 40 })
+    expect(items).toContainEqual({ wowhead_id: 21000, rank: 2 })
+    expect(items).toContainEqual({ wowhead_id: 16921, rank: 3 })
+    expect(items).toContainEqual({ wowhead_id: 19003, rank: 12 })
+    expect(items.filter(i => i.wowhead_id === 18423)).toEqual([{ wowhead_id: 18423, rank: 9 }])
+    expect(items.some(i => i.wowhead_id === 99999)).toBe(false)
+    // The scope lives in code, so a null expansion_id row is not dropped by SQL.
+    const subCall = calls.find(c => c.table === 'loot_submissions')!
+    expect(subCall.filters).toEqual([['guild_id', 'g1'], ['status', 'approved']])
+    expect(body.stats.submissions).toBe(3)
+  })
+
+  it('E6 a guild with no active expansion keeps every approved list (GH #355)', async () => {
+    const fixture = baseFixture()
+    fixture.guilds[0].active_expansion_id = null
+    addListsAcrossExpansions(fixture)
+    const { items, body } = await memberItems(fixture)
+    expect(items).toContainEqual({ wowhead_id: 99999, rank: 60 })
+    expect(body.stats.submissions).toBe(4)
   })
 })
 

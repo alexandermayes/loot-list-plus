@@ -15,8 +15,13 @@
  * they now keep the best rank. withFactionVariants runs after ordering, so a
  * mirror sits right after its source row.
  *
- * Today's behaviour is kept for raiders with more than one approved
- * submission: the last one in the query result replaces the others (N-1).
+ * A raider with more than one approved list (one per phase) gets them merged
+ * (GH #355); the routes first keep only the exported expansion's lists
+ * (inExportExpansion). The same item in the same slot on two lists is one
+ * want: per wowhead id and slot the raider keeps as many entries as their
+ * largest single list has, at the highest ranks, so one award skips it once.
+ * Two entries for one item and slot on a single list (an item that drops in
+ * two raids, see apply-receive-skip) stay two. Ties keep read order.
  *
  * fetchReceivedCounts reads the guild's loot_history in pages and checks
  * the error on every page (paginatedSelect ignores errors). A failed read
@@ -55,7 +60,12 @@ interface Entry {
   wowhead_id: number
   rank: number
   slot: number | null
+  /** Read order, breaks ties. */
+  seq: number
 }
+
+/** Best rank first (a higher rank number is better), then read order. */
+const bestFirst = (a: Entry, b: Entry) => b.rank - a.rank || a.seq - b.seq
 
 /**
  * Builds characterId -> ranked items. receivedCounts maps
@@ -67,28 +77,57 @@ export function buildMemberRankedItems(
   submissions: readonly RankedSubmission[],
   receivedCounts: ReadonlyMap<string, number> | null,
 ): Record<string, MemberRankedItem[]> {
-  const entriesByCharacter = new Map<string, Entry[]>()
+  // characterId -> `${wowhead_id}:${slot ?? 1}` -> entries kept for that item and slot
+  const mergedByCharacter = new Map<string, Map<string, Entry[]>>()
+  let seq = 0
   for (const sub of submissions) {
     if (!sub.loot_submission_items) continue
-    const entries: Entry[] = []
+    const thisList = new Map<string, Entry[]>()
     for (const item of sub.loot_submission_items) {
       if (item.removed_at) continue
       const lootItem = Array.isArray(item.loot_items) ? item.loot_items[0] : item.loot_items
       const wowheadId = lootItem?.wowhead_id
       if (!wowheadId) continue
-      entries.push({ key: `${sub.character_id}-${wowheadId}`, wowhead_id: wowheadId, rank: item.rank, slot: item.slot ?? null })
+      const slot = item.slot ?? null
+      const itemSlot = `${wowheadId}:${slot ?? 1}`
+      thisList.set(itemSlot, [
+        ...(thisList.get(itemSlot) ?? []),
+        { key: `${sub.character_id}-${wowheadId}`, wowhead_id: wowheadId, rank: item.rank, slot, seq: seq++ },
+      ])
     }
-    entriesByCharacter.set(sub.character_id, entries)
+    let merged = mergedByCharacter.get(sub.character_id)
+    if (!merged) {
+      merged = new Map()
+      mergedByCharacter.set(sub.character_id, merged)
+    }
+    for (const [itemSlot, listed] of thisList) {
+      const before = merged.get(itemSlot) ?? []
+      merged.set(itemSlot, [...before, ...listed].sort(bestFirst).slice(0, Math.max(before.length, listed.length)))
+    }
   }
 
   const result: Record<string, MemberRankedItem[]> = {}
-  for (const [characterId, entries] of entriesByCharacter) {
+  for (const [characterId, merged] of mergedByCharacter) {
+    const entries = [...merged.values()].flat()
     const received = receivedCounts ? pickReceivedEntries(entries, receivedCounts) : null
     const kept = received ? entries.filter(e => !received.has(e)) : entries.slice()
-    kept.sort((a, b) => a.rank - b.rank || (b.slot ?? 0) - (a.slot ?? 0))
+    kept.sort((a, b) => a.rank - b.rank || (b.slot ?? 0) - (a.slot ?? 0) || a.seq - b.seq)
     result[characterId] = withFactionVariants(kept.map(e => ({ wowhead_id: e.wowhead_id, rank: e.rank })))
   }
   return result
+}
+
+/**
+ * Keeps the lists an export sends: the export's expansion plus lists with no
+ * expansion_id (nullable column, legacy rows went out before). No expansion
+ * keeps every list.
+ */
+export function inExportExpansion<T extends { expansion_id?: string | null }>(
+  submissions: readonly T[],
+  expansionId: string | null | undefined,
+): T[] {
+  if (!expansionId) return submissions.slice()
+  return submissions.filter(s => s.expansion_id == null || s.expansion_id === expansionId)
 }
 
 /**
