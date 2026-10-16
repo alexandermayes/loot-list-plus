@@ -2,7 +2,7 @@
 // Runs in the root vitest suite. companion/tsconfig.json excludes
 // __tests__, so the companion typecheck never needs vitest's types.
 import { describe, expect, it } from 'vitest'
-import { describeRejected, statusText } from '../sync-status'
+import { describeParked, describeRejected, describeStuck, statusText } from '../sync-status'
 import type { SyncStatus } from '../sync-status'
 
 function status(partial: Partial<SyncStatus> = {}): SyncStatus {
@@ -12,6 +12,8 @@ function status(partial: Partial<SyncStatus> = {}): SyncStatus {
     lastError: null,
     pendingAwards: 0,
     pendingAttendance: 0,
+    parkedAwards: 0,
+    parkedAttendance: 0,
     ...partial,
   }
 }
@@ -52,7 +54,45 @@ describe('describeRejected (GH #320)', () => {
   })
 })
 
+describe('describeParked and describeStuck (GH #320 follow-up)', () => {
+  it('D7 nothing parked gives null', () => {
+    expect(describeParked(0, 0)).toBeNull()
+  })
+
+  it('D8 one parked award', () => {
+    expect(describeParked(1, 0)).toBe(
+      '1 award will not be retried. The server rejected it 3 times. Use "Clear stuck entries" to remove it from the addon.',
+    )
+  })
+
+  it('D9 several parked awards and one parked attendance record', () => {
+    expect(describeParked(2, 1)).toBe(
+      '2 awards and 1 attendance record will not be retried. The server rejected them 3 times. Use "Clear stuck entries" to remove them from the addon.',
+    )
+  })
+
+  it('D10 several parked attendance records', () => {
+    expect(describeParked(0, 2)).toBe(
+      '2 attendance records will not be retried. The server rejected them 3 times. Use "Clear stuck entries" to remove them from the addon.',
+    )
+  })
+
+  it('D11 describeStuck joins the retrying and parked sentences, drops a null one, and is null when all counts are 0', () => {
+    expect(describeStuck(2, 1, 1, 0)).toBe(`${describeRejected(2, 1)} ${describeParked(1, 0)}`)
+    expect(describeStuck(0, 0, 1, 0)).toBe(describeParked(1, 0))
+    expect(describeStuck(1, 0, 0, 0)).toBe(describeRejected(1, 0))
+    expect(describeStuck(0, 0, 0, 0)).toBeNull()
+  })
+})
+
 describe('statusText (GH #320)', () => {
+  it('T7 watching with a last sync and the combined stuck sentence appends it in parentheses (GH #320 follow-up)', () => {
+    const sentence = describeStuck(2, 1, 1, 0)
+    expect(statusText(status({ lastSync: '2026-10-13T12:00:00.000Z', lastError: sentence }))).toBe(
+      `Last sync: 2026-10-13T12:00:00.000Z (${sentence})`,
+    )
+  })
+
   it('T1 a syncing status', () => {
     expect(statusText(status({ state: 'syncing' }))).toBe('Syncing...')
   })
