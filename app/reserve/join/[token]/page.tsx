@@ -19,6 +19,7 @@ import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { getRaidIcon } from '@/utils/raidIcons'
 import { canClassReserveItem } from '@/utils/wowClassRestrictions'
 import { getExpansionClassNames } from '@/domain/expansion/classes'
+import { getExpansionGame } from '@/domain/expansion/game'
 import { wowheadItemUrl } from '@/domain/expansion/wowhead'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { useConfirm } from '@/components/ui/confirm-modal'
@@ -888,7 +889,7 @@ export default function ReserveJoinPage() {
           <div className="flex items-start gap-4">
             {run.raid_tier_name && (
               <img
-                src={getRaidIcon(run.raid_tier_name)}
+                src={getRaidIcon(run.raid_tier_name, getExpansionGame(run.expansion_name) ?? 'classic')}
                 alt=""
                 className="w-14 h-14 rounded-lg border border-border/50 flex-shrink-0"
               />
