@@ -9,6 +9,7 @@ import {
   gameMismatchError,
 } from '../expansionSeeder'
 import { EXPANSION_GAMES } from '@/domain/expansion/game'
+import { getRaidPhase, getExpansionSlug } from '@/data/expansion-phases'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySupabase = any
@@ -28,8 +29,14 @@ interface RecordedCall {
  * fresh expansion row -- the two are distinguished by whether insert() was
  * called on that specific builder instance. The builder is also thenable so
  * plain awaited update().eq() chains settle without a .single() call.
+ *
+ * An awaited raid_tiers chain that never called insert() is the catalog sync's
+ * existing-tiers read: it resolves no rows, or { error } when
+ * raidTiersReadError is set.
  */
-function createMockSupabase(options: { duplicateExists?: boolean } = {}) {
+function createMockSupabase(
+  options: { duplicateExists?: boolean; raidTiersReadError?: string } = {}
+) {
   const fromCalls: string[] = []
   const calls: RecordedCall[] = []
 
@@ -67,10 +74,16 @@ function createMockSupabase(options: { duplicateExists?: boolean } = {}) {
       },
       // Thenable so `await builder.update(...).eq(...)` settles without single().
       then(
-        onFulfilled?: (value: { data: null; error: null }) => unknown,
+        onFulfilled?: (value: { data: unknown; error: unknown }) => unknown,
         onRejected?: (reason: unknown) => unknown
       ) {
-        return Promise.resolve({ data: null, error: null }).then(onFulfilled, onRejected)
+        let result: { data: unknown; error: unknown } = { data: null, error: null }
+        if (table === 'raid_tiers' && !insertCalled) {
+          result = options.raidTiersReadError
+            ? { data: null, error: { message: options.raidTiersReadError } }
+            : { data: [], error: null }
+        }
+        return Promise.resolve(result).then(onFulfilled, onRejected)
       },
     }
 
@@ -162,7 +175,7 @@ describe('getAvailableExpansions', () => {
 })
 
 describe('seedExpansionForGuild', () => {
-  it('seeds Forever with zero raid tiers and no error', async () => {
+  it('seeds Forever with its three manifest raid tiers in one insert and no loot rows', async () => {
     const { supabase, fromCalls, calls } = createMockSupabase()
 
     const result = await seedExpansionForGuild(supabase, 'g1', 'Forever', true, true)
@@ -170,7 +183,7 @@ describe('seedExpansionForGuild', () => {
     expect(result).toEqual({ expansionId: 'exp-1' })
     expect(result.error).toBeUndefined()
 
-    expect(fromCalls).not.toContain('raid_tiers')
+    // D-01: bosses stay manifest-only, so no catalog tables are touched.
     expect(fromCalls).not.toContain('loot_items')
     expect(fromCalls).not.toContain('loot_item_classes')
     expect(fromCalls).not.toContain('wow_classes')
@@ -178,6 +191,61 @@ describe('seedExpansionForGuild', () => {
     const insertCall = calls.find(c => c.table === 'expansions' && c.method === 'insert')
     expect(insertCall).toBeDefined()
     expect(insertCall?.args[0]).toMatchObject({ name: 'Forever', current_phase: 1 })
+
+    const tierCalls = calls.filter(c => c.table === 'raid_tiers')
+    expect(tierCalls.filter(c => c.method === 'select')).toEqual([
+      { table: 'raid_tiers', method: 'select', args: ['id, name'] },
+    ])
+    expect(tierCalls.filter(c => c.method === 'eq')).toEqual([
+      { table: 'raid_tiers', method: 'eq', args: ['expansion_id', 'exp-1'] },
+    ])
+    expect(tierCalls.filter(c => c.method === 'update')).toEqual([])
+
+    const tierInserts = tierCalls.filter(c => c.method === 'insert')
+    expect(tierInserts).toHaveLength(1)
+    expect(tierInserts[0].args).toEqual([
+      [
+        {
+          expansion_id: 'exp-1',
+          name: 'Barrow Deeps',
+          is_active: true,
+          is_guild_active: true,
+          master_sheet_visible: true,
+          phase: 1,
+          sort_order: 1,
+        },
+        {
+          expansion_id: 'exp-1',
+          name: 'Hyjal Summit',
+          is_active: false,
+          is_guild_active: true,
+          master_sheet_visible: true,
+          phase: 1,
+          sort_order: 2,
+        },
+        {
+          expansion_id: 'exp-1',
+          name: "Onyxia's Lair",
+          is_active: false,
+          is_guild_active: true,
+          master_sheet_visible: true,
+          phase: 1,
+          sort_order: 3,
+        },
+      ],
+    ])
+  })
+
+  it('returns the existing generic error and inserts no tiers when the raid_tiers read fails', async () => {
+    const { supabase, calls } = createMockSupabase({ raidTiersReadError: 'boom' })
+
+    const result = await seedExpansionForGuild(supabase, 'g1', 'Forever', true, true)
+
+    expect(result).toEqual({
+      expansionId: '',
+      error: 'Something went wrong while setting up the expansion',
+    })
+    expect(calls.filter(c => c.table === 'raid_tiers' && c.method === 'insert')).toEqual([])
   })
 
   it('rejects an unsupported expansion (Legion) with the registry-derived CP-09 message', async () => {
@@ -214,5 +282,20 @@ describe('seedExpansionForGuild', () => {
     expect(result.error).toBe(
       'Guild already has WoW Forever. Each expansion can only be added once per guild.'
     )
+  })
+})
+
+describe('getRaidPhase', () => {
+  it('resolves Forever raids by exact name and still resolves the legacy Classic names', () => {
+    expect(getRaidPhase('forever', 'Barrow Deeps')).toBe(1)
+    expect(getRaidPhase('forever', 'Hyjal Summit')).toBe(1)
+    expect(getRaidPhase('forever', "Onyxia's Lair")).toBe(1)
+    expect(getRaidPhase('forever', 'Molten Core')).toBeNull()
+    expect(getRaidPhase('classic', "Onyxia's Lair")).toBe(1)
+    expect(getRaidPhase('missing-slug', 'Barrow Deeps')).toBeNull()
+  })
+
+  it('keeps Forever out of the name-to-slug map the public reserve-run route keys off', () => {
+    expect(getExpansionSlug('Forever')).toBeNull()
   })
 })
