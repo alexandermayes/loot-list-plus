@@ -618,20 +618,29 @@ describe('GH-276: class-locked items show only to the classes that can use them'
   })
 
   it('an item with no Classes line keeps the armor rule', async () => {
-    // Proves the sweep below can fail and that the armor check is intact:
-    // Mish'undare is cloth with no class line, so cloth wearers see it and
-    // a Warrior does not.
-    const row = item('bwl-19375', {
+    // Mish'undare is cloth with no class line: canWearArmorType allows
+    // lighter armor, so every class sees it, exactly as before #276. The
+    // Onslaught Girdle (plate, no class line) stays hidden from a Mage,
+    // proving the armor check is intact and that the sweep below can fail.
+    const mishundare = item('bwl-19375', {
       name: "Mish'undare, Circlet of the Mind Flayer",
       item_slot: 'Head',
       wowhead_id: 19375,
       armor_type: null,
       weapon_type: null,
     })
-    for (const className of ['Priest', 'Mage', 'Warlock']) {
-      expect(await visibleIdsFor([row], className), className).toEqual(['bwl-19375'])
+    const girdle = item('mc-19137', {
+      name: 'Onslaught Girdle',
+      item_slot: 'Waist',
+      wowhead_id: 19137,
+      armor_type: null,
+      weapon_type: null,
+    })
+    for (const className of CLASSIC_CLASSES) {
+      expect(await visibleIdsFor([mishundare], className), className).toEqual(['bwl-19375'])
     }
-    expect(await visibleIdsFor([row], 'Warrior')).toEqual([])
+    expect(await visibleIdsFor([girdle], 'Warrior')).toEqual(['mc-19137'])
+    expect(await visibleIdsFor([girdle], 'Mage')).toEqual([])
   })
 
   it.each(CLASSIC_CLASSES)('a Recipe with a Classes line still shows to every class (GH-284 D-03, OD-4): %s', async (className) => {
