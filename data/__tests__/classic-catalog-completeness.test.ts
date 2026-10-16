@@ -7,6 +7,7 @@ import { ITEM_ICONS } from '../item-icons'
 import { ITEM_TYPES, inferArmorType, inferWeaponType, ARMOR_SLOTS } from '../item-types'
 import { GH273_CORE } from './fixtures/classic-gh273-core'
 import { GH284_RECIPES, GH284_RESEARCH } from './fixtures/classic-gh284-recipes'
+import { GH278_PLACED } from './fixtures/classic-gh278-zoneless'
 import { packageWeaponType, packageTypeInfo } from './fixtures/package-item-types'
 import { ITEM_CLASSIFICATIONS } from '../classic-wow-item-classifications'
 import { CLASSIC_ITEM_ROLES } from '../classic-item-roles'
@@ -54,6 +55,16 @@ import { FACTION_ITEM_ALIASES } from '@/domain/loot/faction-item-aliases'
 // mapping, package-agreement and D-03 visibility checks passed against the
 // unmodified catalog since they do not depend on the catalog yet listing the
 // recipes, and the four no-Recipe-in-other-raids checks trivially passed too).
+//
+// GH-278: the gate above only saw package items that carry a source.zone in
+// one of the seven raid zones. wow-classic-items 2.0.1 has no source at all
+// for 32 Epic catalog ids (5 Cache of the Firelord items, every one of the 18
+// Onyxia's Lair drops, 9 Four Horsemen Chest items), so removing any of them
+// passed the suite. Those ids now live in classic-gh278-zoneless.ts, keyed by
+// in-game drop source; the first test unions them into its expected set and
+// the 'Classic zone-less package items (#278)' describe requires each row
+// once under its boss group and checks every catalog row is covered by the
+// package zone, that fixture, or the Recipe gate of #284.
 
 type PackageItem = InstanceType<typeof Items>[number]
 
@@ -183,6 +194,28 @@ describe('Classic catalog completeness (#273)', () => {
     const matches = catalogEntries.filter(entry => entry.raid === expected.raid && entry.wowhead_id === expected.id)
     expect(matches, `${expected.name} (${expected.id}) not found in ${expected.raid}`).toHaveLength(1)
     expect(matches[0]).toMatchObject({ boss: expected.boss, name: expected.name, slot: expected.slot })
+  })
+})
+
+// regression for #278
+describe('Classic zone-less package items (#278)', () => {
+  it('every Classic catalog row is attributed to its raid by the package zone, placed by the #278 fixture, or a Recipe row gated by #284', () => {
+    const placedKeys = new Set(GH278_PLACED.map(item => `${item.raid}|${item.id}`))
+    const uncovered = catalogEntries
+      .filter(entry => {
+        const zone = packageById.get(entry.wowhead_id)?.source?.zone
+        const zoneCovers = zone !== undefined && CLASSIC_RAID_ZONES[zone] === entry.raid
+        const fixtureCovers = placedKeys.has(`${entry.raid}|${entry.wowhead_id}`)
+        const recipeCovers = entry.slot === 'Recipe'
+        return !zoneCovers && !fixtureCovers && !recipeCovers
+      })
+      .map(entry => `${entry.raid}: ${entry.name} (${entry.wowhead_id})`)
+    expect(
+      uncovered,
+      'catalog rows no gate requires. Add each to data/__tests__/fixtures/classic-gh278-zoneless.ts with its ' +
+        'in-game drop source, or explain in DELIBERATELY_EXCLUDED why the package attributes it elsewhere:\n' +
+        uncovered.join('\n'),
+    ).toEqual([])
   })
 })
 
