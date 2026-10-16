@@ -226,8 +226,11 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
       // character exists, so activeGuild is the only source needed.
       const targetGuildId = activeGuild?.id ?? null
 
-      // If user has a guild to join, add character to it
+      // regression for #356: a refused attach (403) was only logged, so the user
+      // never learned why the character was not in the guild
+      let attachFailure: string | null = null
       if (targetGuildId && data.character) {
+        const guildName = activeGuild?.name ?? 'the guild'
         try {
           // Role is determined server-side (Guild Master for creator, Member for everyone else)
           const guildResponse = await fetch(`/api/characters/${data.character.id}/guilds`, {
@@ -242,13 +245,56 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
           })
 
           if (!guildResponse.ok) {
-            const guildError = await guildResponse.json()
+            const guildError = await guildResponse.json().catch(() => null)
             console.error('Error adding character to guild:', guildError)
+            const serverError = typeof guildError?.error === 'string' ? guildError.error : null
+            if (guildResponse.status === 403) {
+              attachFailure = `Character created, but not added to ${guildName}. You are not a member of this guild. Ask an officer for a new invite link.`
+            } else if (serverError) {
+              attachFailure = `Character created, but not added to ${guildName}. ${serverError}`
+            } else {
+              attachFailure = `Character created, but not added to ${guildName}. Try again from the character settings.`
+            }
           }
         } catch (membershipErr) {
           console.error('Error adding character to guild:', membershipErr)
-          showNotification('warning', 'Character created but couldn\'t add to guild. Try from the character settings.')
+          attachFailure = `Character created, but not added to ${guildName}. Try again from the character settings.`
         }
+
+        if (attachFailure) {
+          // Longer than the default: the user is mid-flow and the modal is closing.
+          showNotification('warning', attachFailure, 10000)
+        }
+      }
+
+      if (attachFailure && data.character) {
+        // The character exists but is not in the guild, so the raid team step
+        // would be refused and a guild_id on the active-character PUT would be
+        // rejected with 400. Omitting guild_id keeps the current active guild.
+        // No hard reload here: it would wipe the in-memory warning.
+        try {
+          const activeCharResponse = await fetch('/api/user/active-character', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ character_id: data.character.id })
+          })
+          if (!activeCharResponse.ok) {
+            const activeCharError = await activeCharResponse.json()
+            console.error('Error setting active character:', activeCharError)
+          }
+        } catch (activeCharErr) {
+          console.error('Error setting active character:', activeCharErr)
+          showNotification('warning', 'Character created but couldn\'t set as active. Switch to it manually.')
+        }
+
+        trackClientEvent('character_created')
+        await refreshCharacters()
+        onSuccess?.()
+        onClose()
+        setLoading(false)
+        return
       }
 
       // Add to raid team if selected

@@ -184,3 +184,83 @@ describe('CreateCharacterModal guild attach', () => {
     expect(showNotification).not.toHaveBeenCalledWith('warning', expect.anything())
   })
 })
+
+describe('CreateCharacterModal when the guild attach is refused or fails', () => {
+  const ATTACH_URL = `/api/characters/${CHARACTER.id}/guilds`
+
+  it('warns with the guild name and reason on 403, keeps the character active without a guild, and does not reload', async () => {
+    // regression for #356: a refused attach (403) was only logged, so the user never learned why
+    renderModal({ attach: { status: 403, body: { error: 'You are not a member of this guild' } } })
+
+    await submit()
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1))
+
+    expect(showNotification).toHaveBeenCalledTimes(1)
+    const [type, message] = showNotification.mock.calls[0]
+    expect(type).toBe('warning')
+    expect(message).toContain('Test Guild')
+    expect(message).toContain('not a member')
+    expect(reload).not.toHaveBeenCalled()
+    const [put] = requestsTo('/api/user/active-character', 'PUT')
+    expect(put.body).toEqual({ character_id: CHARACTER.id })
+    expect(put.body).not.toHaveProperty('guild_id')
+    expect(refreshCharacters).toHaveBeenCalledTimes(1)
+    expect(trackClientEvent).toHaveBeenCalledWith('character_created')
+  })
+
+  it('repeats the server error in the warning on any other failure and does not reload', async () => {
+    renderModal({ attach: { status: 500, body: { error: 'Failed to add character to guild' } } })
+
+    await submit()
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1))
+
+    const [type, message] = showNotification.mock.calls[0]
+    expect(type).toBe('warning')
+    expect(message).toContain('Test Guild')
+    expect(message).toContain('Failed to add character to guild')
+    expect(reload).not.toHaveBeenCalled()
+    const [put] = requestsTo('/api/user/active-character', 'PUT')
+    expect(put.body).not.toHaveProperty('guild_id')
+  })
+
+  it('falls back to a generic warning when the attach request itself fails and does not reload', async () => {
+    renderModal({ attach: 'reject' })
+
+    await submit()
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1))
+
+    expect(showNotification).toHaveBeenCalledTimes(1)
+    const [type, message] = showNotification.mock.calls[0]
+    expect(type).toBe('warning')
+    expect(message).toContain('Test Guild')
+    expect(message).toContain('Try again from the character settings.')
+    expect(reload).not.toHaveBeenCalled()
+    const [put] = requestsTo('/api/user/active-character', 'PUT')
+    expect(put.body).not.toHaveProperty('guild_id')
+  })
+
+  it('skips the raid team step when the attach failed', async () => {
+    vi.mocked(hasFeature).mockReturnValue(true)
+    renderModal({
+      attach: { status: 403, body: { error: 'You are not a member of this guild' } },
+      raidTeams: [{ id: 'team-1', name: 'Team One', color_hex: '#fff' }],
+    })
+
+    await submit({ raidTeam: 'Team One' })
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1))
+
+    expect(requestsTo(ATTACH_URL, 'POST')).toHaveLength(1)
+    expect(requests.some(r => r.url.startsWith('/api/raid-teams/') && r.method === 'POST')).toBe(false)
+  })
+
+  it('still adds to the raid team on a successful attach', async () => {
+    vi.mocked(hasFeature).mockReturnValue(true)
+    renderModal({ raidTeams: [{ id: 'team-1', name: 'Team One', color_hex: '#fff' }] })
+
+    await submit({ raidTeam: 'Team One' })
+    await waitFor(() => expect(reload).toHaveBeenCalledTimes(1))
+
+    const [teamPost] = requestsTo('/api/raid-teams/team-1/members', 'POST')
+    expect(teamPost.body).toEqual({ character_ids: [CHARACTER.id] })
+  })
+})
