@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import ForeverAnnouncementModal from '../ForeverAnnouncementModal'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { foreverModalSeenKey, ONBOARDING_SEEN_KEY } from '@/lib/announcements'
@@ -157,6 +158,26 @@ describe('ForeverAnnouncementModal, eligible user', () => {
       announcement: 'wow-forever',
       surface: 'app_modal',
     })
+  })
+
+  it('makes the page behind the announcement inert while open and releases it after Not now (regression for #304)', async () => {
+    const user = userEvent.setup()
+    const { container } = render(
+      <>
+        <button type="button">Trigger</button>
+        <ForeverAnnouncementModal delayMs={0} />
+      </>
+    )
+
+    // Testing Library's container is a direct child of document.body, like
+    // the Next app root the Modal portals beside. Assert on the attribute,
+    // not the .inert property: jsdom does not reflect the property.
+    const dialog = await screen.findByRole('dialog', { name: APPROVED.title })
+    await waitFor(() => expect(container).toHaveAttribute('inert'))
+    expect(dialog.closest('[inert]')).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: APPROVED.dismiss }))
+    await waitFor(() => expect(container).not.toHaveAttribute('inert'))
   })
 })
 

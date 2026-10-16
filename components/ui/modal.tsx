@@ -258,6 +258,7 @@ const Modal = ({
   // is safe and avoids a second useId() call.
   const titleId = React.useId()
   const containerRef = React.useRef<HTMLDivElement>(null)
+  const backdropRef = React.useRef<HTMLDivElement>(null)
 
   const topmostId = React.useSyncExternalStore(
     subscribeToModalStack,
@@ -299,6 +300,33 @@ const Modal = ({
     registerOpenModal(titleId, zIndex)
     return () => unregisterOpenModal(titleId)
   }, [mounted, titleId, zIndex])
+
+  // regression for #304: aria-modal alone does not keep every screen reader
+  // out of the page behind the dialog, so the topmost Modal marks its body
+  // siblings inert. inert (not aria-hidden) also drops them from the tab
+  // order, which closes the Shift+Tab leak when the container itself holds
+  // focus. Tied to isTopmost so a lower Modal never inerts the one stacked on
+  // it. One-shot on purpose: portals that open from inside the dialog (Radix
+  // dropdown-menu, SearchableItemSelect, MultiSelectDropdown) mount into body
+  // later and must stay usable. setAttribute rather than the .inert property
+  // so jsdom and every inert-capable browser behave the same; where inert is
+  // unsupported the attribute is ignored and nothing else changes. Declared
+  // before the focus-restore effect because React runs cleanups in
+  // declaration order and a browser refuses to focus an element inside an
+  // inert subtree.
+  React.useEffect(() => {
+    if (!mounted || !isTopmost) return
+    const root = backdropRef.current
+    if (!root || typeof document === "undefined" || !document.body) return
+    const inerted = Array.from(document.body.children).filter(
+      (child): child is Element =>
+        child !== root && !child.contains(root) && !child.hasAttribute("inert")
+    )
+    inerted.forEach((el) => el.setAttribute("inert", ""))
+    return () => {
+      inerted.forEach((el) => el.removeAttribute("inert"))
+    }
+  }, [mounted, isTopmost])
 
   // Capture whatever had focus right before *this* Modal opened, and
   // restore it on close — independent of isTopmost, so this Modal restores
@@ -400,6 +428,7 @@ const Modal = ({
   return createPortal(
     <ModalTitleContext.Provider value={titleId}>
       <div
+        ref={backdropRef}
         className={cn(
           "fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 transition-opacity duration-150",
           visible ? "opacity-100" : "opacity-0"
