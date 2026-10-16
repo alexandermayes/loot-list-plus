@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 Phase: 06 (Week-4 Review & Next Bet) — EXECUTING
 Plan: 6 of 9
 Status: Ready to execute
-Last activity: 2026-10-16 - Completed quick task 261016-l4r: Classic completeness test covers the 32 zone-less items (GH #278, PR #428)
+Last activity: 2026-10-16 - Completed quick task 261016-l4q: guild join edge cases fixed (GH #356, PR #429 awaiting copy sign-off)
 
 Progress: [████████████████████] 23/23 plans ([███████░░░] 67%)
 
@@ -258,6 +258,7 @@ Recent decisions affecting current work:
 | 261016-l9e | Fix GH #411: DEFAULT_SETTINGS.raid_roles_overall_bonus_priority moves from false to true to match the guild_settings column default and the settings GET fallback (same alignment as #399); 752 scoring, settings and sheet-import tests pass unchanged, regression assertion added. PR #423 | 2026-10-16 | b92a2190 | Needs Review | [261016-l9e-fix-gh-411-align-the-raid-roles-overall-](./quick/261016-l9e-fix-gh-411-align-the-raid-roles-overall-/) |
 | 261016-l53 | Fix GH #276: generated data/item-class-restrictions.ts (207 class-locked Classic, TBC and Wrath items from wow-classic-items tooltips), pure canClassUseItem in domain/loot, one guarded check in fetchFilteredLootItems ahead of the class-agnostic-slot return; filter in code so no per-guild backfill. 3981 tests pass. PR #427 | 2026-10-16 | 456700a0 | Needs Review | [261016-l53-fix-gh-276-class-locked-classic-set-piec](./quick/261016-l53-fix-gh-276-class-locked-classic-set-piec/) |
 | 261016-l4r | Fix GH #278: a checked-in fixture places the 32 zone-less Classic drops (Cache of the Firelord 5, Onyxia 18, Four Horsemen Chest 9) by in-game source and the completeness test now requires every catalog row to be covered by package zone, fixture or the recipe gate; 508 to 579 data tests. PR #428 | 2026-10-16 | 153d43e0 | Needs Review | [261016-l4r-fix-gh-278-classic-catalog-completeness-](./quick/261016-l4r-fix-gh-278-classic-catalog-completeness-/) |
+| 261016-l4q | Fix GH #356: pure resolveJoinMembershipFields decides role, trial and joined_via for every guild attach (creator gets Guild Master on Battle.net import, alts inherit a sibling trial), the dead pending_guild_join hint is gone, and CreateCharacterModal warns when the guild attach fails instead of silently reloading (copy needs sign-off). 3924 tests pass. PR #429 | 2026-10-16 | PENDING | Needs Review | [261016-l4q-fix-gh-356-guild-join-edge-cases-battle-](./quick/261016-l4q-fix-gh-356-guild-join-edge-cases-battle-/) |
 
 ## Deferred Items
 
