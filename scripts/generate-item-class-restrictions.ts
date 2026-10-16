@@ -1,0 +1,158 @@
+/**
+ * Generate Class Restrictions from the wow-classic-items package
+ *
+ * Classic set pieces and other class-locked drops were offered to classes
+ * that cannot use them (GH #276): the raider item picker checks armor and
+ * weapon proficiency only, and canWearArmorType allows lighter armor, so
+ * Arcanist cloth showed to every Classic class and Paladin plate showed to
+ * Warriors.
+ *
+ * The package has no `classes` field. The only place it exposes a class lock
+ * is the tooltip line `Classes: A, B`, so this script walks every Classic,
+ * TBC and Wrath catalog id, reads that line and writes
+ * data/item-class-restrictions.ts. Slot 'Token' is skipped because
+ * data/token-class-mapping.ts is the token rule (it also covers Cata and
+ * MoP). Slot 'Recipe' is skipped because GH-284 D-03 shows every recipe to
+ * every class.
+ *
+ * Offline and deterministic: no network, no cache, no date line, so a re-run
+ * on unchanged data is byte-identical and the Refresh Item Data workflow's
+ * `git diff --quiet` stays quiet.
+ *
+ * Usage: npx tsx scripts/generate-item-class-restrictions.ts
+ */
+
+import * as fs from 'fs'
+import * as path from 'path'
+import { Items } from 'wow-classic-items'
+
+import { classicRaids } from '../data/classic-wow-raids'
+import { tbcRaids } from '../data/tbc-raids'
+import { wrathRaids } from '../data/wrath-raids'
+import { CLASS_PROFICIENCIES } from '../data/class-proficiencies'
+
+const CLASSES_LINE_PREFIX = 'Classes: '
+const EXCLUDED_SLOTS = new Set(['Token', 'Recipe'])
+
+interface RaidLike {
+  bosses: Array<{ items: Array<{ wowhead_id: number; name: string; slot: string }> }>
+}
+
+interface PackageItem {
+  itemId: number
+  name: string
+  tooltip?: { label?: string }[]
+}
+
+interface Restriction {
+  id: number
+  name: string
+  classes: string[]
+}
+
+const validClassNames = new Set(Object.keys(CLASS_PROFICIENCIES))
+
+function loadPackageItems(): Map<number, PackageItem> {
+  const byId = new Map<number, PackageItem>()
+  for (const item of new Items({ iconSrc: false })) byId.set(item.itemId, item as PackageItem)
+  return byId
+}
+
+/** The class names on the package `Classes:` line, in the order the package prints them. */
+function packageClasses(item: PackageItem): string[] | null {
+  const lines = (item.tooltip ?? []).filter(line => (line.label ?? '').startsWith(CLASSES_LINE_PREFIX))
+  if (lines.length === 0) return null
+  if (lines.length > 1) {
+    throw new Error(`Item ${item.itemId} (${item.name}) has ${lines.length} Classes lines`)
+  }
+  const label = lines[0].label as string
+  const classes = label.slice(CLASSES_LINE_PREFIX.length).split(', ')
+  for (const className of classes) {
+    if (!validClassNames.has(className)) {
+      throw new Error(`Item ${item.itemId} (${item.name}): unknown class "${className}" in label "${label}"`)
+    }
+  }
+  return classes
+}
+
+function collectRestrictions(raids: RaidLike[], packageItems: Map<number, PackageItem>, seen: Set<number>): Restriction[] {
+  const restrictions: Restriction[] = []
+  for (const raid of raids) {
+    for (const boss of raid.bosses) {
+      for (const item of boss.items) {
+        if (seen.has(item.wowhead_id)) continue
+        seen.add(item.wowhead_id)
+        if (EXCLUDED_SLOTS.has(item.slot)) continue
+        const packageItem = packageItems.get(item.wowhead_id)
+        if (!packageItem) {
+          throw new Error(`Catalog item ${item.wowhead_id} (${item.name}) is missing from the wow-classic-items package`)
+        }
+        const classes = packageClasses(packageItem)
+        if (!classes) continue
+        restrictions.push({ id: item.wowhead_id, name: item.name, classes })
+      }
+    }
+  }
+  return restrictions
+}
+
+function generateMappingFile(all: Restriction[], counts: Record<string, number>): string {
+  const sorted = [...all].sort((a, b) => a.id - b.id)
+  const lines = sorted.map(r => `  ${r.id}: [${r.classes.map(c => `'${c}'`).join(', ')}], // ${r.name}`)
+  const countLine = Object.entries(counts).map(([expansion, n]) => `${n} ${expansion}`).join(', ')
+
+  return `/**
+ * Item Class Restrictions
+ *
+ * Maps a Wowhead item ID to the classes that can use it (GH #276). Classic
+ * set pieces and other class-locked drops pass the armor and weapon
+ * proficiency checks because canWearArmorType allows lighter armor, so the
+ * raider item picker consults this map as well.
+ *
+ * Source: the wow-classic-items package's "Classes:" tooltip line, the only
+ * place the package exposes a class lock. Covers every Classic, TBC and
+ * Wrath catalog item that carries one. Cata and MoP are not in the package.
+ *
+ * Rule: slot 'Token' is excluded because data/token-class-mapping.ts is the
+ * token rule and also covers Cata and MoP; slot 'Recipe' is excluded because
+ * GH-284 D-03 shows recipes to every class. Ids absent from this map are
+ * unrestricted by this rule: a missing entry shows an item to more classes,
+ * never fewer.
+ *
+ * Read via canClassUseItem() in domain/loot/class-restrictions.ts.
+ *
+ * Auto-generated by scripts/generate-item-class-restrictions.ts
+ * Total items: ${sorted.length} (${countLine})
+ */
+
+import type { WowClassName } from './class-proficiencies'
+
+export const ITEM_CLASS_RESTRICTIONS: Record<number, readonly WowClassName[]> = {
+${lines.join('\n')}
+}
+`
+}
+
+function main() {
+  console.log('Loading the wow-classic-items package...')
+  const packageItems = loadPackageItems()
+
+  const seen = new Set<number>()
+  const classic = collectRestrictions(classicRaids, packageItems, seen)
+  const tbc = collectRestrictions(tbcRaids, packageItems, seen)
+  const wrath = collectRestrictions(wrathRaids, packageItems, seen)
+  const counts = { Classic: classic.length, TBC: tbc.length, Wrath: wrath.length }
+  const all = [...classic, ...tbc, ...wrath]
+  console.log(`Class-locked catalog items: ${all.length} (${counts.Classic} Classic, ${counts.TBC} TBC, ${counts.Wrath} Wrath)`)
+
+  const outputPath = path.join(__dirname, '../data/item-class-restrictions.ts')
+  fs.writeFileSync(outputPath, generateMappingFile(all, counts))
+  console.log(`Saved to ${outputPath}`)
+}
+
+try {
+  main()
+} catch (error) {
+  console.error('generate-item-class-restrictions failed:', error)
+  process.exit(1)
+}

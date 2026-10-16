@@ -32,9 +32,13 @@
  * Token-slot items need a TOKEN_CLASS_MAPPING entry (data/token-class-mapping.ts)
  * or they are offered to every class. data/__tests__/classic-catalog-completeness.test.ts
  * fails if an Epic drop the wow-classic-items package attributes to one of
- * these raids is missing here without a recorded reason (GH-273), checks
- * token class lists against the package, and (in the 'Classic raid
- * profession recipes (#284)' describe, driven by
+ * these raids is missing here without a recorded reason (GH-273). An item the
+ * package records no zone for (the Onyxia's Lair drops, the Cache of the
+ * Firelord items, the Four Horsemen Chest items) is placed by
+ * data/__tests__/fixtures/classic-gh278-zoneless.ts instead, so adding or
+ * removing such an item means updating that fixture too (GH-278). The same
+ * suite checks token class lists against the package, and (in the 'Classic
+ * raid profession recipes (#284)' describe, driven by
  * data/__tests__/fixtures/classic-gh284-recipes.ts) fails if a Molten Core or
  * Ahn'Qiraj profession recipe is missing, moved or extra.
  */
