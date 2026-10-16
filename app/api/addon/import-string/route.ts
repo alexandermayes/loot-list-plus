@@ -5,7 +5,8 @@ import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError, trackEvent } from '@/utils/analytics/server'
 import { notifyLootAward, type LootAward } from '@/lib/discord-loot-announcements'
 import { recomputeBlpForEvents, recomputeBlpForItems } from '@/utils/blp/recompute'
-import { importAttendanceByTeam, findAwardRaidEvent } from '@/utils/raid-events/team-routing'
+import { importAttendanceByTeam } from '@/utils/raid-events/team-routing'
+import { findRaidNightForAward, guildRaidTimeZone, raidNightDate } from '@/lib/addon/raid-night'
 import {
   resolveGuildLootItem,
   resolveGuildLootItemIds,
@@ -90,6 +91,18 @@ interface ImportPayload {
  * awardedAt key looked up as an alternate, so two awards in the same second
  * become two copies and an award stored earlier under its awardedAt key is
  * not recorded twice. A missing or malformed awardId keys on awardedAt.
+ *
+ * GH #355: raid nights are read in the guild's raid time zone
+ * (lib/addon/raid-night.ts), not the UTC date. A session's night comes from
+ * its startTime; an award's from its session's startTime, or from its own
+ * awardedAt when no session matches. A local time from 00:00 to 05:59
+ * belongs to the previous night (D1). If the zoned night does not exist yet,
+ * the UTC-dated night an older sync created is used when it does (D3), and
+ * the award's stored awarded_date is the night it was linked under (D4),
+ * where it used to be the awardedAt UTC date. Nights already created on a
+ * UTC date are not moved. A missing or malformed startTime keeps raidDate,
+ * and a failed time zone read carries on with the UTC dates as before. The
+ * dedupe keys still read the raw awardedAt and awardId, untouched.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -168,13 +181,23 @@ export async function POST(request: NextRequest) {
     const announceQueue: LootAward[] = []
     const attendance = payload.attendance || []
 
+    // GH #355: the guild's raid time zone, read once. A failed read carries
+    // on with the UTC dates, exactly as before.
+    let raidTimeZone: string | null = null
+    try {
+      raidTimeZone = await guildRaidTimeZone(supabase, payload.guildId)
+    } catch (zoneError) {
+      console.error('Failed to read the raid time zone for an import:', zoneError)
+      trackApiError('unknown', 'POST /api/addon/import-string', zoneError instanceof Error ? zoneError : new Error(String(zoneError)))
+    }
+
     // Process attendance FIRST (GH #295 PD-07): importAttendanceByTeam
     // creates the payload's raid nights, so the awards below can link to
     // them. Awards never create a night themselves.
     const attendanceEventIds = new Set<string>()
     for (const record of attendance) {
       try {
-        const raidEventIds = await processAttendance(supabase, payload.guildId, record)
+        const raidEventIds = await processAttendance(supabase, payload.guildId, record, raidTimeZone)
         for (const id of raidEventIds) attendanceEventIds.add(id)
         results.attendance.processed++
       } catch (err) {
@@ -194,7 +217,8 @@ export async function POST(request: NextRequest) {
           user.id,
           award,
           awardScopes.scopeByIndex.get(i) ?? null,
-          attendance
+          attendance,
+          raidTimeZone
         )
         results.awards.processed++
         if (outcome.status === 'already_recorded') {
@@ -316,7 +340,8 @@ async function processAward(
   userId: string,
   award: AddonAward,
   preResolvedScope: LootItemScope | null,
-  attendance: unknown
+  attendance: unknown,
+  raidTimeZone: string | null
 ): Promise<ProcessAwardOutcome> {
   // The export's own attendance session for this award, if any (PD-07).
   // Its boss kill and instance name are live; the award's bossName and
@@ -371,13 +396,28 @@ async function processAward(
     }
   }
 
-  // The guild's raid night for the session's raidDate (exact, even for a
-  // session that crosses 00:00 UTC), or else the awardedAt date (GH #295).
-  // A lookup failure saves the award unlinked instead of failing it.
+  // The guild's raid night (GH #295, GH #355): the session's start time, or
+  // the award's own time when no session matches, read in the guild's raid
+  // time zone. When that night does not exist yet, the UTC-dated night
+  // (the session's raidDate, else the awardedAt date) is used if it does
+  // (D3). matchAwardSession still matches on the UTC window. A lookup
+  // failure saves the award unlinked instead of failing it.
+  const zonedDate = raidTimeZone === null
+    ? null
+    : raidNightDate(session ? session.startTime : award.awardedAt, raidTimeZone)
   let raidEventId: string | null = null
+  let storedDate: string | null = zonedDate
   try {
-    const night = await findAwardRaidEvent(supabase, guildId, session?.raidDate ?? award.awardedAt, characterId)
+    const night = await findRaidNightForAward(
+      supabase,
+      guildId,
+      { zonedDate, legacyDate: session?.raidDate ?? award.awardedAt },
+      characterId,
+    )
     raidEventId = night.raidEventId
+    // D4: the stored awarded_date is the zoned night, or the older UTC-dated
+    // night the award linked to; with no zoned night it stays the awardedAt date.
+    storedDate = zonedDate !== null && night.date === zonedDate ? zonedDate : null
   } catch (nightError) {
     console.error('Failed to look up the raid night for an imported award:', nightError)
     trackApiError('unknown', 'POST /api/addon/import-string', nightError instanceof Error ? nightError : new Error(String(nightError)))
@@ -398,6 +438,7 @@ async function processAward(
       characterId,
       characterName: award.characterName,
       awardedAt: award.awardedAt,
+      awardedDate: storedDate,
       manual: award.manual,
       awardedBy: userId,
       raidEventId,
@@ -418,7 +459,8 @@ async function processAward(
 async function processAttendance(
   supabase: ReturnType<typeof createServiceRoleClient>,
   guildId: string,
-  record: AddonAttendanceRecord
+  record: AddonAttendanceRecord,
+  raidTimeZone: string | null
 ): Promise<string[]> {
   // Resolve active members → character ids + names.
   const { data: memberships } = await supabase
@@ -434,6 +476,9 @@ async function processAttendance(
   }
 
   const attendedSet = new Set(record.attended.map(n => n.toLowerCase()))
-  const { eventIds } = await importAttendanceByTeam(supabase, guildId, record.raidDate, members, attendedSet)
+  // GH #355: the night from the session's start time in the guild's raid
+  // time zone; a missing or malformed startTime keeps the UTC raidDate.
+  const raidNight = (raidTimeZone !== null ? raidNightDate(record.startTime, raidTimeZone) : null) ?? record.raidDate
+  const { eventIds } = await importAttendanceByTeam(supabase, guildId, raidNight, members, attendedSet)
   return eventIds
 }

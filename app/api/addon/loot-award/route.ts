@@ -7,7 +7,7 @@ import { notifyLootAward } from '@/lib/discord-loot-announcements'
 import { resolveGuildLootItem } from '@/lib/loot/guild-scoped-lookup'
 import { buildAddonAwardRow } from '@/lib/loot/loot-history-rows'
 import { addonAwardKeys, insertAddonAward, type AddonAwardInsertResult } from '@/lib/loot/addon-award-insert'
-import { findAwardRaidEvent } from '@/utils/raid-events/team-routing'
+import { findRaidNightForAward, guildRaidTimeZone, isUtcTimestamp, raidNightDate } from '@/lib/addon/raid-night'
 import { recomputeBlpForItems } from '@/utils/blp/recompute'
 
 interface LootAwardRequest {
@@ -61,6 +61,16 @@ interface LootAwardRequest {
  * its awarded_at key looked up as an alternate so an award first stored
  * under that older key is not recorded twice. A missing or malformed
  * award_id is never rejected; the award then keys on awarded_at as above.
+ *
+ * GH #355: when awarded_at is a valid UTC timestamp it feeds the raid night,
+ * read in the guild's raid time zone (lib/addon/raid-night.ts), so a 22:30
+ * EDT award lands on that evening's night and not on the next UTC date. A
+ * local time from 00:00 to 05:59 belongs to the previous night (D1). If the
+ * zoned night does not exist yet, the UTC-dated night an older companion
+ * created is used when it does (D3), and the award is stored under that date.
+ * Nights already created on a UTC date are not moved. A failed time zone
+ * read carries on with the UTC awarded_date, as before. The dedupe keys still
+ * read the raw awarded_at and award_id, untouched.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -116,16 +126,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // GH #355: the night in the guild's raid time zone, from awarded_at.
+    // A failed zone read carries on with the UTC awarded_date, as before.
+    let zonedDate: string | null = null
+    if (isUtcTimestamp(awarded_at)) {
+      try {
+        zonedDate = raidNightDate(awarded_at, await guildRaidTimeZone(supabase, guild_id))
+      } catch (zoneError) {
+        console.error('Failed to read the raid time zone for an addon award:', zoneError)
+        trackApiError('unknown', 'POST /api/addon/loot-award', zoneError instanceof Error ? zoneError : new Error(String(zoneError)))
+      }
+    }
+    let awardedDate = zonedDate ?? awarded_date
+
     // Find the guild's raid night for this award (GH #295). Only the
-    // explicit awarded_date is matched, never the server's today. A lookup
-    // failure saves the award unlinked: the companion never retries a
-    // failed award, so a 500 here would lose it (PD-05).
+    // explicit awarded_date (or the zoned night from awarded_at) is matched,
+    // never the server's today. A lookup failure saves the award unlinked:
+    // the companion never retries a failed award, so a 500 here would lose
+    // it (PD-05).
     let raidEventId: string | null = null
     let raidNight: string
     try {
-      const night = await findAwardRaidEvent(supabase, guild_id, awarded_date, characterId)
+      const night = await findRaidNightForAward(
+        supabase, guild_id, { zonedDate, legacyDate: awarded_date }, characterId,
+      )
       raidEventId = night.raidEventId
       raidNight = night.outcome
+      if (zonedDate !== null && night.date) awardedDate = night.date
     } catch (nightError) {
       console.error('Failed to look up the raid night for an addon award:', nightError)
       trackApiError('unknown', 'POST /api/addon/loot-award', nightError instanceof Error ? nightError : new Error(String(nightError)))
@@ -150,7 +177,7 @@ export async function POST(request: NextRequest) {
           item: lootItem,
           characterId,
           characterName: character_name,
-          awardedDate: awarded_date,
+          awardedDate,
           awardedBy: access.userId,
           notes,
           bossName: boss_name,

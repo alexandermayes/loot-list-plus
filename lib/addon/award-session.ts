@@ -21,6 +21,8 @@ export interface AwardSessionContext {
   raidName: string | null
   /** The latest live boss kill at or before the award, or null. */
   bossName: string | null
+  /** The session's start time, trimmed (GH #355: feeds the zoned raid night). */
+  startTime: string
 }
 
 const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/
@@ -79,5 +81,10 @@ export function matchAwardSession(awardedAt: unknown, sessions: unknown): AwardS
     }
   }
 
-  return { raidDate: best.raidDate, raidName: trimmedOrNull(best.session.raidName), bossName }
+  return {
+    raidDate: best.raidDate,
+    raidName: trimmedOrNull(best.session.raidName),
+    bossName,
+    startTime: (best.session.startTime as string).trim(),
+  }
 }

@@ -134,6 +134,11 @@ export interface BuildImportStringAwardRowInput {
   characterId: string | null
   characterName: string
   awardedAt?: string | null
+  /**
+   * GH #355: the raid night (YYYY-MM-DD) in the guild's raid time zone.
+   * Wins over the date part of awardedAt, which is the UTC date.
+   */
+  awardedDate?: string | null
   manual?: boolean
   awardedBy: string
   /** The guild's raid night for this award (GH #295), or null/absent. */
@@ -160,7 +165,7 @@ export interface BuildImportStringAwardRowInput {
  * on one night is recorded (insertAddonAward picks award_copy).
  */
 export function buildImportStringAwardRow(input: BuildImportStringAwardRowInput): LootHistoryInsert {
-  const { guildId, item, characterId, characterName, awardedAt, manual, awardedBy, raidEventId, sourceAwardKey, today } = input
+  const { guildId, item, characterId, characterName, awardedAt, awardedDate, manual, awardedBy, raidEventId, sourceAwardKey, today } = input
   const row: LootHistoryInsert = {
     guild_id: guildId,
     character_id: characterId,
@@ -168,7 +173,7 @@ export function buildImportStringAwardRow(input: BuildImportStringAwardRowInput)
     loot_item_id: item.id,
     raid_tier_id: item.raid_tier_id,
     expansion_id: item.expansion_id,
-    awarded_date: awardedAt ? awardedAt.split('T')[0] : today,
+    awarded_date: awardedDate || (awardedAt ? awardedAt.split('T')[0] : today),
     awarded_by: awardedBy,
     source: 'addon',
     notes: manual ? 'Manual award from addon' : null,
