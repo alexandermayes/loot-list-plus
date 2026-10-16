@@ -1,0 +1,13 @@
+{
+  "source": "https://wago.tools/db2/{table}/csv?build={build}",
+  "product": "wow_classic_beta",
+  "buildPrefix": "1.60.",
+  "build": null,
+  "fetchedAt": null,
+  "sha256": null,
+  "tables": {
+    "DungeonEncounter": [],
+    "Map": [],
+    "ItemSparse": []
+  }
+}
