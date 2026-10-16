@@ -65,6 +65,10 @@ import { FACTION_ITEM_ALIASES } from '@/domain/loot/faction-item-aliases'
 // the 'Classic zone-less package items (#278)' describe requires each row
 // once under its boss group and checks every catalog row is covered by the
 // package zone, that fixture, or the Recipe gate of #284.
+//
+// RED evidence: with the fixture empty, the coverage test reported exactly
+// the 32 rows (5 Molten Core, 18 Onyxia's Lair, 9 Naxxramas) and none of the
+// 15 Recipe rows. GREEN: with the 32 rows in place it reports zero.
 
 type PackageItem = InstanceType<typeof Items>[number]
 
