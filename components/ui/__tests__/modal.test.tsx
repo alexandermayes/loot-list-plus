@@ -236,4 +236,98 @@ describe('Modal', () => {
 
     expect(screen.getByRole('dialog')).not.toHaveAttribute('aria-describedby')
   })
+
+  it('makes everything outside the dialog inert while open and releases it on close', async () => {
+    const user = userEvent.setup()
+
+    function Wrapper() {
+      const [open, setOpen] = useState(false)
+      return (
+        <div>
+          <button onClick={() => setOpen(true)}>Open modal</button>
+          <Modal open={open} onClose={() => setOpen(false)}>
+            <ModalHeader showCloseButton={false}>
+              <ModalTitle>Modal heading</ModalTitle>
+            </ModalHeader>
+            <ModalBody>
+              <button onClick={() => setOpen(false)}>Close</button>
+            </ModalBody>
+          </Modal>
+        </div>
+      )
+    }
+
+    const { container } = render(<Wrapper />)
+
+    // Testing Library's container is a direct child of document.body, exactly
+    // like the Next app root the Modal portals beside, so it stands in for
+    // "the page behind the dialog" (GH #304). Assert on the attribute, not the
+    // .inert property: jsdom does not reflect the property.
+    const trigger = screen.getByRole('button', { name: 'Open modal' })
+    expect(container).not.toHaveAttribute('inert')
+
+    await user.click(trigger)
+    const dialog = await screen.findByRole('dialog')
+    // The effect waits for the modal-stack registration re-render, so it is
+    // not synchronous with the dialog appearing.
+    await waitFor(() => expect(container).toHaveAttribute('inert'))
+    expect(dialog.closest('[inert]')).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    await waitFor(() => expect(container).not.toHaveAttribute('inert'))
+    expect(trigger).toHaveFocus()
+  })
+
+  it('with two Modals open, only the lower one sits in an inert subtree', async () => {
+    render(
+      <>
+        <Modal open={true} onClose={() => {}} zIndex={50}>
+          <ModalHeader showCloseButton={false}>
+            <ModalTitle>Modal A</ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <button>Button A</button>
+          </ModalBody>
+        </Modal>
+        <Modal open={true} onClose={() => {}} zIndex={100}>
+          <ModalHeader showCloseButton={false}>
+            <ModalTitle>Modal B</ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <button>Button B</button>
+          </ModalBody>
+        </Modal>
+      </>
+    )
+
+    // @testing-library/dom does not treat inert elements as inaccessible, so
+    // getByRole still finds the lower dialog. If a future upgrade changes
+    // that, switch this lookup to { hidden: true }.
+    const a = screen.getByRole('dialog', { name: 'Modal A' })
+    const b = screen.getByRole('dialog', { name: 'Modal B' })
+
+    await waitFor(() => expect(a.closest('[inert]')).not.toBeNull())
+    expect(b.closest('[inert]')).toBeNull()
+  })
+
+  it('carries motion-reduce utilities on the backdrop and panel so reduced-motion users get no fade or scale', () => {
+    render(
+      <Modal open={true} onClose={() => {}}>
+        <ModalHeader showCloseButton={false}>
+          <ModalTitle>Modal heading</ModalTitle>
+        </ModalHeader>
+        <ModalBody>
+          <button>Only button</button>
+        </ModalBody>
+      </Modal>
+    )
+
+    // jsdom loads no Tailwind stylesheet, so class presence on the two
+    // animated wrappers is the honest assertion for the media query.
+    const dialog = screen.getByRole('dialog')
+    const panel = dialog.parentElement as HTMLElement
+    const backdrop = panel.parentElement as HTMLElement
+    expect(panel).toHaveClass('motion-reduce:transition-none', 'motion-reduce:scale-100')
+    expect(backdrop).toHaveClass('motion-reduce:transition-none')
+  })
 })

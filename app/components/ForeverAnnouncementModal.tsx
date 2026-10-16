@@ -38,9 +38,11 @@ interface ForeverAnnouncementModalProps {
  * The shared Modal owns the dialog semantics: its container is the single
  * dialog, named by ModalTitle through Modal's title context and described by
  * the body through aria-describedby. Modal also supplies the Tab trap, initial
- * focus on the first control (Not now), Escape and focus restore on close. Do
- * not add a second dialog element or a local focus trap here: that nesting
- * left the real dialog without an accessible name (GH #304).
+ * focus on the first control (Not now), Escape and focus restore on close,
+ * makes the page behind the dialog inert while it is open and removes its
+ * transitions under prefers-reduced-motion (GH #304 follow-up). Do not add a
+ * second dialog element or a local focus trap here: that nesting left the
+ * real dialog without an accessible name (GH #304).
  */
 export default function ForeverAnnouncementModal({ delayMs = 800 }: ForeverAnnouncementModalProps) {
   const { loading, user, activeGuild } = useGuildContext()
