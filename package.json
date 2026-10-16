@@ -70,7 +70,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "stripe": "^22.5.0",
-    "swr": "^2.3.8"
+    "swr": "^2.3.8",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^16.2.6",
@@ -83,6 +84,7 @@
     "autoprefixer": "^10.4.23",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "csv-parse": "7.0.2",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "jsdom": "^29.1.1",
