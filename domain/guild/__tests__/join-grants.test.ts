@@ -96,7 +96,11 @@ interface World {
   guildMissing?: boolean
   characters?: string[]
   activeMembership?: boolean
+  /** Rows the membership lookup returns; overrides activeMembership. */
+  memberships?: Array<Record<string, unknown>>
   grant?: boolean
+  /** Column set on the grant row; `undefined` leaves `source` out entirely. */
+  grantSource?: 'invite_code' | 'discord_verify'
   failOn?: string
 }
 
@@ -110,10 +114,14 @@ function world(w: World) {
       return { data: (w.characters ?? []).map(id => ({ id })), error: null }
     }
     if (call.table === 'character_guild_memberships') {
-      return { data: w.activeMembership ? [{ id: 'm-1' }] : [], error: null }
+      const rows = w.memberships ?? (w.activeMembership ? [{ membership_status: 'full', trial_started_at: null }] : [])
+      return { data: rows, error: null }
     }
     if (call.table === 'guild_join_grants') {
-      return { data: w.grant ? { user_id: USER } : null, error: null }
+      if (!w.grant) return { data: null, error: null }
+      const row: Record<string, unknown> = { user_id: USER }
+      if (w.grantSource) row.source = w.grantSource
+      return { data: row, error: null }
     }
     return OK
   })
@@ -201,19 +209,30 @@ describe('resolveGuildJoinAccess', () => {
       now: NOW,
     })
 
-    expect(access).toEqual({ allowed: true, via: 'member' })
+    expect(access).toEqual({
+      allowed: true,
+      via: 'member',
+      siblings: [{ membership_status: 'full', trial_started_at: null }],
+    })
     expect(fake.calls.map(c => c.table)).toEqual(['guilds', 'characters', 'character_guild_memberships'])
     expect(fake.calls[1].filters).toEqual([['eq', 'user_id', USER]])
     const membership = fake.calls[2]
+    expect(membership.columns).toBe('membership_status, trial_started_at')
     expect(membership.filters).toContainEqual(['eq', 'guild_id', GUILD])
     expect(membership.filters).toContainEqual(['eq', 'is_active', true])
     expect(membership.filters).toContainEqual(['in', 'character_id', ['char-2']])
     expect(membership.filters).toContainEqual(['neq', 'character_id', 'char-1'])
-    expect(membership.limit).toBe(1)
   })
 
-  it('skips the membership lookup when the user has no character other than the excluded one', async () => {
-    const fake = world({ characters: ['char-1'], activeMembership: true, grant: true })
+  it('carries every active sibling with only its trial standing on the member path', async () => {
+    // regression for #356: the alt rule needs each sibling's trial status, not just that one exists
+    const fake = world({
+      characters: ['char-1', 'char-2', 'char-3'],
+      memberships: [
+        { id: 'm-2', character_id: 'char-2', membership_status: 'trial', trial_started_at: '2026-09-01T00:00:00.000Z' },
+        { id: 'm-3', character_id: 'char-3', membership_status: 'full', trial_started_at: null },
+      ],
+    })
 
     const access = await resolveGuildJoinAccess(fake.client, {
       userId: USER,
@@ -222,7 +241,27 @@ describe('resolveGuildJoinAccess', () => {
       now: NOW,
     })
 
-    expect(access).toEqual({ allowed: true, via: 'grant' })
+    expect(access).toEqual({
+      allowed: true,
+      via: 'member',
+      siblings: [
+        { membership_status: 'trial', trial_started_at: '2026-09-01T00:00:00.000Z' },
+        { membership_status: 'full', trial_started_at: null },
+      ],
+    })
+  })
+
+  it('skips the membership lookup when the user has no character other than the excluded one', async () => {
+    const fake = world({ characters: ['char-1'], activeMembership: true, grant: true, grantSource: 'invite_code' })
+
+    const access = await resolveGuildJoinAccess(fake.client, {
+      userId: USER,
+      guildId: GUILD,
+      excludeCharacterId: 'char-1',
+      now: NOW,
+    })
+
+    expect(access).toEqual({ allowed: true, via: 'grant', source: 'invite_code' })
     expect(fake.calls.map(c => c.table)).toEqual(['guilds', 'characters', 'guild_join_grants'])
     expect(fake.calls.some(c => c.filters.some(f => f[0] === 'in'))).toBe(false)
   })
@@ -237,7 +276,7 @@ describe('resolveGuildJoinAccess', () => {
   })
 
   it('allows a user holding an unconsumed, unexpired join record', async () => {
-    const fake = world({ characters: ['char-1', 'char-2'], activeMembership: false, grant: true })
+    const fake = world({ characters: ['char-1', 'char-2'], activeMembership: false, grant: true, grantSource: 'invite_code' })
 
     const access = await resolveGuildJoinAccess(fake.client, {
       userId: USER,
@@ -246,16 +285,33 @@ describe('resolveGuildJoinAccess', () => {
       now: NOW,
     })
 
-    expect(access).toEqual({ allowed: true, via: 'grant' })
+    expect(access).toEqual({ allowed: true, via: 'grant', source: 'invite_code' })
     const grant = fake.calls[3]
     expect(grant.table).toBe('guild_join_grants')
     expect(grant.op).toBe('select')
+    expect(grant.columns).toBe('user_id, source')
     expect(grant.filters).toEqual([
       ['eq', 'user_id', USER],
       ['eq', 'guild_id', GUILD],
       ['is', 'consumed_at', null],
       ['gt', 'expires_at', NOW.toISOString()],
     ])
+  })
+
+  it('carries the recorded Discord source on the grant path', async () => {
+    const fake = world({ characters: [], grant: true, grantSource: 'discord_verify' })
+
+    const access = await resolveGuildJoinAccess(fake.client, { userId: USER, guildId: GUILD, now: NOW })
+
+    expect(access).toEqual({ allowed: true, via: 'grant', source: 'discord_verify' })
+  })
+
+  it('resolves a join record with no source to source null', async () => {
+    const fake = world({ characters: [], grant: true })
+
+    const access = await resolveGuildJoinAccess(fake.client, { userId: USER, guildId: GUILD, now: NOW })
+
+    expect(access).toEqual({ allowed: true, via: 'grant', source: null })
   })
 
   it('denies when no path applies', async () => {
