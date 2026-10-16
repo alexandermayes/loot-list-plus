@@ -1657,7 +1657,7 @@ export default function LootListContent({
                           }`}>{getPhaseGroupShortLabel(group)}</span>
                           {iconTier && (
                             <img
-                              src={getRaidIcon(iconTier.name)}
+                              src={getRaidIcon(iconTier.name, guildGame)}
                               alt=""
                               className="w-5 h-5 rounded border border-border/50"
                             />
@@ -1712,7 +1712,7 @@ export default function LootListContent({
                   {/* Show first active tier's raid icon, or first tier if none active */}
                   {phaseTiers.length > 0 && (
                     <img
-                      src={getRaidIcon(phaseTiers.find(t => t.is_guild_active)?.name || phaseTiers[0]?.name || '')}
+                      src={getRaidIcon(phaseTiers.find(t => t.is_guild_active)?.name || phaseTiers[0]?.name || '', guildGame)}
                       alt=""
                       className="w-10 h-10 rounded-lg border-2 border-border/50 shadow-md"
                     />
