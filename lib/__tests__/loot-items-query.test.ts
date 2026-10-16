@@ -11,6 +11,7 @@ import { wrathRaids } from '@/data/wrath-raids'
 import { Items } from 'wow-classic-items'
 import { ARMOR_SLOTS } from '@/data/item-types'
 import { uniqueArmorSlotPieces } from '@/data/__tests__/fixtures/package-item-types'
+import { classLockedCatalogItems, packageClasses } from '@/data/__tests__/fixtures/package-item-classes'
 
 /**
  * Minimal in-memory Supabase client stand-in. Only implements the query
@@ -509,6 +510,8 @@ const CLASSIC_CLASSES = [
   'Warrior', 'Paladin', 'Hunter', 'Rogue', 'Priest', 'Shaman', 'Mage', 'Warlock', 'Druid',
 ] as const
 
+const WRATH_CLASSES = [...CLASSIC_CLASSES, 'Death Knight'] as const
+
 describe('GH-284: Classic raid recipes visible to every class', () => {
   it('the catalog has exactly 28 Classic raid recipe rows', () => {
     // Guards against an empty or partial catalog passing the class checks
@@ -543,12 +546,156 @@ describe('GH-284: Classic raid recipes visible to every class', () => {
   })
 })
 
-// ─── GH-388: Dragonstalker's Greaves shows to classes that can wear mail ──
+// ─── GH-276: class-locked items show only to the classes that can use them ──
+
+// Classic set pieces and other class-locked drops pass the armor rule because
+// canWearArmorType allows lighter armor, so Arcanist cloth showed to every
+// class (GH #276). Rows carry no armor or weapon type, the shape the seeder
+// stores, so the picker's fallback path is exercised. Expectations for the
+// sweep come from the package via the fixture, not from the generated map.
+describe('GH-276: class-locked items show only to the classes that can use them', () => {
+  const classIdFor = (className: string) => `class-${className.toLowerCase().replace(/ /g, '-')}`
+
+  async function visibleIdsFor(rows: ReturnType<typeof item>[], className: string): Promise<string[]> {
+    const supabase = makeMockSupabase({
+      loot_items: rows,
+      wow_classes: allClasses,
+      class_specs: allSpecs,
+    })
+    const character = warrior({ class_name: className, class_id: classIdFor(className) })
+    const result = (await fetchFilteredLootItems(supabase, character, ['tier-1'])) as Array<{ id: string }>
+    return result.map((r) => r.id).sort()
+  }
+
+  const arcanistRows = [
+    { wowhead_id: 16795, name: 'Arcanist Crown', slot: 'Head' },
+    { wowhead_id: 16796, name: 'Arcanist Leggings', slot: 'Legs' },
+    { wowhead_id: 16797, name: 'Arcanist Mantle', slot: 'Shoulder' },
+    { wowhead_id: 16798, name: 'Arcanist Robes', slot: 'Chest' },
+    { wowhead_id: 16799, name: 'Arcanist Bindings', slot: 'Wrist' },
+    { wowhead_id: 16800, name: 'Arcanist Boots', slot: 'Feet' },
+    { wowhead_id: 16801, name: 'Arcanist Gloves', slot: 'Hands' },
+    { wowhead_id: 16802, name: 'Arcanist Belt', slot: 'Waist' },
+  ].map((piece) =>
+    item(`mc-${piece.wowhead_id}`, {
+      name: piece.name,
+      item_slot: piece.slot,
+      wowhead_id: piece.wowhead_id,
+      armor_type: null,
+      weapon_type: null,
+    })
+  )
+
+  it.each(CLASSIC_CLASSES)('a Mage sees all eight Arcanist pieces and no other Classic class sees any: %s', async (className) => {
+    const ids = await visibleIdsFor(arcanistRows, className)
+    expect(ids).toEqual(className === 'Mage' ? arcanistRows.map((r) => r.id).sort() : [])
+  })
+
+  it.each(CLASSIC_CLASSES)('Gloves of the Redeemed Prophecy (21889, Hands) shows to a Paladin and not to a Warrior: %s', async (className) => {
+    const row = item('aq40-21889', {
+      name: 'Gloves of the Redeemed Prophecy',
+      item_slot: 'Hands',
+      wowhead_id: 21889,
+      armor_type: null,
+      weapon_type: null,
+    })
+    const ids = await visibleIdsFor([row], className)
+    expect(ids).toEqual(className === 'Paladin' ? ['aq40-21889'] : [])
+  })
+
+  // These sit in slots isClassAgnosticSlot returns early for, so the class
+  // check has to run before that early return (OD-5).
+  it.each([
+    { wowhead_id: 19339, name: 'Mind Quickening Gem', slot: 'Trinket', owner: 'Mage' },
+    { wowhead_id: 18646, name: 'The Eye of Divinity', slot: 'Quest', owner: 'Priest' },
+    { wowhead_id: 23059, name: 'Ring of the Dreadnaught', slot: 'Finger', owner: 'Warrior' },
+  ])('$name ($wowhead_id, $slot) is locked to $owner even though the slot is class-agnostic', async ({ wowhead_id, name, slot, owner }) => {
+    const row = item(`locked-${wowhead_id}`, { name, item_slot: slot, wowhead_id, armor_type: null, weapon_type: null })
+    for (const className of CLASSIC_CLASSES) {
+      const ids = await visibleIdsFor([row], className)
+      expect(ids, `${className} / ${name}`).toEqual(className === owner ? [`locked-${wowhead_id}`] : [])
+    }
+  })
+
+  it('an item with no Classes line keeps the armor rule', async () => {
+    // Mish'undare is cloth with no class line: canWearArmorType allows
+    // lighter armor, so every class sees it, exactly as before #276. The
+    // Onslaught Girdle (plate, no class line) stays hidden from a Mage,
+    // proving the armor check is intact and that the sweep below can fail.
+    const mishundare = item('bwl-19375', {
+      name: "Mish'undare, Circlet of the Mind Flayer",
+      item_slot: 'Head',
+      wowhead_id: 19375,
+      armor_type: null,
+      weapon_type: null,
+    })
+    const girdle = item('mc-19137', {
+      name: 'Onslaught Girdle',
+      item_slot: 'Waist',
+      wowhead_id: 19137,
+      armor_type: null,
+      weapon_type: null,
+    })
+    for (const className of CLASSIC_CLASSES) {
+      expect(await visibleIdsFor([mishundare], className), className).toEqual(['bwl-19375'])
+    }
+    expect(await visibleIdsFor([girdle], 'Warrior')).toEqual(['mc-19137'])
+    expect(await visibleIdsFor([girdle], 'Mage')).toEqual([])
+  })
+
+  it.each(CLASSIC_CLASSES)('a Recipe with a Classes line still shows to every class (GH-284 D-03, OD-4): %s', async (className) => {
+    // Pattern: Core Felcloth Bag carries "Classes: Warlock" in the package;
+    // recipes stay visible to every class, so the map has no Recipe ids.
+    const row = item('mc-21371', {
+      name: 'Pattern: Core Felcloth Bag',
+      item_slot: 'Recipe',
+      wowhead_id: 21371,
+      armor_type: null,
+      weapon_type: null,
+      classification: 'Unlimited',
+      allocation_cost: 0,
+    })
+    expect(await visibleIdsFor([row], className)).toEqual(['mc-21371'])
+  })
+
+  describe.each([
+    { expansion: 'Classic', raids: classicRaids, classes: CLASSIC_CLASSES, count: 174 },
+    { expansion: 'TBC', raids: tbcRaids, classes: CLASSIC_CLASSES, count: 13 },
+    { expansion: 'Wrath', raids: wrathRaids, classes: WRATH_CLASSES, count: 20 },
+  ])('every class-locked $expansion catalog item shows to exactly the classes on its package Classes line', ({ expansion, raids, classes, count }) => {
+    const locked = classLockedCatalogItems(raids)
+    const rows = locked.map((lockedItem) =>
+      item(`${expansion.toLowerCase()}-${lockedItem.wowhead_id}`, {
+        name: lockedItem.name,
+        item_slot: lockedItem.slot,
+        wowhead_id: lockedItem.wowhead_id,
+        armor_type: null,
+        weapon_type: null,
+      })
+    )
+
+    it(`has exactly ${count} class-locked ${expansion} catalog items`, () => {
+      expect(locked).toHaveLength(count)
+    })
+
+    it.each(classes)('shows %s exactly the items whose Classes line names them', async (className) => {
+      const expectedIds = locked
+        .filter((lockedItem) => lockedItem.classes.includes(className))
+        .map((lockedItem) => `${expansion.toLowerCase()}-${lockedItem.wowhead_id}`)
+        .sort()
+      expect(await visibleIdsFor(rows, className)).toEqual(expectedIds)
+    })
+  })
+})
+
+// ─── GH-388 / GH-276: Dragonstalker's Greaves shows to Hunters only ──────
 
 // The seeder stores no armor type, so the picker falls back to ITEM_TYPES and
 // then to a guess from the name; "greaves" was read as plate, hiding the
-// piece from Hunters and Shamans (GH #388).
-describe('GH-388: Dragonstalker\'s Greaves shows to classes that can wear mail', () => {
+// piece from Hunters and Shamans (GH #388). The Greaves are Hunter Tier 2
+// and carry "Classes: Hunter" in the package, so #276 narrows the mail rule
+// to Hunters: Warriors, Paladins and Shamans can wear mail but not this piece.
+describe('GH-388 / GH-276: Dragonstalker\'s Greaves shows to Hunters only', () => {
   const bwlGreavesRow = classicRaids
     .find((raid) => raid.name === 'Blackwing Lair')
     ?.bosses.find((boss) => boss.name === 'Broodlord Lashlayer')
@@ -561,10 +708,10 @@ describe('GH-388: Dragonstalker\'s Greaves shows to classes that can wear mail',
   })
 
   const GH388_CLASS_EXPECTATIONS: Array<{ className: string; visible: boolean }> = [
-    { className: 'Warrior', visible: true },
-    { className: 'Paladin', visible: true },
+    { className: 'Warrior', visible: false },
+    { className: 'Paladin', visible: false },
     { className: 'Hunter', visible: true },
-    { className: 'Shaman', visible: true },
+    { className: 'Shaman', visible: false },
     { className: 'Rogue', visible: false },
     { className: 'Druid', visible: false },
     { className: 'Priest', visible: false },
@@ -667,7 +814,10 @@ describe('GH-388: every Classic raid armor piece shows to exactly the classes th
         const pkgItem = packageById388.get(piece.wowhead_id)
         const armorType = pkgItem?.class === 'Armor' ? pkgItem.subclass : undefined
         const armorIndex = ARMOR_ORDER.indexOf(armorType as (typeof ARMOR_ORDER)[number])
-        return armorIndex !== -1 && armorIndex <= maxIndex
+        const armorAllowed = armorIndex !== -1 && armorIndex <= maxIndex
+        // #276: a class lock narrows the armor rule
+        const locked = pkgItem ? packageClasses(pkgItem) : null
+        return armorAllowed && (locked === null || locked.includes(className))
       })
       .map((piece) => `classic-${piece.wowhead_id}`)
       .sort()
@@ -741,8 +891,6 @@ describe('GH-388 (Wrath): Inexorable Sabatons shows only to classes that can wea
 // ─── GH-388: every TBC and Wrath raid armor piece shows to exactly the ──
 // ─── classes that can wear it ───────────────────────────────────────────
 
-const WRATH_CLASSES = [...CLASSIC_CLASSES, 'Death Knight'] as const
-
 describe.each([
   { expansion: 'TBC', raids: tbcRaids, classes: CLASSIC_CLASSES, pieceCount: 328 },
   { expansion: 'Wrath', raids: wrathRaids, classes: WRATH_CLASSES, pieceCount: 664 },
@@ -801,7 +949,10 @@ describe.each([
         const pkgItem = packageById.get(piece.wowhead_id)
         const armorType = pkgItem?.class === 'Armor' ? pkgItem.subclass : undefined
         const armorIndex = ARMOR_ORDER.indexOf(armorType as (typeof ARMOR_ORDER)[number])
-        return armorIndex !== -1 && armorIndex <= maxIndex
+        const armorAllowed = armorIndex !== -1 && armorIndex <= maxIndex
+        // #276: a class lock narrows the armor rule
+        const locked = pkgItem ? packageClasses(pkgItem) : null
+        return armorAllowed && (locked === null || locked.includes(className))
       })
       .map((piece) => `${expansion.toLowerCase()}-${piece.wowhead_id}`)
       .sort()
