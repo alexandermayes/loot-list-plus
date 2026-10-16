@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 Phase: 06 (Week-4 Review & Next Bet) — EXECUTING
 Plan: 6 of 9
 Status: Ready to execute
-Last activity: 2026-10-16 - Completed quick task 261016-l4q: guild join edge cases fixed (GH #356, PR #429 awaiting copy sign-off)
+Last activity: 2026-10-16 - Completed quick task 261016-lcq: Forever announcement a11y gaps closed (GH #304 follow-up, PR #430)
 
 Progress: [████████████████████] 23/23 plans ([███████░░░] 67%)
 
@@ -259,6 +259,7 @@ Recent decisions affecting current work:
 | 261016-l53 | Fix GH #276: generated data/item-class-restrictions.ts (207 class-locked Classic, TBC and Wrath items from wow-classic-items tooltips), pure canClassUseItem in domain/loot, one guarded check in fetchFilteredLootItems ahead of the class-agnostic-slot return; filter in code so no per-guild backfill. 3981 tests pass. PR #427 | 2026-10-16 | 456700a0 | Needs Review | [261016-l53-fix-gh-276-class-locked-classic-set-piec](./quick/261016-l53-fix-gh-276-class-locked-classic-set-piec/) |
 | 261016-l4r | Fix GH #278: a checked-in fixture places the 32 zone-less Classic drops (Cache of the Firelord 5, Onyxia 18, Four Horsemen Chest 9) by in-game source and the completeness test now requires every catalog row to be covered by package zone, fixture or the recipe gate; 508 to 579 data tests. PR #428 | 2026-10-16 | 153d43e0 | Needs Review | [261016-l4r-fix-gh-278-classic-catalog-completeness-](./quick/261016-l4r-fix-gh-278-classic-catalog-completeness-/) |
 | 261016-l4q | Fix GH #356: pure resolveJoinMembershipFields decides role, trial and joined_via for every guild attach (creator gets Guild Master on Battle.net import, alts inherit a sibling trial), the dead pending_guild_join hint is gone, and CreateCharacterModal warns when the guild attach fails instead of silently reloading (copy needs sign-off). 3924 tests pass. PR #429 | 2026-10-16 | PENDING | Needs Review | [261016-l4q-fix-gh-356-guild-join-edge-cases-battle-](./quick/261016-l4q-fix-gh-356-guild-join-edge-cases-battle-/) |
+| 261016-lcq | Follow-up to GH #304: a11y audit of the Forever announcement found the shared Modal already covered dialog role, labelling, focus trap, Escape and focus restore; fixed the two gaps (page behind the topmost modal is now inert, fade and scale respect prefers-reduced-motion), 5 new tests, 3901 pass. No copy change. PR #430 | 2026-10-16 | 2842ac89 | Needs Review | [261016-lcq-follow-up-to-gh-304-screen-reader-and-ke](./quick/261016-lcq-follow-up-to-gh-304-screen-reader-and-ke/) |
 
 ## Deferred Items
 
