@@ -16,6 +16,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Add01Icon, Copy01Icon, Calendar03Icon, UserMultiple02Icon, ArrowRight02Icon } from '@hugeicons/core-free-icons'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { getRaidIcon } from '@/utils/raidIcons'
+import { getGuildGame } from '@/domain/expansion/game'
 import { CreateReserveRunModal } from './components/CreateReserveRunModal'
 
 type ReserveRun = {
@@ -176,7 +177,7 @@ export default function ReservePage() {
         <div className="space-y-3">
           {filteredRuns.map((run) => {
             const badge = STATUS_BADGE[run.status]
-            const raidIcon = run.raid_tier_name ? getRaidIcon(run.raid_tier_name) : null
+            const raidIcon = run.raid_tier_name ? getRaidIcon(run.raid_tier_name, getGuildGame(activeGuild)) : null
             return (
               <Card
                 key={run.id}

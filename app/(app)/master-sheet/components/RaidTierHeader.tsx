@@ -2,6 +2,7 @@
 
 import { memo } from 'react'
 import { getRaidIcon } from '@/utils/raidIcons'
+import type { GameVersion } from '@/domain/expansion/game'
 
 interface RaidTierHeaderProps {
   tierId: string
@@ -9,6 +10,7 @@ interface RaidTierHeaderProps {
   itemCount: number
   isCollapsed: boolean
   onToggle: (tierId: string) => void
+  game: GameVersion
 }
 
 /**
@@ -20,6 +22,7 @@ export const RaidTierHeader = memo(function RaidTierHeader({
   itemCount,
   isCollapsed,
   onToggle,
+  game,
 }: RaidTierHeaderProps) {
   return (
     <button
@@ -29,7 +32,7 @@ export const RaidTierHeader = memo(function RaidTierHeader({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img
-            src={getRaidIcon(tierName)}
+            src={getRaidIcon(tierName, game)}
             alt=""
             width={24}
             height={24}
