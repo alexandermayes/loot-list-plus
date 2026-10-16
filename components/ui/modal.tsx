@@ -427,10 +427,14 @@ const Modal = ({
 
   return createPortal(
     <ModalTitleContext.Provider value={titleId}>
+      {/* regression for #304: the 150ms fade and scale are decorative; under
+          prefers-reduced-motion both are removed with Tailwind's motion-reduce
+          variant. TRANSITION_MS still delays unmount so focus restore timing
+          is unchanged for every consumer. */}
       <div
         ref={backdropRef}
         className={cn(
-          "fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 transition-opacity duration-150",
+          "fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 transition-opacity duration-150 motion-reduce:transition-none",
           visible ? "opacity-100" : "opacity-0"
         )}
         style={{ zIndex }}
@@ -439,7 +443,7 @@ const Modal = ({
       >
         <div
           className={cn(
-            "w-full flex items-center justify-center transition-[opacity,transform] duration-150 ease-out",
+            "w-full flex items-center justify-center transition-[opacity,transform] duration-150 ease-out motion-reduce:transition-none motion-reduce:scale-100",
             visible ? "opacity-100 scale-100" : "opacity-0 scale-95"
           )}
         >

@@ -309,4 +309,25 @@ describe('Modal', () => {
     await waitFor(() => expect(a.closest('[inert]')).not.toBeNull())
     expect(b.closest('[inert]')).toBeNull()
   })
+
+  it('carries motion-reduce utilities on the backdrop and panel so reduced-motion users get no fade or scale', () => {
+    render(
+      <Modal open={true} onClose={() => {}}>
+        <ModalHeader showCloseButton={false}>
+          <ModalTitle>Modal heading</ModalTitle>
+        </ModalHeader>
+        <ModalBody>
+          <button>Only button</button>
+        </ModalBody>
+      </Modal>
+    )
+
+    // jsdom loads no Tailwind stylesheet, so class presence on the two
+    // animated wrappers is the honest assertion for the media query.
+    const dialog = screen.getByRole('dialog')
+    const panel = dialog.parentElement as HTMLElement
+    const backdrop = panel.parentElement as HTMLElement
+    expect(panel).toHaveClass('motion-reduce:transition-none', 'motion-reduce:scale-100')
+    expect(backdrop).toHaveClass('motion-reduce:transition-none')
+  })
 })

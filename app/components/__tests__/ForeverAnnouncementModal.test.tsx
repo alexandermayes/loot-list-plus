@@ -179,6 +179,16 @@ describe('ForeverAnnouncementModal, eligible user', () => {
     await user.click(screen.getByRole('button', { name: APPROVED.dismiss }))
     await waitFor(() => expect(container).not.toHaveAttribute('inert'))
   })
+
+  it('renders through a Modal that respects prefers-reduced-motion (regression for #304)', async () => {
+    render(<ForeverAnnouncementModal delayMs={0} />)
+    const dialog = await screen.findByRole('dialog', { name: APPROVED.title })
+    // jsdom loads no Tailwind stylesheet, so class presence is the assertion.
+    const panel = dialog.parentElement as HTMLElement
+    const backdrop = panel.parentElement as HTMLElement
+    expect(panel).toHaveClass('motion-reduce:transition-none', 'motion-reduce:scale-100')
+    expect(backdrop).toHaveClass('motion-reduce:transition-none')
+  })
 })
 
 describe('ForeverAnnouncementModal, ineligible cases render no dialog', () => {
