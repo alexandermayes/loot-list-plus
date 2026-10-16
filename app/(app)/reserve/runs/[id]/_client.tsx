@@ -40,6 +40,7 @@ import {
 import { trackClientEvent } from '@/utils/analytics/client'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { getRaidIcon } from '@/utils/raidIcons'
+import { getExpansionGame } from '@/domain/expansion/game'
 
 // Hardcoded WoW class colors for display
 const CLASS_COLORS: Record<string, string> = {
@@ -106,6 +107,7 @@ type ReserveRun = {
   raid_leader_token?: string
   guild_id: string | null
   raid_tier_name: string | null
+  expansion_name: string | null
   submissions: Submission[]
   awards: Award[]
   items: LootItem[]
@@ -632,7 +634,7 @@ export default function ReserveRunPage() {
             <div className="flex items-start gap-4">
               {run.raid_tier_name && (
                 <img
-                  src={getRaidIcon(run.raid_tier_name)}
+                  src={getRaidIcon(run.raid_tier_name, getExpansionGame(run.expansion_name) ?? 'classic')}
                   alt=""
                   className="w-12 h-12 rounded-lg border border-border/50 flex-shrink-0 hidden sm:block"
                 />
