@@ -19,7 +19,7 @@ import {
 } from '../forever/reference-check'
 
 // Why this test exists: the Forever boss names came from third-party guides and
-// are not in wago DungeonEncounter yet (D-12), and wago.tools answered 503 on
+// are not in wago DungeonEncounter yet (D-12), and the wago service answered 503 on
 // every 2026-10-12 probe, so nothing in this phase may wait on it (D-14). The
 // committed snapshot starts as a placeholder (build null, empty tables) that
 // this test validates strictly; the first successful refresh (plan 02-08/02-09)
