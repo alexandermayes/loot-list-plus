@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 02
 current_phase_name: Expansion Onboarding Manifest
 status: executing
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-10-16T18:24:01.844Z"
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-10-16T18:51:08.224Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 02 execution started
-state_head: 8404420a24332cde2b3d47f5f083bd73b28e3946
+state_head: 6d2181da2b4ce003079ab96cd4deca7fc3662100
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 22
-  completed_plans: 12
+  completed_plans: 13
   percent: 13
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 02 (Expansion Onboarding Manifest) — EXECUTING
-Plan: 3 of 13
+Plan: 4 of 13 complete; next incomplete plan is 02-07 (wave 2)
 Status: Ready to execute
 Last activity: 2026-10-14 — Phase 02 execution started
 
@@ -81,6 +81,7 @@ Progress: [██░░░░░░░░] 1/8 phases ([█░░░░░░░
 | Phase 02 P01 | 8 min | 2 tasks | 6 files |
 | Phase 02 P12 | 44h 26m wall (incl. checkpoint wait) | 3 tasks | 8 files |
 | Phase 02 P02 | 8 min | 2 tasks | 5 files |
+| Phase 02 P03 | 23 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -110,8 +111,8 @@ Progress: [██░░░░░░░░] 1/8 phases ([█░░░░░░░
 
 ### Pending Owner Inputs
 
-- Oct 21: Forever boss names (Phase 2); addon scope and owner for the separate repo (Phase 5)
-- Oct 26: spec defaults review and copy sign-off for picker, presets, "Set your 5" (Phase 4); simplicity audit scope and sidebar direction (Phase 8)
+- Oct 21: Forever boss names (Phase 2); addon scope and owner for the separate repo (Phase 5); community asks for in-game loot list viewing through the addon without a web login (addon scope input)
+- Oct 26: spec defaults review and copy sign-off for picker, presets, "Set your 5" (Phase 4); simplicity audit scope and sidebar direction (Phase 8); community input for the Phase 4 presets review: how often raiders may re-rank need rows within a tier; a council-style preset that shows attendance, bad luck protection and a future preparation score side by side
 - Nov 9: beta guild, named paper-fallback officer, void rule (Phase 7); master loot or Gargul export scope (Phase 5)
 
 ### Blockers/Concerns
@@ -126,10 +127,11 @@ Progress: [██░░░░░░░░] 1/8 phases ([█░░░░░░░
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
-| *(none)* | | | | |
+| Scoring | Preparation or performance score per attendance sheet (0, 0.5, 1) as an additive component that defaults to zero for existing guilds | Deferred | Phase 02 | post-v2.0 |
+| Scoring | Split bad luck protection timers by upgrade size (weapon or trinket, tier, minor slots) | Deferred | Phase 02 | post-v2.0 |
 
 ## Session Continuity
 
-Last session: 2026-10-16T18:24:01.781Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-10-16T18:51:08.173Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None

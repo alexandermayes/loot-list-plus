@@ -103,7 +103,7 @@ Plans:
   4. Running the Forever catalog sync twice changes nothing the second time, and the sync never deletes or renames a row that a list, award or BLP record points at
   5. wago.tools snapshots are committed with their provenance, and a test fails if any runtime or test code fetches wago.tools or Wowhead live
 
-**Plans**: 3/13 plans executed in 4 waves (revised 2026-10-14 after the plan check: the registry plan and the snapshot plan were each split in two and later plans renumbered; second revision 2026-10-14: raid-icon scoping moved out of 02-11 into its own plan 02-12, merged before PR 3, and plan 02-13 wires the remaining six raid-icon call sites)
+**Plans**: 4/13 plans executed in 4 waves (revised 2026-10-14 after the plan check: the registry plan and the snapshot plan were each split in two and later plans renumbered; second revision 2026-10-14: raid-icon scoping moved out of 02-11 into its own plan 02-12, merged before PR 3, and plan 02-13 wires the remaining six raid-icon call sites)
 
 Plans:
 **Wave 1**
@@ -114,7 +114,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-03-PLAN.md (wave 2): tracer: Forever phases entry, alias lookup, insert-only syncExpansionCatalog and the seeder's Forever branch, so a new Forever guild gets its three tiers (EXPN-01, EXPN-05)
+- [x] 02-03-PLAN.md (wave 2): tracer: Forever phases entry, alias lookup, insert-only syncExpansionCatalog and the seeder's Forever branch, so a new Forever guild gets its three tiers (EXPN-01, EXPN-05)
 - [ ] 02-07-PLAN.md (wave 2): committed wago snapshot placeholder with provenance fields, provisional-boss allowlist ratchet (one reviewed growth exception per D-15) and forced-promotion check (EXPN-06, EXPN-01)
 - [ ] 02-13-PLAN.md (wave 2): the six remaining raid-icon call sites (reserve run list, run detail, create-run modal, public join page, share card, master sheet tier header) resolve by game; allowlist empty (EXPN-01, D-04)
 
@@ -171,7 +171,7 @@ Plans:
 **Plans**: TBD
 **UI hint**: yes
 **Research**: None needed for the score split (golden fixtures define it). Run `/gsd-ui-phase 4` for the picker and presets.
-**Owner inputs**: spec defaults review for all 22 specs, especially Enhancement Shaman (Windfury rework) and Feral, by Oct 26 (Decision 5); copy sign-off for picker, presets and "Set your 5" by Oct 26 (Decision 7).
+**Owner inputs**: spec defaults review for all 22 specs, especially Enhancement Shaman (Windfury rework) and Feral, by Oct 26 (Decision 5); copy sign-off for picker, presets and "Set your 5" by Oct 26 (Decision 7); community input for the presets review: a council-style preset that shows attendance, bad luck protection and a future preparation score side by side, and how often raiders may re-rank need rows within a tier.
 **Defaults applied**: 10-point budget, Big 3, Medium 2, Standard 1, trinkets Big (Decision 6); standing and interest shown separately (Decision 8). Discovery lists are free.
 
 ### Phase 5: Drop Desk Core
@@ -280,7 +280,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Forever Defect and Privacy Fixes | 9/9 | Complete    | 2026-10-13 |
-| 2. Expansion Onboarding Manifest | 3/13 | In Progress|  |
+| 2. Expansion Onboarding Manifest | 4/13 | In Progress|  |
 | 3. Discovery Schema and Need Pipeline | 0/TBD | Not started | - |
 | 4. Discovery Lists and Score Split | 0/TBD | Not started | - |
 | 5. Drop Desk Core | 0/TBD | Not started | - |
@@ -309,3 +309,4 @@ Plans:
 - **The Drop Desk is split across Phases 5 and 6** so that the transactional award path is verified by Nov 16, about two weeks before the Nov 30 gate. The raid-facing parts (responses, Discord thread, undo, council card) build on that verified path.
 - **Bot `/priority` switching to Loot Score is not a v1 requirement.** It stays "by list rank" (Decision 10). Switching it once the shared ranker exists is an owner call, not planned work.
 - **Deferred to later milestones:** the Known mode transition (KNOWN-01, KNOWN-02), everything that needs real Forever drops (DROP-01 to DROP-07), and the platform items (PLAT-01 to PLAT-06). Raid assignments are out of scope; the owner is building them as a separate tool.
+- **Community requests captured during Phase 2 (post-v2.0 unless the owner pulls them into Phase 4 or 8):** a council-flavored loot style preset showing attendance, luck and preparation side by side; a preparation or performance score per attendance sheet (0, 0.5, 1) as an additive component that defaults to zero for existing guilds; bad luck protection timers split by upgrade size (weapon or trinket, tier, minor slots); in-game loot list viewing through the addon without a web login, which feeds the Phase 5 addon scope decision.
