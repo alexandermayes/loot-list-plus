@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { SUPPORTED_EXPANSIONS, getExpansionDefinition } from '../expansionSeeder'
-import { EXPANSION_PHASES, getExpansionSlug } from '@/data/expansion-phases'
+import { EXPANSION_PHASES } from '@/data/expansion-phases'
+import { getExpansionMeta } from '@/data/expansions/registry'
 
 // GH-279-R3: AQ20 silently seeded with a NULL phase for over seven months
 // because data/expansion-phases.ts named it "Ahn'Qiraj" while the catalog
@@ -64,14 +65,14 @@ describe('Every seeded raid resolves to a phase (GH-279-R3)', () => {
 
   it.each(expansionsWithRaids)('%s: has a resolvable slug with a non-empty EXPANSION_PHASES entry', (expansionName) => {
     const definition = getExpansionDefinition(expansionName)!
-    const slug = getExpansionSlug(definition.displayName)
-    expect(slug, `${expansionName}: getExpansionSlug("${definition.displayName}") returned null`).not.toBeNull()
+    const slug = getExpansionMeta(expansionName)?.slug
+    expect(slug, `${expansionName}: the registry has no slug for "${definition.displayName}"`).toBeDefined()
     expect(EXPANSION_PHASES[slug as string], `${expansionName}: EXPANSION_PHASES has no entry for slug "${slug}"`).toBeDefined()
   })
 
   it.each(expansionsWithRaids)('%s: every phase-list raid name exists in the catalog (no orphans)', (expansionName) => {
     const definition = getExpansionDefinition(expansionName)!
-    const slug = getExpansionSlug(definition.displayName) as string
+    const slug = getExpansionMeta(expansionName)!.slug
     const phases = EXPANSION_PHASES[slug]
     const catalogNames = new Set(definition.raids.map(r => r.name))
 
@@ -83,8 +84,7 @@ describe('Every seeded raid resolves to a phase (GH-279-R3)', () => {
   })
 
   it.each(expansionsWithRaids)('%s: every phase entry names at least one catalog raid', (expansionName) => {
-    const definition = getExpansionDefinition(expansionName)!
-    const slug = getExpansionSlug(definition.displayName) as string
+    const slug = getExpansionMeta(expansionName)!.slug
     const phases = EXPANSION_PHASES[slug]
 
     for (const phase of phases) {
@@ -93,8 +93,7 @@ describe('Every seeded raid resolves to a phase (GH-279-R3)', () => {
   })
 
   it.each(expansionsWithRaids)('%s: no raid name appears in two phase entries', (expansionName) => {
-    const definition = getExpansionDefinition(expansionName)!
-    const slug = getExpansionSlug(definition.displayName) as string
+    const slug = getExpansionMeta(expansionName)!.slug
     const phases = EXPANSION_PHASES[slug]
 
     const seen = new Map<string, number>()
