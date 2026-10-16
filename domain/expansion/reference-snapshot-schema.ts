@@ -1,5 +1,5 @@
 /**
- * Strict zod schema for the committed wago.tools reference snapshot
+ * Strict zod schema for the committed wago reference snapshot
  * (EXPN-06 snapshot half, D-13, D-14).
  *
  * This module imports zod, so it is deliberately NOT re-exported from

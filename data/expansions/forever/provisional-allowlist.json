@@ -1,0 +1,47 @@
+[
+  {
+    "raid": "Barrow Deeps",
+    "bossKey": "deepscar-matriarch",
+    "name": "Deepscar Matriarch"
+  },
+  {
+    "raid": "Barrow Deeps",
+    "bossKey": "khalith-the-dreadspinner",
+    "name": "Khalith the Dreadspinner"
+  },
+  {
+    "raid": "Barrow Deeps",
+    "bossKey": "amethrax",
+    "name": "Amethrax"
+  },
+  {
+    "raid": "Barrow Deeps",
+    "bossKey": "ravus-and-darlissa",
+    "name": "Ravus and Darlissa"
+  },
+  {
+    "raid": "Barrow Deeps",
+    "bossKey": "elder-tangleclaw",
+    "name": "Elder Tangleclaw"
+  },
+  {
+    "raid": "Barrow Deeps",
+    "bossKey": "well-of-sorrow",
+    "name": "Well of Sorrow"
+  },
+  {
+    "raid": "Barrow Deeps",
+    "bossKey": "dellynar-songwood",
+    "name": "Del'lynar Songwood"
+  },
+  {
+    "raid": "Barrow Deeps",
+    "bossKey": "sonya-darkhallow",
+    "name": "Sonya Darkhallow"
+  },
+  {
+    "raid": "Onyxia's Lair",
+    "bossKey": "onyxia",
+    "name": "Onyxia"
+  }
+]
