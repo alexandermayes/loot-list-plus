@@ -9,14 +9,24 @@ import {
   applyGuildDataToSavedVars,
   buildGuildDataLua,
   readPendingLists,
+  removePendingEntries,
   toPendingAttendancePairs,
-  toPendingAttendanceRequests,
   toPendingAwardPairs,
-  toPendingAwardRequests,
   type SentPending,
 } from './addon-format'
 import { toLuaTable } from './lua-writer'
-import { describeRejected, statusText } from './sync-status'
+import {
+  CLEARED_LOG_FILE,
+  STUCK_STORE_FILE,
+  appendClearedLog,
+  parkedEntries,
+  partitionPending,
+  pruneStore,
+  readStuckStore,
+  recordOutcomes,
+  writeStuckStore,
+} from './stuck-entries'
+import { describeStuck, statusText } from './sync-status'
 import type { SyncStatus } from './sync-status'
 import { WowFinder } from './wow-finder'
 
@@ -26,6 +36,12 @@ export interface SyncConfig {
   wowPath: string
   interval: number  // minutes
   token?: string
+  /**
+   * The Electron userData folder, where the stuck-entry store and the
+   * cleared-entries log live (GH #320 follow-up). When absent, attempt
+   * counts live only in memory for this process and nothing is written.
+   */
+  stateDir?: string
 }
 
 export type { SyncStatus }
@@ -35,32 +51,42 @@ export type { SyncStatus }
  *
  * Sync cycle (one pass):
  * 1. Read pending awards/attendance from SavedVariables
- * 2. Push attendance, then awards, to the API
+ * 2. Load the stuck-entry store, prune it to the entries still in the file,
+ *    split pending into sendable and parked, send only the sendable ones
+ *    (attendance, then awards), record each outcome (accepted deletes the
+ *    record, a permanent rejection counts one more attempt, a transient one
+ *    is ignored), and write the store
  * 3. Fetch guild data from the API (it now includes what was just pushed)
  * 4. In one SavedVariables write, replace guildData and remove only the
  *    pending entries the server accepted (a 2xx, including a repeat it
  *    already had); the addon reads the file on login or /reload. Rejected
  *    entries stay in the file and are sent again on the next pass, and their
  *    counts and a sentence go into the status (GH #320).
- * If step 3 fails nothing is written, so all pending data is sent again on
- * the next pass (awards dedupe by key, attendance upserts).
- * A rejection the server will always give (for example a 404 for an item it
- * does not know) is retried every pass; the status count is what makes it
- * visible.
+ * If step 3 fails nothing is written to SavedVariables, so all pending data
+ * is sent again on the next pass (awards dedupe by key, attendance upserts);
+ * the store was already written, so attempt counts survive.
+ * An entry the server rejects with 400, 404 or 422 three times
+ * (MAX_PERMANENT_ATTEMPTS) is parked: it stays in the file but is no longer
+ * sent, and the status says how many are parked. clearParkedEntries removes
+ * them from the file on the user's request (GH #320 follow-up).
  * Between passes, SavedVariables is watched for changes (the addon writes
- * on logout or /reload) and new pending data triggers a pass.
+ * on logout or /reload) and new sendable pending data triggers a pass.
  */
 export class SyncEngine extends EventEmitter {
   private config: SyncConfig
   private api: ApiClient
   private watcher: chokidar.FSWatcher | null = null
   private syncTimer: NodeJS.Timeout | null = null
+  private stuckStorePath: string | null
+  private clearedLogPath: string | null
   private status: SyncStatus = {
     state: 'idle',
     lastSync: null,
     lastError: null,
     pendingAwards: 0,
     pendingAttendance: 0,
+    parkedAwards: 0,
+    parkedAttendance: 0,
   }
 
   constructor(config: SyncConfig) {
@@ -70,6 +96,8 @@ export class SyncEngine extends EventEmitter {
     if (config.token) {
       this.api.setAuth({ token: config.token, guildId: config.guildId })
     }
+    this.stuckStorePath = config.stateDir ? path.join(config.stateDir, STUCK_STORE_FILE) : null
+    this.clearedLogPath = config.stateDir ? path.join(config.stateDir, CLEARED_LOG_FILE) : null
   }
 
   /**
@@ -113,53 +141,77 @@ export class SyncEngine extends EventEmitter {
     this.updateStatus({ state: 'syncing' })
 
     try {
+      const now = new Date().toISOString()
+
       // Step 1: Read pending data from SavedVariables
       const svPath = this.getSavedVarsPath()
       const saved = this.readSavedVars(svPath)
       const pending: SentPending = saved ? readPendingLists(saved) : { awards: [], attendance: [] }
       const awardPairs = toPendingAwardPairs(pending.awards)
       const attendancePairs = toPendingAttendancePairs(pending.attendance)
+
+      // Step 2: Split off parked entries, push the rest to the API, and
+      // record what the server said. Attendance goes first: its import
+      // creates the raid night that the awards then link to (#295). The
+      // request arrays are exactly sendable.map(p => p.request), so the
+      // accepted indices and the outcomes index into the SENDABLE pairs,
+      // never into the full pair arrays.
+      const store = readStuckStore(this.stuckStorePath)
+      pruneStore(store, pending)
+      // regression for #320
+      const attendance = partitionPending('attendance', attendancePairs, store)
+      const awards = partitionPending('award', awardPairs, store)
       let acceptedAttendance: number[] = []
       let acceptedAwards: number[] = []
 
-      // Step 2: Push pending data to API. Attendance goes first: its import
-      // creates the raid night that the awards then link to (#295). The
-      // request arrays are exactly pairs.map(p => p.request), so the accepted
-      // indices index into the pairs.
-      if (attendancePairs.length > 0) {
-        const result = await this.api.submitAttendance(attendancePairs.map(p => p.request))
+      if (attendance.sendable.length > 0) {
+        const result = await this.api.submitAttendance(attendance.sendable.map(p => p.request))
         acceptedAttendance = result.accepted
+        recordOutcomes('attendance', attendance.sendable, result.outcomes, store, now)
         console.log('Synced attendance records:', result.processed, 'errors:', result.errors)
       }
 
-      if (awardPairs.length > 0) {
-        const result = await this.api.submitAwards(awardPairs.map(p => p.request))
+      if (awards.sendable.length > 0) {
+        const result = await this.api.submitAwards(awards.sendable.map(p => p.request))
         acceptedAwards = result.accepted
+        recordOutcomes('award', awards.sendable, result.outcomes, store, now)
         console.log('Synced awards:', result.processed, 'errors:', result.errors)
       }
 
+      // The store is written before the guild-data fetch, so a failed fetch
+      // still keeps the attempt counts.
+      writeStuckStore(this.stuckStorePath, store)
+
       // Step 3: Fetch fresh guild data. A failure throws before anything is
-      // written, so the pending data stays in the file for the next pass.
+      // written to SavedVariables, so the pending data stays in the file for
+      // the next pass.
       const guildData = await this.api.getGuildData()
 
       // Step 4: One write: guild data in, accepted pending entries out. Only
       // accepted entries are removed; rejected ones stay in the file for the
       // next pass (GH #320).
       const sent: SentPending = {
-        awards: acceptedEntries(awardPairs, acceptedAwards),
-        attendance: acceptedEntries(attendancePairs, acceptedAttendance),
+        awards: acceptedEntries(awards.sendable, acceptedAwards),
+        attendance: acceptedEntries(attendance.sendable, acceptedAttendance),
       }
       const hadPending = pending.awards.length > 0 || pending.attendance.length > 0
       this.writeSyncResult(svPath, guildData, hadPending ? sent : null)
 
-      const stuckAwards = awardPairs.length - sent.awards.length
-      const stuckAttendance = attendancePairs.length - sent.attendance.length
+      const retryingAwards = awards.sendable.length - sent.awards.length
+      const retryingAttendance = attendance.sendable.length - sent.attendance.length
+      const parkedAwards = awards.parked.length
+      const parkedAttendance = attendance.parked.length
+      if (parkedAwards + parkedAttendance > 0) {
+        console.log('Parked entries not sent:', parkedAwards, 'awards,', parkedAttendance, 'attendance records')
+      }
       this.updateStatus({
         state: 'watching',
         lastSync: new Date().toISOString(),
-        lastError: describeRejected(stuckAwards, stuckAttendance),
-        pendingAwards: stuckAwards,
-        pendingAttendance: stuckAttendance,
+        lastError: describeStuck(retryingAwards, retryingAttendance, parkedAwards, parkedAttendance),
+        pendingAwards: retryingAwards,
+        pendingAttendance: retryingAttendance,
+        parkedAwards,
+        parkedAttendance,
       })
 
       return true
@@ -171,6 +223,59 @@ export class SyncEngine extends EventEmitter {
         lastError: msg,
       })
       return false
+    }
+  }
+
+  /**
+   * Removes the parked entries (permanent rejections at the limit) from the
+   * SavedVariables file and forgets their attempt counts, on the user's
+   * request from the tray or the renderer (GH #320 follow-up).
+   *
+   * Refused while a pass is running: the pass holds both the file and the
+   * store, and a write here would race its step 4. The raw entries are
+   * appended to cleared-entries.jsonl BEFORE the file is written, so the
+   * only copy of an entry is never lost even if the write fails. As with
+   * every companion write, WoW owns the file while the game is running and
+   * writes its own copy back at logout, so a clear made while WoW is open
+   * is undone at logout (see the README).
+   */
+  async clearParkedEntries(): Promise<{ cleared: boolean; awards: number; attendance: number }> {
+    const nothing = { cleared: false, awards: 0, attendance: 0 }
+    if (this.status.state === 'syncing') return nothing
+
+    try {
+      const svPath = this.getSavedVarsPath()
+      const saved = this.readSavedVars(svPath)
+      if (!saved) return { cleared: true, awards: 0, attendance: 0 }
+
+      const store = readStuckStore(this.stuckStorePath)
+      const parked = parkedEntries(store, readPendingLists(saved))
+      if (parked.awards.length === 0 && parked.attendance.length === 0) {
+        return { cleared: true, awards: 0, attendance: 0 }
+      }
+
+      const now = new Date().toISOString()
+      appendClearedLog(this.clearedLogPath, parked, now)
+      const db = removePendingEntries(saved, parked)
+      fs.writeFileSync(svPath, toLuaTable('LootListPlusDB', db), 'utf-8')
+
+      // saved was changed in place, so pruning against its pending lists
+      // drops exactly the parked records.
+      pruneStore(store, readPendingLists(saved))
+      writeStuckStore(this.stuckStorePath, store)
+
+      console.log('Cleared parked entries:', parked.awards.length, 'awards,', parked.attendance.length, 'attendance records')
+      this.updateStatus({
+        parkedAwards: 0,
+        parkedAttendance: 0,
+        lastError: describeStuck(this.status.pendingAwards, this.status.pendingAttendance, 0, 0),
+      })
+      return { cleared: true, awards: parked.awards.length, attendance: parked.attendance.length }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Unknown error'
+      console.error('Clearing parked entries failed:', msg)
+      this.updateStatus({ state: 'error', lastError: msg })
+      return nothing
     }
   }
 
@@ -230,12 +335,22 @@ export class SyncEngine extends EventEmitter {
     fs.writeFileSync(svPath, toLuaTable('LootListPlusDB', db), 'utf-8')
   }
 
-  private readPendingFromSavedVars() {
+  /**
+   * Counts of the file's pending entries split by the store, without
+   * pruning or writing it: the watcher only needs to know whether a pass is
+   * worth starting (GH #320 follow-up).
+   */
+  private readPendingPartition() {
     const saved = this.readSavedVars(this.getSavedVarsPath())
-    const pending = saved ? readPendingLists(saved) : { awards: [], attendance: [] }
+    const pending: SentPending = saved ? readPendingLists(saved) : { awards: [], attendance: [] }
+    const store = readStuckStore(this.stuckStorePath)
+    const awards = partitionPending('award', toPendingAwardPairs(pending.awards), store)
+    const attendance = partitionPending('attendance', toPendingAttendancePairs(pending.attendance), store)
     return {
-      awards: toPendingAwardRequests(pending.awards),
-      attendance: toPendingAttendanceRequests(pending.attendance),
+      sendableAwards: awards.sendable.length,
+      sendableAttendance: attendance.sendable.length,
+      parkedAwards: awards.parked.length,
+      parkedAttendance: attendance.parked.length,
     }
   }
 
@@ -257,16 +372,19 @@ export class SyncEngine extends EventEmitter {
 
       this.watcher.on('change', () => {
         console.log('SavedVariables file changed, checking for pending data...')
-        const pending = this.readPendingFromSavedVars()
-        const totalPending = pending.awards.length + pending.attendance.length
+        const counts = this.readPendingPartition()
+        const totalSendable = counts.sendableAwards + counts.sendableAttendance
 
         this.updateStatus({
-          pendingAwards: pending.awards.length,
-          pendingAttendance: pending.attendance.length,
+          pendingAwards: counts.sendableAwards,
+          pendingAttendance: counts.sendableAttendance,
+          parkedAwards: counts.parkedAwards,
+          parkedAttendance: counts.parkedAttendance,
         })
 
-        if (totalPending > 0) {
-          console.log(`Found ${totalPending} pending records, syncing...`)
+        // Parked entries alone do not start a pass: they would not be sent.
+        if (totalSendable > 0) {
+          console.log(`Found ${totalSendable} pending records, syncing...`)
           this.syncNow()
         }
       })
