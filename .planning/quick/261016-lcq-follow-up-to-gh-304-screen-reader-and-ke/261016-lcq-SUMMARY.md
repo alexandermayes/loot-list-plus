@@ -19,7 +19,7 @@ completed: 2026-10-16
 
 ## Commits
 
-Branch fix/304-forever-modal-a11y, PR #430:
+Branch fix/304-forever-modal-a11y, PR #430, squash-merged to main as 2842ac89:
 - f03339f4 fix(modal): make the page behind the topmost dialog inert while it is open (GH #304)
 - 9ad65239 fix(modal): respect prefers-reduced-motion for the dialog fade and scale (GH #304)
 - c3c1685c docs(modal): note the inert background and reduced-motion guarantees for the Forever announcement (GH #304)
