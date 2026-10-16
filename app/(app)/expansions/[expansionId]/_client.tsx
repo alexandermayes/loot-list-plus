@@ -12,7 +12,7 @@ import { ArrowLeft01Icon } from '@hugeicons/core-free-icons'
 import { getExpansionVisuals, getExpansionDisplayName } from '@/utils/expansionVisuals'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { resolvePhaseGroups, isMergedGroup, type PhaseGroup } from '@/domain/expansion/phase-groups'
-import { getGuildGame } from '@/domain/expansion/game'
+import { getGuildGame, type GameVersion } from '@/domain/expansion/game'
 import { Button } from '@/components/ui/button'
 import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { Switch } from '@/components/ui/switch'
@@ -37,6 +37,7 @@ interface Expansion {
 
 interface CompactRaidToggleProps {
   tier: RaidTier
+  game: GameVersion
   updating: string | null
   onToggleActive: (tierId: string, currentValue: boolean) => void
   onToggleRankings: (tierId: string, currentValue: boolean) => void
@@ -44,6 +45,7 @@ interface CompactRaidToggleProps {
 
 function CompactRaidToggle({
   tier,
+  game,
   updating,
   onToggleActive,
   onToggleRankings,
@@ -61,7 +63,7 @@ function CompactRaidToggle({
       {/* Icon + Name */}
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <img
-          src={getRaidIcon(tier.name)}
+          src={getRaidIcon(tier.name, game)}
           alt={tier.name}
           className="w-6 h-6 rounded border border-border/50 flex-shrink-0"
         />
@@ -99,6 +101,7 @@ function CompactRaidToggle({
 interface PhaseCardProps {
   phase: number
   tiers: RaidTier[]
+  game: GameVersion
   deadline: string | null
   deadlineInput: string
   isCurrentPhase: boolean
@@ -113,6 +116,7 @@ interface PhaseCardProps {
 function PhaseCard({
   phase,
   tiers,
+  game,
   deadline,
   deadlineInput,
   isCurrentPhase,
@@ -177,6 +181,7 @@ function PhaseCard({
               <CompactRaidToggle
                 key={tier.id}
                 tier={tier}
+                game={game}
                 updating={updating}
                 onToggleActive={onToggleRaidActive}
                 onToggleRankings={onToggleRaidRankings}
@@ -934,6 +939,7 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                 key={phase}
                 phase={phase}
                 tiers={tiersInPhase}
+                game={getGuildGame(activeGuild)}
                 deadline={phaseDeadlines[phase] || null}
                 deadlineInput={phaseDeadlineInputs[phase] || ''}
                 isCurrentPhase={isCurrent}
