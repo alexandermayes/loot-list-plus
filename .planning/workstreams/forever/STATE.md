@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 02
 current_phase_name: Expansion Onboarding Manifest
 status: executing
-stopped_at: Completed 02-12-PLAN.md
-last_updated: "2026-10-16T18:15:58.950Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-10-16T18:24:01.844Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 02 execution started
-state_head: ae90b239c4cc1b5856594331b12da568de21c6b5
+state_head: 8404420a24332cde2b3d47f5f083bd73b28e3946
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 22
-  completed_plans: 11
+  completed_plans: 12
   percent: 13
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 02 (Expansion Onboarding Manifest) — EXECUTING
-Plan: 2 of 13
+Plan: 3 of 13
 Status: Ready to execute
 Last activity: 2026-10-14 — Phase 02 execution started
 
@@ -80,6 +80,7 @@ Progress: [██░░░░░░░░] 1/8 phases ([█░░░░░░░
 | Phase 01 P09 | 4 min | 2 tasks | 4 files |
 | Phase 02 P01 | 8 min | 2 tasks | 6 files |
 | Phase 02 P12 | 44h 26m wall (incl. checkpoint wait) | 3 tasks | 8 files |
+| Phase 02 P02 | 8 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,7 @@ Progress: [██░░░░░░░░] 1/8 phases ([█░░░░░░░
 - [Phase 01]: 01-09: bot embed titles use a colon, the /priority raider line a middle dot, the review post title parentheses; copy is proposed and awaits owner sign-off before PR 6 merges — FIX-03 and Hard Constraint 2; remaining user-facing bot em dashes are the owner-accepted Phase 7 REH-02 deferrals (decision 3), raider line fixed now (decision 5)
 - [Phase 02]: Golden-row files for the five legacy expansions are captured once from the unmodified seeder and never regenerated with -u; later plans run the suite with CI=true — A mismatch means the plan changed legacy rows (EXPN-03)
 - [Phase 02]: 02-12: Forever raids use the neutral FOREVER_RAID_ICON (question mark) and the Forever path never reads the name map; getRaidShorthand unchanged — Forever raid names collide with Classic and TBC names; inventory test keeps game-less calls explicit until 02-13
+- [Phase 02]: 02-02: zod 4.6.5 and csv-parse 7.0.2 installed with exact pins after owner legitimacy approval; manifest schema kept outside the domain barrel — Supply-chain mitigation T-02-SC and bundle reach T-02-02-01
 
 ### Pending Owner Inputs
 
@@ -128,6 +130,6 @@ Progress: [██░░░░░░░░] 1/8 phases ([█░░░░░░░
 
 ## Session Continuity
 
-Last session: 2026-10-16T18:15:58.886Z
-Stopped at: Completed 02-12-PLAN.md
+Last session: 2026-10-16T18:24:01.781Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
