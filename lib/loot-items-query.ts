@@ -9,6 +9,12 @@
  * This function is pure w.r.t. the supabase client passed in — it does
  * no auth. Callers are responsible for verifying that the requesting
  * user owns the character before calling.
+ *
+ * Three physical-equippability rules are enforced for every character,
+ * independent of officer assignments: token class lists
+ * (data/token-class-mapping.ts), per-item class locks
+ * (domain/loot/class-restrictions.ts, GH #276) and armor and weapon
+ * proficiency (data/class-proficiencies.ts).
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -23,6 +29,7 @@ import {
 } from '@/data/class-proficiencies'
 import { getItemTypeInfo, inferArmorType, inferWeaponType } from '@/data/item-types'
 import { isTokenSlot, canClassUseToken } from '@/data/token-class-mapping'
+import { canClassUseItem } from '@/domain/loot/class-restrictions'
 import { paginatedSelect } from '@/utils/supabase/paginate'
 
 export interface LootItemClassRestriction {
@@ -165,8 +172,9 @@ export async function fetchFilteredLootItems(
 
   const className = character.class_name as WowClassName | null
 
-  // Armor/weapon proficiency is ALWAYS enforced — a Druid can never equip
-  // plate regardless of officer assignments. Officer assignments only
+  // Armor/weapon proficiency and per-item class locks are ALWAYS enforced:
+  // a Druid can never equip plate and a Warrior can never wear Arcanist
+  // cloth, regardless of officer assignments. Officer assignments only
   // control bracket visibility, not physical equippability.
   const filtered = items.filter((item: LootItemRow) => {
     // Tokens have their own class eligibility rules.
@@ -174,6 +182,15 @@ export async function fetchFilteredLootItems(
       if (className && !canClassUseToken(item.name, className)) return false
       return true
     }
+
+    // regression for #276: class-locked drops (Classic set pieces, class
+    // trinkets, class rings, Priest and Hunter quest items) pass the armor
+    // rule below because canWearArmorType allows lighter armor, and some of
+    // them sit in class-agnostic slots, so this check has to run before the
+    // isClassAgnosticSlot early return. The rule comes from the
+    // wow-classic-items 'Classes:' line via data/item-class-restrictions.ts;
+    // an id outside the map is allowed.
+    if (className && !canClassUseItem(item.wowhead_id, className)) return false
 
     if (className && CLASS_PROFICIENCIES[className]) {
       let armorType = item.armor_type as ArmorType | null

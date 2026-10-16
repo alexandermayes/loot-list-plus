@@ -1423,10 +1423,12 @@ export default function DesignSystemPage() {
                     <p>Its accessible name comes from <code className="text-accent">ModalTitle</code>, wired through context.</p>
                     <p>Focus trap: Tab cannot leave the modal while it is open.</p>
                     <p>Focus returns to the triggering button on close.</p>
+                    <p>Everything outside the topmost modal is inert while it is open, so Tab and screen readers cannot reach the page behind it.</p>
+                    <p>With prefers-reduced-motion enabled the fade and scale are skipped.</p>
                     <p>Escape closes the topmost modal when several are stacked (the same-zIndex tie-break fixed in commit <code className="text-accent">027129cd</code>).</p>
                   </div>
                   <p className="text-xs text-muted-foreground mt-4">
-                    Try it: open a modal, press Tab repeatedly (focus stays inside), then Escape (focus returns to the button you clicked).
+                    Try it: open a modal, press Tab repeatedly (focus stays inside), then Escape (focus returns to the button you clicked), or turn on Reduce Motion in your OS and reopen it (no fade, no scale).
                   </p>
                 </PreviewCard>
               </div>
