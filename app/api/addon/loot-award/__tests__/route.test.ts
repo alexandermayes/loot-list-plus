@@ -31,7 +31,7 @@ const OTHER_GUILD_ID = 'guild-2'
 type ExpansionRow = { id: string; guild_id: string }
 type TierRow = { id: string; expansion_id: string; name?: string }
 type ItemRow = { id: string; name: string; raid_tier_id: string; wowhead_id: number; boss_name?: string }
-type Call = { table: string; filters: Array<[string, unknown]> }
+type Call = { table: string; columns?: string; filters: Array<[string, unknown]> }
 
 interface Fixture {
   expansions: ExpansionRow[]
@@ -49,6 +49,10 @@ interface Fixture {
   lookupRow?: { id: string } | null
   /** Rows returned by the unmatched-name same-night pre-check. */
   existingUnmatched?: Array<{ id: string; character_name: string | null }>
+  /** GH #355: the active expansion's timezone; null or absent means no active expansion. */
+  raidTimeZone?: string | null
+  /** GH #355: the raid time zone read (guilds.maybeSingle) fails. */
+  raidTimeZoneError?: boolean
 }
 
 /**
@@ -66,7 +70,7 @@ function makeClient(fixture: Fixture) {
       calls.push(call)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const builder: any = {
-        select: () => builder,
+        select: (columns?: string) => { call.columns = columns; return builder },
         insert: (payload: unknown) => { call.filters.push(['__insert_payload__', payload]); return builder },
         eq: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         in: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
@@ -85,6 +89,16 @@ function makeClient(fixture: Fixture) {
           return Promise.resolve({ data: null, error: null })
         },
         maybeSingle: () => {
+          if (table === 'guilds') {
+            if (fixture.raidTimeZoneError) return Promise.resolve({ data: null, error: { message: 'guilds boom' } })
+            return Promise.resolve({
+              data: {
+                active_expansion_id: fixture.activeExpansionId ?? null,
+                expansions: fixture.raidTimeZone == null ? null : { timezone: fixture.raidTimeZone },
+              },
+              error: null,
+            })
+          }
           if (table === 'loot_history') return Promise.resolve({ data: fixture.lookupRow ?? null, error: null })
           return Promise.resolve({ data: null, error: null })
         },
@@ -710,6 +724,132 @@ describe('POST /api/addon/loot-award', () => {
         expect(notifyLootAward).not.toHaveBeenCalled()
         expect(recomputeBlpForItems).not.toHaveBeenCalled()
       })
+    })
+  })
+
+  describe('GH #355: raid night in the guild time zone', () => {
+    const thrall = [{ character_id: 'char-1', characters: { id: 'char-1', name: 'Thrall' } }]
+    const NIGHT_1013 = { id: 'ev-1013', guild_id: GUILD_ID, raid_date: '2026-10-13', raid_team_id: null }
+    const NIGHT_1014 = { id: 'ev-1014', guild_id: GUILD_ID, raid_date: '2026-10-14', raid_team_id: null }
+
+    function zoneFixture(extra: Partial<Fixture> = {}): Fixture {
+      return {
+        ...singleItemFixture({ id: 'item-20928', name: 'Qiraji Bindings of Command', wowhead_id: 20928 }),
+        characters: thrall,
+        raidEvents: [NIGHT_1013, NIGHT_1014],
+        raidTimeZone: 'America/New_York',
+        ...extra,
+      }
+    }
+
+    const payloadOf = (calls: Call[]) =>
+      lootHistoryInsert(calls)?.filters.find(([col]) => col === '__insert_payload__')?.[1] as Record<string, unknown>
+    const award = (extra: Record<string, unknown>) =>
+      request({ guild_id: GUILD_ID, wowhead_id: 20928, character_name: 'Thrall', ...extra })
+    const zoneReads = (calls: Call[]) =>
+      calls.filter(c => c.table === 'guilds' && c.columns?.includes('timezone'))
+
+    it('Z1 a 22:30 EDT award links the evening night, not the next UTC date', async () => {
+      const { client, calls } = makeClient(zoneFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(award({ awarded_date: '2026-10-14', awarded_at: '2026-10-14T02:30:00Z' }))
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(body.data).toMatchObject({ raid_event_id: 'ev-1013', raid_night: 'linked' })
+      expect(payloadOf(calls)).toMatchObject({ raid_event_id: 'ev-1013', awarded_date: '2026-10-13' })
+      expect(payloadOf(calls).source_award_key).toBe(
+        addonAwardKey({ awardedAt: '2026-10-14T02:30:00Z', wowheadId: 20928, characterName: 'Thrall' }),
+      )
+    })
+
+    it('Z2 the 06:00 local rollover splits Berlin awards between nights', async () => {
+      for (const [awardedAt, eventId] of [
+        ['2026-10-14T03:59:00Z', 'ev-1013'],
+        ['2026-10-14T04:00:00Z', 'ev-1014'],
+      ]) {
+        vi.clearAllMocks()
+        vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'user-1' }, error: null } as never)
+        vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
+        const { client } = makeClient(zoneFixture({ raidTimeZone: 'Europe/Berlin' }))
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+        const res = await POST(award({ awarded_date: '2026-10-14', awarded_at: awardedAt }))
+        const body = await res.json()
+
+        expect(res.status).toBe(200)
+        expect(body.data.raid_event_id).toBe(eventId)
+      }
+    })
+
+    it('Z3 with only the UTC-dated night present, links it and stores that date (legacy fallback)', async () => {
+      const { client, calls } = makeClient(zoneFixture({ raidEvents: [NIGHT_1014] }))
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(award({ awarded_date: '2026-10-14', awarded_at: '2026-10-14T02:30:00Z' }))
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(body.data).toMatchObject({ raid_event_id: 'ev-1014', raid_night: 'linked' })
+      expect(payloadOf(calls)).toMatchObject({ raid_event_id: 'ev-1014', awarded_date: '2026-10-14' })
+    })
+
+    it('Z4 with no nights saves unlinked under the zoned date', async () => {
+      const { client, calls } = makeClient(zoneFixture({ raidEvents: [] }))
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(award({ awarded_date: '2026-10-14', awarded_at: '2026-10-14T02:30:00Z' }))
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(body.data).toMatchObject({ raid_event_id: null, raid_night: 'no_raid_night' })
+      expect(payloadOf(calls)).toMatchObject({ raid_event_id: null, awarded_date: '2026-10-13' })
+    })
+
+    it('Z5 a missing or malformed awarded_at reads no time zone and uses awarded_date', async () => {
+      for (const extra of [{}, { awarded_at: 'yesterday' }, { awarded_at: 1758398400 }, { awarded_at: '2026-10-14T02:30:00' }]) {
+        vi.clearAllMocks()
+        vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'user-1' }, error: null } as never)
+        vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
+        const { client, calls } = makeClient(zoneFixture())
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+        const res = await POST(award({ awarded_date: '2026-10-14', ...extra }))
+        const body = await res.json()
+
+        expect(res.status).toBe(200)
+        expect(zoneReads(calls)).toHaveLength(0)
+        expect(body.data.raid_event_id).toBe('ev-1014')
+        expect(payloadOf(calls).awarded_date).toBe('2026-10-14')
+      }
+    })
+
+    it('Z6 a failed time zone read carries on with the UTC date and tracks the error', async () => {
+      const { client, calls } = makeClient(zoneFixture({ raidTimeZoneError: true }))
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      const res = await POST(award({ awarded_date: '2026-10-14', awarded_at: '2026-10-14T02:30:00Z' }))
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(zoneReads(calls)).toHaveLength(1)
+      expect(body.data.raid_event_id).toBe('ev-1014')
+      expect(payloadOf(calls).awarded_date).toBe('2026-10-14')
+      expect(trackApiError).toHaveBeenCalled()
+    })
+
+    it('Z7 a guild with no active expansion time zone behaves like America/New_York', async () => {
+      const { client, calls } = makeClient(zoneFixture({ raidTimeZone: null }))
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(award({ awarded_date: '2026-10-14', awarded_at: '2026-10-14T02:30:00Z' }))
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(body.data.raid_event_id).toBe('ev-1013')
+      expect(payloadOf(calls).awarded_date).toBe('2026-10-13')
     })
   })
 })

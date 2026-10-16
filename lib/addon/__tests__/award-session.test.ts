@@ -23,6 +23,7 @@ describe('matchAwardSession', () => {
       raidDate: '2026-09-20',
       raidName: "Temple of Ahn'Qiraj",
       bossName: "C'Thun",
+      startTime: '2026-09-20T23:00:00Z',
     })
   })
 

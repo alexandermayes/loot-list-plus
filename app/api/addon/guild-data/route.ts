@@ -5,7 +5,7 @@ import { trackApiError } from '@/utils/analytics/server'
 import { getAttendanceWindowEnd, resolveOwnedEvents, resolveActiveRaiderModifiers } from '@/domain/scoring'
 import { toDateString } from '@/utils/date'
 import { withFactionVariants } from '@/domain/loot/faction-item-aliases'
-import { buildMemberRankedItems, fetchReceivedCounts } from '@/lib/addon/member-ranked-items'
+import { buildMemberRankedItems, fetchReceivedCounts, inExportExpansion } from '@/lib/addon/member-ranked-items'
 
 /**
  * GET /api/addon/guild-data
@@ -23,7 +23,9 @@ import { buildMemberRankedItems, fetchReceivedCounts } from '@/lib/addon/member-
  * last-wins collapse keeps the best rank. One listed entry per award of the
  * item to the raider is left out too, best rank first, as on the master
  * sheet and in the Gargul export (FU-C of 261001-tv5). A failed loot
- * history read sends every entry.
+ * history read sends every entry. members[].items merge every approved list
+ * the raider has in the exported expansion (GH #355); lists with no
+ * expansion_id still go out.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -82,7 +84,7 @@ export async function GET(request: NextRequest) {
       supabase.from('loot_items').select('id, name, wowhead_id, boss_name, item_slot, item_type, classification, raid_tier_id')
         .in('raid_tier_id', raidTierIds).order('name'),
       supabase.from('loot_submissions').select(`
-        id, character_id, phase, status,
+        id, character_id, expansion_id, phase, status,
         loot_submission_items (loot_item_id, rank, slot, removed_at, loot_items (wowhead_id))
       `).eq('guild_id', guildId).eq('status', 'approved'),
       supabase.from('bad_luck_protection').select('character_id, loot_item_id, times_passed').eq('guild_id', guildId),
@@ -137,9 +139,13 @@ export async function GET(request: NextRequest) {
       item_type: item.item_type,
     })))
 
-    // Build submission lookup: removed rows out, best rank last, faction
-    // mirrors (see lib/addon/member-ranked-items.ts)
-    const submissionsByChar = buildMemberRankedItems(submissionsResult.data || [], receivedCounts)
+    // Build submission lookup: only the active expansion's lists (plus lists
+    // with no expansion_id), merged per raider (GH #355), removed rows out,
+    // best rank last, faction mirrors (see lib/addon/member-ranked-items.ts)
+    const submissionsByChar = buildMemberRankedItems(
+      inExportExpansion(submissionsResult.data || [], guild.active_expansion_id),
+      receivedCounts,
+    )
 
     // Build members
     interface CharData { id: string; name: string; wow_classes: { name: string; color_hex: string } | { name: string; color_hex: string }[]; spec: { id: string; name: string; role: string } | { id: string; name: string; role: string }[] | null }
