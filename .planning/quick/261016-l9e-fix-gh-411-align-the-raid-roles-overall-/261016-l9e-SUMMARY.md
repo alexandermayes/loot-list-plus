@@ -16,7 +16,7 @@ completed: 2026-10-16
 
 ## Commits
 
-- PR #423, branch fix/411-align-raid-roles-default: `fix(scoring): align the raid_roles_overall_bonus_priority default with the database (GH #411)`
+- b92a2190 (PR #423, squash of branch fix/411-align-raid-roles-default): `fix(scoring): align the raid_roles_overall_bonus_priority default with the database (GH #411)`
 
 ## What changed
 
