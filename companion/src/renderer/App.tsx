@@ -10,6 +10,8 @@ interface SyncStatusData {
   lastError: string | null
   pendingAwards: number
   pendingAttendance: number
+  parkedAwards: number
+  parkedAttendance: number
 }
 
 declare global {
@@ -28,6 +30,7 @@ declare global {
         start: (config: { apiUrl: string; guildId: string; wowPath: string; interval: number }) => Promise<boolean>
         stop: () => Promise<boolean>
         now: () => Promise<boolean>
+        clearStuck: () => Promise<{ cleared: boolean; awards: number; attendance: number } | undefined>
         getStatus: () => Promise<SyncStatusData>
         onStatus: (callback: (status: SyncStatusData) => void) => () => void
       }
@@ -129,6 +132,10 @@ export default function App() {
             <PendingQueue
               awards={syncStatus?.pendingAwards || 0}
               attendance={syncStatus?.pendingAttendance || 0}
+              parkedAwards={syncStatus?.parkedAwards || 0}
+              parkedAttendance={syncStatus?.parkedAttendance || 0}
+              onClearStuck={() => window.companion.sync.clearStuck()}
+              clearDisabled={syncStatus?.state === 'syncing'}
             />
           </div>
         )}

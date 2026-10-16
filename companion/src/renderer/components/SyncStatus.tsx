@@ -4,6 +4,8 @@ interface SyncStatusData {
   lastError: string | null
   pendingAwards: number
   pendingAttendance: number
+  parkedAwards: number
+  parkedAttendance: number
 }
 
 interface SyncStatusProps {

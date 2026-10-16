@@ -46,12 +46,18 @@ function createWindow() {
   })
 }
 
-function createTray() {
-  const iconPath = path.join(__dirname, '../../assets/tray-icon.png')
-  const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
-  tray = new Tray(icon)
-
-  const contextMenu = Menu.buildFromTemplate([
+/**
+ * The tray's context menu. Electron menus are immutable once built, so
+ * refreshTray rebuilds this on every engine status event; that is what
+ * keeps the Status line and the enabled state of "Clear stuck entries"
+ * current (GH #320 follow-up). Before this the menu was built once, before
+ * any engine existed, so the Status line always read "Not connected".
+ */
+function buildTrayMenu(): Menu {
+  const status = syncEngine?.getStatus()
+  const idle = status !== undefined && status.state !== 'syncing'
+  const parked = status ? status.parkedAwards + status.parkedAttendance : 0
+  return Menu.buildFromTemplate([
     {
       label: 'Show LootList+ Companion',
       click: () => mainWindow?.show(),
@@ -59,11 +65,17 @@ function createTray() {
     { type: 'separator' },
     {
       label: 'Sync Now',
+      enabled: idle,
       click: () => syncEngine?.syncNow(),
     },
     {
       label: `Status: ${syncEngine?.getStatusText() || 'Not connected'}`,
       enabled: false,
+    },
+    {
+      label: 'Clear stuck entries',
+      enabled: idle && parked > 0,
+      click: () => syncEngine?.clearParkedEntries(),
     },
     { type: 'separator' },
     {
@@ -74,9 +86,19 @@ function createTray() {
       },
     },
   ])
+}
+
+function refreshTray() {
+  tray?.setContextMenu(buildTrayMenu())
+}
+
+function createTray() {
+  const iconPath = path.join(__dirname, '../../assets/tray-icon.png')
+  const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
+  tray = new Tray(icon)
 
   tray.setToolTip('LootList+ Companion')
-  tray.setContextMenu(contextMenu)
+  refreshTray()
 
   tray.on('click', () => {
     mainWindow?.show()
@@ -96,6 +118,7 @@ function setupIPC() {
   ipcMain.handle('auth:logout', () => {
     AuthManager.logout()
     syncEngine?.stop()
+    refreshTray()
   })
 
   // WoW path detection
@@ -110,9 +133,12 @@ function setupIPC() {
   // Sync control
   ipcMain.handle('sync:start', async (_, config: { apiUrl: string; guildId: string; wowPath: string; interval: number }) => {
     if (syncEngine) syncEngine.stop()
-    syncEngine = new SyncEngine(config)
+    // stateDir is set here from Electron, never taken from the renderer
+    // (GH #320 follow-up).
+    syncEngine = new SyncEngine({ ...config, stateDir: app.getPath('userData') })
     syncEngine.on('status', (status) => {
       mainWindow?.webContents.send('sync:status', status)
+      refreshTray()
     })
     syncEngine.start()
     return true
@@ -120,11 +146,16 @@ function setupIPC() {
 
   ipcMain.handle('sync:stop', () => {
     syncEngine?.stop()
+    refreshTray()
     return true
   })
 
   ipcMain.handle('sync:now', async () => {
     return syncEngine?.syncNow()
+  })
+
+  ipcMain.handle('sync:clearStuck', async () => {
+    return syncEngine?.clearParkedEntries()
   })
 
   ipcMain.handle('sync:getStatus', () => {

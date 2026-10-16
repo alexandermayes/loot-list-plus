@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('companion', {
       ipcRenderer.invoke('sync:start', config),
     stop: () => ipcRenderer.invoke('sync:stop'),
     now: () => ipcRenderer.invoke('sync:now'),
+    clearStuck: () => ipcRenderer.invoke('sync:clearStuck'),
     getStatus: () => ipcRenderer.invoke('sync:getStatus'),
     onStatus: (callback: (status: unknown) => void) => {
       ipcRenderer.on('sync:status', (_, status) => callback(status))
