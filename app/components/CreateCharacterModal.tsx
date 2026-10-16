@@ -221,9 +221,10 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
       // Get user for setting active character
       const { data: { user } } = await supabase.auth.getUser()
 
-      // Check if there's a pending guild join from Discord flow
-      const pendingGuildJoin = typeof window !== 'undefined' ? sessionStorage.getItem('pending_guild_join') : null
-      const targetGuildId = activeGuild?.id || pendingGuildJoin
+      // No client-side join hint: the server records invite and Discord joins
+      // and GuildContext surfaces that guild as activeGuild before the first
+      // character exists, so activeGuild is the only source needed.
+      const targetGuildId = activeGuild?.id ?? null
 
       // If user has a guild to join, add character to it
       if (targetGuildId && data.character) {
@@ -236,18 +237,13 @@ export function CreateCharacterModal({ isOpen, onClose, onSuccess, suggestedName
             },
             body: JSON.stringify({
               guild_id: targetGuildId,
-              joined_via: pendingGuildJoin ? 'discord_verify' : 'manual'
+              joined_via: 'manual'
             })
           })
 
           if (!guildResponse.ok) {
             const guildError = await guildResponse.json()
             console.error('Error adding character to guild:', guildError)
-          }
-
-          // Clear the pending guild join
-          if (pendingGuildJoin) {
-            sessionStorage.removeItem('pending_guild_join')
           }
         } catch (membershipErr) {
           console.error('Error adding character to guild:', membershipErr)
