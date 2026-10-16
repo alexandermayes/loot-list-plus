@@ -232,6 +232,42 @@ describe('POST /api/battlenet/characters/import applies the guild rule before cr
     expect(upsert?.payload).toMatchObject({ membership_status: 'trial', trial_started_at: expect.any(String) })
   })
 
+  it('gives the guild creator Guild Master with no trial fields and no settings read, then consumes', async () => {
+    // regression for #356: the Battle.net import gave the creator the default role
+    vi.mocked(resolveGuildJoinAccess).mockResolvedValue(creator())
+    const { service } = setup({ trial: true })
+
+    const res = await POST(request({ guildId: GUILD }))
+
+    expect(res.status).toBe(201)
+    const upsert = service.writes().find(c => c.table === 'character_guild_memberships')
+    expect(upsert?.payload).toMatchObject({ role: 'Guild Master', is_active: true, joined_via: 'battlenet_import' })
+    expect(upsert?.payload).not.toHaveProperty('membership_status')
+    expect(upsert?.payload).not.toHaveProperty('trial_started_at')
+    expect(service.calls.some(c => c.table === 'guild_settings')).toBe(false)
+    expect(consumeGuildJoinGrant).toHaveBeenCalledWith(service.client, { userId: USER, guildId: GUILD })
+  })
+
+  it('puts an alt on trial with the main trial start when the main is on trial, reading no settings', async () => {
+    // regression for #356: an alt got full status while the main was still on trial
+    vi.mocked(resolveGuildJoinAccess).mockResolvedValue(
+      member([{ membership_status: 'trial', trial_started_at: '2026-09-01T00:00:00.000Z' }]),
+    )
+    const { service } = setup({ trial: false })
+
+    const res = await POST(request({ guildId: GUILD }))
+
+    expect(res.status).toBe(201)
+    const upsert = service.writes().find(c => c.table === 'character_guild_memberships')
+    expect(upsert?.payload).toMatchObject({
+      role: 'Member',
+      joined_via: 'battlenet_import',
+      membership_status: 'trial',
+      trial_started_at: '2026-09-01T00:00:00.000Z',
+    })
+    expect(service.calls.some(c => c.table === 'guild_settings')).toBe(false)
+  })
+
   it.each([
     ['creator', creator()],
     ['member', member([{ membership_status: 'full', trial_started_at: null }])],

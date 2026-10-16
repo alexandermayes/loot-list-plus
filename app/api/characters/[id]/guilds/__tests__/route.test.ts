@@ -111,8 +111,14 @@ interface ServiceWorld {
   characters?: string[]
   /** Another own character is an active member of the guild. */
   altActive?: boolean
+  /** That other character is on trial (membership_status 'trial'). */
+  altTrial?: boolean
+  /** The trial start recorded on the other character's membership. */
+  altTrialStartedAt?: string
   /** The user holds an unconsumed, unexpired join record for the guild. */
   grant?: boolean
+  /** Source recorded on the join record; `undefined` means 'invite_code'. */
+  grantSource?: 'invite_code' | 'discord_verify' | null
   /** guild_settings.new_members_start_as_trial */
   trial?: boolean
   failAccessLookup?: boolean
@@ -131,10 +137,16 @@ function serviceClient(w: ServiceWorld) {
       return { data: w.existing, error: null }
     }
     if (call.table === 'character_guild_memberships' && call.op === 'select' && terminal === 'then') {
-      return { data: w.altActive ? [{ id: 'm-alt' }] : [], error: null }
+      const altRow = {
+        id: 'm-alt',
+        membership_status: w.altTrial ? 'trial' : 'full',
+        trial_started_at: w.altTrial ? (w.altTrialStartedAt ?? '2026-09-01T00:00:00.000Z') : null,
+      }
+      return { data: w.altActive ? [altRow] : [], error: null }
     }
     if (call.table === 'guild_join_grants' && call.op === 'select') {
-      return { data: w.grant ? { user_id: USER } : null, error: null }
+      const source = w.grantSource === undefined ? 'invite_code' : w.grantSource
+      return { data: w.grant ? { user_id: USER, source } : null, error: null }
     }
     if (call.table === 'guild_settings' && call.op === 'select') {
       return { data: { new_members_start_as_trial: w.trial === true }, error: null }
@@ -191,7 +203,7 @@ describe('POST /api/characters/[id]/guilds adds a character only for the creator
     expect(service.writes()).toEqual([])
   })
 
-  it('inserts with the default role and consumes the join record for a record holder', async () => {
+  it('inserts with the default role and the recorded join source, and consumes the join record for a record holder', async () => {
     const { service } = setup(true, { createdBy: 'someone-else', existing: null, grant: true })
 
     const res = await POST(request({ guild_id: GUILD, joined_via: 'invite' }), params)
@@ -199,9 +211,10 @@ describe('POST /api/characters/[id]/guilds adds a character only for the creator
     expect(res.status).toBe(201)
     const writes = membershipWrites(service.calls)
     expect(writes).toHaveLength(1)
+    // The recorded source wins over the client's claim.
     expect(writes[0]).toMatchObject({
       op: 'insert',
-      payload: { character_id: CHARACTER, guild_id: GUILD, role: 'Member', joined_via: 'invite' },
+      payload: { character_id: CHARACTER, guild_id: GUILD, role: 'Member', joined_via: 'invite_code' },
     })
     expect(writes[0].payload).not.toHaveProperty('membership_status')
     expectConsumed(service.calls)
@@ -210,13 +223,37 @@ describe('POST /api/characters/[id]/guilds adds a character only for the creator
     expect(grantLookup?.otherFilters).toContainEqual(['is', 'consumed_at', null])
   })
 
+  it('keeps the client joined_via for a record holder whose join record has no source', async () => {
+    const { service } = setup(true, { createdBy: 'someone-else', existing: null, grant: true, grantSource: null })
+
+    const res = await POST(request({ guild_id: GUILD, joined_via: 'invite' }), params)
+
+    expect(res.status).toBe(201)
+    const [write] = membershipWrites(service.calls)
+    expect(write.payload).toMatchObject({ joined_via: 'invite' })
+  })
+
+  it('records the Discord source as joined_via for a record holder even when the client says manual', async () => {
+    // regression for #356: joined_via was always the client's claim, so a Discord join read as manual
+    const { service } = setup(true, { createdBy: 'someone-else', existing: null, grant: true, grantSource: 'discord_verify' })
+
+    const res = await POST(request({ guild_id: GUILD, joined_via: 'manual' }), params)
+
+    expect(res.status).toBe(201)
+    const [write] = membershipWrites(service.calls)
+    expect(write.payload).toMatchObject({ joined_via: 'discord_verify' })
+  })
+
   it('inserts and consumes for a user whose other character is an active member (alts)', async () => {
     const { service } = setup(true, { createdBy: 'someone-else', existing: null, characters: [CHARACTER, ALT], altActive: true })
 
     const res = await POST(request({ guild_id: GUILD }), params)
 
     expect(res.status).toBe(201)
-    expect(membershipWrites(service.calls)).toHaveLength(1)
+    const writes = membershipWrites(service.calls)
+    expect(writes).toHaveLength(1)
+    // No recorded source on the member path, so the client's default stands.
+    expect(writes[0].payload).toMatchObject({ joined_via: 'manual' })
     expectConsumed(service.calls)
     const lookup = service.calls.find(c => c.table === 'character_guild_memberships' && c.otherFilters.length > 0)
     expect(lookup?.otherFilters).toContainEqual(['in', 'character_id', [ALT]])
@@ -234,6 +271,8 @@ describe('POST /api/characters/[id]/guilds adds a character only for the creator
     expect(writes).toHaveLength(1)
     expect(writes[0]).toMatchObject({ op: 'insert', payload: { role: 'Guild Master' } })
     expectConsumed(service.calls)
+    // The route no longer reads guilds itself: the one read is inside resolveGuildJoinAccess.
+    expect(service.calls.filter(c => c.table === 'guilds')).toHaveLength(1)
   })
 
   it('returns 403 with no write for an inactive membership when the user is not the creator and has no other active character or record', async () => {
@@ -357,6 +396,54 @@ describe('POST /api/characters/[id]/guilds adds a character only for the creator
       const [write] = membershipWrites(service.calls)
       expect(write.payload).not.toHaveProperty('membership_status')
       expect(write.payload).not.toHaveProperty('trial_started_at')
+    })
+
+    it('puts an alt on trial with the main trial start when the main is on trial, reading no settings', async () => {
+      // regression for #356: an alt got full status while the main was still on trial
+      const { service } = setup(true, {
+        createdBy: 'someone-else',
+        existing: null,
+        characters: [CHARACTER, ALT],
+        altActive: true,
+        altTrial: true,
+        trial: false,
+      })
+
+      const res = await POST(request({ guild_id: GUILD }), params)
+
+      expect(res.status).toBe(201)
+      const [write] = membershipWrites(service.calls)
+      expect(write.payload).toMatchObject({
+        role: 'Member',
+        membership_status: 'trial',
+        trial_started_at: '2026-09-01T00:00:00.000Z',
+      })
+      expect(service.calls.some(c => c.table === 'guild_settings')).toBe(false)
+    })
+
+    it('reactivates an alt as trial with the main trial start when the main is on trial', async () => {
+      const { service } = setup(true, {
+        createdBy: 'someone-else',
+        existing: { id: 'm-6', is_active: false },
+        characters: [CHARACTER, ALT],
+        altActive: true,
+        altTrial: true,
+      })
+
+      const res = await POST(request({ guild_id: GUILD }), params)
+
+      expect(res.status).toBe(200)
+      const [write] = membershipWrites(service.calls)
+      expect(write).toMatchObject({
+        op: 'update',
+        payload: {
+          is_active: true,
+          role: 'Member',
+          membership_status: 'trial',
+          trial_started_at: '2026-09-01T00:00:00.000Z',
+        },
+        filters: [['id', 'm-6']],
+      })
     })
 
     it.each([

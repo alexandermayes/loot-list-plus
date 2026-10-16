@@ -3,6 +3,7 @@ import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getDefaultRoleName } from '@/domain/guild/default-role'
 import { resolveGuildJoinAccess, consumeGuildJoinGrant } from '@/domain/guild/join-grants'
+import { resolveJoinMembershipFields, resolveJoinedVia } from '@/domain/guild/join-membership'
 
 /**
  * GET /api/characters/[id]/guilds
@@ -85,6 +86,11 @@ export async function GET(
  * user with a join the server recorded (an invite or Discord join made before
  * they had a character). Anyone else gets 403. A join record is used up by
  * the membership write it allows.
+ *
+ * Role, trial fields and joined_via are decided by domain/guild/join-membership
+ * from the access result: the creator gets Guild Master, an alt follows the
+ * main's trial standing, and a recorded join source overrides the client's
+ * joined_via, which is only a hint.
  */
 export async function POST(
   request: Request,
@@ -132,16 +138,6 @@ export async function POST(
     // their own characters to a guild they're joining.
     const serviceSupabase = createServiceRoleClient()
 
-    // Determine role server-side: guild creator gets Guild Master, everyone else gets Member
-    const { data: guildData } = await serviceSupabase
-      .from('guilds')
-      .select('created_by')
-      .eq('id', guild_id)
-      .single()
-
-    const defaultRole = await getDefaultRoleName(guild_id)
-    const role = guildData?.created_by === user.id ? 'Guild Master' : defaultRole
-
     // Check if membership already exists
     const { data: existingMembership } = await serviceSupabase
       .from('character_guild_memberships')
@@ -172,26 +168,29 @@ export async function POST(
       )
     }
 
-    // A member added through a join record starts as trial when the guild
-    // starts new members as trial, as the invite and Discord joins do.
-    let trialFields: { membership_status?: 'trial'; trial_started_at?: string } = {}
+    const defaultRole = await getDefaultRoleName(guild_id)
+
+    // The new-member trial setting only matters for a join record holder; the
+    // creator never starts on trial and an alt follows its siblings instead.
+    let newMembersStartAsTrial = false
     if (access.via === 'grant') {
       const { data: joinSettings } = await serviceSupabase
         .from('guild_settings')
         .select('new_members_start_as_trial')
         .eq('guild_id', guild_id)
         .maybeSingle()
-      if (joinSettings?.new_members_start_as_trial === true) {
-        trialFields = { membership_status: 'trial', trial_started_at: new Date().toISOString() }
-      }
+      newMembersStartAsTrial = joinSettings?.new_members_start_as_trial === true
     }
+
+    const fields = resolveJoinMembershipFields({ access, defaultRole, newMembersStartAsTrial })
+    const joinedVia = resolveJoinedVia(access, typeof joined_via === 'string' ? joined_via : 'manual')
 
     if (existingMembership) {
       // Reactivate membership. Reactivation assigns the same role a new
       // membership gets, as the invite and Discord join routes do.
       const { data: membership, error } = await serviceSupabase
         .from('character_guild_memberships')
-        .update({ is_active: true, role, ...trialFields })
+        .update({ is_active: true, ...fields })
         .eq('id', existingMembership.id)
         .select(`
           id,
@@ -226,9 +225,8 @@ export async function POST(
       .insert({
         character_id: id,
         guild_id,
-        role,
-        joined_via,
-        ...trialFields,
+        joined_via: joinedVia,
+        ...fields,
       })
       .select(`
         id,
