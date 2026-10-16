@@ -7,6 +7,7 @@ import { ITEM_ICONS } from '../item-icons'
 import { ITEM_TYPES, inferArmorType, inferWeaponType, ARMOR_SLOTS } from '../item-types'
 import { GH273_CORE } from './fixtures/classic-gh273-core'
 import { GH284_RECIPES, GH284_RESEARCH } from './fixtures/classic-gh284-recipes'
+import { GH278_PLACED } from './fixtures/classic-gh278-zoneless'
 import { packageWeaponType, packageTypeInfo } from './fixtures/package-item-types'
 import { ITEM_CLASSIFICATIONS } from '../classic-wow-item-classifications'
 import { CLASSIC_ITEM_ROLES } from '../classic-item-roles'
@@ -54,6 +55,24 @@ import { FACTION_ITEM_ALIASES } from '@/domain/loot/faction-item-aliases'
 // mapping, package-agreement and D-03 visibility checks passed against the
 // unmodified catalog since they do not depend on the catalog yet listing the
 // recipes, and the four no-Recipe-in-other-raids checks trivially passed too).
+//
+// GH-278: the gate above only saw package items that carry a source.zone in
+// one of the seven raid zones. wow-classic-items 2.0.1 has no source at all
+// for 32 Epic catalog ids (5 Cache of the Firelord items, every one of the 18
+// Onyxia's Lair drops, 9 Four Horsemen Chest items), so removing any of them
+// passed the suite. Those ids now live in classic-gh278-zoneless.ts, keyed by
+// in-game drop source; the first test unions them into its expected set and
+// the 'Classic zone-less package items (#278)' describe requires each row
+// once under its boss group and checks every catalog row is covered by the
+// package zone, that fixture, or the Recipe gate of #284.
+//
+// RED evidence: with the fixture empty, the coverage test reported exactly
+// the 32 rows (5 Molten Core, 18 Onyxia's Lair, 9 Naxxramas) and none of the
+// 15 Recipe rows. GREEN: with the 32 rows in place it reports zero.
+// Removing Shard of the Scale (17064) from the catalog fails exactly two
+// tests, the missing-items test and its placement row. Removing the same id
+// from the fixture fails the coverage test (naming 17064) and the two fixture
+// count tests in classic-gh278-zoneless.test.ts (31 entries, 17 Onyxia rows).
 
 type PackageItem = InstanceType<typeof Items>[number]
 
@@ -137,21 +156,26 @@ function expectedTokenClasses(tokenId: number): string[] | null {
 }
 
 describe('Classic catalog completeness (#273)', () => {
-  it('lists every Epic or Legendary drop the package attributes to a Classic raid, unless deliberately excluded or covered by a faction alias', () => {
+  it('lists every Epic or Legendary drop the package attributes to a Classic raid, plus every zone-less drop the #278 fixture places, unless deliberately excluded or covered by a faction alias', () => {
     const catalogKeys = new Set(catalogEntries.map(entry => `${entry.raid}|${entry.wowhead_id}`))
-    const missing = packageItems
+    const packageExpected = packageItems
       .filter(item => item.itemId < MAX_CLASSIC_ITEM_ID)
       .filter(item => item.quality === 'Epic' || item.quality === 'Legendary')
       .filter(item => item.source?.zone !== undefined && CLASSIC_RAID_ZONES[item.source.zone] !== undefined)
       .filter(item => !(item.itemId in DELIBERATELY_EXCLUDED))
-      .filter(item => {
+      .map(item => ({ raid: CLASSIC_RAID_ZONES[item.source.zone!], id: item.itemId, name: item.name }))
+    // GH #278: the package has no source for these rows, so the fixture
+    // supplies them; they go through the same alias rewrite and lookup.
+    const fixtureExpected = GH278_PLACED.map(item => ({ raid: item.raid, id: item.id, name: item.name }))
+    const missing = [...packageExpected, ...fixtureExpected]
+      .filter(expected => {
         // GH #277: an aliased Horde id (e.g. 19002) has no catalog row of
-        // its own by design — it counts as present when its alias target
+        // its own by design; it counts as present when its alias target
         // (the Alliance catalog id) is listed under the same raid.
-        const catalogId = FACTION_ITEM_ALIASES[item.itemId] ?? item.itemId
-        return !catalogKeys.has(`${CLASSIC_RAID_ZONES[item.source.zone!]}|${catalogId}`)
+        const catalogId = FACTION_ITEM_ALIASES[expected.id] ?? expected.id
+        return !catalogKeys.has(`${expected.raid}|${catalogId}`)
       })
-      .map(item => `${CLASSIC_RAID_ZONES[item.source.zone!]}: ${item.name} (${item.itemId})`)
+      .map(expected => `${expected.raid}: ${expected.name} (${expected.id})`)
     expect(missing, `missing from data/classic-wow-raids.ts:\n${missing.join('\n')}`).toEqual([])
   })
 
@@ -183,6 +207,44 @@ describe('Classic catalog completeness (#273)', () => {
     const matches = catalogEntries.filter(entry => entry.raid === expected.raid && entry.wowhead_id === expected.id)
     expect(matches, `${expected.name} (${expected.id}) not found in ${expected.raid}`).toHaveLength(1)
     expect(matches[0]).toMatchObject({ boss: expected.boss, name: expected.name, slot: expected.slot })
+  })
+})
+
+// regression for #278
+describe('Classic zone-less package items (#278)', () => {
+  it('every Classic catalog row is attributed to its raid by the package zone, placed by the #278 fixture, or a Recipe row gated by #284', () => {
+    const placedKeys = new Set(GH278_PLACED.map(item => `${item.raid}|${item.id}`))
+    const uncovered = catalogEntries
+      .filter(entry => {
+        const zone = packageById.get(entry.wowhead_id)?.source?.zone
+        const zoneCovers = zone !== undefined && CLASSIC_RAID_ZONES[zone] === entry.raid
+        const fixtureCovers = placedKeys.has(`${entry.raid}|${entry.wowhead_id}`)
+        const recipeCovers = entry.slot === 'Recipe'
+        return !zoneCovers && !fixtureCovers && !recipeCovers
+      })
+      .map(entry => `${entry.raid}: ${entry.name} (${entry.wowhead_id})`)
+    expect(
+      uncovered,
+      'catalog rows no gate requires. Add each to data/__tests__/fixtures/classic-gh278-zoneless.ts with its ' +
+        'in-game drop source, or explain in DELIBERATELY_EXCLUDED why the package attributes it elsewhere:\n' +
+        uncovered.join('\n'),
+    ).toEqual([])
+  })
+
+  it.each(GH278_PLACED)('$raid lists $name ($id) once, under $boss, as $slot', expected => {
+    const matches = catalogEntries.filter(entry => entry.raid === expected.raid && entry.wowhead_id === expected.id)
+    expect(matches, `${expected.name} (${expected.id}) not found in ${expected.raid}`).toHaveLength(1)
+    expect(matches[0]).toMatchObject({ boss: expected.boss, name: expected.name, slot: expected.slot })
+  })
+
+  it('no #278 fixture id is deliberately excluded or a faction alias key', () => {
+    for (const item of GH278_PLACED) {
+      expect(item.id in DELIBERATELY_EXCLUDED, `${item.name} (${item.id}) is in DELIBERATELY_EXCLUDED`).toBe(false)
+      expect(
+        Object.prototype.hasOwnProperty.call(FACTION_ITEM_ALIASES, item.id),
+        `${item.name} (${item.id}) is a FACTION_ITEM_ALIASES key`,
+      ).toBe(false)
+    }
   })
 })
 
