@@ -214,7 +214,6 @@ const GAMELESS_CALL_ALLOWLIST: readonly string[] = [
   'app/(app)/master-sheet/components/RaidTierHeader.tsx',
   'app/(app)/reserve/_client.tsx',
   'app/(app)/reserve/components/CreateReserveRunModal.tsx',
-  'app/(app)/reserve/runs/[id]/_client.tsx',
   'app/reserve/join/[token]/opengraph-image.tsx',
   'app/reserve/join/[token]/page.tsx',
 ]
@@ -320,8 +319,8 @@ describe('raid icon call-site inventory under app/', () => {
     expect(problems).toEqual([])
   })
 
-  it('names exactly the six surfaces plan 02-13 wires', () => {
-    expect(GAMELESS_CALL_ALLOWLIST).toHaveLength(6)
-    expect(new Set(GAMELESS_CALL_ALLOWLIST).size).toBe(6)
+  it('names exactly the five surfaces plan 02-13 has still to wire', () => {
+    expect(GAMELESS_CALL_ALLOWLIST).toHaveLength(5)
+    expect(new Set(GAMELESS_CALL_ALLOWLIST).size).toBe(5)
   })
 })

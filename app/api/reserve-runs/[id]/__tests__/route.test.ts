@@ -26,12 +26,14 @@ const MEMBER_ID = id(12)
 const GONE_ID = id(13)
 const SOLO_ID = id(14)
 const OUTSIDER_ID = id(15)
+const EXPANSION_FOREVER_ID = id(30)
 
 const RUN_RG = id(100)
 const RUN_RGL = id(101)
 const RUN_RGP = id(102)
 const RUN_RLEFT = id(103)
 const RUN_RN = id(104)
+const RUN_FOREVER = id(105)
 const UNKNOWN_RUN = id(199)
 
 type Row = Record<string, unknown>
@@ -47,6 +49,7 @@ interface Fixture {
   reserve_awards: Row[]
   loot_items: Row[]
   raid_tiers: Row[]
+  expansions: Row[]
   guilds: Row[]
   errorOn?: Partial<Record<string, string>>
 }
@@ -90,6 +93,7 @@ function makeClient(fixture: Fixture) {
     reserve_awards: fixture.reserve_awards.map((r) => ({ ...r })),
     loot_items: fixture.loot_items.map((r) => ({ ...r })),
     raid_tiers: fixture.raid_tiers.map((r) => ({ ...r })),
+    expansions: fixture.expansions.map((r) => ({ ...r })),
     guilds: fixture.guilds.map((r) => ({ ...r })),
   }
 
@@ -184,6 +188,7 @@ function baseFixture(): Fixture {
       run({ id: RUN_RGP, created_by: CREATOR_ID, raid_leader_token: 'TOK_G', visibility: 'public_live' }),
       run({ id: RUN_RLEFT, created_by: GONE_ID, raid_leader_token: 'TOK_L' }),
       run({ id: RUN_RN, created_by: SOLO_ID, raid_leader_token: 'TOK_N', guild_id: null }),
+      run({ id: RUN_FOREVER, created_by: CREATOR_ID, raid_leader_token: 'TOK_F', expansion_id: EXPANSION_FOREVER_ID }),
     ],
     characters: [
       { id: 'char-creator', user_id: CREATOR_ID },
@@ -208,6 +213,7 @@ function baseFixture(): Fixture {
     ],
     loot_items: [],
     raid_tiers: [{ id: TIER_ID, name: 'Tier 1' }],
+    expansions: [{ id: EXPANSION_FOREVER_ID, name: 'Forever' }],
     guilds: [{ id: GUILD_ID, subscription_tier: 'pro' }],
   }
 }
@@ -427,6 +433,56 @@ describe('GET /api/reserve-runs/[id]', () => {
     setClient(fixture)
     const res = await GET(request(RUN_RG), { params: Promise.resolve({ id: RUN_RG }) })
     expect(res.status).toBe(200)
+  })
+
+  // D-04 as amended 2026-10-14: the run detail page picks its raid icon by the
+  // run's own game, so the payload carries the public expansion name.
+  it("returns the run's expansion name to the creator when the run has an expansion_id", async () => {
+    setUser(CREATOR_ID)
+    const calls = setClient(baseFixture())
+    const res = await GET(request(RUN_FOREVER), { params: Promise.resolve({ id: RUN_FOREVER }) })
+    const json = await res.json()
+    expect(res.status).toBe(200)
+    expect(json.run.expansion_name).toBe('Forever')
+    const expansionReads = calls.filter((c) => c.table === 'expansions')
+    expect(expansionReads).toHaveLength(1)
+    expect(expansionReads[0].selectCols).toBe('name')
+    expect(expansionReads[0].filters).toContainEqual(['eq', 'id', EXPANSION_FOREVER_ID])
+  })
+
+  it("returns the run's expansion name to a viewing member without widening what viewers get", async () => {
+    setUser(MEMBER_ID)
+    setClient(baseFixture())
+    const res = await GET(request(RUN_FOREVER), { params: Promise.resolve({ id: RUN_FOREVER }) })
+    const json = await res.json()
+    expect(res.status).toBe(200)
+    expect(json.can_manage).toBe(false)
+    expect(json.run.expansion_name).toBe('Forever')
+    // regression guard for T-02-13-01: the new field is a derived public value,
+    // never a manager-only column.
+    expect(json.run).not.toHaveProperty('raid_leader_token')
+    expect(json.run).not.toHaveProperty('created_by')
+  })
+
+  it('returns a null expansion_name and reads no expansion when the run has no expansion_id', async () => {
+    setUser(CREATOR_ID)
+    const calls = setClient(baseFixture())
+    const res = await GET(request(RUN_RG), { params: Promise.resolve({ id: RUN_RG }) })
+    const json = await res.json()
+    expect(res.status).toBe(200)
+    expect(json.run.expansion_name).toBeNull()
+    expect(calls.filter((c) => c.table === 'expansions')).toHaveLength(0)
+  })
+
+  it('returns a null expansion_name when the run points at an expansion row that is gone', async () => {
+    setUser(CREATOR_ID)
+    const fixture = baseFixture()
+    fixture.expansions = []
+    setClient(fixture)
+    const res = await GET(request(RUN_FOREVER), { params: Promise.resolve({ id: RUN_FOREVER }) })
+    const json = await res.json()
+    expect(res.status).toBe(200)
+    expect(json.run.expansion_name).toBeNull()
   })
 })
 
