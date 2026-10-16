@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 02
 current_phase_name: Expansion Onboarding Manifest
 status: executing
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-10-16T18:51:08.224Z"
+stopped_at: Completed 02-07-PLAN.md
+last_updated: "2026-10-16T19:05:17.676Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 02 execution started
-state_head: 6d2181da2b4ce003079ab96cd4deca7fc3662100
+state_head: bc5e2e69602f9a84b77c21d536493cce7b1b7bb8
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 22
-  completed_plans: 13
+  completed_plans: 14
   percent: 13
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 02 (Expansion Onboarding Manifest) — EXECUTING
-Plan: 4 of 13 complete; next incomplete plan is 02-07 (wave 2)
+Plan: 5 of 13 complete; next incomplete plan is 02-13 (wave 2)
 Status: Ready to execute
 Last activity: 2026-10-14 — Phase 02 execution started
 
@@ -82,6 +82,7 @@ Progress: [██░░░░░░░░] 1/8 phases ([█░░░░░░░
 | Phase 02 P12 | 44h 26m wall (incl. checkpoint wait) | 3 tasks | 8 files |
 | Phase 02 P02 | 8 min | 2 tasks | 5 files |
 | Phase 02 P03 | 23 min | 2 tasks | 7 files |
+| Phase 02 P07 | 13 min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,7 @@ Progress: [██░░░░░░░░] 1/8 phases ([█░░░░░░░
 - [Phase 02]: Golden-row files for the five legacy expansions are captured once from the unmodified seeder and never regenerated with -u; later plans run the suite with CI=true — A mismatch means the plan changed legacy rows (EXPN-03)
 - [Phase 02]: 02-12: Forever raids use the neutral FOREVER_RAID_ICON (question mark) and the Forever path never reads the name map; getRaidShorthand unchanged — Forever raid names collide with Classic and TBC names; inventory test keeps game-less calls explicit until 02-13
 - [Phase 02]: 02-02: zod 4.6.5 and csv-parse 7.0.2 installed with exact pins after owner legitimacy approval; manifest schema kept outside the domain barrel — Supply-chain mitigation T-02-SC and bundle reach T-02-02-01
+- [Phase 02]: 02-07: snapshot sha256 input is canonicalSnapshotPayload({ build, tables }) (sorted keys, rows by ID, fetchedAt excluded); PROVISIONAL_CEILING = 9 pins the allowlist size — A re-pull of unchanged data hashes the same, and allowlist growth needs a visible reviewed ceiling edit (D-15)
 
 ### Pending Owner Inputs
 
@@ -132,6 +134,6 @@ Progress: [██░░░░░░░░] 1/8 phases ([█░░░░░░░
 
 ## Session Continuity
 
-Last session: 2026-10-16T18:51:08.173Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-10-16T19:05:17.605Z
+Stopped at: Completed 02-07-PLAN.md
 Resume file: None

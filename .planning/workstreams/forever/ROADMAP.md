@@ -103,7 +103,7 @@ Plans:
   4. Running the Forever catalog sync twice changes nothing the second time, and the sync never deletes or renames a row that a list, award or BLP record points at
   5. wago.tools snapshots are committed with their provenance, and a test fails if any runtime or test code fetches wago.tools or Wowhead live
 
-**Plans**: 4/13 plans executed in 4 waves (revised 2026-10-14 after the plan check: the registry plan and the snapshot plan were each split in two and later plans renumbered; second revision 2026-10-14: raid-icon scoping moved out of 02-11 into its own plan 02-12, merged before PR 3, and plan 02-13 wires the remaining six raid-icon call sites)
+**Plans**: 5/13 plans executed in 4 waves (revised 2026-10-14 after the plan check: the registry plan and the snapshot plan were each split in two and later plans renumbered; second revision 2026-10-14: raid-icon scoping moved out of 02-11 into its own plan 02-12, merged before PR 3, and plan 02-13 wires the remaining six raid-icon call sites)
 
 Plans:
 **Wave 1**
@@ -115,7 +115,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 02-03-PLAN.md (wave 2): tracer: Forever phases entry, alias lookup, insert-only syncExpansionCatalog and the seeder's Forever branch, so a new Forever guild gets its three tiers (EXPN-01, EXPN-05)
-- [ ] 02-07-PLAN.md (wave 2): committed wago snapshot placeholder with provenance fields, provisional-boss allowlist ratchet (one reviewed growth exception per D-15) and forced-promotion check (EXPN-06, EXPN-01)
+- [x] 02-07-PLAN.md (wave 2): committed wago snapshot placeholder with provenance fields, provisional-boss allowlist ratchet (one reviewed growth exception per D-15) and forced-promotion check (EXPN-06, EXPN-01)
 - [ ] 02-13-PLAN.md (wave 2): the six remaining raid-icon call sites (reserve run list, run detail, create-run modal, public join page, share card, master sheet tier header) resolve by game; allowlist empty (EXPN-01, D-04)
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -280,7 +280,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Forever Defect and Privacy Fixes | 9/9 | Complete    | 2026-10-13 |
-| 2. Expansion Onboarding Manifest | 4/13 | In Progress|  |
+| 2. Expansion Onboarding Manifest | 5/13 | In Progress|  |
 | 3. Discovery Schema and Need Pipeline | 0/TBD | Not started | - |
 | 4. Discovery Lists and Score Split | 0/TBD | Not started | - |
 | 5. Drop Desk Core | 0/TBD | Not started | - |
