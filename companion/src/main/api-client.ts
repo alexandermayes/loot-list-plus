@@ -44,17 +44,36 @@ export interface GuildData {
 }
 
 /**
+ * What the server said about one submitted request. status is the HTTP
+ * status, or null when the fetch itself threw (network down, DNS, abort).
+ * error is the server body's `error` string when the body was JSON and had
+ * one, truncated to 200 characters, or the thrown Error's message; null
+ * otherwise. It is kept for the stuck-entry store's diagnostics only and is
+ * never shown in the status (GH #320).
+ */
+export interface SubmitOutcome {
+  status: number | null
+  error: string | null
+}
+
+/**
  * accepted holds the indices, into the array that was submitted, of the
  * requests that got a 2xx. A 200 with already_recorded is a repeat the
  * server already has and counts as accepted; any other status or a thrown
  * fetch is a reject, which the sync engine keeps in SavedVariables for the
- * next pass (GH #320).
+ * next pass (GH #320). outcomes[i] describes input i, accepted or not, so
+ * the engine can tell a permanent rejection (400, 404, 422) from a transient
+ * one and stop resending the former after a few passes (GH #320 follow-up).
  */
 export interface SubmitResult {
   processed: number
   errors: number
   accepted: number[]
+  outcomes: SubmitOutcome[]
 }
+
+/** Longest server error string kept on an outcome. */
+const MAX_ERROR_LENGTH = 200
 
 export class ApiClient {
   private baseUrl: string
@@ -76,6 +95,23 @@ export class ApiClient {
       headers['Authorization'] = `Bearer ${this.auth.token}`
     }
     return headers
+  }
+
+  /**
+   * The `error` string of a rejection's JSON body, truncated, or null when
+   * the body is not JSON or has no string error. Only called on non-ok
+   * responses; an accepted response's body is not read, as before.
+   */
+  private async rejectionError(res: Response): Promise<string | null> {
+    const body: unknown = await res.json().catch(() => null)
+    if (body === null || typeof body !== 'object') return null
+    const error = (body as Record<string, unknown>)['error']
+    return typeof error === 'string' ? error.slice(0, MAX_ERROR_LENGTH) : null
+  }
+
+  /** The outcome of a fetch that threw, for the catch branches below. */
+  private thrownOutcome(err: unknown): SubmitOutcome {
+    return { status: null, error: err instanceof Error ? err.message.slice(0, MAX_ERROR_LENGTH) : null }
   }
 
   /**
@@ -127,6 +163,7 @@ export class ApiClient {
     let processed = 0
     let errors = 0
     const accepted: number[] = []
+    const outcomes: SubmitOutcome[] = []
 
     for (let i = 0; i < awards.length; i++) {
       const award = awards[i]
@@ -145,12 +182,14 @@ export class ApiClient {
         } else {
           errors++
         }
-      } catch {
+        outcomes.push({ status: res.status, error: res.ok ? null : await this.rejectionError(res) })
+      } catch (err) {
         errors++
+        outcomes.push(this.thrownOutcome(err))
       }
     }
 
-    return { processed, errors, accepted }
+    return { processed, errors, accepted, outcomes }
   }
 
   /**
@@ -169,6 +208,7 @@ export class ApiClient {
     let processed = 0
     let errors = 0
     const accepted: number[] = []
+    const outcomes: SubmitOutcome[] = []
 
     for (let i = 0; i < records.length; i++) {
       const record = records[i]
@@ -187,11 +227,13 @@ export class ApiClient {
         } else {
           errors++
         }
-      } catch {
+        outcomes.push({ status: res.status, error: res.ok ? null : await this.rejectionError(res) })
+      } catch (err) {
         errors++
+        outcomes.push(this.thrownOutcome(err))
       }
     }
 
-    return { processed, errors, accepted }
+    return { processed, errors, accepted, outcomes }
   }
 }
