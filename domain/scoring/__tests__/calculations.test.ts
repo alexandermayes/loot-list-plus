@@ -497,6 +497,8 @@ describe('getDefaultSettings', () => {
     expect(defaults.trial_penalty_enabled).toBe(false)
     // GH #357: matches the guild_settings column default
     expect(defaults.single_raider_overall_bonus).toBe(true)
+    // regression for #411: the code default used to say false while the column and the GET fallback said true
+    expect(defaults.raid_roles_overall_bonus_priority).toBe(true)
   })
 })
 
