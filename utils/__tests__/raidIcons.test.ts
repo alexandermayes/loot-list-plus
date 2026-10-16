@@ -207,14 +207,9 @@ function findRaidIconCalls(source: string): RaidIconCall[] {
   return calls
 }
 
-// Plan 02-13 wires each of these and removes it from this list in the same
-// commit; the list ends empty (D-04 as amended 2026-10-14: every raid-icon call
-// site resolves by game).
-const GAMELESS_CALL_ALLOWLIST: readonly string[] = [
-  'app/(app)/reserve/components/CreateReserveRunModal.tsx',
-  'app/reserve/join/[token]/opengraph-image.tsx',
-  'app/reserve/join/[token]/page.tsx',
-]
+// Every raid-icon call site resolves by game (D-04 as amended 2026-10-14). A
+// future game-less call needs a reviewed entry here, with the reason beside it.
+const GAMELESS_CALL_ALLOWLIST: readonly string[] = []
 
 const REPO_ROOT = path.resolve(__dirname, '../..')
 const MIN_CALLS = 13
@@ -317,8 +312,7 @@ describe('raid icon call-site inventory under app/', () => {
     expect(problems).toEqual([])
   })
 
-  it('names exactly the three surfaces plan 02-13 has still to wire', () => {
-    expect(GAMELESS_CALL_ALLOWLIST).toHaveLength(3)
-    expect(new Set(GAMELESS_CALL_ALLOWLIST).size).toBe(3)
+  it('allowlist is empty', () => {
+    expect(GAMELESS_CALL_ALLOWLIST).toEqual([])
   })
 })
