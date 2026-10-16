@@ -134,6 +134,19 @@ export async function GET(
       .eq('id', run.raid_tier_id)
       .single()
 
+    // The public expansion name, the same value the public join route returns.
+    // The run page needs it to pick the raid icon by game (D-04). A derived
+    // field like raid_tier_name, so it stays out of RUN_VIEWER_FIELDS.
+    let expansionName: string | null = null
+    if (run.expansion_id) {
+      const { data: expansion } = await serviceSupabase
+        .from('expansions')
+        .select('name')
+        .eq('id', run.expansion_id)
+        .single()
+      expansionName = expansion?.name ?? null
+    }
+
     const runPayload: Record<string, unknown> = canManage
       ? { ...run }
       : Object.fromEntries(RUN_VIEWER_FIELDS.map((key) => [key, (run as Record<string, unknown>)[key]]))
@@ -144,6 +157,7 @@ export async function GET(
       run: {
         ...runPayload,
         raid_tier_name: raidTier?.name || null,
+        expansion_name: expansionName,
         submissions: submissionsWithCounts,
         awards: awards || [],
         items: items || [],
