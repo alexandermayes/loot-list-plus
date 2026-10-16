@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 Phase: 06 (Week-4 Review & Next Bet) — EXECUTING
 Plan: 6 of 9
 Status: Ready to execute
-Last activity: 2026-10-13 - Completed quick task 261013-w2s: addon awards and attendance match raid nights in the guild time zone (GH #355 item 2, PR #414 open)
+Last activity: 2026-10-13 - Completed quick task 261013-w43: addon local BLP credits a raider once per item per raid night (GH #355 item 3, addon PR #2 open)
 
 Progress: [████████████████████] 23/23 plans ([███████░░░] 67%)
 
@@ -253,6 +253,7 @@ Recent decisions affecting current work:
 | 261013-ngb | Fix GH #357 item 2: explainScore takes optional { characterId, asOfDate } so config-only callers get the raider bonus reasons; the master sheet officer popover and the candidate modal inline explanation show each active entry as "reason: +N until Mon D". 8 new tests, no new copy. PR #409 | 2026-10-13 | 667f8d5d | Needs Review | [261013-ngb-fix-gh-357-item-3-master-sheet-hover-and](./quick/261013-ngb-fix-gh-357-item-3-master-sheet-hover-and/) |
 | 261013-w28 | Fix GH #355 item 1: buildMemberRankedItems merges every approved list a raider has (per item and slot, best ranks first) instead of keeping the last one; export-string and guild-data scope lists to the active expansion in code, keeping legacy rows with no expansion_id. PR #412 | 2026-10-13 | 1576ff39 | Needs Review | [261013-w28-fix-gh-355-item-1-addon-exports-merge-ev](./quick/261013-w28-fix-gh-355-item-1-addon-exports-merge-ev/) |
 | 261013-w2s | Fix GH #355 item 2: new lib/addon/raid-night.ts picks the raid night from a UTC timestamp in the guild raid time zone (00:00 to 05:59 local rolls back a day; legacy UTC-date fallback for awards); attendance, loot-award and import-string routes use it; the companion sends each session start_time. 37 helper tests plus route and companion tests. PR #414 | 2026-10-13 | 8e1c3385 | Needs Review | [261013-w2s-fix-gh-355-item-2-addon-awards-and-atten](./quick/261013-w2s-fix-gh-355-item-2-addon-awards-and-atten/) |
+| 261013-w43 | Fix GH #355 item 3 (addon repo): a profile-level blpCredited marker makes LD:AwardItem credit each listed non-winner once per item per raid night and give the winner no credit for a later copy that night, matching the website. 6 Lua tests, changelog bullet needs sign-off, no version bump. alexandermayes/loot-list-plus-addon#2 | 2026-10-13 | f852032d | Needs Review | [261013-w43-fix-gh-355-item-3-addon-local-blp-credit](./quick/261013-w43-fix-gh-355-item-3-addon-local-blp-credit/) |
 
 ## Deferred Items
 
