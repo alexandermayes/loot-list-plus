@@ -211,8 +211,6 @@ function findRaidIconCalls(source: string): RaidIconCall[] {
 // commit; the list ends empty (D-04 as amended 2026-10-14: every raid-icon call
 // site resolves by game).
 const GAMELESS_CALL_ALLOWLIST: readonly string[] = [
-  'app/(app)/master-sheet/components/RaidTierHeader.tsx',
-  'app/(app)/reserve/_client.tsx',
   'app/(app)/reserve/components/CreateReserveRunModal.tsx',
   'app/reserve/join/[token]/opengraph-image.tsx',
   'app/reserve/join/[token]/page.tsx',
@@ -319,8 +317,8 @@ describe('raid icon call-site inventory under app/', () => {
     expect(problems).toEqual([])
   })
 
-  it('names exactly the five surfaces plan 02-13 has still to wire', () => {
-    expect(GAMELESS_CALL_ALLOWLIST).toHaveLength(5)
-    expect(new Set(GAMELESS_CALL_ALLOWLIST).size).toBe(5)
+  it('names exactly the three surfaces plan 02-13 has still to wire', () => {
+    expect(GAMELESS_CALL_ALLOWLIST).toHaveLength(3)
+    expect(new Set(GAMELESS_CALL_ALLOWLIST).size).toBe(3)
   })
 })
