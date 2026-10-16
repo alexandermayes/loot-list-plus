@@ -19,7 +19,7 @@ completed: 2026-10-16
 
 ## Commits
 
-Branch fix/278-catalog-completeness-zoneless, PR #428:
+Branch fix/278-catalog-completeness-zoneless, PR #428, squash-merged to main as 153d43e0:
 - 07eb264e test(data): require every Classic catalog row to be covered by zone, the #278 fixture or the recipe gate
 - 201c2861 test(data): place the 32 zone-less Classic drops by in-game source (#278)
 - d50cf66a test(data): gate the #278 zone-less fixture against the package and join it into the completeness check
