@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 Phase: 06 (Week-4 Review & Next Bet) — EXECUTING
 Plan: 6 of 9
 Status: Ready to execute
-Last activity: 2026-10-16 - Completed quick task 261016-tbo: live boss and instance name on addon awards (GH #319, PR #438 merged, addon PR #3 awaiting copy sign-off)
+Last activity: 2026-10-16 - Completed quick task 261016-tgu (website half of GH #321, PR #439); addon halves of #319 and #321 pending
 
 Progress: [████████████████████] 23/23 plans ([███████░░░] 67%)
 
@@ -262,6 +262,7 @@ Recent decisions affecting current work:
 | 261016-lcq | Follow-up to GH #304: a11y audit of the Forever announcement found the shared Modal already covered dialog role, labelling, focus trap, Escape and focus restore; fixed the two gaps (page behind the topmost modal is now inert, fade and scale respect prefers-reduced-motion), 5 new tests, 3901 pass. No copy change. PR #430 | 2026-10-16 | 2842ac89 | Needs Review | [261016-lcq-follow-up-to-gh-304-screen-reader-and-ke](./quick/261016-lcq-follow-up-to-gh-304-screen-reader-and-ke/) |
 | 261016-lcr | Follow-up to GH #320 (companion only): rejections classified by status (400/404/422 permanent), an entry is parked after 3 permanent rejections in a userData store (not SavedVariables, which the addon export serialises), parked counts in SyncStatus, tray and renderer with a "Clear stuck entries" action; 72 to 92 companion tests. PR #435 | 2026-10-16 | 9907d824 | Needs Review | [261016-lcr-follow-up-to-gh-320-companion-stops-retr](./quick/261016-lcr-follow-up-to-gh-320-companion-stops-retr/) |
 | 261016-tbo | Fix GH #319: addon stamps the live boss (only while still in the instance it was killed in) and a new instanceName on each award; companion forwards instanceName as raid_name; loot-award and the paste import use it as the GH #307 raid hint so multi-tier items file under the right tier. 4105 to 4114 web tests, 66 to 70 addon tests. PR #438; addon PR #3 awaits changelog copy sign-off | 2026-10-16 | 1f626b53 | Needs Review | [261016-tbo-fix-gh-319-addon-sends-live-boss-and-ins](./quick/261016-tbo-fix-gh-319-addon-sends-live-boss-and-ins/) |
+| 261016-tgu | Fix GH #321 (website and companion half): unlinked addon awards are linked to a raid night when its attendance arrives later through the addon or companion paths (team-aware, award_copy-safe, never creates nights) with BLP recomputed; the companion sends the session date as awarded_date (addon sessionDate, else a local match against pending attendance) so midnight-UTC awards land on the right night; paste import honours sessionDate. 4105 to 4135 tests. PR #439; addon half waits for loot-list-plus-addon#3 | 2026-10-16 | a1593bf1 | Needs Review | [261016-tgu-fix-gh-321-link-unlinked-addon-awards-wh](./quick/261016-tgu-fix-gh-321-link-unlinked-addon-awards-wh/) |
 
 ## Deferred Items
 
