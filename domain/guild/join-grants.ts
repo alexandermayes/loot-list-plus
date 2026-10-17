@@ -9,7 +9,8 @@
  * A character is added to a guild only for:
  * - the guild's creator (guilds.created_by, which only the server changes),
  * - a user who already has another character with an active membership in the
- *   guild (alts), or
+ *   guild (alts; the result carries each sibling's trial standing so an alt
+ *   can follow the main), or
  * - a user holding an unconsumed, unexpired join record for the guild.
  *
  * Each function takes the service-role client as its first argument. Log
@@ -20,6 +21,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { SiblingMembership } from '@/domain/guild/join-membership'
 
 /** A join record is valid for this many days after the join. */
 export const GUILD_JOIN_GRANT_TTL_DAYS = 30
@@ -28,7 +30,9 @@ export const GUILD_JOIN_GRANT_TTL_DAYS = 30
 export type GuildJoinGrantSource = 'invite_code' | 'discord_verify'
 
 export type GuildJoinAccess =
-  | { allowed: true; via: 'creator' | 'member' | 'grant' }
+  | { allowed: true; via: 'creator' }
+  | { allowed: true; via: 'member'; siblings: SiblingMembership[] }
+  | { allowed: true; via: 'grant'; source: GuildJoinGrantSource | null }
   | { allowed: false }
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -103,27 +107,35 @@ export async function resolveGuildJoinAccess(
     .filter(id => id !== args.excludeCharacterId)
 
   if (otherCharacterIds.length > 0) {
+    // Every active sibling, not just one: the member rule in join-membership
+    // needs each one's trial standing, and a user has a handful of alts.
     let membershipQuery = supabase
       .from('character_guild_memberships')
-      .select('id')
+      .select('membership_status, trial_started_at')
       .eq('guild_id', args.guildId)
       .eq('is_active', true)
       .in('character_id', otherCharacterIds)
     if (args.excludeCharacterId) {
       membershipQuery = membershipQuery.neq('character_id', args.excludeCharacterId)
     }
-    const { data: memberships, error: membershipError } = await membershipQuery.limit(1)
+    const { data: memberships, error: membershipError } = await membershipQuery
     if (membershipError) {
       throw new Error('Failed to check guild join access')
     }
     if (memberships && memberships.length > 0) {
-      return { allowed: true, via: 'member' }
+      const siblings: SiblingMembership[] = (
+        memberships as Array<{ membership_status?: string | null; trial_started_at?: string | null }>
+      ).map(row => ({
+        membership_status: row.membership_status ?? null,
+        trial_started_at: row.trial_started_at ?? null,
+      }))
+      return { allowed: true, via: 'member', siblings }
     }
   }
 
   const { data: grant, error: grantError } = await supabase
     .from('guild_join_grants')
-    .select('user_id')
+    .select('user_id, source')
     .eq('user_id', args.userId)
     .eq('guild_id', args.guildId)
     .is('consumed_at', null)
@@ -133,7 +145,8 @@ export async function resolveGuildJoinAccess(
     throw new Error('Failed to check guild join access')
   }
   if (grant) {
-    return { allowed: true, via: 'grant' }
+    const source = (grant.source as GuildJoinGrantSource | null | undefined) ?? null
+    return { allowed: true, via: 'grant', source }
   }
 
   return { allowed: false }

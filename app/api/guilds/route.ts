@@ -286,7 +286,7 @@ export async function POST(request: NextRequest) {
 
     } else {
       // No valid character - user will be prompted to create one
-      // Guild Master role will be assigned when character is created (CreateCharacterModal checks created_by)
+      // Guild Master role will be assigned when character is created (both attach routes grant it through domain/guild/join-membership)
       needsCharacterCreation = true
     }
 

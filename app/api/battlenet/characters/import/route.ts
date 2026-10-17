@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 import { getDefaultRoleName } from '@/domain/guild/default-role'
 import { resolveGuildJoinAccess, consumeGuildJoinGrant, type GuildJoinAccess } from '@/domain/guild/join-grants'
+import { resolveJoinMembershipFields } from '@/domain/guild/join-membership'
 import {
   getBattlenetAccount,
   battlenetFetch,
@@ -99,7 +100,8 @@ interface CharacterProfileResponse {
  *   guild's creator, a user with another active character in the guild, or
  *   a user with a join the server recorded (an invite or Discord join made
  *   before they had a character); anyone else gets 403 before any
- *   Battle.net request or write.
+ *   Battle.net request or write. The creator gets Guild Master and an alt
+ *   follows the main's trial standing (domain/guild/join-membership).
  * - isMain?: Whether to set as main character
  * - importGear?: Whether to import equipped gear (default: true)
  */
@@ -335,33 +337,33 @@ export async function POST(request: NextRequest) {
     }
 
     // Add to guild if provided
-    if (guildId) {
+    if (guildId && guildAccess?.allowed) {
+      const access = guildAccess
       const defaultRole = await getDefaultRoleName(guildId)
 
-      // A member added through a join record starts as trial when the guild
-      // starts new members as trial, as the invite and Discord joins do.
-      let trialFields: { membership_status?: 'trial'; trial_started_at?: string } = {}
-      if (guildAccess?.allowed && guildAccess.via === 'grant') {
+      // The new-member trial setting only matters for a join record holder; the
+      // creator never starts on trial and an alt follows its siblings instead.
+      let newMembersStartAsTrial = false
+      if (access.via === 'grant') {
         const { data: joinSettings } = await supabase
           .from('guild_settings')
           .select('new_members_start_as_trial')
           .eq('guild_id', guildId)
           .maybeSingle()
-        if (joinSettings?.new_members_start_as_trial === true) {
-          trialFields = { membership_status: 'trial', trial_started_at: new Date().toISOString() }
-        }
+        newMembersStartAsTrial = joinSettings?.new_members_start_as_trial === true
       }
 
+      // joined_via records how the character was created, so it stays
+      // battlenet_import on every access path.
       const { error: guildError } = await supabase
         .from('character_guild_memberships')
         .upsert(
           {
             character_id: character.id,
             guild_id: guildId,
-            role: defaultRole,
             is_active: true,
             joined_via: 'battlenet_import',
-            ...trialFields,
+            ...resolveJoinMembershipFields({ access, defaultRole, newMembersStartAsTrial }),
           },
           { onConflict: 'character_id,guild_id' }
         )

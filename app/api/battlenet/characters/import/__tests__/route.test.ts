@@ -7,7 +7,8 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getBattlenetAccount, battlenetFetch, getWowProfileNamespaces } from '@/lib/battlenet'
 import { getDefaultRoleName } from '@/domain/guild/default-role'
-import { resolveGuildJoinAccess, consumeGuildJoinGrant } from '@/domain/guild/join-grants'
+import { resolveGuildJoinAccess, consumeGuildJoinGrant, type GuildJoinAccess } from '@/domain/guild/join-grants'
+import type { SiblingMembership } from '@/domain/guild/join-membership'
 import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 
 vi.mock('@/utils/supabase/server', () => ({
@@ -125,7 +126,10 @@ function request(body: Record<string, unknown>) {
   }) as never
 }
 
-const allowed = (via: 'creator' | 'member' | 'grant') => ({ allowed: true as const, via })
+const creator = (): GuildJoinAccess => ({ allowed: true, via: 'creator' })
+const member = (siblings: SiblingMembership[] = []): GuildJoinAccess => ({ allowed: true, via: 'member', siblings })
+const grant = (source: 'invite_code' | 'discord_verify' | null = 'invite_code'): GuildJoinAccess =>
+  ({ allowed: true, via: 'grant', source })
 
 describe('POST /api/battlenet/characters/import applies the guild rule before creating anything', () => {
   beforeEach(() => {
@@ -136,7 +140,7 @@ describe('POST /api/battlenet/characters/import applies the guild rule before cr
     vi.mocked(getWowProfileNamespaces).mockReturnValue(['profile-classic1x-us'])
     vi.mocked(battlenetFetch).mockImplementation(async () => new Response(JSON.stringify(PROFILE), { status: 200 }))
     vi.mocked(getDefaultRoleName).mockResolvedValue('Member')
-    vi.mocked(resolveGuildJoinAccess).mockResolvedValue(allowed('grant'))
+    vi.mocked(resolveGuildJoinAccess).mockResolvedValue(grant())
     vi.mocked(consumeGuildJoinGrant).mockImplementation(async () => {
       events.push('consume')
     })
@@ -228,8 +232,47 @@ describe('POST /api/battlenet/characters/import applies the guild rule before cr
     expect(upsert?.payload).toMatchObject({ membership_status: 'trial', trial_started_at: expect.any(String) })
   })
 
-  it.each(['creator', 'member'] as const)('adds no trial fields via the %s path even when trial is on', async (via) => {
-    vi.mocked(resolveGuildJoinAccess).mockResolvedValue(allowed(via))
+  it('gives the guild creator Guild Master with no trial fields and no settings read, then consumes', async () => {
+    // regression for #356: the Battle.net import gave the creator the default role
+    vi.mocked(resolveGuildJoinAccess).mockResolvedValue(creator())
+    const { service } = setup({ trial: true })
+
+    const res = await POST(request({ guildId: GUILD }))
+
+    expect(res.status).toBe(201)
+    const upsert = service.writes().find(c => c.table === 'character_guild_memberships')
+    expect(upsert?.payload).toMatchObject({ role: 'Guild Master', is_active: true, joined_via: 'battlenet_import' })
+    expect(upsert?.payload).not.toHaveProperty('membership_status')
+    expect(upsert?.payload).not.toHaveProperty('trial_started_at')
+    expect(service.calls.some(c => c.table === 'guild_settings')).toBe(false)
+    expect(consumeGuildJoinGrant).toHaveBeenCalledWith(service.client, { userId: USER, guildId: GUILD })
+  })
+
+  it('puts an alt on trial with the main trial start when the main is on trial, reading no settings', async () => {
+    // regression for #356: an alt got full status while the main was still on trial
+    vi.mocked(resolveGuildJoinAccess).mockResolvedValue(
+      member([{ membership_status: 'trial', trial_started_at: '2026-09-01T00:00:00.000Z' }]),
+    )
+    const { service } = setup({ trial: false })
+
+    const res = await POST(request({ guildId: GUILD }))
+
+    expect(res.status).toBe(201)
+    const upsert = service.writes().find(c => c.table === 'character_guild_memberships')
+    expect(upsert?.payload).toMatchObject({
+      role: 'Member',
+      joined_via: 'battlenet_import',
+      membership_status: 'trial',
+      trial_started_at: '2026-09-01T00:00:00.000Z',
+    })
+    expect(service.calls.some(c => c.table === 'guild_settings')).toBe(false)
+  })
+
+  it.each([
+    ['creator', creator()],
+    ['member', member([{ membership_status: 'full', trial_started_at: null }])],
+  ])('adds no trial fields via the %s path even when trial is on', async (_path, access) => {
+    vi.mocked(resolveGuildJoinAccess).mockResolvedValue(access)
     const { service } = setup({ trial: true })
 
     const res = await POST(request({ guildId: GUILD }))
