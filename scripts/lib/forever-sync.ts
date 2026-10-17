@@ -103,6 +103,26 @@ export function findDuplicateTierNames(rows: ReadonlyArray<{ name: string }>): s
 }
 
 /**
+ * Re-reads one expansion's tiers after an apply and returns its duplicated
+ * names. Read only: a duplicate is reported for the owner to resolve by hand,
+ * never deleted. A failed read throws so the caller records it as a failure
+ * instead of reporting a clean expansion it could not check.
+ */
+async function readDuplicateTierNames(
+  client: SupabaseClient,
+  expansionId: string
+): Promise<string[]> {
+  const { data, error } = await client
+    .from('raid_tiers')
+    .select('id, name')
+    .eq('expansion_id', expansionId)
+  if (error) {
+    throw new Error(`Failed to re-read raid_tiers for expansion ${expansionId}: ${error.message}`)
+  }
+  return findDuplicateTierNames((data ?? []) as Array<{ name: string }>)
+}
+
+/**
  * Syncs every Forever expansion, dry run unless apply is true. A failure on
  * one expansion is recorded with its id and the loop moves on, so one bad
  * guild cannot hide the rest; re-running heals because the sync is idempotent.
@@ -129,6 +149,12 @@ export async function runForeverSync(
         expansionName: FOREVER_EXPANSION_NAME,
         dryRun: !apply,
       })
+      if (apply) {
+        const duplicateNames = await readDuplicateTierNames(client, row.id)
+        if (duplicateNames.length > 0) {
+          report.duplicates.push({ expansionId: row.id, names: duplicateNames })
+        }
+      }
       report.expansions.push({
         expansionId: row.id,
         guildId: row.guild_id,
