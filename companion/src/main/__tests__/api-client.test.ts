@@ -27,7 +27,7 @@ function award(wowheadId: number): PendingAwardRequest {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('ApiClient.submitAwards (GH #320)', () => {
-  it('A1 only a 2xx is accepted: ok, 500 and a thrown fetch give accepted [0]', async () => {
+  it('A1 only a 2xx is accepted: ok, 500 and a thrown fetch give accepted [0] and one outcome per input', async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(json(200, { data: { id: 'a1' } }))
@@ -37,7 +37,16 @@ describe('ApiClient.submitAwards (GH #320)', () => {
 
     const result = await client().submitAwards([award(1), award(2), award(3)])
 
-    expect(result).toEqual({ processed: 1, errors: 2, accepted: [0] })
+    expect(result).toEqual({
+      processed: 1,
+      errors: 2,
+      accepted: [0],
+      outcomes: [
+        { status: 200, error: null },
+        { status: 500, error: 'boom' },
+        { status: null, error: 'network down' },
+      ],
+    })
     expect(fetchMock).toHaveBeenCalledTimes(3)
     const [url, init] = fetchMock.mock.calls[0]
     expect(url).toBe('https://lootlist.test/api/addon/loot-award')
@@ -55,12 +64,55 @@ describe('ApiClient.submitAwards (GH #320)', () => {
 
     const result = await client().submitAwards([award(1), award(2)])
 
-    expect(result).toEqual({ processed: 2, errors: 0, accepted: [0, 1] })
+    expect(result).toEqual({
+      processed: 2,
+      errors: 0,
+      accepted: [0, 1],
+      outcomes: [
+        { status: 200, error: null },
+        { status: 200, error: null },
+      ],
+    })
+  })
+
+  // regression for #320
+  it('A4 a rejection carries the status and the JSON error string, truncated to 200; a non-JSON body gives null (GH #320 follow-up)', async () => {
+    const longError = 'x'.repeat(250)
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(json(404, { error: 'No loot item found for wowhead_id 20928' }))
+        .mockResolvedValueOnce(new Response('Bad Gateway', { status: 502, headers: { 'Content-Type': 'text/plain' } }))
+        .mockResolvedValueOnce(json(400, { error: longError })),
+    )
+
+    const result = await client().submitAwards([award(20928), award(2), award(3)])
+
+    expect(result.accepted).toEqual([])
+    expect(result.outcomes[0]).toEqual({ status: 404, error: 'No loot item found for wowhead_id 20928' })
+    expect(result.outcomes[1]).toEqual({ status: 502, error: null })
+    expect(result.outcomes[2].status).toBe(400)
+    expect(result.outcomes[2].error).toHaveLength(200)
+    expect(result.outcomes[2].error).toBe('x'.repeat(200))
+  })
+
+  it('A5 a thrown non-Error value gives status null and error null (GH #320 follow-up)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValueOnce('nope'))
+
+    const result = await client().submitAwards([award(1)])
+
+    expect(result).toEqual({
+      processed: 0,
+      errors: 1,
+      accepted: [],
+      outcomes: [{ status: null, error: null }],
+    })
   })
 })
 
 describe('ApiClient.submitAttendance (GH #320)', () => {
-  it('A3 accepted holds input indices: a 500 then a 200 give accepted [1]', async () => {
+  it('A3 accepted holds input indices: a 500 then a 200 give accepted [1] and matching outcomes', async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(json(500, { error: 'boom' }))
@@ -72,7 +124,15 @@ describe('ApiClient.submitAttendance (GH #320)', () => {
       { raid_date: '2026-09-21', raid_name: "Temple of Ahn'Qiraj", attended: ['Thrall'] },
     ])
 
-    expect(result).toEqual({ processed: 1, errors: 1, accepted: [1] })
+    expect(result).toEqual({
+      processed: 1,
+      errors: 1,
+      accepted: [1],
+      outcomes: [
+        { status: 500, error: 'boom' },
+        { status: 200, error: null },
+      ],
+    })
     expect(fetchMock.mock.calls[0][0]).toBe('https://lootlist.test/api/addon/attendance')
   })
 })

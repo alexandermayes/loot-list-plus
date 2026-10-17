@@ -8,7 +8,10 @@ import {
   buildGuildDataLua,
   convertItemsToLuaFormat,
   convertMembersToLuaFormat,
+  pendingAttendanceIdentity,
+  pendingAwardIdentity,
   readPendingLists,
+  removePendingEntries,
   toPendingAttendancePairs,
   toPendingAttendanceRequests,
   toPendingAwardPairs,
@@ -163,6 +166,29 @@ describe('acceptedEntries (GH #320)', () => {
     expect(once[0]).toBe(b)
 
     expect(acceptedEntries(pairs, [])).toEqual([])
+  })
+})
+
+describe('pending identities and removePendingEntries (GH #320 follow-up)', () => {
+  it('I1 pendingAwardIdentity prefers awardId, else awardedAt, wowheadId and the normalised name; a non-record gives null', () => {
+    expect(pendingAwardIdentity({ wowheadId: 20928, characterName: 'Thrall', awardedAt: AWARDED_AT, awardId: AWARD_ID })).toBe(
+      `id:${AWARD_ID}`,
+    )
+    expect(pendingAwardIdentity({ wowheadId: 20928, characterName: ' THRALL ', awardedAt: AWARDED_AT })).toBe(
+      `at:${AWARDED_AT}|20928|thrall`,
+    )
+    expect(pendingAwardIdentity(null)).toBeNull()
+    expect(pendingAwardIdentity(7)).toBeNull()
+    expect(pendingAwardIdentity('x')).toBeNull()
+  })
+
+  it('I2 pendingAttendanceIdentity joins raidDate, raidName and startTime; a non-record gives null', () => {
+    expect(
+      pendingAttendanceIdentity({ raidDate: '2026-09-20', raidName: "Temple of Ahn'Qiraj", startTime: '2026-09-20T19:00:00Z' }),
+    ).toBe("2026-09-20|Temple of Ahn'Qiraj|2026-09-20T19:00:00Z")
+    expect(pendingAttendanceIdentity(null)).toBeNull()
+    expect(pendingAttendanceIdentity([])).toBeNull()
+    expect(pendingAttendanceIdentity('x')).toBeNull()
   })
 })
 
@@ -498,5 +524,64 @@ describe('applyGuildDataToSavedVars (FU-A of 261001-tv5, D-10)', () => {
       'items', 'members', 'priorities', 'blp', 'attendance',
     ])
     expect(toLuaTable('X', gd)).toContain('[20928] = {')
+  })
+
+  it('S11 removePendingEntries removes only the given entries, leaves guildData and the other tables by reference, and keeps [20928] keys (GH #320 follow-up)', () => {
+    const saved = savedFile()
+    const guildDataBefore = saved.LootListPlusDB.profiles.Default.guildData
+    const lootHistoryBefore = saved.LootListPlusDB.profiles.Default.lootHistory
+    const altBefore = saved.LootListPlusDB.profiles.Alt
+
+    const db = removePendingEntries(saved, { awards: [awardB], attendance: [night] })
+    expect(db).toBe(saved.LootListPlusDB)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const profile = (db as any).profiles.Default
+    expect(profile.pendingAwards).toEqual([awardA])
+    expect(profile.pendingAwards[0]).toBe(awardA)
+    expect(profile.pendingAttendance).toEqual([])
+    expect(profile.guildData).toBe(guildDataBefore)
+    expect(profile.lootHistory).toBe(lootHistoryBefore)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((db as any).profiles.Alt).toBe(altBefore)
+
+    // The S4 fixture: a file the addon wrote with [20928] keys in lootHistory
+    // and another profile still writes them as numbers after a remove.
+    const file = [
+      'LootListPlusDB = {',
+      '\t["profiles"] = {',
+      '\t\t["Default"] = {',
+      '\t\t\t["lootHistory"] = {',
+      '\t\t\t\t[20928] = {',
+      '\t\t\t\t\t["characterName"] = "Thrall",',
+      '\t\t\t\t},',
+      '\t\t\t},',
+      '\t\t\t["pendingAwards"] = {',
+      '\t\t\t\t{',
+      '\t\t\t\t\t["wowheadId"] = 20928,',
+      '\t\t\t\t\t["characterName"] = "Thrall",',
+      `\t\t\t\t\t["awardedAt"] = "${AWARDED_AT}",`,
+      '\t\t\t\t},',
+      '\t\t\t},',
+      '\t\t},',
+      '\t\t["Alt"] = {',
+      '\t\t\t["guildData"] = {',
+      '\t\t\t\t["items"] = {',
+      '\t\t\t\t\t[20928] = {',
+      '\t\t\t\t\t\t["name"] = "Qiraji Bindings of Command",',
+      '\t\t\t\t\t},',
+      '\t\t\t\t},',
+      '\t\t\t},',
+      '\t\t},',
+      '\t},',
+      '}',
+      '',
+    ].join('\n')
+    const parsed = parseLuaTable(file)
+    const pending = readPendingLists(parsed)
+    expect(pending.awards).toHaveLength(1)
+    const lua = toLuaTable('LootListPlusDB', removePendingEntries(parsed, { awards: pending.awards, attendance: [] }))
+    expect(lua).not.toContain('["20928"]')
+    expect(lua.match(/\[20928\] = \{/g)).toHaveLength(2)
+    expect(readPendingLists(parsed).awards).toEqual([])
   })
 })

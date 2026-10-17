@@ -39,9 +39,26 @@ root).
   changed.
 
 Each sync pass reads the pending awards and attendance, sends attendance and
-then awards, downloads guild data, and then writes guild data and removes the
-pending entries it sent in a single file write. If the download fails nothing
-is written, and the pending data is sent again on the next pass.
+then awards, downloads guild data, and then writes guild data and removes only
+the pending entries the server accepted in a single file write. If the
+download fails nothing is written, and the pending data is sent again on the
+next pass.
+
+Rejected entries are classified by HTTP status: 400, 404 and 422 are
+permanent (the server will never take that entry as it is), everything else
+(401, 403, 429, any 5xx, a network failure) is transient and is simply sent
+again on the next pass. Permanent rejections are counted per entry in
+`stuck-entries.json` in the Electron userData folder. After 3 of them the
+entry is parked: it stays in the SavedVariables file but the companion stops
+sending it, and the status line, the tray and the Sync status tab say how
+many entries are parked. "Clear stuck entries" (tray menu or the Sync status
+tab) removes the parked entries from the file after appending them to
+`cleared-entries.jsonl` in the same folder, so nothing is lost without a
+copy. Nothing is added to the entries in the SavedVariables file itself,
+because the addon's export string carries every field of every pending entry
+and a companion field would ride along into it. The caveat below applies to
+clearing too: do it while WoW is closed, or the game writes its own copy of
+the file back at logout.
 
 WoW owns the SavedVariables file while the game is running and overwrites it
 at logout or `/reload`, so data the companion writes reaches the addon when it

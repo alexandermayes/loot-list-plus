@@ -161,7 +161,15 @@ export function readPendingLists(saved: Record<string, unknown>): SentPending {
   }
 }
 
-function pendingAwardIdentity(entry: unknown): string | null {
+/**
+ * The identity of a raw pending award: `id:` plus the addon's awardId when
+ * it has one (addon 1.1.0 and later), otherwise `at:` plus awardedAt,
+ * wowheadId and the trimmed, lowercased character name. withoutSent matches
+ * accepted entries on it, and the stuck-entry store (stuck-entries.ts) keys
+ * its attempt counts on it, prefixed with the kind (GH #320 follow-up).
+ * Null for a non-record entry.
+ */
+export function pendingAwardIdentity(entry: unknown): string | null {
   const a = asRecord(entry)
   if (!a) return null
   if (typeof a['awardId'] === 'string') return `id:${a['awardId']}`
@@ -169,7 +177,12 @@ function pendingAwardIdentity(entry: unknown): string | null {
   return `at:${String(a['awardedAt'])}|${String(a['wowheadId'])}|${name}`
 }
 
-function pendingAttendanceIdentity(entry: unknown): string | null {
+/**
+ * The identity of a raw pending attendance record: raidDate, raidName and
+ * startTime joined with `|`. Used like pendingAwardIdentity, by withoutSent
+ * and by the stuck-entry store. Null for a non-record entry.
+ */
+export function pendingAttendanceIdentity(entry: unknown): string | null {
   const a = asRecord(entry)
   if (!a) return null
   return `${String(a['raidDate'])}|${String(a['raidName'])}|${String(a['startTime'])}`
@@ -229,10 +242,25 @@ export function applyGuildDataToSavedVars(
   const profiles = tableAt(db, 'profiles')
   const profile = tableAt(profiles, 'Default')
   profile['guildData'] = guildDataLua
-  if (sent) {
-    profile['pendingAwards'] = withoutSent(profile['pendingAwards'], sent.awards, pendingAwardIdentity)
-    profile['pendingAttendance'] = withoutSent(profile['pendingAttendance'], sent.attendance, pendingAttendanceIdentity)
-  }
+  if (sent) removePendingEntries(saved, sent)
+  return db
+}
+
+/**
+ * Removes the given raw entries from the pending lists of a parsed
+ * SavedVariables file and returns the LootListPlusDB table to write. This is
+ * the pending half of applyGuildDataToSavedVars, shared with it so there is
+ * one implementation; guildData and every other table are untouched. The
+ * sync engine also calls it on its own when the user clears parked entries
+ * (GH #320 follow-up). Same in-place rule as above: the Lua number-key
+ * markers must survive, so the parsed tables are never rebuilt.
+ */
+export function removePendingEntries(saved: Record<string, unknown>, remove: SentPending): Record<string, unknown> {
+  const db = tableAt(saved, 'LootListPlusDB')
+  const profiles = tableAt(db, 'profiles')
+  const profile = tableAt(profiles, 'Default')
+  profile['pendingAwards'] = withoutSent(profile['pendingAwards'], remove.awards, pendingAwardIdentity)
+  profile['pendingAttendance'] = withoutSent(profile['pendingAttendance'], remove.attendance, pendingAttendanceIdentity)
   return db
 }
 
