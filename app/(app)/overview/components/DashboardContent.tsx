@@ -2000,6 +2000,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
           guildIconUrl={activeGuild.icon_url}
           hasExpansion={!!activeGuild.active_expansion_id}
           raidTierStatus={raidTierStatus}
+          raidTierNames={raidTiers.map(t => t.name)}
         />
       )}
 
