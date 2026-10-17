@@ -147,7 +147,9 @@ export class SyncEngine extends EventEmitter {
       const svPath = this.getSavedVarsPath()
       const saved = this.readSavedVars(svPath)
       const pending: SentPending = saved ? readPendingLists(saved) : { awards: [], attendance: [] }
-      const awardPairs = toPendingAwardPairs(pending.awards)
+      // The pending sessions supply each award's raid night when the addon
+      // did not stamp one (GH #321).
+      const awardPairs = toPendingAwardPairs(pending.awards, pending.attendance)
       const attendancePairs = toPendingAttendancePairs(pending.attendance)
 
       // Step 2: Split off parked entries, push the rest to the API, and
@@ -344,7 +346,7 @@ export class SyncEngine extends EventEmitter {
     const saved = this.readSavedVars(this.getSavedVarsPath())
     const pending: SentPending = saved ? readPendingLists(saved) : { awards: [], attendance: [] }
     const store = readStuckStore(this.stuckStorePath)
-    const awards = partitionPending('award', toPendingAwardPairs(pending.awards), store)
+    const awards = partitionPending('award', toPendingAwardPairs(pending.awards, pending.attendance), store)
     const attendance = partitionPending('attendance', toPendingAttendancePairs(pending.attendance), store)
     return {
       sendableAwards: awards.sendable.length,

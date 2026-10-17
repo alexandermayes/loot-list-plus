@@ -12,7 +12,13 @@ import { notifyLootAward } from '@/lib/discord-loot-announcements'
 import { recomputeBlpForItems } from '@/utils/blp/recompute'
 import { addonAwardKey } from '@/lib/loot/addon-award-insert'
 import { importAttendanceByTeam, findAwardRaidEvent } from '@/utils/raid-events/team-routing'
+import { linkUnlinkedAddonAwards } from '@/utils/raid-events/link-unlinked-awards'
 
+// GH #321: the back-linker has its own tests (utils/raid-events/__tests__);
+// here only the route's wiring to it is checked.
+vi.mock('@/utils/raid-events/link-unlinked-awards', () => ({
+  linkUnlinkedAddonAwards: vi.fn(async () => ({ linked: [], itemIds: [], skipped: [] })),
+}))
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
 vi.mock('@/utils/server-roles', () => ({ verifyOfficerPermissions: vi.fn() }))
@@ -594,6 +600,34 @@ describe('POST /api/addon/import-string', () => {
       expect(insertPayload(calls).loot_item_id).toBe(AQ20_ITEM)
     })
 
+    // regression for #319: with no session, the award's own live instance
+    // name picks the tier; the cached boss label is a group row and cannot.
+    it("files an award outside any session under AQ40 from its own instanceName \"Ahn'Qiraj Temple\"", async () => {
+      const { client, calls } = makeClient(aqFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const liveAward = { ...cachedAward, instanceName: "Ahn'Qiraj Temple" }
+      const res = await POST(request({ importString: importString(payloadWith([liveAward], [])) }))
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(body.data.awards).toEqual({ processed: 1, errors: 0, already_recorded: 0 })
+      expect(insertPayload(calls).loot_item_id).toBe(AQ40_ITEM)
+      expect(insertPayload(calls).raid_tier_id).toBe('tier-b-aq40')
+    })
+
+    it('ignores a non-string instanceName outside any session and keeps the cached lootItemId', async () => {
+      const { client, calls } = makeClient(aqFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const oddAward = { ...cachedAward, instanceName: 42 }
+      const res = await POST(request({ importString: importString(payloadWith([oddAward], [])) }))
+
+      expect(res.status).toBe(200)
+      expect(insertPayload(calls).loot_item_id).toBe(AQ20_ITEM)
+      expect(insertPayload(calls).raid_tier_id).toBe('tier-a-aq20')
+    })
+
     it('keeps the cached lootItemId when the live hints do not decide', async () => {
       const { client, calls } = makeClient(aqFixture())
       vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
@@ -928,6 +962,127 @@ describe('POST /api/addon/import-string', () => {
 
       expect(res.status).toBe(200)
       expect(vi.mocked(importAttendanceByTeam).mock.calls[0][2]).toBe('2026-10-14')
+    })
+  })
+
+  describe('GH #321: sessionDate and awards that arrived before the night', () => {
+    const thrall = [{ character_id: 'char-1', characters: { id: 'char-1', name: 'Thrall' } }]
+    // A UTC zone keeps the zoned night equal to the awardedAt UTC date (no
+    // rollover at 08:00Z), so only sessionDate can move the night.
+    const fixture = (extra: Partial<Fixture> = {}): Fixture => ({
+      ...singleItemFixture({ id: 'item-19003', wowhead_id: 19003 }),
+      characters: thrall,
+      raidTimeZone: 'UTC',
+      ...extra,
+    })
+    const payloadWith = (awards: unknown[], attendance: unknown[]) => ({
+      guildId: GUILD_ID, exportedAt: '2026-09-21T09:00:00Z', awards, attendance,
+    })
+    const storedPayload = (calls: Call[]) =>
+      lootHistoryInserts(calls)[0]?.insertPayload as { raid_event_id: string | null; awarded_date: string }
+    // 20:30 EDT on the 13th, which is already the 14th in UTC.
+    const nySession = {
+      raidDate: '2026-10-14',
+      raidName: 'Naxxramas',
+      startTime: '2026-10-14T00:30:00Z',
+      endTime: '2026-10-14T04:00:00Z',
+      bossKills: [],
+      attended: ['Thrall'],
+    }
+
+    beforeEach(() => {
+      vi.mocked(linkUnlinkedAddonAwards).mockImplementation(async () => ({ linked: [], itemIds: [], skipped: [] }))
+    })
+
+    it('S1 an award with sessionDate 2026-09-20 outside any session links to the 2026-09-20 night, not its awardedAt date', async () => {
+      vi.mocked(findAwardRaidEvent).mockImplementation(async (_client, _guild, date) =>
+        date === '2026-09-20' ? { raidEventId: 'ev-0920', outcome: 'linked' } : { raidEventId: null, outcome: 'no_raid_night' },
+      )
+      const { client, calls } = makeClient(fixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const award = { wowheadId: 19003, characterName: 'Thrall', awardedAt: '2026-09-21T08:00:00Z', sessionDate: '2026-09-20' }
+      const res = await POST(request({ importString: importString(payloadWith([award], [])) }))
+
+      expect(res.status).toBe(200)
+      expect(vi.mocked(findAwardRaidEvent).mock.calls.map(c => c[2])).toEqual(['2026-09-21', '2026-09-20'])
+      expect(storedPayload(calls).raid_event_id).toBe('ev-0920')
+    })
+
+    it('S2 a malformed sessionDate falls back to the awardedAt date and never rejects the import', async () => {
+      const { client, calls } = makeClient(fixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const award = { wowheadId: 19003, characterName: 'Thrall', awardedAt: '2026-09-21T08:00:00Z', sessionDate: '2026-13-45' }
+      const res = await POST(request({ importString: importString(payloadWith([award], [])) }))
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(body.data.awards).toEqual({ processed: 1, errors: 0, already_recorded: 0 })
+      expect(vi.mocked(findAwardRaidEvent).mock.calls.map(c => c[2])).toEqual(['2026-09-21'])
+      expect(storedPayload(calls).awarded_date).toBe('2026-09-21')
+    })
+
+    it("S3 a session in the export still wins over the award's sessionDate", async () => {
+      vi.mocked(findAwardRaidEvent).mockResolvedValueOnce({ raidEventId: 'ev-1013', outcome: 'linked' })
+      const { client } = makeClient(fixture({ raidTimeZone: 'America/New_York' }))
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const award = { wowheadId: 19003, characterName: 'Thrall', awardedAt: '2026-10-14T02:00:00Z', sessionDate: '2026-10-14' }
+      await POST(request({ importString: importString(payloadWith([award], [nySession])) }))
+
+      expect(findAwardRaidEvent).toHaveBeenCalledTimes(1)
+      expect(findAwardRaidEvent).toHaveBeenCalledWith(client, GUILD_ID, '2026-10-13', 'char-1')
+    })
+
+    it('S4 after the attendance creates a night, earlier unlinked awards on that night are linked before the awards and their items join the BLP recompute', async () => {
+      vi.mocked(importAttendanceByTeam).mockResolvedValueOnce({ eventIds: ['ev-1013'], attendedCount: 1, absentCount: 0 })
+      vi.mocked(linkUnlinkedAddonAwards).mockResolvedValueOnce({ linked: ['hist-old'], itemIds: ['item-old'], skipped: [] })
+      const { client } = makeClient(fixture({ raidTimeZone: 'America/New_York' }))
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const award = { wowheadId: 19003, characterName: 'Thrall', awardedAt: '2026-10-14T02:00:00Z' }
+      const res = await POST(request({ importString: importString(payloadWith([award], [nySession])) }))
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(body.data.attendance).toEqual({ processed: 1, errors: 0 })
+      expect(linkUnlinkedAddonAwards).toHaveBeenCalledTimes(1)
+      expect(linkUnlinkedAddonAwards).toHaveBeenCalledWith(client, GUILD_ID, '2026-10-13')
+      const attendanceOrder = vi.mocked(importAttendanceByTeam).mock.invocationCallOrder[0]
+      const linkOrder = vi.mocked(linkUnlinkedAddonAwards).mock.invocationCallOrder[0]
+      const awardOrder = vi.mocked(findAwardRaidEvent).mock.invocationCallOrder[0]
+      expect(attendanceOrder).toBeLessThan(linkOrder)
+      expect(linkOrder).toBeLessThan(awardOrder)
+      expect(recomputeBlpForItems).toHaveBeenCalledWith(client, GUILD_ID, expect.arrayContaining(['item-old']))
+    })
+
+    it('S5 two sessions on the same night call the linker once per night, and none without attendance', async () => {
+      const { client } = makeClient(fixture({ raidTimeZone: 'America/New_York' }))
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const second = { ...nySession, startTime: '2026-10-14T01:00:00Z', endTime: '2026-10-14T03:00:00Z' }
+      await POST(request({ importString: importString(payloadWith([], [nySession, second])) }))
+      expect(vi.mocked(linkUnlinkedAddonAwards).mock.calls.map(c => c[2])).toEqual(['2026-10-13'])
+
+      vi.mocked(linkUnlinkedAddonAwards).mockClear()
+      await POST(request({ importString: importString(payloadWith([{ wowheadId: 19003, characterName: 'Thrall', awardedAt: '2026-10-14T02:00:00Z' }], [])) }))
+      expect(linkUnlinkedAddonAwards).not.toHaveBeenCalled()
+    })
+
+    it('S6 a linking failure is logged and tracked and the import still succeeds', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.mocked(importAttendanceByTeam).mockResolvedValueOnce({ eventIds: ['ev-1013'], attendedCount: 1, absentCount: 0 })
+      vi.mocked(linkUnlinkedAddonAwards).mockRejectedValueOnce(new Error('loot_history boom'))
+      const { client } = makeClient(fixture({ raidTimeZone: 'America/New_York' }))
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({ importString: importString(payloadWith([], [nySession])) }))
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(body.data.attendance).toEqual({ processed: 1, errors: 0 })
+      expect(trackApiError).toHaveBeenCalledWith('unknown', 'POST /api/addon/import-string', expect.any(Error))
     })
   })
 })

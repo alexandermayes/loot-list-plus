@@ -15,6 +15,12 @@ interface LootAwardRequest {
   wowhead_id: number
   character_name: string
   boss_name?: string
+  /**
+   * The live instance name from GetInstanceInfo, sent by companion 1.2.0
+   * for awards from addon 1.2.0 (the award's instanceName field). Older
+   * clients send none (GH #319).
+   */
+  raid_name?: string
   awarded_date?: string
   /** The addon's own award timestamp (UTC ISO), optional (FU-1 of #331, #293). */
   awarded_at?: unknown
@@ -33,11 +39,13 @@ interface LootAwardRequest {
  * carries raid_tier_id and expansion_id from that same guild-scoped lookup
  * (GH #294 D-01) via buildAddonAwardRow.
  *
- * GH #307: when the item sits in more than one of the guild's tiers, the
- * award's boss_name picks the tier (the tier whose row has that boss, or
- * whose 'Shared Boss Loot' / 'Trash' row sits with that boss). No raid name
- * is passed: the companion sends none, and the addon's award raidName is
- * the cached catalog row's raid, not the live instance.
+ * GH #307, GH #319: when the item sits in more than one of the guild's
+ * tiers, the award's boss_name picks the tier first (the tier whose row has
+ * that boss, or whose 'Shared Boss Loot' / 'Trash' row sits with that boss).
+ * When the boss does not decide, raid_name (the live instance name) does,
+ * matched against the tier's name or its in-game instance names. Before
+ * #319 no raid name was passed at all and the addon's boss was the cached
+ * catalog label, so every such award took the fallback tier.
  *
  * GH #295: the award is linked to the guild's raid night for its
  * awarded_date and the raider's team (findAwardRaidEvent, the raid-tracking
@@ -78,7 +86,7 @@ export async function POST(request: NextRequest) {
     if (!auth.ok) return auth.response
 
     const body: LootAwardRequest = await request.json()
-    const { guild_id, wowhead_id, character_name, boss_name, awarded_date, awarded_at, award_id, notes } = body
+    const { guild_id, wowhead_id, character_name, boss_name, raid_name, awarded_date, awarded_at, award_id, notes } = body
 
     if (!guild_id || !wowhead_id || !character_name) {
       return NextResponse.json({
@@ -97,7 +105,11 @@ export async function POST(request: NextRequest) {
     // would silently hide a real error behind an ordinary-looking response.
     let lootItem
     try {
-      lootItem = await resolveGuildLootItem(supabase, guild_id, wowhead_id, { bossName: boss_name ?? null })
+      // regression for #319
+      lootItem = await resolveGuildLootItem(supabase, guild_id, wowhead_id, {
+        bossName: boss_name ?? null,
+        raidName: typeof raid_name === 'string' ? raid_name : null,
+      })
     } catch (lookupError) {
       console.error('Failed to resolve guild-scoped loot item:', lookupError)
       trackApiError('unknown', 'POST /api/addon/loot-award', lookupError instanceof Error ? lookupError : new Error(String(lookupError)))
