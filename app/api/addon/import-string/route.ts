@@ -25,6 +25,8 @@ interface AddonAward {
   characterClass?: string
   bossName?: string
   raidName?: string
+  /** The live instance name from GetInstanceInfo (addon 1.2.0 and later), optional (GH #319). */
+  instanceName?: string
   awardedAt: string
   /** The addon's own award id (addon 1.1.0 and later), optional. */
   awardId?: string
@@ -73,7 +75,9 @@ interface ImportPayload {
  * (matchAwardSession); that session's raidDate picks the raid night
  * (findAwardRaidEvent, find-only, guild-scoped, team-aware), and its live
  * boss kill and instance name pick the tier when the item sits in more than
- * one (resolveGuildLootItem hints). The addon's cached lootItemId is
+ * one (resolveGuildLootItem hints). An award outside any session offers its
+ * own bossName and instanceName instead, which addon 1.2.0 stamps live
+ * (GH #319). The addon's cached lootItemId is
  * replaced only when those live hints decided between tiers (OD-6). A
  * re-imported award already on its night counts as processed and in
  * awards.already_recorded, not as an error, and is not announced again.
@@ -344,12 +348,17 @@ async function processAward(
   raidTimeZone: string | null
 ): Promise<ProcessAwardOutcome> {
   // The export's own attendance session for this award, if any (PD-07).
-  // Its boss kill and instance name are live; the award's bossName and
-  // raidName echo the cached catalog row, so award.raidName is never used.
+  // The session is preferred: its boss kill is time-matched and more
+  // precise. An award with no session falls back to its own bossName and
+  // instanceName, which addon 1.2.0 stamps live; older awards echo the
+  // cached catalog row and carry no instanceName. award.raidName is never
+  // used, it is the cached catalog raid.
+  // regression for #319
   const session = matchAwardSession(award.awardedAt, attendance)
+  const liveInstance = typeof award.instanceName === 'string' ? award.instanceName : null
   const hints: LootItemHints = session
     ? { bossName: session.bossName, raidName: session.raidName }
-    : { bossName: award.bossName ?? null }
+    : { bossName: award.bossName ?? null, raidName: liveInstance }
 
   // Resolution order (GH #294 D-01/D-02, OD-2):
   //  1. preResolvedScope — set by resolveImportAwardScopes whenever the
@@ -358,12 +367,14 @@ async function processAward(
   //     reach here unmapped: resolveImportAwardScopes already rejected the
   //     whole import with 400 if it could not resolve one. GH #307 OD-6:
   //     the addon's lootItemId is its cached catalog row, so when the live
-  //     session hints decide between the guild's tiers, that row wins.
+  //     hints (the session's, or the award's own instanceName, GH #319)
+  //     decide between the guild's tiers, that row wins. An award with
+  //     neither has no live hint to offer, so no extra lookup is made.
   //  2. resolveGuildLootItem by wowheadId, trying the exact id first and
   //     its faction alias second (GH #277 D-03, SCOPE-01) — the path used
   //     when no lootItemId was supplied at all.
   let item: LootItemScope | null = preResolvedScope
-  if (item && session && award.wowheadId) {
+  if (item && (session || liveInstance) && award.wowheadId) {
     const live = await resolveGuildLootItem(supabase, guildId, award.wowheadId, hints)
     if (live && (live.matched_by === 'boss' || live.matched_by === 'boss_tier' || live.matched_by === 'raid')) {
       item = live

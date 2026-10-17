@@ -594,6 +594,34 @@ describe('POST /api/addon/import-string', () => {
       expect(insertPayload(calls).loot_item_id).toBe(AQ20_ITEM)
     })
 
+    // regression for #319: with no session, the award's own live instance
+    // name picks the tier; the cached boss label is a group row and cannot.
+    it("files an award outside any session under AQ40 from its own instanceName \"Ahn'Qiraj Temple\"", async () => {
+      const { client, calls } = makeClient(aqFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const liveAward = { ...cachedAward, instanceName: "Ahn'Qiraj Temple" }
+      const res = await POST(request({ importString: importString(payloadWith([liveAward], [])) }))
+      const body = await res.json()
+
+      expect(res.status).toBe(200)
+      expect(body.data.awards).toEqual({ processed: 1, errors: 0, already_recorded: 0 })
+      expect(insertPayload(calls).loot_item_id).toBe(AQ40_ITEM)
+      expect(insertPayload(calls).raid_tier_id).toBe('tier-b-aq40')
+    })
+
+    it('ignores a non-string instanceName outside any session and keeps the cached lootItemId', async () => {
+      const { client, calls } = makeClient(aqFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const oddAward = { ...cachedAward, instanceName: 42 }
+      const res = await POST(request({ importString: importString(payloadWith([oddAward], [])) }))
+
+      expect(res.status).toBe(200)
+      expect(insertPayload(calls).loot_item_id).toBe(AQ20_ITEM)
+      expect(insertPayload(calls).raid_tier_id).toBe('tier-a-aq20')
+    })
+
     it('keeps the cached lootItemId when the live hints do not decide', async () => {
       const { client, calls } = makeClient(aqFixture())
       vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
