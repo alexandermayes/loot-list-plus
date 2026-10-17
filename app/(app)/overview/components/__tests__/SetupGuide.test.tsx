@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor, cleanup } from '@testing-library/react'
+import { render, screen, waitFor, cleanup, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SetupGuide } from '../SetupGuide'
 
@@ -71,6 +71,7 @@ function renderGuide(overrides: {
   approvedSubmissions?: number
   raidEvents?: number
   inviteCodes?: string[]
+  raidTierNames?: string[]
 }) {
   state.guild = { id: 'guild-1', game: overrides.game }
   state.activeCharacter = { name: 'Thrall' }
@@ -87,6 +88,7 @@ function renderGuide(overrides: {
       guildIconUrl={null}
       hasExpansion={overrides.hasExpansion}
       raidTierStatus={overrides.raidTierStatus}
+      raidTierNames={overrides.raidTierNames}
     />
   )
 }
@@ -326,6 +328,54 @@ describe('SetupGuide', () => {
     expect(scheduleButton).toHaveAttribute('aria-expanded', 'true')
     expect(screen.getByRole('button', { name: 'Set raid days' })).toBeInTheDocument()
     expect(currentButton).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  // Tracer for plan 02-11 (EXPN-01 visible half, D-01 to D-03, D-06, D-07).
+  it('Tracer: a Forever guild with tiers lists its raids and bosses, every boss Unconfirmed', async () => {
+    renderGuide({
+      game: 'forever',
+      raidTierStatus: 'available',
+      hasExpansion: true,
+      memberCount: 1,
+      firstRaidDay: 'monday',
+      raidTierNames: ['Barrow Deeps', 'Hyjal Summit', "Onyxia's Lair"],
+    })
+    await screen.findByText('2 of 5 steps done')
+
+    const region = screen.getByRole('region', { name: 'Your raids' })
+    const text = region.textContent ?? ''
+
+    // Manifest size order, with size labels.
+    const positions = ['Barrow Deeps', 'Hyjal Summit', "Onyxia's Lair"].map(name => text.indexOf(name))
+    expect(positions.every(p => p >= 0)).toBe(true)
+    expect([...positions].sort((a, b) => a - b)).toEqual(positions)
+    expect(within(region).getByText('10-player')).toBeInTheDocument()
+    expect(within(region).getByText('20-player')).toBeInTheDocument()
+    expect(within(region).getByText('40-player')).toBeInTheDocument()
+
+    for (const boss of [
+      'Deepscar Matriarch',
+      'Khalith the Dreadspinner',
+      'Amethrax',
+      'Ravus and Darlissa',
+      'Elder Tangleclaw',
+      'Well of Sorrow',
+      "Del'lynar Songwood",
+      'Sonya Darkhallow',
+      'Onyxia',
+    ]) {
+      expect(within(region).getByText(boss)).toBeInTheDocument()
+    }
+
+    // The word, not colour, marks provisional bosses (8 Barrow Deeps + Onyxia).
+    expect(within(region).getAllByText('Unconfirmed')).toHaveLength(9)
+    expect(within(region).getAllByText('Boss names are confirmed when the raid opens.')).toHaveLength(2)
+    expect(within(region).getAllByText('Bosses to be announced')).toHaveLength(1)
+    expect(within(region).getAllByText('Raids open Dec 9')).toHaveLength(1)
+
+    // The steps list and the waiting-row logic are untouched.
+    expect(screen.getByRole('button', { name: 'Invite your raiders' })).toBeInTheDocument()
+    expect(screen.queryByText('Not available for WoW Forever yet')).not.toBeInTheDocument()
   })
 
   it('Test 10: no em dash anywhere in the rendered guide', async () => {
