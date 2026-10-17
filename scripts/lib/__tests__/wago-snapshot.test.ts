@@ -12,12 +12,15 @@ import type { ProvisionalAllowlistEntry } from '@/data/expansions/forever/refere
 import {
   EXPECTED_HEADERS,
   PINNED_TABLES,
+  RetryableHttpError,
+  TerminalHttpError,
   USER_AGENT,
   WAGO_BASE_URL,
   parseTable,
   refreshSnapshot,
   resolveBuild,
   trimToManifest,
+  withRetry,
   type RefreshDeps,
 } from '../wago-snapshot'
 
@@ -358,5 +361,250 @@ describe('refreshSnapshot', () => {
     const deps = makeDeps({ fetchImpl, now: () => 'last tuesday' })
     await expect(refreshSnapshot(deps)).rejects.toThrow(/ReferenceSnapshotSchema/)
     expect(deps.writeSnapshot).not.toHaveBeenCalled()
+  })
+})
+
+describe('withRetry', () => {
+  function recordingSleep() {
+    const delays: number[] = []
+    return { delays, sleep: async (ms: number) => void delays.push(ms) }
+  }
+
+  it('ends exhausted after 5 attempts of 503, sleeping 2000, 4000, 8000, 16000 ms at random 0.5', async () => {
+    const { delays, sleep } = recordingSleep()
+    const fn = vi.fn(async () => {
+      throw new RetryableHttpError('GET failed with HTTP 503', 503)
+    })
+    const result = await withRetry(fn, { sleep, random: () => 0.5 })
+
+    expect(result).toEqual({ kind: 'exhausted', attempts: 5, lastStatus: 503 })
+    expect(fn).toHaveBeenCalledTimes(5)
+    expect(delays).toEqual([2000, 4000, 8000, 16000])
+  })
+
+  it('succeeds on attempt 3 after 503, 503, 200', async () => {
+    const { delays, sleep } = recordingSleep()
+    let call = 0
+    const result = await withRetry(
+      async () => {
+        call += 1
+        if (call < 3) throw new RetryableHttpError('HTTP 503', 503)
+        return 'body'
+      },
+      { sleep, random: () => 0.5 },
+    )
+
+    expect(result).toEqual({ kind: 'ok', value: 'body', attempts: 3 })
+    expect(delays).toEqual([2000, 4000])
+  })
+
+  it('uses Retry-After in place of the computed delay, and caps it', async () => {
+    const { delays, sleep } = recordingSleep()
+    const retryAfter = [7000, 999_000]
+    let call = 0
+    await withRetry(
+      async () => {
+        const next = retryAfter[call]
+        call += 1
+        if (next !== undefined) throw new RetryableHttpError('HTTP 429', 429, next)
+        return 'body'
+      },
+      { sleep, random: () => 0.5 },
+    )
+    expect(delays).toEqual([7000, 60_000])
+  })
+
+  it('never sleeps longer than the cap, jitter included', async () => {
+    const { delays, sleep } = recordingSleep()
+    await withRetry(
+      async () => {
+        throw new RetryableHttpError('HTTP 503', 503)
+      },
+      { attempts: 12, sleep, random: () => 0.999 },
+    )
+    expect(delays).toHaveLength(11)
+    expect(Math.max(...delays)).toBeLessThanOrEqual(60_000)
+    expect(delays[delays.length - 1]).toBe(60_000)
+  })
+
+  it('jitters each delay by plus or minus 25 percent', async () => {
+    const low = recordingSleep()
+    const high = recordingSleep()
+    const fail = async () => {
+      throw new RetryableHttpError('HTTP 503', 503)
+    }
+    await withRetry(fail, { attempts: 2, sleep: low.sleep, random: () => 0 })
+    await withRetry(fail, { attempts: 2, sleep: high.sleep, random: () => 1 })
+    expect(low.delays).toEqual([1500])
+    expect(high.delays).toEqual([2500])
+  })
+
+  it('rethrows a terminal error at once, without sleeping', async () => {
+    const { delays, sleep } = recordingSleep()
+    const fn = vi.fn(async () => {
+      throw new TerminalHttpError('GET failed with HTTP 404', 404)
+    })
+    await expect(withRetry(fn, { sleep })).rejects.toThrow(/404/)
+    expect(fn).toHaveBeenCalledTimes(1)
+    expect(delays).toEqual([])
+  })
+
+  it('rethrows an error that is not an HTTP error instead of retrying it', async () => {
+    const { sleep } = recordingSleep()
+    const fn = vi.fn(async () => {
+      throw new TypeError('bug in the caller')
+    })
+    await expect(withRetry(fn, { sleep })).rejects.toThrow('bug in the caller')
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('retry through refreshSnapshot', () => {
+  const BUILD = '1.60.1.70009'
+  const RETRYABLE_STATUSES = [403, 429, 500, 502, 503, 504]
+
+  /** Answers the builds call from `first` in order, then behaves like wagoRoutes. */
+  function buildsThen(first: Array<number | Response | Error>, build = BUILD): { route: Route; buildCalls: () => number } {
+    const queue = [...first]
+    let buildCalls = 0
+    const normal = wagoRoutes(build)
+    const route: Route = (url) => {
+      if (url !== BUILDS_URL) return normal(url)
+      buildCalls += 1
+      const next = queue.shift()
+      if (next === undefined) return normal(url)
+      if (next instanceof Error) throw next
+      return typeof next === 'number' ? new Response('unavailable', { status: next }) : next
+    }
+    return { route, buildCalls: () => buildCalls }
+  }
+
+  function sleepDelays(deps: RefreshDeps): number[] {
+    return (deps.sleep as ReturnType<typeof vi.fn>).mock.calls.map((call) => call[0] as number)
+  }
+
+  it.each(RETRYABLE_STATUSES)('treats %i that never clears as an outage after 5 attempts and writes nothing', async (status) => {
+    const { fetchImpl, calls } = recordingFetch(() => new Response('unavailable', { status }))
+    const deps = makeDeps({ fetchImpl })
+    const result = await refreshSnapshot(deps)
+
+    expect(result).toEqual({ outcome: 'outage', attempts: 5, lastStatus: status })
+    expect(calls).toHaveLength(5)
+    expect(sleepDelays(deps)).toEqual([2000, 4000, 8000, 16000])
+    expect(deps.writeSnapshot).not.toHaveBeenCalled()
+  })
+
+  it.each(RETRYABLE_STATUSES)('recovers when %i clears on the third attempt', async (status) => {
+    const { route, buildCalls } = buildsThen([status, status])
+    const { fetchImpl } = recordingFetch(route)
+    const deps = makeDeps({ fetchImpl })
+    const result = await refreshSnapshot(deps)
+
+    expect(result.outcome).toBe('updated')
+    expect(buildCalls()).toBe(3)
+    expect(sleepDelays(deps)).toEqual([2000, 4000])
+  })
+
+  it('makes the next sleep Retry-After seconds when the header is present', async () => {
+    const throttled = new Response('slow down', { status: 429, headers: { 'Retry-After': '7' } })
+    const { route } = buildsThen([throttled])
+    const deps = makeDeps({ fetchImpl: recordingFetch(route).fetchImpl })
+    await refreshSnapshot(deps)
+    expect(sleepDelays(deps)).toEqual([7000])
+  })
+
+  it('ignores a Retry-After header it cannot read and falls back to backoff', async () => {
+    const odd = new Response('slow down', { status: 503, headers: { 'Retry-After': 'soon' } })
+    const { route } = buildsThen([odd])
+    const deps = makeDeps({ fetchImpl: recordingFetch(route).fetchImpl })
+    await refreshSnapshot(deps)
+    expect(sleepDelays(deps)).toEqual([2000])
+  })
+
+  it('retries a network error and a timeout', async () => {
+    const timeout = new DOMException('The operation timed out.', 'TimeoutError')
+    const abort = new DOMException('This operation was aborted', 'AbortError')
+    const { route, buildCalls } = buildsThen([new TypeError('fetch failed'), timeout, abort])
+    const deps = makeDeps({ fetchImpl: recordingFetch(route).fetchImpl })
+    const result = await refreshSnapshot(deps)
+
+    expect(result.outcome).toBe('updated')
+    expect(buildCalls()).toBe(4)
+    expect(sleepDelays(deps)).toEqual([2000, 4000, 8000])
+  })
+
+  it('treats a network error that never clears as an outage with no status', async () => {
+    const fetchImpl = (async () => {
+      throw new TypeError('fetch failed')
+    }) as typeof fetch
+    const deps = makeDeps({ fetchImpl })
+    const result = await refreshSnapshot(deps)
+
+    expect(result).toEqual({ outcome: 'outage', attempts: 5, lastStatus: null })
+    expect(deps.writeSnapshot).not.toHaveBeenCalled()
+  })
+
+  it('succeeds on attempt 3 after 403, 403, 200 with the identifying User-Agent on all three requests', async () => {
+    const { route } = buildsThen([403, 403])
+    const { fetchImpl, calls } = recordingFetch(route)
+    const deps = makeDeps({ fetchImpl })
+    const result = await refreshSnapshot(deps)
+
+    expect(result.outcome).toBe('updated')
+    expect(sleepDelays(deps)).toEqual([2000, 4000])
+    const buildRequests = calls.filter((call) => call.url === BUILDS_URL)
+    expect(buildRequests).toHaveLength(3)
+    for (const call of buildRequests) expect(call.headers['User-Agent']).toBe(USER_AGENT)
+  })
+
+  it('never sends a second identity: five 403 responses are an outage and every attempt carries only USER_AGENT', async () => {
+    const { fetchImpl, calls } = recordingFetch(() => new Response('forbidden', { status: 403 }))
+    const deps = makeDeps({ fetchImpl })
+    const result = await refreshSnapshot(deps)
+
+    expect(result).toEqual({ outcome: 'outage', attempts: 5, lastStatus: 403 })
+    expect(calls).toHaveLength(5)
+    for (const call of calls) expect(call.headers).toEqual({ 'User-Agent': USER_AGENT })
+    expect(new Set(calls.map((call) => call.headers['User-Agent']))).toEqual(new Set([USER_AGENT]))
+  })
+
+  it.each([403, 503])('returns an outage when %i persists on a table call, writing nothing', async (status) => {
+    const normal = wagoRoutes(BUILD)
+    const route: Route = (url) =>
+      url === tableUrl('ItemSparse', BUILD) ? new Response('unavailable', { status }) : normal(url)
+    const { fetchImpl, calls } = recordingFetch(route)
+    const deps = makeDeps({ fetchImpl })
+    const result = await refreshSnapshot(deps)
+
+    expect(result).toEqual({ outcome: 'outage', attempts: 5, lastStatus: status })
+    expect(deps.writeSnapshot).not.toHaveBeenCalled()
+    for (const call of calls) expect(call.headers['User-Agent']).toBe(USER_AGENT)
+  })
+
+  it.each([400, 401, 404, 410])('throws on a %i from the builds call at once, with no retry and no sleep', async (status) => {
+    const { fetchImpl, calls } = recordingFetch(() => new Response('nope', { status }))
+    const deps = makeDeps({ fetchImpl })
+    await expect(refreshSnapshot(deps)).rejects.toThrow(new RegExp(String(status)))
+    expect(calls).toHaveLength(1)
+    expect(deps.sleep).not.toHaveBeenCalled()
+    expect(deps.writeSnapshot).not.toHaveBeenCalled()
+  })
+
+  it('throws on a 404 from a table call instead of reporting an outage', async () => {
+    const normal = wagoRoutes(BUILD)
+    const route: Route = (url) =>
+      url === tableUrl('Map', BUILD) ? new Response('Table not found', { status: 404 }) : normal(url)
+    const deps = makeDeps({ fetchImpl: recordingFetch(route).fetchImpl })
+    await expect(refreshSnapshot(deps)).rejects.toThrow(/404/)
+    expect(deps.sleep).not.toHaveBeenCalled()
+    expect(deps.writeSnapshot).not.toHaveBeenCalled()
+  })
+
+  it('logs each retry with the attempt, the status and the delay', async () => {
+    const { route } = buildsThen([503])
+    const deps = makeDeps({ fetchImpl: recordingFetch(route).fetchImpl })
+    await refreshSnapshot(deps)
+    const lines = (deps.log as ReturnType<typeof vi.fn>).mock.calls.map((call) => String(call[0]))
+    expect(lines.some((line) => /attempt 1/.test(line) && /503/.test(line) && /2000/.test(line))).toBe(true)
   })
 })
