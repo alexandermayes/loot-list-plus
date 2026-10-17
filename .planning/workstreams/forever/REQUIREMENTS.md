@@ -24,7 +24,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **EXPN-02**: The seeder resolves every expansion through one registry; no displayName if/else chains remain
 - [x] **EXPN-03**: The five existing expansions seed byte-identical rows through adapters (golden-row snapshot test)
 - [ ] **EXPN-04**: A Vitest manifest gate rejects duplicate ids, missing token classes, phase or raid gaps, and name mismatches before merge
-- [ ] **EXPN-05**: Catalog sync for Forever is idempotent and never deletes or renames a referenced row
+- [x] **EXPN-05**: Catalog sync for Forever is idempotent and never deletes or renames a referenced row
 - [ ] **EXPN-06**: wago.tools snapshots are committed with provenance; no runtime or test code fetches wago or Wowhead live
 
 ### Discovery lists
@@ -135,7 +135,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXPN-02 | Phase 2 | Pending |
 | EXPN-03 | Phase 2 | Complete |
 | EXPN-04 | Phase 2 | Pending |
-| EXPN-05 | Phase 2 | Pending |
+| EXPN-05 | Phase 2 | Complete |
 | EXPN-06 | Phase 2 | Pending |
 | DISC-01 | Phase 3 | Pending |
 | DISC-02 | Phase 4 | Pending |

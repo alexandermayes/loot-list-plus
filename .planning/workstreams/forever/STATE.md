@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 02
 current_phase_name: Expansion Onboarding Manifest
 status: executing
-stopped_at: Completed 02-08-PLAN.md
-last_updated: "2026-10-17T04:12:06.238Z"
+stopped_at: Completed 02-10-PLAN.md
+last_updated: "2026-10-17T04:20:23.187Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 02 execution started
-state_head: 7aa8a7fd4d1f6801c729f5af8dba976de146784d
+state_head: c6d4d6285205b6bbdff2b348013f19b009edba0d
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 22
-  completed_plans: 17
+  completed_plans: 18
   percent: 13
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 02 (Expansion Onboarding Manifest) — EXECUTING
-Plan: 8 of 13 complete; next incomplete plan is 02-10 (wave 3)
+Plan: 9 of 13 complete; next incomplete plan is 02-11 (wave 3)
 Status: Ready to execute
 Last activity: 2026-10-14 — Phase 02 execution started
 
@@ -86,6 +86,7 @@ Progress: [██░░░░░░░░] 1/8 phases ([█░░░░░░░
 | Phase 02 P13 | 175 min wall (incl. checkpoint wait) | 3 tasks | 13 files |
 | Phase 02 P04 | n/a (wall clock spans checkpoint wait) | 2 tasks | 5 files |
 | Phase 02 P08 | ~20 min | 2 tasks | 3 files |
+| Phase 02 P10 | 2 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -114,6 +115,7 @@ Progress: [██░░░░░░░░] 1/8 phases ([█░░░░░░░
 - [Phase 02]: 02-02: zod 4.6.5 and csv-parse 7.0.2 installed with exact pins after owner legitimacy approval; manifest schema kept outside the domain barrel — Supply-chain mitigation T-02-SC and bundle reach T-02-02-01
 - [Phase 02]: 02-07: snapshot sha256 input is canonicalSnapshotPayload({ build, tables }) (sorted keys, rows by ID, fetchedAt excluded); PROVISIONAL_CEILING = 9 pins the allowlist size — A re-pull of unchanged data hashes the same, and allowlist growth needs a visible reviewed ceiling edit (D-15)
 - [Phase 02]: EXPANSION_NAME_TO_SLUG keeps no Forever key; tests and new callers read slugs from the registry (getExpansionMeta) because the reserve-run route keys off that map
+- [Phase 02]: 02-10: sync:forever is dry-run by default, --apply writes, unknown flags exit 1; duplicates after apply are reported, never deleted — No unique index on raid_tiers (expansion_id, name) and a migration is out of phase scope; a typo must not silently run as the wrong mode
 
 ### Pending Owner Inputs
 
@@ -138,6 +140,6 @@ Progress: [██░░░░░░░░] 1/8 phases ([█░░░░░░░
 
 ## Session Continuity
 
-Last session: 2026-10-17T04:12:06.182Z
-Stopped at: Completed 02-08-PLAN.md
+Last session: 2026-10-17T04:20:23.110Z
+Stopped at: Completed 02-10-PLAN.md
 Resume file: None
