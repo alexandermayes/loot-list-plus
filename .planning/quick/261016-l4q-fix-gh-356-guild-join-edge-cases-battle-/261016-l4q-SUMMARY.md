@@ -26,7 +26,7 @@ completed: 2026-10-16
 
 ## Commits
 
-Branch fix/356-guild-join-edge-cases, PR #429 (awaiting copy sign-off before merge):
+Branch fix/356-guild-join-edge-cases, PR #429, squash-merged to main as f5d33714 after copy sign-off (#356 closed):
 - b47db258 fix(domain): decide guild join role, trial and joined_via in one pure rule (#356)
 - 49f294a9 fix(api): creator gets Guild Master on Battle.net import, alts inherit trial, joined_via from the recorded join (#356)
 - d943ca24 fix(ui): drop the dead pending_guild_join hint from CreateCharacterModal (#356)
@@ -53,7 +53,7 @@ Branch fix/356-guild-join-edge-cases, PR #429 (awaiting copy sign-off before mer
 
 ## Flags for the user
 
-- Copy needing sign-off (shown as a 10 second warning; guildName falls back to "the guild"):
+- Copy signed off 2026-10-16 (shown as a 10 second warning; guildName falls back to "the guild"):
   1. 403: "Character created, but not added to {guildName}. You are not a member of this guild. Ask an officer for a new invite link."
   2. Other server error with a message: "Character created, but not added to {guildName}. {serverError}"
   3. Thrown request or no message: "Character created, but not added to {guildName}. Try again from the character settings."

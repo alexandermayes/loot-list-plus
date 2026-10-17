@@ -24,7 +24,7 @@ completed: 2026-10-16
 
 ## Commits
 
-Branch fix/320-companion-stuck-entry-backoff, PR #435 (awaiting copy sign-off before merge):
+Branch fix/320-companion-stuck-entry-backoff, PR #435, squash-merged to main as 9907d824 after copy sign-off:
 - abdd6ca1 test(companion): expect per-entry outcomes from submitAwards and submitAttendance (GH #320)
 - 89ff5791 fix(companion): report a per-entry status and error from submitAwards and submitAttendance (GH #320)
 - 5129883b test(companion): add failing tests for rejection classification, the stuck-entry store and removePendingEntries (GH #320)
@@ -45,7 +45,7 @@ Branch fix/320-companion-stuck-entry-backoff, PR #435 (awaiting copy sign-off be
 
 - `npx vitest run companion`: 72 tests before, 92 after (20 new, each seen failing first)
 - `npm run lint` 0 errors; `npm run typecheck` clean; `cd companion && npm run typecheck && npm run build` clean with the three output files present
-- CI on PR #435 pending at the time of writing
+- CI on PR #435 green before merge
 
 ## Deviations from Plan
 
@@ -55,7 +55,7 @@ Branch fix/320-companion-stuck-entry-backoff, PR #435 (awaiting copy sign-off be
 
 ## Flags for the user
 
-- Copy needing sign-off (verbatim in PR #435): the parked sentences ("1 award will not be retried. The server rejected it 3 times. Use "Clear stuck entries" to remove it from the addon." and plural forms), tray item and button "Clear stuck entries", card heading "Will not be retried", and the helper text "The server rejected these every time, so the companion has stopped resending them. Clearing removes them from the addon file. Do it while WoW is closed, because the game writes its own copy back at logout."
+- Copy signed off 2026-10-16 (verbatim in PR #435): the parked sentences ("1 award will not be retried. The server rejected it 3 times. Use "Clear stuck entries" to remove it from the addon." and plural forms), tray item and button "Clear stuck entries", card heading "Will not be retried", and the helper text "The server rejected these every time, so the companion has stopped resending them. Clearing removes them from the addon file. Do it while WoW is closed, because the game writes its own copy back at logout."
 - Pre-existing gap, not fixed: the renderer never calls window.companion.sync.start, so the engine is only started from the main process.
 - Deferred: a "Retry stuck entries" action and a two-step confirm on Clear.
 
