@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 02
 current_phase_name: Expansion Onboarding Manifest
 status: executing
-stopped_at: Completed 02-13-PLAN.md
-last_updated: "2026-10-16T22:02:14.148Z"
+stopped_at: Completed 02-04-PLAN.md
+last_updated: "2026-10-17T04:01:34.417Z"
 last_activity: 2026-10-14
 last_activity_desc: Phase 02 execution started
-state_head: 4db96a61a4bdd0984b964a4585809cf7fbe4d8ea
+state_head: 262cef6b81337dc6796e576464fc83c9e8c463ad
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 22
-  completed_plans: 15
+  completed_plans: 16
   percent: 13
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 02 (Expansion Onboarding Manifest) — EXECUTING
-Plan: 6 of 13 complete; next incomplete plan is 02-04 (wave 3)
+Plan: 7 of 13 complete; next incomplete plan is 02-08 (wave 3)
 Status: Ready to execute
 Last activity: 2026-10-14 — Phase 02 execution started
 
@@ -84,6 +84,7 @@ Progress: [██░░░░░░░░] 1/8 phases ([█░░░░░░░
 | Phase 02 P03 | 23 min | 2 tasks | 7 files |
 | Phase 02 P07 | 13 min | 2 tasks | 5 files |
 | Phase 02 P13 | 175 min wall (incl. checkpoint wait) | 3 tasks | 13 files |
+| Phase 02 P04 | n/a (wall clock spans checkpoint wait) | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -111,6 +112,7 @@ Progress: [██░░░░░░░░] 1/8 phases ([█░░░░░░░
 - [Phase 02]: 02-12: Forever raids use the neutral FOREVER_RAID_ICON (question mark) and the Forever path never reads the name map; getRaidShorthand unchanged — Forever raid names collide with Classic and TBC names; inventory test keeps game-less calls explicit until 02-13
 - [Phase 02]: 02-02: zod 4.6.5 and csv-parse 7.0.2 installed with exact pins after owner legitimacy approval; manifest schema kept outside the domain barrel — Supply-chain mitigation T-02-SC and bundle reach T-02-02-01
 - [Phase 02]: 02-07: snapshot sha256 input is canonicalSnapshotPayload({ build, tables }) (sorted keys, rows by ID, fetchedAt excluded); PROVISIONAL_CEILING = 9 pins the allowlist size — A re-pull of unchanged data hashes the same, and allowlist growth needs a visible reviewed ceiling edit (D-15)
+- [Phase 02]: EXPANSION_NAME_TO_SLUG keeps no Forever key; tests and new callers read slugs from the registry (getExpansionMeta) because the reserve-run route keys off that map
 
 ### Pending Owner Inputs
 
@@ -135,6 +137,6 @@ Progress: [██░░░░░░░░] 1/8 phases ([█░░░░░░░
 
 ## Session Continuity
 
-Last session: 2026-10-16T22:02:14.093Z
-Stopped at: Completed 02-13-PLAN.md
+Last session: 2026-10-17T04:01:34.364Z
+Stopped at: Completed 02-04-PLAN.md
 Resume file: None
