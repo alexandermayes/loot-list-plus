@@ -24,7 +24,7 @@ completed: 2026-10-16
 
 ## Commits
 
-Website and companion: branch fix/321-backlink-addon-awards, PR #439 (merge commit recorded in STATE.md once merged):
+Website and companion: branch fix/321-backlink-addon-awards, PR #439, squash-merged to main as a1593bf1:
 - 595d84d5 fix(addon-api): link addon awards when attendance arrives later (#321)
 - 376979a0 fix(companion): send the session's date as awarded_date, not the UTC clock (#321)
 - e1bd83dc Merge origin/main (keeps the GH #319 raid_name forwarding next to the #321 awarded_date resolution)
@@ -40,7 +40,7 @@ Addon half (Task 3, stamp sessionDate on each award) is not started: it waits fo
 
 ## Verification
 
-- Root `npx vitest run`: 4105 to 4135 tests (+15 helper, +3 attendance route, +6 import-string, +6 companion), all passing on the executor's tree. After merging origin/main (which carried #319): companion, app/api/addon and utils/raid-events suites 299 tests passing; `npm run typecheck` and companion `tsc --noEmit` clean; eslint clean on the merged files. Full CI on PR #439 pending at the time of writing.
+- Root `npx vitest run`: 4105 to 4135 tests (+15 helper, +3 attendance route, +6 import-string, +6 companion), all passing on the executor's tree. After merging origin/main (which carried #319): companion, app/api/addon and utils/raid-events suites 299 tests passing; `npm run typecheck` and companion `tsc --noEmit` clean; eslint clean on the merged files. CI on PR #439 green before merge.
 
 ## Deviations from Plan
 
