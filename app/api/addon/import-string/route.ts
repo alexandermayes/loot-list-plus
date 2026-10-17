@@ -5,7 +5,8 @@ import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError, trackEvent } from '@/utils/analytics/server'
 import { notifyLootAward, type LootAward } from '@/lib/discord-loot-announcements'
 import { recomputeBlpForEvents, recomputeBlpForItems } from '@/utils/blp/recompute'
-import { importAttendanceByTeam } from '@/utils/raid-events/team-routing'
+import { importAttendanceByTeam, toRaidNightDate } from '@/utils/raid-events/team-routing'
+import { linkUnlinkedAddonAwards } from '@/utils/raid-events/link-unlinked-awards'
 import { findRaidNightForAward, guildRaidTimeZone, raidNightDate } from '@/lib/addon/raid-night'
 import {
   resolveGuildLootItem,
@@ -30,6 +31,10 @@ interface AddonAward {
   awardedAt: string
   /** The addon's own award id (addon 1.1.0 and later), optional. */
   awardId?: string
+  /** The addon session's raidDate (YYYY-MM-DD, UTC) at award time, addon
+   * 1.2.0 and later (GH #321). Picks the night when no session in this
+   * export contains the award. */
+  sessionDate?: string
   manual?: boolean
 }
 
@@ -107,6 +112,16 @@ interface ImportPayload {
  * UTC date are not moved. A missing or malformed startTime keeps raidDate,
  * and a failed time zone read carries on with the UTC dates as before. The
  * dedupe keys still read the raw awardedAt and awardId, untouched.
+ *
+ * GH #321: after the attendance loop, the guild's addon awards saved earlier
+ * without a raid night and dated one of the nights this import touched are
+ * linked to it (linkUnlinkedAddonAwards, team-aware, copy-safe) and their
+ * items join the BLP recompute. A linking failure is logged and the import
+ * carries on. An award that carries the addon's sessionDate (addon 1.2.0)
+ * and matches no session here uses that date as its UTC night instead of
+ * the awardedAt date, so an award made after midnight UTC still finds the
+ * night the session started on; a malformed sessionDate falls back to
+ * awardedAt.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -199,10 +214,12 @@ export async function POST(request: NextRequest) {
     // creates the payload's raid nights, so the awards below can link to
     // them. Awards never create a night themselves.
     const attendanceEventIds = new Set<string>()
+    const attendanceNights = new Set<string>()
     for (const record of attendance) {
       try {
-        const raidEventIds = await processAttendance(supabase, payload.guildId, record, raidTimeZone)
+        const { eventIds: raidEventIds, raidNight } = await processAttendance(supabase, payload.guildId, record, raidTimeZone)
         for (const id of raidEventIds) attendanceEventIds.add(id)
+        attendanceNights.add(raidNight)
         results.attendance.processed++
       } catch (err) {
         console.error('Failed to process attendance:', err)
@@ -210,8 +227,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Process awards, each linked to its session's raid night when one matches.
+    // Items newly linked to a night in this import, for the BLP recompute.
     const linkedItemIds = new Set<string>()
+
+    // regression for #321: the nights now exist, so addon awards saved
+    // earlier without one (an earlier companion sync or paste) catch up.
+    // Awards in this import link themselves below; a failure here is logged
+    // and the import carries on.
+    for (const raidNight of attendanceNights) {
+      try {
+        const linked = await linkUnlinkedAddonAwards(supabase, payload.guildId, raidNight)
+        for (const id of linked.itemIds) linkedItemIds.add(id)
+      } catch (linkError) {
+        console.error('Failed to link unlinked addon awards after an import:', linkError)
+        trackApiError('unknown', 'POST /api/addon/import-string', linkError instanceof Error ? linkError : new Error(String(linkError)))
+      }
+    }
+
+    // Process awards, each linked to its session's raid night when one matches.
     for (let i = 0; i < awards.length; i++) {
       const award = awards[i]
       try {
@@ -413,16 +446,21 @@ async function processAward(
   // (the session's raidDate, else the awardedAt date) is used if it does
   // (D3). matchAwardSession still matches on the UTC window. A lookup
   // failure saves the award unlinked instead of failing it.
+  // regression for #321: with no session in this export, the addon's own
+  // sessionDate (the UTC date its session started) is the UTC night, so an
+  // award made after midnight UTC still finds the night it belongs to. A
+  // malformed sessionDate falls back to the awardedAt date, never to a 400.
   const zonedDate = raidTimeZone === null
     ? null
     : raidNightDate(session ? session.startTime : award.awardedAt, raidTimeZone)
+  const legacyDate = session?.raidDate ?? toRaidNightDate(award.sessionDate) ?? award.awardedAt
   let raidEventId: string | null = null
   let storedDate: string | null = zonedDate
   try {
     const night = await findRaidNightForAward(
       supabase,
       guildId,
-      { zonedDate, legacyDate: session?.raidDate ?? award.awardedAt },
+      { zonedDate, legacyDate },
       characterId,
     )
     raidEventId = night.raidEventId
@@ -472,7 +510,7 @@ async function processAttendance(
   guildId: string,
   record: AddonAttendanceRecord,
   raidTimeZone: string | null
-): Promise<string[]> {
+): Promise<{ eventIds: string[]; raidNight: string }> {
   // Resolve active members → character ids + names.
   const { data: memberships } = await supabase
     .from('character_guild_memberships')
@@ -491,5 +529,7 @@ async function processAttendance(
   // time zone; a missing or malformed startTime keeps the UTC raidDate.
   const raidNight = (raidTimeZone !== null ? raidNightDate(record.startTime, raidTimeZone) : null) ?? record.raidDate
   const { eventIds } = await importAttendanceByTeam(supabase, guildId, raidNight, members, attendedSet)
-  return eventIds
+  // The night is returned too, so the route can link the awards saved
+  // before it existed (GH #321).
+  return { eventIds, raidNight }
 }

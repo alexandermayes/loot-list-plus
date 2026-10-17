@@ -8,6 +8,7 @@ import {
   buildGuildDataLua,
   convertItemsToLuaFormat,
   convertMembersToLuaFormat,
+  matchPendingSession,
   pendingAttendanceIdentity,
   pendingAwardIdentity,
   readPendingLists,
@@ -134,6 +135,72 @@ describe('toPendingAwardRequests (FU-A of 261001-tv5, D-07)', () => {
       expect(blank.raid_name).toBeUndefined()
       expect(JSON.parse(JSON.stringify(numeric))).not.toHaveProperty('raid_name')
     })
+  })
+})
+
+describe('awarded_date from the session, not the UTC clock (GH #321)', () => {
+  // A session that starts in the evening UTC and runs past midnight.
+  const session = {
+    raidDate: '2026-09-20',
+    raidName: "Temple of Ahn'Qiraj",
+    startTime: '2026-09-20T19:00:00Z',
+    endTime: '2026-09-21T02:00:00Z',
+    attended: ['Thrall'],
+  }
+  const lateAward = { wowheadId: 20928, characterName: 'Thrall', awardedAt: '2026-09-21T01:00:00Z' }
+
+  it('D1 a string sessionDate wins over the UTC date of awardedAt', () => {
+    const [request] = toPendingAwardRequests([{ ...lateAward, sessionDate: '2026-09-20' }])
+    expect(request.awarded_date).toBe('2026-09-20')
+    expect(request.awarded_at).toBe('2026-09-21T01:00:00Z')
+  })
+
+  it('D2 an addon 1.1.0 award inside a pending session takes that session raidDate', () => {
+    const [request] = toPendingAwardRequests([lateAward], [session])
+    expect(request.awarded_date).toBe('2026-09-20')
+  })
+
+  it('D3 with no matching session the UTC date of awardedAt is used', () => {
+    const [outside] = toPendingAwardRequests([{ ...lateAward, awardedAt: '2026-09-21T03:00:00Z' }], [session])
+    expect(outside.awarded_date).toBe('2026-09-21')
+    const [noSessions] = toPendingAwardRequests([lateAward])
+    expect(noSessions.awarded_date).toBe('2026-09-21')
+    const [emptyTable] = toPendingAwardRequests([lateAward], {})
+    expect(emptyTable.awarded_date).toBe('2026-09-21')
+  })
+
+  it('D4 a malformed sessionDate is ignored and the session or the UTC date decides', () => {
+    for (const bad of ['20/09/2026', '2026-09-20T19:00:00Z', 20260920, '']) {
+      const [withSession] = toPendingAwardRequests([{ ...lateAward, sessionDate: bad }], [session])
+      expect(withSession.awarded_date).toBe('2026-09-20')
+      const [withoutSession] = toPendingAwardRequests([{ ...lateAward, sessionDate: bad }])
+      expect(withoutSession.awarded_date).toBe('2026-09-21')
+    }
+  })
+
+  it('D5 matchPendingSession mirrors matchAwardSession: latest start wins, unparseable times and bad raidDates are skipped', () => {
+    const earlier = { ...session, startTime: '2026-09-20T18:00:00Z', raidDate: '2026-09-19' }
+    expect(matchPendingSession('2026-09-21T01:00:00Z', [earlier, session])).toBe('2026-09-20')
+    expect(matchPendingSession('2026-09-21T01:00:00Z', [{ ...session, startTime: '19:00' }])).toBeNull()
+    expect(matchPendingSession('2026-09-21T01:00:00Z', [{ ...session, endTime: undefined }])).toBeNull()
+    expect(matchPendingSession('2026-09-21T01:00:00Z', [{ ...session, raidDate: '2026-9-20' }])).toBeNull()
+    expect(matchPendingSession('not a time', [session])).toBeNull()
+    expect(matchPendingSession(undefined, [session])).toBeNull()
+    expect(matchPendingSession('2026-09-21T01:00:00Z', 'junk')).toBeNull()
+    expect(matchPendingSession('2026-09-21T01:00:00Z', [null, 7, 'x'])).toBeNull()
+  })
+
+  it('D6 the pairs keep the raw entry and the award key is unchanged by the session date', () => {
+    const raw = [{ ...lateAward, awardId: AWARD_ID }]
+    const [pair] = toPendingAwardPairs(raw, [session])
+    expect(pair.entry).toBe(raw[0])
+    expect(pair.request.awarded_date).toBe('2026-09-20')
+    expect(addonAwardKeys({
+      awardedAt: pair.request.awarded_at,
+      wowheadId: pair.request.wowhead_id,
+      characterName: pair.request.character_name,
+      awardId: pair.request.award_id,
+    }).key).toBe(`addon2:${AWARD_ID}:20928:thrall`)
   })
 })
 
