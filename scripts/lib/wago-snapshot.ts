@@ -14,6 +14,11 @@
  * until then a wrong guess fails loudly (a missing header or an unknown builds
  * shape throws) instead of writing a partial snapshot.
  *
+ * Every request sends only USER_AGENT, on every attempt. A 403 is retried with
+ * the same backoff as 429 and 5xx and is never retried under another identity,
+ * because changing identity to get past a block would work around an access
+ * control (owner decision 2026-10-14). A block that persists is an outage.
+ *
  * Side-effect free at import time: no I/O, no console output.
  */
 import { createHash } from 'node:crypto'
@@ -64,19 +69,113 @@ function tableUrl(table: PinnedTable, build: string): string {
   return SOURCE_TEMPLATE.replace('{table}', table).replace('{build}', encodeURIComponent(build))
 }
 
+// 403 is retried like the others: a public host can answer a scripted fetch with
+// 403 for a while (research A4: 403 on 2026-09-13, 200 on 2026-09-25). It is never
+// worked around by changing identity, so one that persists is simply an outage.
+const RETRYABLE_STATUSES: ReadonlySet<number> = new Set([403, 429, 500, 502, 503, 504])
+
+/** A failure worth another attempt: a retryable status, a network error or a timeout. */
+export class RetryableHttpError extends Error {
+  constructor(
+    message: string,
+    /** HTTP status, or null for a network error or timeout. */
+    readonly status: number | null,
+    /** Parsed Retry-After in milliseconds, when the response carried a readable one. */
+    readonly retryAfterMs: number | null = null,
+  ) {
+    super(message)
+    this.name = 'RetryableHttpError'
+  }
+}
+
+/** A failure retrying cannot fix: a 404, any other non-2xx. */
+export class TerminalHttpError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message)
+    this.name = 'TerminalHttpError'
+  }
+}
+
+// Retry-After in seconds. The HTTP-date form is not honoured; backoff applies instead.
+function retryAfterMs(response: Response): number | null {
+  const header = response.headers.get('retry-after')
+  if (header === null || !/^\d+$/.test(header.trim())) return null
+  return Number(header.trim()) * 1000
+}
+
 /**
- * One attempt: the USER_AGENT header and a 30 s timeout. A non-2xx response
- * throws with the status in the message.
+ * One attempt: the USER_AGENT header and nothing else, with a 30 s timeout.
+ * Retryable statuses, network errors and timeouts throw RetryableHttpError; any
+ * other non-2xx throws TerminalHttpError. Both carry the status in the message.
  */
 async function fetchText(fetchImpl: typeof fetch, url: string): Promise<string> {
-  const response = await fetchImpl(url, {
-    headers: { 'User-Agent': USER_AGENT },
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-  })
-  if (!response.ok) {
-    throw new Error(`GET ${url} failed with HTTP ${response.status}`)
+  let response: Response
+  try {
+    response = await fetchImpl(url, {
+      headers: { 'User-Agent': USER_AGENT },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    })
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
+    throw new RetryableHttpError(`GET ${url} failed before a response: ${reason}`, null)
   }
-  return response.text()
+  if (!response.ok) {
+    const message = `GET ${url} failed with HTTP ${response.status}`
+    if (RETRYABLE_STATUSES.has(response.status)) {
+      throw new RetryableHttpError(message, response.status, retryAfterMs(response))
+    }
+    throw new TerminalHttpError(message, response.status)
+  }
+  try {
+    return await response.text()
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
+    throw new RetryableHttpError(`GET ${url} failed while reading the body: ${reason}`, null)
+  }
+}
+
+export type RetryResult<T> =
+  | { kind: 'ok'; value: T; attempts: number }
+  | { kind: 'exhausted'; attempts: number; lastStatus: number | null }
+
+export interface RetryOptions {
+  attempts?: number
+  baseMs?: number
+  capMs?: number
+  sleep: (ms: number) => Promise<void>
+  random?: () => number
+  /** Called before each wait, for logging. `attempt` is the one that just failed. */
+  onRetry?: (info: { attempt: number; status: number | null; delayMs: number }) => void
+}
+
+/**
+ * Runs `fn` up to `attempts` times. After failure k (1-based) it waits
+ * baseMs * 2^(k-1), jittered by plus or minus 25 percent, and never longer than
+ * capMs. A Retry-After on the failure replaces that delay (still capped). Only
+ * RetryableHttpError is retried: a TerminalHttpError or any other error
+ * propagates at once. Running out of attempts is a result, not a throw, so the
+ * caller decides what an outage means.
+ */
+export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions): Promise<RetryResult<T>> {
+  const { attempts = 5, baseMs = 2000, capMs = 60_000, sleep, random = Math.random, onRetry } = options
+  let lastStatus: number | null = null
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return { kind: 'ok', value: await fn(), attempts: attempt }
+    } catch (error) {
+      if (!(error instanceof RetryableHttpError)) throw error
+      lastStatus = error.status
+      if (attempt === attempts) break
+      const jittered = baseMs * 2 ** (attempt - 1) * (0.75 + random() * 0.5)
+      const delayMs = Math.min(capMs, error.retryAfterMs ?? jittered)
+      onRetry?.({ attempt, status: error.status, delayMs })
+      await sleep(delayMs)
+    }
+  }
+  return { kind: 'exhausted', attempts, lastStatus }
 }
 
 function versionsFrom(list: unknown): string[] {
@@ -225,8 +324,20 @@ export interface RefreshDeps {
 }
 
 export type RefreshResult =
+  | { outcome: 'outage'; attempts: number; lastStatus: number | null }
   | { outcome: 'unchanged'; build: string; sha256: string; promotable: PromotableBoss[] }
   | { outcome: 'updated'; build: string; sha256: string; snapshot: ReferenceSnapshot; promotable: PromotableBoss[] }
+
+// Thrown inside refreshSnapshot when a request runs out of retries, and caught
+// there to become the 'outage' outcome. It never leaves this module.
+class WagoOutage extends Error {
+  constructor(
+    readonly attempts: number,
+    readonly lastStatus: number | null,
+  ) {
+    super(`wago unavailable after ${attempts} attempts`)
+  }
+}
 
 /**
  * Re-pulls the pinned tables for the newest build under the manifest's prefix,
@@ -234,12 +345,41 @@ export type RefreshResult =
  * differs from the committed one. fetchedAt is excluded from the hash, so a
  * re-pull of unchanged data never produces a diff (research Pitfall 4). The
  * snapshot is schema-validated before any write.
+ *
+ * Outage set (D-13 as amended 2026-10-14): when retries run out on 403, 429,
+ * 500, 502, 503, 504, a network error or a timeout, on any request, it returns
+ * outcome 'outage' and writes nothing. Everything else throws: a 404 or other
+ * non-2xx, a missing CSV header, an unknown builds shape, no build under the
+ * prefix, a snapshot that fails the schema.
  */
 export async function refreshSnapshot(deps: RefreshDeps): Promise<RefreshResult> {
+  try {
+    return await refresh(deps)
+  } catch (error) {
+    if (error instanceof WagoOutage) {
+      return { outcome: 'outage', attempts: error.attempts, lastStatus: error.lastStatus }
+    }
+    throw error
+  }
+}
+
+async function refresh(deps: RefreshDeps): Promise<RefreshResult> {
   const { fetchImpl, manifest, log } = deps
   const { product, buildPrefix } = manifest.reference
 
-  const buildsText = await fetchText(fetchImpl, BUILDS_URL)
+  // Every request goes through the same retry policy and the same single identity.
+  const get = async (url: string): Promise<string> => {
+    const result = await withRetry(() => fetchText(fetchImpl, url), {
+      sleep: deps.sleep,
+      random: deps.random,
+      onRetry: ({ attempt, status, delayMs }) =>
+        log(`attempt ${attempt} failed (${status === null ? 'no response' : `HTTP ${status}`}); retrying in ${delayMs} ms`),
+    })
+    if (result.kind === 'exhausted') throw new WagoOutage(result.attempts, result.lastStatus)
+    return result.value
+  }
+
+  const buildsText = await get(BUILDS_URL)
   let buildsJson: unknown
   try {
     buildsJson = JSON.parse(buildsText)
@@ -251,7 +391,7 @@ export async function refreshSnapshot(deps: RefreshDeps): Promise<RefreshResult>
 
   const untrimmed: Partial<Tables> = {}
   for (const table of PINNED_TABLES) {
-    const csv = await fetchText(fetchImpl, tableUrl(table, build))
+    const csv = await get(tableUrl(table, build))
     // The cast is per table: parseTable's return type tracks the table name.
     ;(untrimmed as Record<PinnedTable, unknown>)[table] = parseTable(csv, table)
   }

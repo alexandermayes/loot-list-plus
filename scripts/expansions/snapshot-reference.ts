@@ -13,8 +13,21 @@
  * When GITHUB_OUTPUT is set, appends outage, changed, promotable_count and
  * promotable lines for the workflow to read.
  *
- * Exit codes: 0 on success. Any thrown error prints an ::error:: line and
- * exits 1.
+ * Outage set (D-13 as amended 2026-10-14): after 5 attempts with exponential
+ * backoff, a 403, 429, 500, 502, 503 or 504, a network error or a timeout is a
+ * wago outage. The script prints a ::notice:: line, writes outage=true and
+ * changed=false to GITHUB_OUTPUT, writes no file and exits 0, so an outage never
+ * turns CI red.
+ *
+ * Failure set: a 404 or other non-2xx, a missing expected CSV header, no build
+ * under the manifest prefix, an unrecognised builds list or a snapshot that
+ * fails the schema prints an ::error:: line and exits 1.
+ *
+ * Only the identifying User-Agent is ever sent, on every attempt; a persistent
+ * 403 is never retried under a different or browser-style identity. The owner
+ * confirmed the outage set and the single identity on 2026-10-14.
+ *
+ * Exit codes: 0 on success or outage, 1 on any failure.
  */
 import { appendFileSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -83,6 +96,15 @@ async function main(): Promise<void> {
     allowlist,
     log: (line) => console.log(line),
   })
+
+  if (result.outcome === 'outage') {
+    // A green notice, but the attempts and last status stay visible in the run summary.
+    console.log(
+      `::notice::wago unavailable after ${result.attempts} attempts (last status ${result.lastStatus ?? 'none'}); snapshot not refreshed`,
+    )
+    setOutputs({ outage: 'true', changed: 'false' })
+    return
+  }
 
   const promotable = result.promotable.map((boss) => `${boss.raid}/${boss.bossKey} (encounter ${boss.encounterId})`)
   setOutputs({
