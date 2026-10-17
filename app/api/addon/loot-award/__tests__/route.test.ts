@@ -392,7 +392,7 @@ describe('POST /api/addon/loot-award', () => {
     expect(body.error).not.toContain('No loot item found')
   })
 
-  describe('GH #307: multi-tier items follow the award boss', () => {
+  describe('GH #307 / #319: multi-tier items follow the award boss, then the live raid name', () => {
     function aqFixture(): Fixture {
       return {
         activeExpansionId: 'exp-classic',
@@ -431,6 +431,60 @@ describe('POST /api/addon/loot-award', () => {
       vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
 
       const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 20727, character_name: 'Thrall', boss_name: 'Shared Boss Loot' }))
+      expect(res.status).toBe(200)
+      expect(insertPayload(calls).loot_item_id).toBe('aq20-20727')
+      expect(insertPayload(calls).raid_tier_id).toBe('tier-a-aq20')
+    })
+
+    // regression for #319: the addon's boss is the cached group label, so
+    // the live instance name the companion forwards has to pick the tier.
+    it("files 20727 with boss 'Shared Boss Loot' and raid_name \"Ahn'Qiraj Temple\" under AQ40 via the instance name map", async () => {
+      const { client, calls } = makeClient(aqFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({
+        guild_id: GUILD_ID, wowhead_id: 20727, character_name: 'Thrall',
+        boss_name: 'Shared Boss Loot', raid_name: "Ahn'Qiraj Temple",
+      }))
+      expect(res.status).toBe(200)
+      expect(insertPayload(calls).loot_item_id).toBe('aq40-20727')
+      expect(insertPayload(calls).raid_tier_id).toBe('tier-b-aq40')
+    })
+
+    it("files 20727 with boss 'Shared Boss Loot' and raid_name \"Ruins of Ahn'Qiraj\" under AQ20 via the tier's own name", async () => {
+      const { client, calls } = makeClient(aqFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({
+        guild_id: GUILD_ID, wowhead_id: 20727, character_name: 'Thrall',
+        boss_name: 'Shared Boss Loot', raid_name: "Ruins of Ahn'Qiraj",
+      }))
+      expect(res.status).toBe(200)
+      expect(insertPayload(calls).loot_item_id).toBe('aq20-20727')
+      expect(insertPayload(calls).raid_tier_id).toBe('tier-a-aq20')
+    })
+
+    it("files 20727 with boss C'Thun and raid_name \"Ruins of Ahn'Qiraj\" under AQ40: the boss wins over the raid", async () => {
+      const { client, calls } = makeClient(aqFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({
+        guild_id: GUILD_ID, wowhead_id: 20727, character_name: 'Thrall',
+        boss_name: "C'Thun", raid_name: "Ruins of Ahn'Qiraj",
+      }))
+      expect(res.status).toBe(200)
+      expect(insertPayload(calls).loot_item_id).toBe('aq40-20727')
+      expect(insertPayload(calls).raid_tier_id).toBe('tier-b-aq40')
+    })
+
+    it('ignores a non-string raid_name and files under the fallback tier with 200', async () => {
+      const { client, calls } = makeClient(aqFixture())
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({
+        guild_id: GUILD_ID, wowhead_id: 20727, character_name: 'Thrall',
+        boss_name: 'Shared Boss Loot', raid_name: 42,
+      }))
       expect(res.status).toBe(200)
       expect(insertPayload(calls).loot_item_id).toBe('aq20-20727')
       expect(insertPayload(calls).raid_tier_id).toBe('tier-a-aq20')
