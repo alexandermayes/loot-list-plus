@@ -13,7 +13,12 @@ export interface PendingAwardRequest {
   wowhead_id: number
   character_name: string
   boss_name?: string
-  /** The date part of awardedAt (YYYY-MM-DD), used to find the raid night. */
+  /**
+   * The raid night the award belongs to (YYYY-MM-DD, UTC), used to find the
+   * raid night: the addon's sessionDate (addon 1.2.0), else the date of the
+   * pending session that contains awardedAt, else the date part of awardedAt
+   * (GH #321).
+   */
   awarded_date?: string
   /** The addon's raw award timestamp (UTC ISO), part of the award's key. */
   awarded_at?: string
@@ -57,6 +62,48 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null
 }
 
+const RAID_DATE = /^\d{4}-\d{2}-\d{2}$/
+const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/
+
+function parseIsoTime(value: unknown): number | null {
+  if (typeof value !== 'string' || !ISO_TIMESTAMP.test(value.trim())) return null
+  const time = Date.parse(value.trim())
+  return Number.isNaN(time) ? null : time
+}
+
+/**
+ * The raidDate of the pending attendance record whose [startTime, endTime]
+ * contains awardedAt, or null (GH #321). With overlapping sessions the
+ * latest start wins; records with an unparseable start or end time or a
+ * raidDate not shaped YYYY-MM-DD are skipped, and a non-array list or an
+ * unparseable awardedAt gives null.
+ *
+ * This mirrors matchAwardSession in the website's lib/addon/award-session.ts
+ * (the same rules, without the boss and instance hints). It is a copy, not
+ * an import: the companion's tsconfig maps @/* to companion/src, so the
+ * website's lib is out of reach here. Keep the two in step.
+ */
+// regression for #321
+export function matchPendingSession(awardedAt: unknown, pendingAttendance: unknown): string | null {
+  if (!Array.isArray(pendingAttendance)) return null
+  const awardTime = parseIsoTime(awardedAt)
+  if (awardTime === null) return null
+
+  let best: { start: number; raidDate: string } | null = null
+  for (const candidate of pendingAttendance) {
+    const session = asRecord(candidate)
+    if (!session) continue
+    const start = parseIsoTime(session['startTime'])
+    const end = parseIsoTime(session['endTime'])
+    if (start === null || end === null) continue
+    const raidDate = session['raidDate']
+    if (typeof raidDate !== 'string' || !RAID_DATE.test(raidDate)) continue
+    if (awardTime < start || awardTime > end) continue
+    if (!best || start > best.start) best = { start, raidDate }
+  }
+  return best ? best.raidDate : null
+}
+
 /**
  * Maps the addon's profile.pendingAwards list to loot-award pairs, each the
  * raw entry next to the request built from it.
@@ -65,8 +112,14 @@ function asRecord(value: unknown): Record<string, unknown> | null {
  * in-game award. Absent values stay undefined, so JSON.stringify drops them.
  * A missing or non-array list gives []. Non-record entries are skipped, so
  * pair i and request i always describe the same entry.
+ *
+ * awarded_date is the raid night, not the UTC clock (GH #321): a session
+ * that crosses midnight UTC would otherwise file its late awards on the
+ * next day's night. The addon's sessionDate wins (addon 1.2.0 stamps it);
+ * for older addons the pending session in the same file that contains
+ * awardedAt supplies it; only then does the UTC date of awardedAt stand in.
  */
-export function toPendingAwardPairs(raw: unknown): PendingPair<PendingAwardRequest>[] {
+export function toPendingAwardPairs(raw: unknown, pendingAttendance?: unknown): PendingPair<PendingAwardRequest>[] {
   if (!Array.isArray(raw)) return []
   const pairs: PendingPair<PendingAwardRequest>[] = []
   for (const entry of raw) {
@@ -74,13 +127,19 @@ export function toPendingAwardPairs(raw: unknown): PendingPair<PendingAwardReque
     if (!a) continue
     const awardedAt = typeof a['awardedAt'] === 'string' ? (a['awardedAt'] as string) : undefined
     const awardId = typeof a['awardId'] === 'string' ? (a['awardId'] as string) : undefined
+    // regression for #321
+    const sessionDate = typeof a['sessionDate'] === 'string' && RAID_DATE.test(a['sessionDate']) ? a['sessionDate'] : undefined
+    const awardedDate =
+      sessionDate ??
+      matchPendingSession(awardedAt, pendingAttendance) ??
+      (awardedAt ? awardedAt.split('T')[0] : undefined)
     pairs.push({
       entry,
       request: {
         wowhead_id: a['wowheadId'] as number,
         character_name: a['characterName'] as string,
         boss_name: a['bossName'] as string | undefined,
-        awarded_date: awardedAt ? awardedAt.split('T')[0] : undefined,
+        awarded_date: awardedDate,
         awarded_at: awardedAt,
         award_id: awardId,
       },
@@ -90,8 +149,8 @@ export function toPendingAwardPairs(raw: unknown): PendingPair<PendingAwardReque
 }
 
 /** The loot-award requests alone (used to count pending data). */
-export function toPendingAwardRequests(raw: unknown): PendingAwardRequest[] {
-  return toPendingAwardPairs(raw).map(p => p.request)
+export function toPendingAwardRequests(raw: unknown, pendingAttendance?: unknown): PendingAwardRequest[] {
+  return toPendingAwardPairs(raw, pendingAttendance).map(p => p.request)
 }
 
 /**
