@@ -96,6 +96,45 @@ describe('toPendingAwardRequests (FU-A of 261001-tv5, D-07)', () => {
       )
     }
   })
+
+  // regression for #319: raid_name must come from the live instanceName
+  // only. An addon 1.1.0 award has raidName alone, the cached catalog raid,
+  // which would steer the server's raid step to the wrong tier.
+  describe('raid_name from the live instanceName (GH #319)', () => {
+    it('P6 forwards instanceName as raid_name and ignores the cached raidName', () => {
+      const [request] = toPendingAwardRequests([
+        {
+          wowheadId: 20727, characterName: 'Thrall', bossName: 'Shared Boss Loot',
+          raidName: "Temple of Ahn'Qiraj", instanceName: "Ahn'Qiraj Temple", awardedAt: AWARDED_AT,
+        },
+      ])
+      expect(request.raid_name).toBe("Ahn'Qiraj Temple")
+    })
+
+    it('P7 an addon 1.1.0 award with raidName only produces no raid_name key', () => {
+      const [request] = toPendingAwardRequests([
+        { wowheadId: 20727, characterName: 'Thrall', bossName: 'Shared Boss Loot', raidName: "Ruins of Ahn'Qiraj", awardedAt: AWARDED_AT },
+      ])
+      expect(request).toEqual({
+        wowhead_id: 20727,
+        character_name: 'Thrall',
+        boss_name: 'Shared Boss Loot',
+        awarded_date: '2026-09-20',
+        awarded_at: AWARDED_AT,
+      })
+      expect(JSON.parse(JSON.stringify(request))).not.toHaveProperty('raid_name')
+    })
+
+    it('P8 a non-string or blank instanceName is dropped', () => {
+      const [numeric, blank] = toPendingAwardRequests([
+        { wowheadId: 20727, characterName: 'Thrall', instanceName: 531, awardedAt: AWARDED_AT },
+        { wowheadId: 20727, characterName: 'Thrall', instanceName: '   ', awardedAt: AWARDED_AT },
+      ])
+      expect(numeric.raid_name).toBeUndefined()
+      expect(blank.raid_name).toBeUndefined()
+      expect(JSON.parse(JSON.stringify(numeric))).not.toHaveProperty('raid_name')
+    })
+  })
 })
 
 describe('toPendingAwardPairs and toPendingAttendancePairs (GH #320)', () => {

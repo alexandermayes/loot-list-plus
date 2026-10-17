@@ -13,6 +13,13 @@ export interface PendingAwardRequest {
   wowhead_id: number
   character_name: string
   boss_name?: string
+  /**
+   * The live instance name the addon stamped as instanceName (addon 1.2.0
+   * and later), so the server can pick the tier an item dropped in (GH #319).
+   * Never the award's raidName: that is the cached catalog raid, and on an
+   * addon 1.1.0 award it is the last-written cached row.
+   */
+  raid_name?: string
   /** The date part of awardedAt (YYYY-MM-DD), used to find the raid night. */
   awarded_date?: string
   /** The addon's raw award timestamp (UTC ISO), part of the award's key. */
@@ -62,7 +69,9 @@ function asRecord(value: unknown): Record<string, unknown> | null {
  * raw entry next to the request built from it.
  * awardedAt and awardId are forwarded raw when they are strings, so the
  * server builds the same key it builds from the export string for the same
- * in-game award. Absent values stay undefined, so JSON.stringify drops them.
+ * in-game award. instanceName is forwarded as raid_name when it is a
+ * non-blank string (GH #319). Absent values stay undefined, so
+ * JSON.stringify drops them.
  * A missing or non-array list gives []. Non-record entries are skipped, so
  * pair i and request i always describe the same entry.
  */
@@ -74,12 +83,16 @@ export function toPendingAwardPairs(raw: unknown): PendingPair<PendingAwardReque
     if (!a) continue
     const awardedAt = typeof a['awardedAt'] === 'string' ? (a['awardedAt'] as string) : undefined
     const awardId = typeof a['awardId'] === 'string' ? (a['awardId'] as string) : undefined
+    // regression for #319
+    const instanceName = a['instanceName']
+    const raidName = typeof instanceName === 'string' && instanceName.trim() !== '' ? instanceName : undefined
     pairs.push({
       entry,
       request: {
         wowhead_id: a['wowheadId'] as number,
         character_name: a['characterName'] as string,
         boss_name: a['bossName'] as string | undefined,
+        raid_name: raidName,
         awarded_date: awardedAt ? awardedAt.split('T')[0] : undefined,
         awarded_at: awardedAt,
         award_id: awardId,
