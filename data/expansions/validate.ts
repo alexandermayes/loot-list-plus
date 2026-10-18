@@ -116,7 +116,6 @@ export function catalogFromLegacy(storedName: string, slug: string, catalog: Leg
  * only an identical (raid, boss, wowhead_id) triple fails.
  */
 export function checkDuplicateIds(cat: GateCatalog): GateError[] {
-  if (cat) return []
   const errors: GateError[] = []
 
   if (cat.mode === 'native') {
@@ -170,7 +169,6 @@ export function checkDuplicateIds(cat: GateCatalog): GateError[] {
  * exactly one phase with no phase naming a raid the catalog lacks.
  */
 export function checkPhaseCoverage(cat: GateCatalog, phases: readonly PhaseDefinition[] | undefined): GateError[] {
-  if (cat) return []
   const label = `${cat.storedName} (slug "${cat.slug}")`
 
   if (!phases || phases.length === 0) {
