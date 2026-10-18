@@ -24,6 +24,13 @@ import { EXPANSION_PHASES, type PhaseDefinition } from '@/data/expansion-phases'
 import { getExpansionMeta } from '@/data/expansions/registry'
 import { getExpansionCatalog } from '@/data/expansions/catalogs'
 import { FOREVER_MANIFEST } from '@/data/expansions/forever/manifest'
+import { CLASS_PROFICIENCIES } from '@/data/class-proficiencies'
+import { getTokenClasses, isTokenSlot } from '@/data/token-class-mapping'
+import { getExpansionGame } from '@/domain/expansion/game'
+import { getWowheadDomain } from '@/domain/expansion/wowhead'
+import { normalizeCatalogName } from '@/lib/loot/guild-scoped-lookup'
+import shippedNamesFixture from '@/data/expansions/forever/__fixtures__/shipped-names.json'
+import legacyTokenExceptionsFixture from '@/data/expansions/__fixtures__/legacy-token-exceptions.json'
 
 export type GateRule =
   | 'duplicate-id'
@@ -229,6 +236,65 @@ export function checkPhaseCoverage(cat: GateCatalog, phases: readonly PhaseDefin
   return errors
 }
 
+const KNOWN_CLASSES: ReadonlySet<string> = new Set(Object.keys(CLASS_PROFICIENCIES))
+
+/**
+ * duplicate-raid-name. Raid names and previousNames share one namespace per
+ * expansion, compared through normalizeCatalogName so a curly apostrophe or
+ * stray whitespace cannot hide a clash. A previousName that equals another
+ * raid's current name would make the sync service rename two tiers onto one.
+ */
+export function checkRaidNames(cat: GateCatalog): GateError[] {
+  const errors: GateError[] = []
+  const owner = new Map<string, string>()
+
+  const claim = (raidName: string, label: string, value: string) => {
+    const normalized = normalizeCatalogName(value)
+    if (normalized === null) {
+      errors.push({
+        rule: 'duplicate-raid-name',
+        message: `${cat.storedName}: raid "${raidName}" has an empty ${label}`,
+      })
+      return
+    }
+    const earlier = owner.get(normalized)
+    if (earlier === undefined) {
+      owner.set(normalized, `${label} "${value}" of raid "${raidName}"`)
+    } else {
+      errors.push({
+        rule: 'duplicate-raid-name',
+        message: `${cat.storedName}: ${label} "${value}" of raid "${raidName}" normalizes to the same string as the ${earlier}`,
+      })
+    }
+  }
+
+  for (const raid of cat.raids) {
+    claim(raid.name, 'name', raid.name)
+    for (const previous of raid.previousNames) claim(raid.name, 'previousName', previous)
+  }
+  return errors
+}
+
+/** duplicate-boss-key. Native boss keys are the sync identity, so one raid cannot repeat one. */
+export function checkBossKeys(cat: GateCatalog): GateError[] {
+  if (cat.mode !== 'native') return []
+  const errors: GateError[] = []
+  for (const raid of cat.raids) {
+    const seen = new Set<string>()
+    for (const boss of raid.bosses) {
+      if (boss.key === null) continue
+      if (seen.has(boss.key)) {
+        errors.push({
+          rule: 'duplicate-boss-key',
+          message: `${cat.storedName}: raid "${raid.name}" has two bosses keyed "${boss.key}" (second is "${boss.name}")`,
+        })
+      }
+      seen.add(boss.key)
+    }
+  }
+  return errors
+}
+
 /** A legacy Token item with no class mapping, as frozen in the exceptions fixture. */
 export interface LegacyTokenException {
   slug: string
@@ -238,40 +304,198 @@ export interface LegacyTokenException {
   name: string
 }
 
-/** Skeleton: filled in by the GREEN commit. */
-export function legacyTokenViolations(_cat: GateCatalog): LegacyTokenException[] {
-  return []
+/**
+ * The legacy Token items getTokenClasses cannot map (research Pitfall 3).
+ * getTokenClasses is a substring search over TOKEN_CLASS_MAPPING, so this is
+ * exactly the set the seeder writes no loot_item_classes rows for.
+ */
+export function legacyTokenViolations(cat: GateCatalog): LegacyTokenException[] {
+  const found: LegacyTokenException[] = []
+  for (const raid of cat.raids) {
+    for (const boss of raid.bosses) {
+      for (const item of boss.items) {
+        if (isTokenSlot(item.slot) && getTokenClasses(item.name) === undefined) {
+          found.push({ slug: cat.slug, raid: raid.name, boss: boss.name, wowheadId: item.wowheadId, name: item.name })
+        }
+      }
+    }
+  }
+  return found
 }
 
-export function checkRaidNames(_cat: GateCatalog): GateError[] {
-  return []
+function exceptionKey(entry: LegacyTokenException): string {
+  return JSON.stringify([entry.slug, entry.raid, entry.boss, entry.wowheadId])
 }
 
-export function checkBossKeys(_cat: GateCatalog): GateError[] {
-  return []
-}
+/**
+ * missing-token-class, orphan-token-class, unknown-token-class (GH-269: a
+ * token joined by name instead of id mapped to the wrong classes).
+ *
+ * Native catalogs are strict: every Token-slot item needs a tokenClasses entry
+ * (keyed by wowhead_id) holding at least one known class, every entry must name
+ * an item, and every class name must exist. Legacy catalogs are held to the
+ * frozen fixture: a new unmapped Token fails, and a fixture entry that no
+ * longer fails must be removed (legacy-token-exceptions-drift), so the
+ * baseline can only shrink.
+ */
+export function checkTokenClasses(cat: GateCatalog, legacyExceptions: readonly LegacyTokenException[]): GateError[] {
+  const errors: GateError[] = []
 
-export function checkTokenClasses(_cat: GateCatalog, _legacyExceptions: readonly LegacyTokenException[]): GateError[] {
-  return []
+  if (cat.mode === 'legacy') {
+    const frozen = new Map<string, LegacyTokenException>()
+    for (const entry of legacyExceptions) {
+      if (entry.slug === cat.slug) frozen.set(exceptionKey(entry), entry)
+    }
+    const current = new Set<string>()
+    for (const violation of legacyTokenViolations(cat)) {
+      const key = exceptionKey(violation)
+      current.add(key)
+      if (!frozen.has(key)) {
+        errors.push({
+          rule: 'missing-token-class',
+          message: `${cat.storedName}: Token item "${violation.name}" (wowhead_id ${violation.wowheadId}) under ${violation.raid} / ${violation.boss} has no class mapping and is not in legacy-token-exceptions.json`,
+        })
+      }
+    }
+    for (const [key, entry] of frozen) {
+      if (!current.has(key)) {
+        errors.push({
+          rule: 'legacy-token-exceptions-drift',
+          message: `${cat.storedName}: legacy-token-exceptions.json lists "${entry.name}" (wowhead_id ${entry.wowheadId}) under ${entry.raid} / ${entry.boss}, but it is no longer an unmapped Token; remove it from the fixture`,
+        })
+      }
+    }
+    return errors
+  }
+
+  const itemIds = new Set<string>()
+  for (const raid of cat.raids) {
+    for (const boss of raid.bosses) {
+      for (const item of boss.items) {
+        itemIds.add(item.wowheadId)
+        if (!isTokenSlot(item.slot)) continue
+        const classes = cat.tokenClasses[item.wowheadId]
+        if (!classes || !classes.some((name) => KNOWN_CLASSES.has(name))) {
+          errors.push({
+            rule: 'missing-token-class',
+            message: `${cat.storedName}: Token item "${item.name}" (wowhead_id ${item.wowheadId}) under ${raid.name} / ${boss.name} has no known class in tokenClasses`,
+          })
+        }
+      }
+    }
+  }
+
+  for (const [id, classes] of Object.entries(cat.tokenClasses)) {
+    if (!itemIds.has(id)) {
+      errors.push({
+        rule: 'orphan-token-class',
+        message: `${cat.storedName}: tokenClasses has an entry for wowhead_id ${id}, which names no item`,
+      })
+    }
+    for (const name of classes) {
+      if (!KNOWN_CLASSES.has(name)) {
+        errors.push({
+          rule: 'unknown-token-class',
+          message: `${cat.storedName}: tokenClasses[${id}] names "${name}", which is not a class`,
+        })
+      }
+    }
+  }
+  return errors
 }
 
 export interface NameCheckInput {
+  /** The registry key the caller asked about. */
   key: string
   meta: ExpansionMeta
+  /** The native manifest, or null for a legacy expansion. */
   manifest: ExpansionManifest | null
   phases: readonly PhaseDefinition[] | undefined
 }
 
-export function checkNames(_input: NameCheckInput): GateError[] {
-  return []
+/**
+ * name-mismatch. Every place that restates an expansion's identity must agree
+ * with the registry: the stored name, the game version, the phase-list slug,
+ * the manifest header and the Wowhead domain map.
+ */
+export function checkNames({ key, meta, manifest, phases }: NameCheckInput): GateError[] {
+  const errors: GateError[] = []
+  const mismatch = (message: string) => errors.push({ rule: 'name-mismatch', message: `${key}: ${message}` })
+
+  if (meta.storedName !== key) {
+    mismatch(`the registry key differs from its storedName "${meta.storedName}"`)
+  }
+  const game = getExpansionGame(key)
+  if (meta.game !== game) {
+    mismatch(`the registry game is ${String(meta.game)} but getExpansionGame returns ${String(game)}`)
+  }
+  if (!phases || phases.length === 0) {
+    mismatch(`slug "${meta.slug}" has no non-empty EXPANSION_PHASES entry`)
+  }
+  if (getWowheadDomain(meta.storedName) === null) {
+    mismatch(`stored name "${meta.storedName}" has no Wowhead domain`)
+  }
+  if (manifest) {
+    if (manifest.storedName !== meta.storedName) {
+      mismatch(`the manifest storedName "${manifest.storedName}" differs from the registry "${meta.storedName}"`)
+    }
+    if (manifest.slug !== meta.slug) {
+      mismatch(`the manifest slug "${manifest.slug}" differs from the registry "${meta.slug}"`)
+    }
+    if (manifest.gameVersion !== meta.game) {
+      mismatch(`the manifest gameVersion "${manifest.gameVersion}" differs from the registry game ${String(meta.game)}`)
+    }
+  }
+  return errors
 }
 
-export function checkSizeOrder(_cat: GateCatalog): GateError[] {
-  return []
+/**
+ * size-order (D-07). Native raid sizes must strictly increase in manifest
+ * order (10, 20, 40): sort_order follows manifest order, so a tie or a
+ * decrease would present the raids out of progression.
+ */
+export function checkSizeOrder(cat: GateCatalog): GateError[] {
+  if (cat.mode !== 'native') return []
+  const errors: GateError[] = []
+  let previous: GateRaid | null = null
+  for (const raid of cat.raids) {
+    if (raid.size === null) continue
+    if (previous && previous.size !== null && raid.size <= previous.size) {
+      errors.push({
+        rule: 'size-order',
+        message: `${cat.storedName}: raid "${raid.name}" (size ${raid.size}) follows "${previous.name}" (size ${previous.size}); sizes must strictly increase in manifest order`,
+      })
+    }
+    previous = raid
+  }
+  return errors
 }
 
-export function checkShippedNames(_cat: GateCatalog, _shippedNames: readonly string[]): GateError[] {
-  return []
+/**
+ * shipped-name-changed (D-09). A raid name that has reached a guild is a
+ * raid_tiers.name join key; renaming it without previousNames would make sync
+ * insert a second tier beside the shipped one. Compared through
+ * normalizeCatalogName so alias spelling does not matter.
+ */
+export function checkShippedNames(cat: GateCatalog, shippedNames: readonly string[]): GateError[] {
+  const known = new Set<string>()
+  for (const raid of cat.raids) {
+    for (const name of [raid.name, ...raid.previousNames]) {
+      const normalized = normalizeCatalogName(name)
+      if (normalized !== null) known.add(normalized)
+    }
+  }
+  const errors: GateError[] = []
+  for (const shipped of shippedNames) {
+    const normalized = normalizeCatalogName(shipped)
+    if (normalized === null || !known.has(normalized)) {
+      errors.push({
+        rule: 'shipped-name-changed',
+        message: `${cat.storedName}: shipped raid name "${shipped}" is neither a raid name nor a previousName; rename a raid by adding the old name to previousNames`,
+      })
+    }
+  }
+  return errors
 }
 
 /** Inputs a test can replace to prove a rule fires without touching real data. */
@@ -289,16 +513,20 @@ export interface GateOverrides {
  * (the retail "coming soon" rows) have nothing to gate and return no errors.
  */
 export function validateExpansion(storedName: string, overrides: GateOverrides = {}): GateError[] {
-  const meta = getExpansionMeta(storedName)
+  const meta = overrides.meta ?? getExpansionMeta(storedName)
   if (!meta) {
     return [{ rule: 'name-mismatch', message: `"${storedName}" is not in EXPANSION_REGISTRY` }]
   }
   if (!meta.hasData) return []
 
+  // The manifest is only read for a sync-mode expansion, so a legacy one never
+  // sees a manifest override by accident.
+  const manifest = meta.seedMode === 'sync' ? (overrides.manifest ?? FOREVER_MANIFEST) : null
+
   let cat = overrides.catalog
   if (!cat) {
-    if (meta.seedMode === 'sync') {
-      cat = catalogFromManifest(FOREVER_MANIFEST)
+    if (manifest) {
+      cat = catalogFromManifest(manifest)
     } else {
       const legacy = getExpansionCatalog(storedName)
       if (!legacy || legacy.kind !== 'legacy') {
@@ -311,7 +539,13 @@ export function validateExpansion(storedName: string, overrides: GateOverrides =
   const phases = 'phases' in overrides ? overrides.phases : EXPANSION_PHASES[cat.slug]
 
   return [
+    ...checkNames({ key: storedName, meta, manifest, phases }),
+    ...checkRaidNames(cat),
+    ...checkBossKeys(cat),
     ...checkDuplicateIds(cat),
+    ...checkTokenClasses(cat, overrides.legacyExceptions ?? legacyTokenExceptionsFixture),
     ...checkPhaseCoverage(cat, phases),
+    ...checkSizeOrder(cat),
+    ...(cat.mode === 'native' ? checkShippedNames(cat, overrides.shippedNames ?? shippedNamesFixture) : []),
   ]
 }
