@@ -2,6 +2,17 @@ import { describe, it, expect } from 'vitest'
 import { ExpansionManifestSchema, type ExpansionManifest } from '@/domain/expansion/manifest-schema'
 import { FOREVER_MANIFEST } from '../forever/manifest'
 import { EXPANSION_GAMES, FOREVER_EXPANSION_NAME } from '@/domain/expansion/game'
+import { EXPANSION_PHASES } from '@/data/expansion-phases'
+import { getExpansionCatalog } from '@/data/expansions/catalogs'
+import {
+  catalogFromLegacy,
+  catalogFromManifest,
+  checkDuplicateIds,
+  validateExpansion,
+  type GateCatalog,
+  type GateError,
+  type GateItem,
+} from '@/data/expansions/validate'
 
 // Why this gate exists: raid tiers are joined by name in several places
 // (GH-269: name-keyed joins that silently mis-matched, GH-279: a phase list
@@ -163,5 +174,121 @@ describe('ExpansionManifestSchema strictness', () => {
     const copy = clone() as unknown as { raids: Record<string, unknown>[] }
     copy.raids[0].opens_on = '12/09/2026'
     expect(ExpansionManifestSchema.safeParse(copy).success).toBe(false)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Cross-catalog gate (plan 02-06). The rules live in data/expansions/validate.ts;
+// every case here hands a rule a mutated copy and asserts the rule's name, so a
+// rule cannot go quiet and still leave the suite green.
+// ---------------------------------------------------------------------------
+
+const EXPANSIONS_WITH_DATA = [
+  'Classic',
+  'The Burning Crusade',
+  'Wrath of the Lich King',
+  'Cataclysm',
+  'Mists of Pandaria',
+  'Forever',
+]
+
+function rulesOf(errors: GateError[]): string[] {
+  return errors.map((error) => error.rule)
+}
+
+function onlyRule(errors: GateError[], rule: GateError['rule']): GateError[] {
+  return errors.filter((error) => error.rule === rule)
+}
+
+function gateItem(wowheadId: string, name = `Item ${wowheadId}`, slot = 'Head'): GateItem {
+  return { wowheadId, name, slot }
+}
+
+// One raid, one boss per entry of bossItems. Native bosses carry a slug key.
+function handBuilt(mode: GateCatalog['mode'], bossItems: GateItem[][]): GateCatalog {
+  return {
+    storedName: 'Forever',
+    slug: 'forever',
+    mode,
+    raids: [{
+      name: 'Barrow Deeps',
+      previousNames: [],
+      size: mode === 'native' ? 10 : null,
+      bosses: bossItems.map((items, index) => ({
+        name: `Boss ${index}`,
+        key: mode === 'native' ? `boss-${index}` : null,
+        items,
+      })),
+    }],
+    tokenClasses: {},
+  }
+}
+
+describe('validateExpansion over the real registry', () => {
+  it.each(EXPANSIONS_WITH_DATA)('%s: no errors', (storedName) => {
+    expect(validateExpansion(storedName)).toEqual([])
+  })
+
+  it('returns nothing for a registry row with no data yet', () => {
+    expect(validateExpansion('Legion')).toEqual([])
+  })
+
+  it('reports a name the registry does not know', () => {
+    expect(rulesOf(validateExpansion('Not An Expansion'))).toEqual(['name-mismatch'])
+  })
+})
+
+describe('duplicate-id', () => {
+  it('[E-EXPN-04 adjacency] a native catalog fails when two bosses share a wowhead_id', () => {
+    const cat = handBuilt('native', [[gateItem('271940')], [gateItem('271940')]])
+    const errors = checkDuplicateIds(cat)
+    expect(rulesOf(errors)).toEqual(['duplicate-id'])
+    expect(errors[0].message).toContain('271940')
+  })
+
+  it('[E-EXPN-04 adjacency] the same id twice in one boss also fails a native catalog, once', () => {
+    const cat = handBuilt('native', [[gateItem('271940'), gateItem('271940'), gateItem('271940')]])
+    expect(rulesOf(checkDuplicateIds(cat))).toEqual(['duplicate-id'])
+  })
+
+  it('[E-EXPN-04 adjacency] a legacy catalog passes when the same id sits under two different bosses', () => {
+    const cat = handBuilt('legacy', [[gateItem('271940')], [gateItem('271940')]])
+    expect(checkDuplicateIds(cat)).toEqual([])
+  })
+
+  it('[E-EXPN-04 adjacency] a legacy catalog fails on an identical (raid, boss, id) triple', () => {
+    const cat = handBuilt('legacy', [[gateItem('271940'), gateItem('271940')]])
+    expect(rulesOf(checkDuplicateIds(cat))).toEqual(['duplicate-id'])
+  })
+
+  it('runs through validateExpansion when a catalog override is supplied', () => {
+    const cat = handBuilt('native', [[gateItem('271940')], [gateItem('271940')]])
+    expect(onlyRule(validateExpansion('Forever', { catalog: cat }), 'duplicate-id')).toHaveLength(1)
+  })
+
+  it('the legacy adapter keeps real cross-boss id sharing legal', () => {
+    // Research measured 95 cross-boss duplicates in Classic alone, so this is
+    // the proof the legacy scoping is real and not an empty catalog.
+    const classic = getExpansionCatalog('Classic')
+    if (!classic || classic.kind !== 'legacy') throw new Error('Classic legacy catalog missing')
+    const cat = catalogFromLegacy('Classic', 'classic', classic)
+    const ids = cat.raids.flatMap((raid) => raid.bosses.flatMap((boss) => boss.items.map((item) => item.wowheadId)))
+    expect(new Set(ids).size).toBeLessThan(ids.length)
+    expect(checkDuplicateIds(cat)).toEqual([])
+  })
+})
+
+describe('phase-coverage', () => {
+  it('a Forever phase list without Hyjal Summit fails and names the raid', () => {
+    const mutated = structuredClone(EXPANSION_PHASES.forever)
+    for (const phase of mutated) phase.raids = phase.raids.filter((name) => name !== 'Hyjal Summit')
+    const errors = onlyRule(validateExpansion('Forever', { phases: mutated }), 'phase-coverage')
+    expect(errors).toHaveLength(1)
+    expect(errors[0].message).toContain('Hyjal Summit')
+  })
+
+  it('the manifest catalog reads the same names the phase list does', () => {
+    const cat = catalogFromManifest(FOREVER_MANIFEST)
+    expect(cat.raids.map((raid) => raid.name)).toEqual(EXPANSION_PHASES.forever.flatMap((phase) => phase.raids))
   })
 })
