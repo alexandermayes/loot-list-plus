@@ -223,9 +223,32 @@ const MODULE_PATH = /(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\s*\(\s*)(['"])([^'
 const SCRIPTS_SEGMENT = /(?:^|\/)scripts\//
 
 /** One message per way `source` reaches wago or Wowhead live, or pulls scripts/ into runtime. */
-export function findLiveFetchViolations(_source: string, _options: ScanOptions): string[] {
-  // Signature-only stub for the RED commit: reports nothing yet.
-  return []
+export function findLiveFetchViolations(source: string, { isRuntimeFile }: ScanOptions): string[] {
+  const code = stripComments(source)
+  const violations: string[] = []
+
+  for (const match of code.matchAll(FETCH_FAMILY_CALL)) {
+    const index = match.index ?? 0
+    // `function fetch(` declares a function rather than calling one.
+    if (/\bfunction\s+$/.test(code.slice(Math.max(0, index - 20), index))) continue
+    const args = readBalanced(code, index + match[0].length - 1) ?? code.slice(index + match[0].length)
+    if (args.includes(WAGO_HOST) || args.includes(WOWHEAD_HOST)) {
+      violations.push(`rule 1: ${match[0].replace(/\s*\($/, '')} call names the wago or Wowhead host`)
+    }
+  }
+
+  if (code.includes(WAGO_HOST)) violations.push('rule 2: names the wago host')
+  if (code.includes(TOOLTIP_HOST)) violations.push('rule 2: names the Wowhead tooltip API host')
+
+  if (isRuntimeFile) {
+    for (const match of code.matchAll(MODULE_PATH)) {
+      if (SCRIPTS_SEGMENT.test(match[2])) {
+        violations.push(`rule 3: runtime code imports from scripts/ (${match[2]})`)
+      }
+    }
+  }
+
+  return violations
 }
 
 /**
