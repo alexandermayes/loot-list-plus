@@ -18,7 +18,7 @@
 // Everything soft-gates on ANTHROPIC_API_KEY; without it /help just posts the
 // human-fallback message so a half-configured deploy never crashes the bot.
 
-const HELP_MODEL = process.env.HELP_MODEL || 'claude-3-5-haiku-20241022';
+const HELP_MODEL = process.env.HELP_MODEL || 'claude-haiku-4-5-20251001';
 const ANSWER_MAX_CHARS = 3800; // keep under Discord's 4096 embed-description cap
 const ARTICLE_SNIPPET_CHARS = 800; // per-article budget in the Claude prompt
 const CANDIDATE_LIMIT = 8;
