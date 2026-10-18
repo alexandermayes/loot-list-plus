@@ -19,7 +19,7 @@
  * catalog, so no runtime code may import it.
  */
 import type { ExpansionManifest } from '@/domain/expansion/manifest-schema'
-import type { LegacyCatalog } from '@/data/expansions/types'
+import type { ExpansionMeta, LegacyCatalog } from '@/data/expansions/types'
 import { EXPANSION_PHASES, type PhaseDefinition } from '@/data/expansion-phases'
 import { getExpansionMeta } from '@/data/expansions/registry'
 import { getExpansionCatalog } from '@/data/expansions/catalogs'
@@ -229,10 +229,59 @@ export function checkPhaseCoverage(cat: GateCatalog, phases: readonly PhaseDefin
   return errors
 }
 
+/** A legacy Token item with no class mapping, as frozen in the exceptions fixture. */
+export interface LegacyTokenException {
+  slug: string
+  raid: string
+  boss: string
+  wowheadId: string
+  name: string
+}
+
+/** Skeleton: filled in by the GREEN commit. */
+export function legacyTokenViolations(_cat: GateCatalog): LegacyTokenException[] {
+  return []
+}
+
+export function checkRaidNames(_cat: GateCatalog): GateError[] {
+  return []
+}
+
+export function checkBossKeys(_cat: GateCatalog): GateError[] {
+  return []
+}
+
+export function checkTokenClasses(_cat: GateCatalog, _legacyExceptions: readonly LegacyTokenException[]): GateError[] {
+  return []
+}
+
+export interface NameCheckInput {
+  key: string
+  meta: ExpansionMeta
+  manifest: ExpansionManifest | null
+  phases: readonly PhaseDefinition[] | undefined
+}
+
+export function checkNames(_input: NameCheckInput): GateError[] {
+  return []
+}
+
+export function checkSizeOrder(_cat: GateCatalog): GateError[] {
+  return []
+}
+
+export function checkShippedNames(_cat: GateCatalog, _shippedNames: readonly string[]): GateError[] {
+  return []
+}
+
 /** Inputs a test can replace to prove a rule fires without touching real data. */
 export interface GateOverrides {
   catalog?: GateCatalog
   phases?: readonly PhaseDefinition[] | undefined
+  meta?: ExpansionMeta
+  manifest?: ExpansionManifest
+  shippedNames?: readonly string[]
+  legacyExceptions?: readonly LegacyTokenException[]
 }
 
 /**
