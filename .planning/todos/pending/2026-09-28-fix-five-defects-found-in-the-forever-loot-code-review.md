@@ -3,6 +3,7 @@ created: 2026-09-28T20:45:00.000Z
 title: Fix five existing defects found in the Forever loot code review
 area: integrations
 severity: major
+resolves_phase: 1
 files:
   - app/api/addon/guild-data/route.ts
   - app/api/addon/export-string/route.ts

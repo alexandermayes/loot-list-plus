@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 53
+open_count: 54
 waived_count: 0
 fixed_count: 4
-total_count: 57
-last_updated: 2026-09-23T18:34:15.080Z
+total_count: 58
+last_updated: 2026-10-13T21:21:08.579Z
 ---
 
 # Broken Windows Ledger
@@ -72,6 +72,7 @@ last_updated: 2026-09-23T18:34:15.080Z
 | 55 | 12 | deviation | scripts/design-system/local-detector-run.mjs | 169 | 12-07 Task 2 found a pre-existing bug in local-detector-run.mjs's pageKeyFor helper (from 12-05, not touched by this plan per its own no-code-changes scope): it loops PAGES and returns the first url where raw.startsWith(url); since / is first and every other page URL starts with the localhost:3100/ base, EVERY finding across all seven pages is bucketed under / in the findings object and in gatingCounts.byPage, even though the underlying finding.file field (the true URL) is correct. Effect verified on both 12-DETECTOR-LOCAL-RAW.json (12-05) and 12-DETECTOR-LOCAL-FINAL.json (12-07): the four gating-rule findings are actually on /pricing (2 low-contrast findings per viewport), /research/wow-classic-loot-systems-2026 (1 low-contrast per viewport) and /changelog (35 nested-cards per viewport), not on / as both summaries' byPage-derived prose stated. Totals (gatingCounts.total, perRuleCounts) are unaffected, only the byPage breakdown and the findings object's page grouping are wrong. Not fixed here: outside 12-07's declared files_modified and its own no-code-change constraint (12-01 gate, Standing Constraint 2 discharge). 12-07-EVIDENCE.md's attribution table uses the corrected per-URL breakdown (recomputed from finding.file directly), not the buggy grouping. Route to whoever next edits this script or builds ENF-04's CI job: fix pageKeyFor to check exact match or same-origin path-segment boundary, not a raw string-prefix test. | open |  | 2026-09-23T18:25:38.161Z |  |
 | 56 | 12 | unrun-verify | .planning/workstreams/design-system/baselines/2026-09-23-post-phase-12/ |  | 12-07 Task 2: npm run test:users:create still had not been run (GET /api/dev/test-users returned 404, re-checked live this session against the running local dev server), so the after-capture falls back to public-pages-only (20 images), byte-identical to the before-capture (WINDOWS entry 39) on all 20 pairs -- confirming this phase changed no public page. Overview, guild-settings, loot-management, master-sheet, raid-tracking and profile were all skipped again, same posture as WINDOWS entries 10, 15, 20, 22, 24 and 39. /design-system, this phase's only changed screen, has no working authenticated capture path either (baseline.mjs's PAGES matrix has no /design-system entry); its before and after states are routed to the end-of-phase UAT walkthrough rather than a screenshot pair, per the 12-01 gate's Section 4 default. | open |  | 2026-09-23T18:27:30.372Z |  |
 | 57 | 12 | deviation | .planning/workstreams/design-system/phases/09-type-and-card-migration/09-EVIDENCE.md |  | 12-03's own finding, given its own entry at 12-07 close-out: 09-EVIDENCE.md's prose states Card's base radius (rounded-xl) is 12px. That figure was measured against Tailwind's own unmodified defaults, not this project's tailwind.config.js, where lg is 12px and xl is 16px -- the correct figure is 16px, confirmed live against the config and carried into DESIGN.md's guarded Shapes table by 12-03 (12-03-SUMMARY.md key-decisions). 09-EVIDENCE.md's own prose was never corrected and will be cited again with the wrong number if left unrecorded. Not fixed here: 09-EVIDENCE.md is a closed phase's evidence record, out of 12-07's files_modified; DESIGN.md already carries the correct value as the authority a future reader should cite instead. | open |  | 2026-09-23T18:34:15.080Z |  |
+| 58 | 01 | deviation | app/api/addon/guild-data/__tests__/route.test.ts |  | 01-02 P3 fixture uses 1000 raiders not 1001: memberships read is a single bounded query by plan assumption | open |  | 2026-10-13T21:21:08.579Z |  |
 
 ````json
 [
@@ -757,6 +758,18 @@ last_updated: 2026-09-23T18:34:15.080Z
     "status": "open",
     "reason": "",
     "recorded_at": "2026-09-23T18:34:15.080Z",
+    "resolved_at": null
+  },
+  {
+    "id": 58,
+    "kind": "deviation",
+    "phase": "01",
+    "file": "app/api/addon/guild-data/__tests__/route.test.ts",
+    "line": null,
+    "description": "01-02 P3 fixture uses 1000 raiders not 1001: memberships read is a single bounded query by plan assumption",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-13T21:21:08.579Z",
     "resolved_at": null
   }
 ]
