@@ -375,6 +375,28 @@ describe('refreshSnapshot', () => {
     expect(deps.writeSnapshot).not.toHaveBeenCalled()
   })
 
+  // A 200 with a header and no rows must not become an "updated" snapshot with
+  // empty tables; it is a terminal error, not an outage, so the workflow goes red.
+  it.each(['DungeonEncounter', 'Map'] as const)(
+    'throws and writes nothing when the untrimmed %s table has no rows',
+    async (table) => {
+      const header = table === 'DungeonEncounter' ? ENCOUNTER_CSV.split('\n')[0] : MAP_CSV.split('\n')[0]
+      const { fetchImpl } = recordingFetch(wagoRoutes(BUILD, { [table]: header }))
+      const deps = makeDeps({ fetchImpl })
+
+      await expect(refreshSnapshot(deps)).rejects.toThrow(`${table}: wago returned no rows for build ${BUILD}`)
+      expect(deps.writeSnapshot).not.toHaveBeenCalled()
+      expect(deps.sleep).not.toHaveBeenCalled()
+    },
+  )
+
+  it('logs the untrimmed row counts so a reviewer can tell the pull was real', async () => {
+    const deps = makeDeps({ fetchImpl: recordingFetch(wagoRoutes(BUILD)).fetchImpl })
+    await refreshSnapshot(deps)
+    const lines = (deps.log as ReturnType<typeof vi.fn>).mock.calls.map((call) => String(call[0]))
+    expect(lines).toContain(`pulled 4 encounters, 3 maps, 1 items for build ${BUILD}`)
+  })
+
   it('throws when the built snapshot fails the schema, before any write', async () => {
     const { fetchImpl } = recordingFetch(wagoRoutes(BUILD))
     const deps = makeDeps({ fetchImpl, now: () => 'last tuesday' })

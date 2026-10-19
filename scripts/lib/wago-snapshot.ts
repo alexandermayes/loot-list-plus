@@ -362,7 +362,8 @@ class WagoOutage extends Error {
  * 500, 502, 503, 504, a network error or a timeout, on any request, it returns
  * outcome 'outage' and writes nothing. Everything else throws: a 404 or other
  * non-2xx, a missing CSV header, an unknown builds shape, no build under the
- * prefix, a snapshot that fails the schema.
+ * prefix, an untrimmed DungeonEncounter or Map table with zero rows, a snapshot
+ * that fails the schema.
  */
 export async function refreshSnapshot(deps: RefreshDeps): Promise<RefreshResult> {
   try {
@@ -407,7 +408,22 @@ async function refresh(deps: RefreshDeps): Promise<RefreshResult> {
     // The cast is per table: parseTable's return type tracks the table name.
     ;(untrimmed as Record<PinnedTable, unknown>)[table] = parseTable(csv, table)
   }
-  const tables = trimToManifest(untrimmed as Tables, manifest)
+  const pulled = untrimmed as Tables
+
+  // A 200 with a header and no rows (wrong build, truncated export, partial
+  // upstream outage) would trim to empty tables and open a PR that deletes every
+  // reference row, quietly disabling the D-15 forcing function. These two tables
+  // are never empty for a real build, so treat that as a terminal error rather
+  // than an outage. ItemSparse is not checked: the manifest has no items yet.
+  log(
+    `pulled ${pulled.DungeonEncounter.length} encounters, ${pulled.Map.length} maps, ` +
+      `${pulled.ItemSparse.length} items for build ${build}`,
+  )
+  for (const table of ['DungeonEncounter', 'Map'] as const) {
+    if (pulled[table].length === 0) throw new Error(`${table}: wago returned no rows for build ${build}`)
+  }
+
+  const tables = trimToManifest(pulled, manifest)
 
   const sha256 = createHash('sha256').update(canonicalSnapshotPayload({ build, tables })).digest('hex')
   const promotableFrom = (snapshot: ReferenceSnapshot) =>
