@@ -38,6 +38,7 @@
     "seed:test:multi": "tsx scripts/seed-test-data-multiuser.ts",
     "seed:test:multi:clean": "tsx scripts/seed-test-data-multiuser.ts --clean",
     "sync:feedback": "tsx scripts/sync-feedback-inbox.ts",
+    "sync:forever": "tsx scripts/sync-forever-catalog.ts",
     "seed:help": "tsx scripts/seed-help-articles.ts",
     "gift:code": "tsx scripts/create-gift-code.ts"
   },
