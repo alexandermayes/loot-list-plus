@@ -8,6 +8,24 @@ import {
 } from '@/domain/expansion/reference-snapshot-schema'
 import type { ExpansionManifest } from '@/domain/expansion/manifest-schema'
 import { FOREVER_MANIFEST } from '@/data/expansions/forever/manifest'
+
+// Onyxia was promoted from the first real snapshot. The refresh cases below
+// keep exercising promotion, so they run against a copy with Onyxia provisional.
+const MANIFEST_WITH_PROVISIONAL_ONYXIA = {
+  ...FOREVER_MANIFEST,
+  raids: FOREVER_MANIFEST.raids.map((raid) =>
+    raid.name === "Onyxia's Lair"
+      ? {
+          ...raid,
+          bosses: raid.bosses.map((boss) => {
+            const copy = { ...boss, verification: 'provisional' as const, encounterId: null }
+            delete copy.verifiedBy
+            return copy
+          }),
+        }
+      : raid,
+  ),
+}
 import type { ProvisionalAllowlistEntry } from '@/data/expansions/forever/reference-check'
 import {
   EXPECTED_HEADERS,
@@ -117,7 +135,7 @@ function makeDeps(overrides: Partial<RefreshDeps> & Pick<RefreshDeps, 'fetchImpl
     now: () => '2026-10-16T22:00:00.000Z',
     readCommitted: () => PLACEHOLDER,
     writeSnapshot,
-    manifest: FOREVER_MANIFEST,
+    manifest: MANIFEST_WITH_PROVISIONAL_ONYXIA,
     allowlist: ALLOWLIST,
     log: vi.fn(),
     ...overrides,
