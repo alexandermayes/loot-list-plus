@@ -31,6 +31,7 @@ import {
 } from '@/domain/expansion/reference-snapshot-schema'
 import {
   findPromotableBosses,
+  raidMapIds,
   type PromotableBoss,
   type ProvisionalAllowlistEntry,
 } from '@/data/expansions/forever/reference-check'
@@ -275,12 +276,12 @@ function byId<Row extends { ID: number }>(rows: Row[]): Row[] {
 /**
  * Keeps only what the manifest references, so the committed file stays small
  * and a refresh diff shows only rows the manifest cares about: encounters
- * whose normalised name matches a manifest boss or whose MapID is a manifest
- * mapId; maps by mapId or by raid name or alias; items by manifest item id.
+ * whose MapID is a manifest mapId, or whose normalised name matches a boss of
+ * a raid and whose map is that raid's (a Classic "Onyxia" on another map is
+ * dropped); maps by mapId or by raid name or alias; items by manifest item id.
  * Names go through normalizeCatalogName (curly apostrophes, spacing, case).
  */
 export function trimToManifest(tables: Tables, manifest: ExpansionManifest): Tables {
-  const bossNames = new Set<string>()
   const raidNames = new Set<string>()
   const mapIds = new Set<number>()
   for (const raid of manifest.raids) {
@@ -289,12 +290,19 @@ export function trimToManifest(tables: Tables, manifest: ExpansionManifest): Tab
       if (normalized !== null) raidNames.add(normalized)
     }
     if (raid.mapId !== null) mapIds.add(raid.mapId)
-    for (const boss of raid.bosses) {
-      const normalized = normalizeCatalogName(boss.name)
-      if (normalized !== null) bossNames.add(normalized)
-    }
   }
   const itemIds = new Set(Object.keys(manifest.items))
+
+  // A boss name only counts on its own raid's map: the pinned product also
+  // carries the Classic encounters, which reuse names such as "Onyxia".
+  const scopes = manifest.raids.map((raid) => {
+    const names = new Set<string>()
+    for (const boss of raid.bosses) {
+      const normalized = normalizeCatalogName(boss.name)
+      if (normalized !== null) names.add(normalized)
+    }
+    return { mapIds: raidMapIds(raid, tables.Map), names }
+  })
 
   const isNamed = (value: string, names: Set<string>) => {
     const normalized = normalizeCatalogName(value)
@@ -303,7 +311,11 @@ export function trimToManifest(tables: Tables, manifest: ExpansionManifest): Tab
 
   return {
     DungeonEncounter: byId(
-      tables.DungeonEncounter.filter((row) => mapIds.has(row.MapID) || isNamed(row.Name_lang, bossNames)),
+      tables.DungeonEncounter.filter(
+        (row) =>
+          mapIds.has(row.MapID) ||
+          scopes.some((scope) => scope.mapIds.has(row.MapID) && isNamed(row.Name_lang, scope.names)),
+      ),
     ),
     Map: byId(tables.Map.filter((row) => mapIds.has(row.ID) || isNamed(row.MapName_lang, raidNames))),
     ItemSparse: byId(tables.ItemSparse.filter((row) => itemIds.has(String(row.ID)))),

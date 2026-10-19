@@ -221,6 +221,25 @@ describe('trimToManifest', () => {
     expect(trimmed.Map.map((row) => row.ID)).toEqual([249, 900])
   })
 
+  it('drops a same-named encounter that sits on another raid map, keeping the raid-map row', () => {
+    // A Classic-style "Onyxia" row on map 1 (Eastern Kingdoms) must not be kept
+    // or treated as evidence for the Forever boss; the one on map 249 stays.
+    const withCollision = {
+      ...tables,
+      DungeonEncounter: [
+        ...tables.DungeonEncounter,
+        { ID: 9001, Name_lang: 'Onyxia', MapID: 1, OrderIndex: 0, DifficultyID: 0 },
+      ],
+    }
+    const trimmed = trimToManifest(withCollision, FOREVER_MANIFEST)
+    expect(trimmed.DungeonEncounter.map((row) => row.ID)).toEqual([1001, 1002, 1003])
+  })
+
+  it('drops a boss-named encounter when no map matches its raid', () => {
+    const noMaps = { ...tables, Map: [] }
+    expect(trimToManifest(noMaps, FOREVER_MANIFEST).DungeonEncounter).toEqual([])
+  })
+
   it('returns ItemSparse [] while the manifest has no items', () => {
     expect(trimToManifest(tables, FOREVER_MANIFEST).ItemSparse).toEqual([])
   })

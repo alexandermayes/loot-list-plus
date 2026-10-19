@@ -9,7 +9,12 @@
  *   the provisional manifest bosses, and its size must equal PROVISIONAL_CEILING.
  * - findPromotableBosses reports allowlisted bosses a snapshot now confirms.
  * - checkVerifiedEncounters makes a 'wago-dungeon-encounter' verification
- *   honest: the encounter ID must exist in the snapshot.
+ *   honest: the cited encounter must exist, belong to the boss's raid and
+ *   carry the boss's name.
+ *
+ * Boss names alone are not evidence: the pinned product also carries the
+ * Classic encounters, and Forever reuses names such as "Onyxia". Every match
+ * is therefore scoped to the raid's map (see raidMapIds).
  *
  * No I/O and no network. Manifest and snapshot types are imported type-only so
  * zod never loads here; the reference test reads the JSON files.
@@ -36,6 +41,30 @@ export interface PromotableBoss extends ProvisionalAllowlistEntry {
  * constant in the same PR as the manifest edit.
  */
 export const PROVISIONAL_CEILING = 9
+
+type ManifestRaid = ExpansionManifest['raids'][number]
+type SnapshotTables = ReferenceSnapshot['tables']
+
+/**
+ * The wago Map.IDs that count as this raid. A pinned manifest mapId is
+ * authoritative and wins outright. Until one is pinned (all Forever raids are
+ * null today) the raid's name or a previous name is joined to Map.MapName_lang.
+ * Classic and Forever can share a map name, so pin mapId once it is known.
+ */
+export function raidMapIds(raid: ManifestRaid, maps: SnapshotTables['Map']): Set<number> {
+  if (raid.mapId !== null) return new Set([raid.mapId])
+  const names = new Set<string>()
+  for (const name of [raid.name, ...raid.previousNames]) {
+    const normalized = normalizeCatalogName(name)
+    if (normalized !== null) names.add(normalized)
+  }
+  const ids = new Set<number>()
+  for (const row of maps) {
+    const normalized = normalizeCatalogName(row.MapName_lang)
+    if (normalized !== null && names.has(normalized)) ids.add(row.ID)
+  }
+  return ids
+}
 
 function entryId(raid: string, bossKey: string): string {
   return `${raid}/${bossKey}`
@@ -93,19 +122,24 @@ export function findPromotableBosses(
   allowlist: readonly ProvisionalAllowlistEntry[],
   snapshot: ReferenceSnapshot,
 ): PromotableBoss[] {
-  const encounterIds = new Map<string, number>()
-  for (const row of snapshot.tables.DungeonEncounter) {
-    const name = normalizeCatalogName(row.Name_lang)
-    if (name !== null && !encounterIds.has(name)) encounterIds.set(name, row.ID)
+  const provisional = provisionalBossIds(manifest)
+  const mapIdsByRaid = new Map<string, Set<number>>()
+  for (const raid of manifest.raids) {
+    mapIdsByRaid.set(raid.name, raidMapIds(raid, snapshot.tables.Map))
   }
 
-  const provisional = provisionalBossIds(manifest)
   const found: PromotableBoss[] = []
   for (const entry of allowlist) {
     if (!provisional.has(entryId(entry.raid, entry.bossKey))) continue
     const name = normalizeCatalogName(entry.name)
-    const encounterId = name === null ? undefined : encounterIds.get(name)
-    if (encounterId !== undefined) found.push({ ...entry, encounterId })
+    const raidMaps = mapIdsByRaid.get(entry.raid)
+    if (name === null || raidMaps === undefined) continue
+
+    // The first row in table order wins, as before; only rows on the raid's map count.
+    const row = snapshot.tables.DungeonEncounter.find(
+      (candidate) => raidMaps.has(candidate.MapID) && normalizeCatalogName(candidate.Name_lang) === name,
+    )
+    if (row !== undefined) found.push({ ...entry, encounterId: row.ID })
   }
   return found
 }
@@ -114,15 +148,30 @@ export function checkVerifiedEncounters(
   manifest: ExpansionManifest,
   snapshot: ReferenceSnapshot,
 ): string[] {
-  const known = new Set(snapshot.tables.DungeonEncounter.map((row) => row.ID))
+  const rowsById = new Map(snapshot.tables.DungeonEncounter.map((row) => [row.ID, row]))
   const errors: string[] = []
   for (const raid of manifest.raids) {
+    const raidMaps = raidMapIds(raid, snapshot.tables.Map)
     for (const boss of raid.bosses) {
       if (boss.verification !== 'verified' || boss.verifiedBy !== 'wago-dungeon-encounter') continue
-      if (boss.encounterId === null || !known.has(boss.encounterId)) {
+      const row = boss.encounterId === null ? undefined : rowsById.get(boss.encounterId)
+      if (row === undefined) {
         errors.push(
           `verified boss "${boss.key}" (${raid.name}) cites DungeonEncounter id ${boss.encounterId ?? 'null'}, ` +
             'which is not in the committed snapshot',
+        )
+        continue
+      }
+      if (!raidMaps.has(row.MapID)) {
+        errors.push(
+          `verified boss "${boss.key}" (${raid.name}) cites DungeonEncounter id ${row.ID}, ` +
+            `which is on map ${row.MapID}, not a map of this raid`,
+        )
+      }
+      if (normalizeCatalogName(row.Name_lang) !== normalizeCatalogName(boss.name)) {
+        errors.push(
+          `verified boss "${boss.key}" (${raid.name}) cites DungeonEncounter id ${row.ID}, ` +
+            `whose name does not match "${boss.name}"`,
         )
       }
     }

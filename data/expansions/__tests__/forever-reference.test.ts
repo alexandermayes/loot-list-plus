@@ -411,6 +411,52 @@ describe('promotion forced by a snapshot (D-15)', () => {
     const found = findPromotableBosses(FOREVER_MANIFEST, readAllowlist(), snapshotWithOnyxia('Nefarian'))
     expect(found).toEqual([])
   })
+
+  // The pinned product also carries Classic encounters, so a name match alone
+  // must not promote the Forever boss.
+  it('does not promote Forever Onyxia from a Classic Onyxia row on another map', () => {
+    const base = snapshotWithOnyxia()
+    const classicRow = { ID: 9001, Name_lang: 'Onyxia', MapID: 1, OrderIndex: 0, DifficultyID: 0 }
+    const classicMap = { ID: 1, MapName_lang: 'Classic Elsewhere', InstanceType: 2, ExpansionID: 0, Directory: 'Elsewhere' }
+    const snapshot: ReferenceSnapshot = {
+      ...base,
+      tables: { ...base.tables, DungeonEncounter: [classicRow], Map: [classicMap, ...base.tables.Map] },
+    }
+    expect(findPromotableBosses(FOREVER_MANIFEST, readAllowlist(), snapshot)).toEqual([])
+  })
+
+  it('does not promote from a row whose map has no Map entry, or on an empty Map table', () => {
+    const base = snapshotWithOnyxia()
+    const orphan: ReferenceSnapshot = { ...base, tables: { ...base.tables, Map: [] } }
+    expect(findPromotableBosses(FOREVER_MANIFEST, readAllowlist(), orphan)).toEqual([])
+  })
+
+  it('picks the row on the raid map when a same-named row sits on another map first', () => {
+    const base = snapshotWithOnyxia()
+    const classicRow = { ID: 9001, Name_lang: 'Onyxia', MapID: 1, OrderIndex: 0, DifficultyID: 0 }
+    const snapshot: ReferenceSnapshot = {
+      ...base,
+      tables: { ...base.tables, DungeonEncounter: [classicRow, ...base.tables.DungeonEncounter] },
+    }
+    const found = findPromotableBosses(FOREVER_MANIFEST, readAllowlist(), snapshot)
+    expect(found).toHaveLength(1)
+    expect(found[0]).toMatchObject({ bossKey: 'onyxia', encounterId: 1084 })
+  })
+
+  it('prefers a pinned manifest mapId over the name join', () => {
+    const base = snapshotWithOnyxia()
+    const pinned: ExpansionManifest = {
+      ...FOREVER_MANIFEST,
+      raids: FOREVER_MANIFEST.raids.map((raid) => (raid.name === "Onyxia's Lair" ? { ...raid, mapId: 777 } : raid)),
+    }
+    // The row sits on map 249, which the name join would accept; the pin says 777.
+    expect(findPromotableBosses(pinned, readAllowlist(), base)).toEqual([])
+    const onPinnedMap: ReferenceSnapshot = {
+      ...base,
+      tables: { ...base.tables, DungeonEncounter: [{ ...base.tables.DungeonEncounter[0], MapID: 777 }], Map: [] },
+    }
+    expect(findPromotableBosses(pinned, readAllowlist(), onPinnedMap).map((entry) => entry.bossKey)).toEqual(['onyxia'])
+  })
 })
 
 describe('checkVerifiedEncounters', () => {
@@ -425,6 +471,30 @@ describe('checkVerifiedEncounters', () => {
 
   it('passes when the snapshot holds the verified boss encounter ID', () => {
     expect(checkVerifiedEncounters(verifiedOnyxia, snapshotWithOnyxia())).toEqual([])
+  })
+
+  it('fails when the cited encounter is on a map that is not the raid', () => {
+    const base = snapshotWithOnyxia()
+    const elsewhere: ReferenceSnapshot = {
+      ...base,
+      tables: {
+        ...base.tables,
+        DungeonEncounter: [{ ...base.tables.DungeonEncounter[0], MapID: 1 }],
+      },
+    }
+    const errors = checkVerifiedEncounters(verifiedOnyxia, elsewhere)
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toContain('not a map of this raid')
+  })
+
+  it('fails when the cited encounter carries a different boss name', () => {
+    const errors = checkVerifiedEncounters(verifiedOnyxia, snapshotWithOnyxia('Nefarian'))
+    expect(errors).toHaveLength(1)
+    expect(errors[0]).toContain('name does not match')
+  })
+
+  it('accepts a case or spacing variant of the boss name on the raid map', () => {
+    expect(checkVerifiedEncounters(verifiedOnyxia, snapshotWithOnyxia('  ONYXIA '))).toEqual([])
   })
 
   it('fails against the empty committed snapshot', () => {
