@@ -14,8 +14,9 @@ import { TBC_ITEM_ROLES } from '@/data/tbc-item-roles'
 import { WOTLK_ITEM_ROLES } from '@/data/wrath-item-roles'
 import { CATA_ITEM_ROLES } from '@/data/cata-item-roles'
 import { MOP_ITEM_ROLES } from '@/data/mop-item-roles'
-import { EXPANSION_PHASES, getExpansionSlug } from '@/data/expansion-phases'
+import { getExpansionSlug, getRaidPhase } from '@/data/expansion-phases'
 import { getTokenClasses, isTokenSlot } from '@/data/token-class-mapping'
+import { syncExpansionCatalog } from '@/app/services/expansionCatalogSync'
 import { getExpansionDisplayName } from '@/utils/expansionVisuals'
 import { EXPANSION_GAMES, getExpansionGame } from '@/domain/expansion/game'
 import type { GameVersion } from '@/domain/expansion/game'
@@ -31,11 +32,19 @@ export type { GameVersion }
  * into database records.
  */
 
+/**
+ * How an expansion's raid tiers are written: 'legacy-insert' runs the raid loop
+ * below over the static catalog; 'sync' hands the expansion to
+ * syncExpansionCatalog and the manifest.
+ */
+export type SeedMode = 'legacy-insert' | 'sync'
+
 export interface ExpansionDefinition {
   name: string
   displayName: string
   raids: RaidDefinition[]
   game: GameVersion
+  seedMode: SeedMode
 }
 
 export interface RaidDefinition {
@@ -54,21 +63,6 @@ export interface LootItemDefinition {
   name: string
   slot: string
   wowheadId: string
-}
-
-/**
- * Get the phase number for a raid based on expansion phases mapping
- */
-function getRaidPhase(expansionSlug: string, raidName: string): number | null {
-  const phases = EXPANSION_PHASES[expansionSlug]
-  if (!phases) return null
-
-  for (const phase of phases) {
-    if (phase.raids.includes(raidName)) {
-      return phase.phase
-    }
-  }
-  return null
 }
 
 /**
@@ -174,7 +168,8 @@ const CLASSIC_WOW_DATA: ExpansionDefinition = {
   name: 'Classic',
   displayName: 'Classic',
   raids: transformClassicRaids(),
-  game: EXPANSION_GAMES.Classic
+  game: EXPANSION_GAMES.Classic,
+  seedMode: 'legacy-insert'
 }
 
 // TBC expansion data
@@ -182,7 +177,8 @@ const TBC_DATA: ExpansionDefinition = {
   name: 'The Burning Crusade',
   displayName: 'The Burning Crusade',
   raids: transformTBCRaids(),
-  game: EXPANSION_GAMES['The Burning Crusade']
+  game: EXPANSION_GAMES['The Burning Crusade'],
+  seedMode: 'legacy-insert'
 }
 
 // WotLK expansion data
@@ -190,7 +186,8 @@ const WOTLK_DATA: ExpansionDefinition = {
   name: 'Wrath of the Lich King',
   displayName: 'Wrath of the Lich King',
   raids: transformWrathRaids(),
-  game: EXPANSION_GAMES['Wrath of the Lich King']
+  game: EXPANSION_GAMES['Wrath of the Lich King'],
+  seedMode: 'legacy-insert'
 }
 
 // Cataclysm expansion data
@@ -198,7 +195,8 @@ const CATA_DATA: ExpansionDefinition = {
   name: 'Cataclysm',
   displayName: 'Cataclysm',
   raids: transformCataRaids(),
-  game: EXPANSION_GAMES.Cataclysm
+  game: EXPANSION_GAMES.Cataclysm,
+  seedMode: 'legacy-insert'
 }
 
 // Mists of Pandaria expansion data
@@ -206,17 +204,20 @@ const MOP_DATA: ExpansionDefinition = {
   name: 'Mists of Pandaria',
   displayName: 'Mists of Pandaria',
   raids: transformMoPRaids(),
-  game: EXPANSION_GAMES['Mists of Pandaria']
+  game: EXPANSION_GAMES['Mists of Pandaria'],
+  seedMode: 'legacy-insert'
 }
 
 // WoW Forever expansion data
-// Raid tiers arrive later once Forever raid data exists; seeding creates the
-// expansion row only, with zero raid tiers.
+// Raid tiers come from syncExpansionCatalog and the Forever manifest, never
+// from the legacy raid loop below, so `raids` stays empty. Bosses are
+// manifest-only and seed no loot rows (D-01).
 const FOREVER_DATA: ExpansionDefinition = {
   name: 'Forever',
   displayName: 'Forever',
   raids: [],
-  game: EXPANSION_GAMES.Forever
+  game: EXPANSION_GAMES.Forever,
+  seedMode: 'sync'
 }
 
 // Map of all available expansions
@@ -328,6 +329,41 @@ export async function getGuildExpansions(
 }
 
 /**
+ * Best-effort removal of an expansion row whose Forever sync failed, plus the
+ * active-expansion pointer if this call set it. Never throws: the caller is
+ * about to rethrow the sync error and that is the one worth reporting.
+ */
+async function rollbackSyncedExpansion(
+  supabase: SupabaseClient,
+  guildId: string,
+  expansionId: string,
+  clearPointer: boolean
+): Promise<void> {
+  try {
+    if (clearPointer) {
+      const { error: pointerError } = await supabase
+        .from('guilds')
+        .update({ active_expansion_id: null })
+        .eq('id', guildId)
+        .eq('active_expansion_id', expansionId)
+      if (pointerError) {
+        console.error('[SEEDER] Error clearing active expansion during rollback:', pointerError)
+      }
+    }
+
+    const { error: deleteError } = await supabase
+      .from('expansions')
+      .delete()
+      .eq('id', expansionId)
+    if (deleteError) {
+      console.error('[SEEDER] Error removing expansion during rollback:', deleteError)
+    }
+  } catch (rollbackError) {
+    console.error('[SEEDER] Rollback after failed catalog sync threw:', rollbackError)
+  }
+}
+
+/**
  * Seed an expansion with all raid tiers and loot items for a guild
  *
  * @param supabase - Supabase client (can be service role or regular)
@@ -412,6 +448,25 @@ export async function seedExpansionForGuild(
         console.error('Error setting active expansion:', updateError)
         // Don't fail the whole operation, just log the error
       }
+    }
+
+    // 3a. Manifest-driven expansions seed their tiers through the sync service.
+    // A throw lands in the catch below, which keeps the existing generic message.
+    if (expansionData.seedMode === 'sync') {
+      try {
+        await syncExpansionCatalog(supabase, {
+          expansionId: expansion.id,
+          expansionName: expansionData.displayName
+        })
+      } catch (syncError) {
+        // The seeder owns this cleanup so no caller has to: POST
+        // /api/guilds/[id]/expansions does not roll back, and a tier-less
+        // expansion row would block every retry with the "already has" error.
+        // Clear the pointer first so the delete is not held up by the guilds FK.
+        await rollbackSyncedExpansion(supabase, guildId, expansion.id, setAsCurrent)
+        throw syncError
+      }
+      return { expansionId: expansion.id }
     }
 
     // 3. Create raid tiers with their loot items
