@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vite
 import { render, screen, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { CreateReserveRunModal } from '../CreateReserveRunModal'
+import { FOREVER_RAID_ICON } from '@/utils/raidIcons'
 
 // Hoisted mutable state so per-test values can be set before render while the
 // vi.mock factories below (which vitest hoists to the top of the module) can
@@ -58,7 +59,7 @@ vi.mock('@/utils/raidIcons', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/utils/raidIcons')>()
   return {
     ...actual,
-    getRaidIcon: (name: string) => {
+    getRaidIcon: (name: string, game?: 'classic' | 'forever') => {
       if (slowTierRender.tierName === name) {
         slowTierRender.tierName = null
         const deadline = performance.now() + 30
@@ -66,7 +67,7 @@ vi.mock('@/utils/raidIcons', async (importOriginal) => {
           // busy-wait
         }
       }
-      return actual.getRaidIcon(name)
+      return actual.getRaidIcon(name, game)
     },
   }
 })
@@ -144,6 +145,33 @@ describe('CreateReserveRunModal, Forever vs Classic wording (EW-C8, EW-C9)', () 
     await user.click(screen.getByText('Classic'))
 
     expect(await screen.findByText('No raid data available for this expansion yet.')).toBeInTheDocument()
+  })
+
+  // D-04 as amended 2026-10-14: the tier icon resolves by the guild's game, so
+  // a Forever "Onyxia's Lair" tier never borrows the Classic Onyxia art.
+  it('Forever guild: an "Onyxia\'s Lair" tier icon is the neutral icon, never the Classic Onyxia art', async () => {
+    guildState.activeGuild = { id: 'g1', game: 'forever', active_expansion_id: 'exp-f' }
+    tiersState.tiers = [{ id: 't1', name: "Onyxia's Lair", phase: 1 }]
+
+    render(<CreateReserveRunModal open={true} onClose={vi.fn()} />)
+
+    const tierButton = (await screen.findByText("Onyxia's Lair")).closest('button')
+    const icon = tierButton?.querySelector('img')
+    expect(icon).not.toBeNull()
+    expect(icon?.getAttribute('src')).not.toContain('achievement_boss_onyxia')
+    expect(icon?.getAttribute('src')).toContain(FOREVER_RAID_ICON)
+  })
+
+  it('Guild object with no game field: an "Onyxia\'s Lair" tier icon is the Classic Onyxia art', async () => {
+    guildState.activeGuild = { id: 'g1', active_expansion_id: 'exp-c' } as unknown as { id: string; active_expansion_id: string }
+    tiersState.tiers = [{ id: 't1', name: "Onyxia's Lair", phase: 1 }]
+
+    const user = userEvent.setup()
+    render(<CreateReserveRunModal open={true} onClose={vi.fn()} />)
+    await user.click(screen.getByText('Classic'))
+
+    const tierButton = (await screen.findByText("Onyxia's Lair")).closest('button')
+    expect(tierButton?.querySelector('img')?.getAttribute('src')).toContain('achievement_boss_onyxia')
   })
 
   it('teardown unmounts while fetch is still stubbed, so a pending tier effect never reaches the real fetch', async () => {

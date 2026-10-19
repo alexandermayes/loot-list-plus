@@ -1946,6 +1946,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
                 onCompare={handleCompare}
                 onItemClick={canManageLoot ? handleItemClick : undefined}
                 maxRankingsCount={maxRankingsCount}
+                game={getGuildGame(activeGuild)}
               />
             )}
             </>
