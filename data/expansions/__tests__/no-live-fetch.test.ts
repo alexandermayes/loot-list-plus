@@ -222,6 +222,17 @@ const MODULE_PATH = /(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\s*\(\s*)(['"])([^'
 // 'scripts' as a whole path segment: '../../scripts/x', '@/scripts/x', 'scripts/x'.
 const SCRIPTS_SEGMENT = /(?:^|\/)scripts\//
 
+/**
+ * True when `text` names `host` as a hostname token: the host itself or a
+ * subdomain of it, never a bare substring. A hostname comparison rather than
+ * `includes` so the guard cannot be fooled by look-alike hosts and so CodeQL
+ * does not read the check as incomplete URL sanitization.
+ */
+function mentionsHost(text: string, host: string): boolean {
+  const tokens = text.toLowerCase().match(/[a-z0-9-]+(?:\.[a-z0-9-]+)+/g) ?? []
+  return tokens.some((token) => token === host || token.endsWith('.' + host))
+}
+
 /** One message per way `source` reaches wago or Wowhead live, or pulls scripts/ into runtime. */
 export function findLiveFetchViolations(source: string, { isRuntimeFile }: ScanOptions): string[] {
   const code = stripComments(source)
@@ -232,13 +243,13 @@ export function findLiveFetchViolations(source: string, { isRuntimeFile }: ScanO
     // `function fetch(` declares a function rather than calling one.
     if (/\bfunction\s+$/.test(code.slice(Math.max(0, index - 20), index))) continue
     const args = readBalanced(code, index + match[0].length - 1) ?? code.slice(index + match[0].length)
-    if (args.includes(WAGO_HOST) || args.includes(WOWHEAD_HOST)) {
+    if (mentionsHost(args, WAGO_HOST) || mentionsHost(args, WOWHEAD_HOST)) {
       violations.push(`rule 1: ${match[0].replace(/\s*\($/, '')} call names the wago or Wowhead host`)
     }
   }
 
-  if (code.includes(WAGO_HOST)) violations.push('rule 2: names the wago host')
-  if (code.includes(TOOLTIP_HOST)) violations.push('rule 2: names the Wowhead tooltip API host')
+  if (mentionsHost(code, WAGO_HOST)) violations.push('rule 2: names the wago host')
+  if (mentionsHost(code, TOOLTIP_HOST)) violations.push('rule 2: names the Wowhead tooltip API host')
 
   if (isRuntimeFile) {
     for (const match of code.matchAll(MODULE_PATH)) {
