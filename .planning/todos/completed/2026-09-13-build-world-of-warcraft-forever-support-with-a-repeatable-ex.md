@@ -3,6 +3,7 @@ created: 2026-09-14T05:11:19.557Z
 title: Build World of Warcraft Forever support with a repeatable expansion-onboarding format
 area: data
 severity: major
+resolves_phase: 2
 files:
   - app/services/expansionSeeder.ts:195-207
   - app/services/expansionSeeder.ts:382-405
