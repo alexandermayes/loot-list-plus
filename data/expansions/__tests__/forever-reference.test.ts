@@ -67,18 +67,20 @@ function failureMessages(candidate: unknown): string[] {
   return result.success ? [] : result.error.issues.map((issue) => issue.message)
 }
 
-describe('committed placeholder snapshot (D-14)', () => {
+describe('committed snapshot (a D-14 placeholder until the first refresh landed)', () => {
   it('parses under ReferenceSnapshotSchema', () => {
     const result = ReferenceSnapshotSchema.safeParse(readCommittedSnapshot())
     expect(result.success).toBe(true)
   })
 
-  it('is a placeholder: build, fetchedAt and sha256 are null and every table is empty', () => {
+  it('is a real snapshot: build inside the prefix, fetchedAt and sha256 set, encounter and map rows present', () => {
     const snapshot = ReferenceSnapshotSchema.parse(readCommittedSnapshot())
-    expect(snapshot.build).toBeNull()
-    expect(snapshot.fetchedAt).toBeNull()
-    expect(snapshot.sha256).toBeNull()
-    expect(snapshot.tables).toEqual(EMPTY_TABLES)
+    expect(snapshot.build).not.toBeNull()
+    expect(snapshot.build?.startsWith(snapshot.buildPrefix)).toBe(true)
+    expect(snapshot.fetchedAt).not.toBeNull()
+    expect(snapshot.sha256).not.toBeNull()
+    expect(snapshot.tables.DungeonEncounter.length).toBeGreaterThan(0)
+    expect(snapshot.tables.Map.length).toBeGreaterThan(0)
   })
 
   it('carries the manifest reference product and build prefix', () => {
@@ -289,15 +291,15 @@ function snapshotWithOnyxia(name = 'Onyxia'): ReferenceSnapshot {
 }
 
 describe('provisional allowlist ratchet (D-15)', () => {
-  it('holds exactly the nine provisional manifest bosses, in manifest order', () => {
+  it('holds exactly the eight provisional manifest bosses, in manifest order', () => {
     const allowlist = readAllowlist()
-    expect(allowlist).toHaveLength(9)
+    expect(allowlist).toHaveLength(8)
     expect(allowlist).toEqual(provisionalBosses(FOREVER_MANIFEST))
     expect(allowlist.every((entry) => entry.raid && entry.bossKey && entry.name)).toBe(true)
   })
 
   it('PROVISIONAL_CEILING equals the allowlist size today', () => {
-    expect(PROVISIONAL_CEILING).toBe(9)
+    expect(PROVISIONAL_CEILING).toBe(8)
     expect(readAllowlist()).toHaveLength(PROVISIONAL_CEILING)
   })
 
@@ -322,41 +324,39 @@ describe('provisional allowlist ratchet (D-15)', () => {
   })
 
   it('rejects an allowlist entry for a boss that has been promoted to verified', () => {
-    const promoted = withRaidBosses("Onyxia's Lair", (bosses) =>
-      bosses.map((boss) => ({
-        ...boss,
-        verification: 'verified' as const,
-        verifiedBy: 'wago-dungeon-encounter' as const,
-        encounterId: 1084,
-      })),
+    const promoted = withRaidBosses('Barrow Deeps', (bosses) =>
+      bosses.map((boss) =>
+        boss.key === 'amethrax'
+          ? { ...boss, verification: 'verified' as const, verifiedBy: 'wago-dungeon-encounter' as const, encounterId: 4242 }
+          : boss,
+      ),
     )
     const errors = checkProvisionalAllowlist(promoted, readAllowlist())
-    expect(errors.some((error) => error.includes('onyxia'))).toBe(true)
+    expect(errors.some((error) => error.includes('amethrax'))).toBe(true)
   })
 
-  it('rejects a ten-entry allowlist against the ceiling of 9', () => {
+  it('rejects a nine-entry allowlist against the ceiling of 8', () => {
     const extra = { raid: 'Barrow Deeps', bossKey: 'extra', name: 'Extra' }
     const errors = checkProvisionalAllowlist(FOREVER_MANIFEST, [...readAllowlist(), extra])
     expect(errors.some((error) => error.includes('PROVISIONAL_CEILING'))).toBe(true)
   })
 
-  it('tells the author to lower the ceiling to 8 after one promotion', () => {
-    const promoted = withRaidBosses("Onyxia's Lair", (bosses) =>
-      bosses.map((boss) => ({
-        ...boss,
-        verification: 'verified' as const,
-        verifiedBy: 'wago-dungeon-encounter' as const,
-        encounterId: 1084,
-      })),
+  it('tells the author to lower the ceiling to 7 after one more promotion', () => {
+    const promoted = withRaidBosses('Barrow Deeps', (bosses) =>
+      bosses.map((boss) =>
+        boss.key === 'amethrax'
+          ? { ...boss, verification: 'verified' as const, verifiedBy: 'wago-dungeon-encounter' as const, encounterId: 4242 }
+          : boss,
+      ),
     )
-    const allowlist = readAllowlist().filter((entry) => entry.bossKey !== 'onyxia')
-    expect(allowlist).toHaveLength(8)
+    const allowlist = readAllowlist().filter((entry) => entry.bossKey !== 'amethrax')
+    expect(allowlist).toHaveLength(7)
     const errors = checkProvisionalAllowlist(promoted, allowlist)
     expect(errors).toHaveLength(1)
     expect(errors[0]).toContain('PROVISIONAL_CEILING')
-    expect(errors[0]).toContain('8')
+    expect(errors[0]).toContain('7')
     // Lowering the ceiling in the same PR clears it.
-    expect(checkProvisionalAllowlist(promoted, allowlist, 8)).toEqual([])
+    expect(checkProvisionalAllowlist(promoted, allowlist, 7)).toEqual([])
   })
 
   it('allows the D-15 growth exception only with a reviewed ceiling raise', () => {
@@ -370,8 +370,8 @@ describe('provisional allowlist ratchet (D-15)', () => {
       },
     ])
     const allowlist = [...readAllowlist(), { raid: 'Hyjal Summit', bossKey: 'new-hyjal-boss', name: 'New Hyjal Boss' }]
-    expect(allowlist).toHaveLength(10)
-    expect(checkProvisionalAllowlist(grown, allowlist, 10)).toEqual([])
+    expect(allowlist).toHaveLength(9)
+    expect(checkProvisionalAllowlist(grown, allowlist, 9)).toEqual([])
     const unraised = checkProvisionalAllowlist(grown, allowlist)
     expect(unraised.length).toBeGreaterThan(0)
     expect(unraised.some((error) => error.includes('PROVISIONAL_CEILING'))).toBe(true)
@@ -379,6 +379,17 @@ describe('provisional allowlist ratchet (D-15)', () => {
 })
 
 describe('promotion forced by a snapshot (D-15)', () => {
+  // Onyxia was promoted from the first real snapshot, so the synthetic cases
+  // below rebuild the pre-promotion state: Onyxia provisional and allowlisted.
+  const onyxiaProvisional = withRaidBosses("Onyxia's Lair", (bosses) =>
+    bosses.map((boss) => {
+      const copy = { ...boss, verification: 'provisional' as const, encounterId: null }
+      delete copy.verifiedBy
+      return copy
+    }),
+  )
+  const allowlistWithOnyxia = [...readAllowlist(), { raid: "Onyxia's Lair", bossKey: 'onyxia', name: 'Onyxia' }]
+
   it('no allowlisted boss is promotable against the committed snapshot', () => {
     const snapshot = ReferenceSnapshotSchema.parse(readCommittedSnapshot())
     const promotable = findPromotableBosses(FOREVER_MANIFEST, readAllowlist(), snapshot)
@@ -392,23 +403,23 @@ describe('promotion forced by a snapshot (D-15)', () => {
   })
 
   it('reports Onyxia with its encounter ID when the snapshot names it', () => {
-    const found = findPromotableBosses(FOREVER_MANIFEST, readAllowlist(), snapshotWithOnyxia())
+    const found = findPromotableBosses(onyxiaProvisional, allowlistWithOnyxia, snapshotWithOnyxia())
     expect(found).toHaveLength(1)
     expect(found[0]).toMatchObject({ bossKey: 'onyxia', encounterId: 1084 })
   })
 
   it('matches a case or spacing variant of the name', () => {
-    const found = findPromotableBosses(FOREVER_MANIFEST, readAllowlist(), snapshotWithOnyxia('  ONYXIA '))
+    const found = findPromotableBosses(onyxiaProvisional, allowlistWithOnyxia, snapshotWithOnyxia('  ONYXIA '))
     expect(found.map((entry) => entry.bossKey)).toEqual(['onyxia'])
   })
 
   it('does not report a boss that is not on the allowlist', () => {
-    const found = findPromotableBosses(FOREVER_MANIFEST, [], snapshotWithOnyxia())
+    const found = findPromotableBosses(onyxiaProvisional, [], snapshotWithOnyxia())
     expect(found).toEqual([])
   })
 
   it('does not report a boss whose name is not in the snapshot', () => {
-    const found = findPromotableBosses(FOREVER_MANIFEST, readAllowlist(), snapshotWithOnyxia('Nefarian'))
+    const found = findPromotableBosses(onyxiaProvisional, allowlistWithOnyxia, snapshotWithOnyxia('Nefarian'))
     expect(found).toEqual([])
   })
 
@@ -422,13 +433,13 @@ describe('promotion forced by a snapshot (D-15)', () => {
       ...base,
       tables: { ...base.tables, DungeonEncounter: [classicRow], Map: [classicMap, ...base.tables.Map] },
     }
-    expect(findPromotableBosses(FOREVER_MANIFEST, readAllowlist(), snapshot)).toEqual([])
+    expect(findPromotableBosses(onyxiaProvisional, allowlistWithOnyxia, snapshot)).toEqual([])
   })
 
   it('does not promote from a row whose map has no Map entry, or on an empty Map table', () => {
     const base = snapshotWithOnyxia()
     const orphan: ReferenceSnapshot = { ...base, tables: { ...base.tables, Map: [] } }
-    expect(findPromotableBosses(FOREVER_MANIFEST, readAllowlist(), orphan)).toEqual([])
+    expect(findPromotableBosses(onyxiaProvisional, allowlistWithOnyxia, orphan)).toEqual([])
   })
 
   it('picks the row on the raid map when a same-named row sits on another map first', () => {
@@ -438,7 +449,7 @@ describe('promotion forced by a snapshot (D-15)', () => {
       ...base,
       tables: { ...base.tables, DungeonEncounter: [classicRow, ...base.tables.DungeonEncounter] },
     }
-    const found = findPromotableBosses(FOREVER_MANIFEST, readAllowlist(), snapshot)
+    const found = findPromotableBosses(onyxiaProvisional, allowlistWithOnyxia, snapshot)
     expect(found).toHaveLength(1)
     expect(found[0]).toMatchObject({ bossKey: 'onyxia', encounterId: 1084 })
   })
@@ -446,16 +457,16 @@ describe('promotion forced by a snapshot (D-15)', () => {
   it('prefers a pinned manifest mapId over the name join', () => {
     const base = snapshotWithOnyxia()
     const pinned: ExpansionManifest = {
-      ...FOREVER_MANIFEST,
-      raids: FOREVER_MANIFEST.raids.map((raid) => (raid.name === "Onyxia's Lair" ? { ...raid, mapId: 777 } : raid)),
+      ...onyxiaProvisional,
+      raids: onyxiaProvisional.raids.map((raid) => (raid.name === "Onyxia's Lair" ? { ...raid, mapId: 777 } : raid)),
     }
     // The row sits on map 249, which the name join would accept; the pin says 777.
-    expect(findPromotableBosses(pinned, readAllowlist(), base)).toEqual([])
+    expect(findPromotableBosses(pinned, allowlistWithOnyxia, base)).toEqual([])
     const onPinnedMap: ReferenceSnapshot = {
       ...base,
       tables: { ...base.tables, DungeonEncounter: [{ ...base.tables.DungeonEncounter[0], MapID: 777 }], Map: [] },
     }
-    expect(findPromotableBosses(pinned, readAllowlist(), onPinnedMap).map((entry) => entry.bossKey)).toEqual(['onyxia'])
+    expect(findPromotableBosses(pinned, allowlistWithOnyxia, onPinnedMap).map((entry) => entry.bossKey)).toEqual(['onyxia'])
   })
 })
 
@@ -497,8 +508,19 @@ describe('checkVerifiedEncounters', () => {
     expect(checkVerifiedEncounters(verifiedOnyxia, snapshotWithOnyxia('  ONYXIA '))).toEqual([])
   })
 
-  it('fails against the empty committed snapshot', () => {
-    const empty = ReferenceSnapshotSchema.parse(readCommittedSnapshot())
+  it('passes against the committed snapshot, which names the verified Onyxia encounter on its map', () => {
+    const committed = ReferenceSnapshotSchema.parse(readCommittedSnapshot())
+    expect(checkVerifiedEncounters(verifiedOnyxia, committed)).toEqual([])
+  })
+
+  it('fails against an empty placeholder snapshot', () => {
+    const empty = ReferenceSnapshotSchema.parse({
+      ...syntheticSnapshot(),
+      build: null,
+      fetchedAt: null,
+      sha256: null,
+      tables: EMPTY_TABLES,
+    })
     const errors = checkVerifiedEncounters(verifiedOnyxia, empty)
     expect(errors).toHaveLength(1)
     expect(errors[0]).toContain('onyxia')

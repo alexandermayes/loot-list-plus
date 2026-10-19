@@ -40,7 +40,7 @@ export interface PromotableBoss extends ProvisionalAllowlistEntry {
  * bosses (Hyjal Summit has none today) only through a reviewed raise of this
  * constant in the same PR as the manifest edit.
  */
-export const PROVISIONAL_CEILING = 9
+export const PROVISIONAL_CEILING = 8
 
 type ManifestRaid = ExpansionManifest['raids'][number]
 type SnapshotTables = ReferenceSnapshot['tables']

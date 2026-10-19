@@ -1,5 +1,6 @@
 /**
- * The native WoW Forever manifest: three raids and their provisional bosses.
+ * The native WoW Forever manifest: three raids and their bosses, provisional
+ * until a wago DungeonEncounter row on the raid's map confirms them (D-15).
  *
  * Client-safe: the schema is imported type-only, so zod never reaches a client
  * bundle through this file. data/expansions/__tests__/manifest-gate.test.ts
@@ -66,7 +67,14 @@ export const FOREVER_MANIFEST: ExpansionManifest = {
       opens_on: '2026-12-09',
       mapId: null,
       bosses: [
-        { key: 'onyxia', name: 'Onyxia', verification: 'provisional', source: ONYXIA_SOURCE, encounterId: null },
+        {
+          key: 'onyxia',
+          name: 'Onyxia',
+          verification: 'verified',
+          verifiedBy: 'wago-dungeon-encounter',
+          source: ONYXIA_SOURCE,
+          encounterId: 1084,
+        },
       ],
     },
   ],

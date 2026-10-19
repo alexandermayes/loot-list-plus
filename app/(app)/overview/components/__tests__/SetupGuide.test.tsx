@@ -351,7 +351,7 @@ describe('SetupGuide', () => {
   })
 
   // Tracer for plan 02-11 (EXPN-01 visible half, D-01 to D-03, D-06, D-07).
-  it('Tracer: a Forever guild with tiers lists its raids and bosses, every boss Unconfirmed', async () => {
+  it('Tracer: a Forever guild with tiers lists its raids and bosses, Barrow Deeps bosses Unconfirmed and Onyxia confirmed', async () => {
     renderGuide({
       game: 'forever',
       raidTierStatus: 'available',
@@ -387,9 +387,10 @@ describe('SetupGuide', () => {
       expect(within(region).getByText(boss)).toBeInTheDocument()
     }
 
-    // The word, not colour, marks provisional bosses (8 Barrow Deeps + Onyxia).
-    expect(within(region).getAllByText('Unconfirmed')).toHaveLength(9)
-    expect(within(region).getAllByText('Boss names are confirmed when the raid opens.')).toHaveLength(2)
+    // The word, not colour, marks provisional bosses (the 8 Barrow Deeps bosses;
+    // Onyxia was confirmed by the first wago snapshot, so her raid carries no note).
+    expect(within(region).getAllByText('Unconfirmed')).toHaveLength(8)
+    expect(within(region).getAllByText('Boss names are confirmed when the raid opens.')).toHaveLength(1)
     expect(within(region).getAllByText('Bosses to be announced')).toHaveLength(1)
     expect(within(region).getAllByText('Raids open Dec 9')).toHaveLength(1)
 

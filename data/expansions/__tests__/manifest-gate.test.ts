@@ -88,13 +88,17 @@ describe('FOREVER_MANIFEST content', () => {
     expect(onyxia.bosses.map((boss) => boss.name)).toEqual(['Onyxia'])
   })
 
-  it('keeps every boss provisional with a source note and no confirmed encounter id', () => {
+  it('keeps every boss sourced: provisional bosses carry no verifiedBy and no encounter id, verified bosses carry both', () => {
     for (const raid of FOREVER_MANIFEST.raids) {
       for (const boss of raid.bosses) {
-        expect(boss.verification).toBe('provisional')
-        expect(boss).not.toHaveProperty('verifiedBy')
         expect(boss.source.length).toBeGreaterThan(0)
-        expect(boss.encounterId).toBeNull()
+        if (boss.verification === 'provisional') {
+          expect(boss).not.toHaveProperty('verifiedBy')
+          expect(boss.encounterId).toBeNull()
+        } else {
+          expect(boss.verifiedBy).toBe('wago-dungeon-encounter')
+          expect(boss.encounterId).not.toBeNull()
+        }
       }
     }
   })
