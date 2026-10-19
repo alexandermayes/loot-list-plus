@@ -23,11 +23,102 @@ import {
   SparklesIcon,
 } from '@hugeicons/core-free-icons'
 import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { foreverRaidsForTierNames } from '@/data/expansions/forever/lookup'
 
 // D-04: the only new visible string this plan adds. A Forever guild's
 // "submissions" and "raid" steps show this instead of becoming clickable
 // until a raid tier exists for the active expansion.
 const FOREVER_WAITING_NOTE = 'Not available for WoW Forever yet'
+
+// D-03, Hard Constraint 2: PROPOSED copy for the Forever raid list, awaiting
+// owner sign-off before the PR merges. No em dashes. If the owner changes a
+// string, only these constants and their test assertions change.
+const FOREVER_RAIDS_HEADING = 'Your raids'
+const FOREVER_UNCONFIRMED_BADGE = 'Unconfirmed'
+const FOREVER_PROVISIONAL_NOTE = 'Boss names are confirmed when the raid opens.'
+const FOREVER_NO_BOSSES_NOTE = 'Bosses to be announced'
+const FOREVER_SHARED_OPENS_PREFIX = 'Raids open'
+const FOREVER_RAID_OPENS_PREFIX = 'Opens'
+const raidSizeLabel = (size: number) => `${size}-player`
+
+// D-06: the manifest stores a plain calendar date, so it is parsed as
+// midnight UTC and formatted in UTC. A local-time format would show the
+// previous day west of UTC.
+function formatOpensOn(isoDate: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${isoDate}T00:00:00Z`))
+}
+
+// D-01, D-02, D-07: bosses are manifest-only, so each guild tier name is
+// resolved to its manifest raid here. Only manifest strings are rendered; the
+// tier names are used for matching and never displayed.
+function ForeverRaidList({ tierNames }: { tierNames: readonly string[] }) {
+  const headingId = useId()
+  const matches = foreverRaidsForTierNames(tierNames)
+  if (matches.length === 0) return null
+
+  const firstOpensOn = matches[0].raid.opens_on
+  const sharedOpensOn =
+    firstOpensOn !== null && matches.every(({ raid }) => raid.opens_on === firstOpensOn)
+      ? firstOpensOn
+      : null
+
+  return (
+    <section aria-labelledby={headingId} className="border-t border-border px-5 pt-4 pb-5">
+      <h3 id={headingId} className="text-13 font-semibold text-foreground">
+        {FOREVER_RAIDS_HEADING}
+      </h3>
+      {sharedOpensOn && (
+        <p className="text-12 text-muted-foreground mt-0.5">
+          {`${FOREVER_SHARED_OPENS_PREFIX} ${formatOpensOn(sharedOpensOn)}`}
+        </p>
+      )}
+      <ul className="mt-3 space-y-4">
+        {matches.map(({ raid, index }) => {
+          const hasProvisional = raid.bosses.some(boss => boss.verification === 'provisional')
+          return (
+            <li key={index}>
+              <div className="flex items-baseline gap-2">
+                <span className="text-13 font-medium text-foreground">{raid.name}</span>
+                <span className="text-11 text-muted-foreground">{raidSizeLabel(raid.size)}</span>
+              </div>
+              {!sharedOpensOn && raid.opens_on && (
+                <p className="text-11 text-muted-foreground">
+                  {`${FOREVER_RAID_OPENS_PREFIX} ${formatOpensOn(raid.opens_on)}`}
+                </p>
+              )}
+              {raid.bosses.length === 0 ? (
+                <p className="text-11 text-muted-foreground mt-1">{FOREVER_NO_BOSSES_NOTE}</p>
+              ) : (
+                <>
+                  <ul className="mt-1 space-y-1">
+                    {raid.bosses.map(boss => (
+                      <li key={boss.key} className="flex items-center gap-2">
+                        <span className="text-12 text-foreground-secondary">{boss.name}</span>
+                        {boss.verification === 'provisional' && (
+                          <Badge variant="outline" className="px-1.5 py-0 text-11 font-medium">
+                            {FOREVER_UNCONFIRMED_BADGE}
+                          </Badge>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  {hasProvisional && (
+                    <p className="text-11 text-muted-foreground mt-1.5">{FOREVER_PROVISIONAL_NOTE}</p>
+                  )}
+                </>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
 
 interface SetupStep {
   id: string
@@ -47,9 +138,12 @@ interface SetupGuideProps {
   guildIconUrl?: string | null
   hasExpansion: boolean
   raidTierStatus?: RaidTierStatus
+  // Names of the guild's active raid tiers, from DashboardContent's existing
+  // raid_tiers query. Used only by the Forever raid list.
+  raidTierNames?: string[]
 }
 
-export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion, raidTierStatus = 'available' }: SetupGuideProps) {
+export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion, raidTierStatus = 'available', raidTierNames = [] }: SetupGuideProps) {
   const router = useRouter()
   const supabase = createClient()
   const { activeCharacter, activeGuild } = useGuildContext()
@@ -439,6 +533,10 @@ export function SetupGuide({ guildId, guildName, guildIconUrl, hasExpansion, rai
           )
         })}
       </ol>
+
+      {isForeverGuild && raidTierStatus === 'available' && (
+        <ForeverRaidList tierNames={raidTierNames} />
+      )}
     </Card>
   )
 }
