@@ -16,7 +16,7 @@ type AnySupabase = any
 
 interface RecordedCall {
   table: string
-  method: 'select' | 'eq' | 'insert' | 'update'
+  method: 'select' | 'eq' | 'insert' | 'update' | 'delete'
   args: unknown[]
 }
 
@@ -29,6 +29,8 @@ interface RecordedCall {
  * fresh expansion row -- the two are distinguished by whether insert() was
  * called on that specific builder instance. The builder is also thenable so
  * plain awaited update().eq() chains settle without a .single() call.
+ *
+ * delete() is recorded too so rollback tests can assert what was removed.
  *
  * An awaited raid_tiers chain that never called insert() is the catalog sync's
  * existing-tiers read: it resolves no rows, or { error } when
@@ -59,6 +61,10 @@ function createMockSupabase(
       },
       update(...args: unknown[]) {
         calls.push({ table, method: 'update', args })
+        return builder
+      },
+      delete(...args: unknown[]) {
+        calls.push({ table, method: 'delete', args })
         return builder
       },
       single() {
@@ -246,6 +252,49 @@ describe('seedExpansionForGuild', () => {
       error: 'Something went wrong while setting up the expansion',
     })
     expect(calls.filter(c => c.table === 'raid_tiers' && c.method === 'insert')).toEqual([])
+  })
+
+  // A failed sync must not leave a tier-less expansion behind: POST
+  // /api/guilds/[id]/expansions has no rollback of its own, and the duplicate
+  // check would block every retry.
+  it('removes the new expansion and clears the active pointer when the sync throws, then returns the generic error', async () => {
+    const { supabase, calls } = createMockSupabase({ raidTiersReadError: 'boom' })
+
+    const result = await seedExpansionForGuild(supabase, 'g1', 'Forever', true, true)
+
+    expect(result).toEqual({
+      expansionId: '',
+      error: 'Something went wrong while setting up the expansion',
+    })
+
+    const guildUpdates = calls.filter(c => c.table === 'guilds' && c.method === 'update')
+    expect(guildUpdates.map(c => c.args[0])).toEqual([
+      { active_expansion_id: 'exp-1' },
+      { active_expansion_id: null },
+    ])
+    const guildEqs = calls.filter(c => c.table === 'guilds' && c.method === 'eq')
+    expect(guildEqs.slice(-2)).toEqual([
+      { table: 'guilds', method: 'eq', args: ['id', 'g1'] },
+      { table: 'guilds', method: 'eq', args: ['active_expansion_id', 'exp-1'] },
+    ])
+
+    const deletes = calls.filter(c => c.method === 'delete')
+    expect(deletes).toEqual([{ table: 'expansions', method: 'delete', args: [] }])
+    expect(calls.filter(c => c.table === 'expansions' && c.method === 'eq').slice(-1)).toEqual([
+      { table: 'expansions', method: 'eq', args: ['id', 'exp-1'] },
+    ])
+  })
+
+  it('leaves the active pointer alone on rollback when setAsCurrent is false', async () => {
+    const { supabase, calls } = createMockSupabase({ raidTiersReadError: 'boom' })
+
+    const result = await seedExpansionForGuild(supabase, 'g1', 'Forever', false, true)
+
+    expect(result.expansionId).toBe('')
+    expect(calls.filter(c => c.table === 'guilds' && c.method === 'update')).toEqual([])
+    expect(calls.filter(c => c.method === 'delete')).toEqual([
+      { table: 'expansions', method: 'delete', args: [] },
+    ])
   })
 
   it('rejects an unsupported expansion (Legion) with the registry-derived CP-09 message', async () => {

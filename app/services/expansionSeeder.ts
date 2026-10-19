@@ -329,6 +329,41 @@ export async function getGuildExpansions(
 }
 
 /**
+ * Best-effort removal of an expansion row whose Forever sync failed, plus the
+ * active-expansion pointer if this call set it. Never throws: the caller is
+ * about to rethrow the sync error and that is the one worth reporting.
+ */
+async function rollbackSyncedExpansion(
+  supabase: SupabaseClient,
+  guildId: string,
+  expansionId: string,
+  clearPointer: boolean
+): Promise<void> {
+  try {
+    if (clearPointer) {
+      const { error: pointerError } = await supabase
+        .from('guilds')
+        .update({ active_expansion_id: null })
+        .eq('id', guildId)
+        .eq('active_expansion_id', expansionId)
+      if (pointerError) {
+        console.error('[SEEDER] Error clearing active expansion during rollback:', pointerError)
+      }
+    }
+
+    const { error: deleteError } = await supabase
+      .from('expansions')
+      .delete()
+      .eq('id', expansionId)
+    if (deleteError) {
+      console.error('[SEEDER] Error removing expansion during rollback:', deleteError)
+    }
+  } catch (rollbackError) {
+    console.error('[SEEDER] Rollback after failed catalog sync threw:', rollbackError)
+  }
+}
+
+/**
  * Seed an expansion with all raid tiers and loot items for a guild
  *
  * @param supabase - Supabase client (can be service role or regular)
@@ -418,10 +453,19 @@ export async function seedExpansionForGuild(
     // 3a. Manifest-driven expansions seed their tiers through the sync service.
     // A throw lands in the catch below, which keeps the existing generic message.
     if (expansionData.seedMode === 'sync') {
-      await syncExpansionCatalog(supabase, {
-        expansionId: expansion.id,
-        expansionName: expansionData.displayName
-      })
+      try {
+        await syncExpansionCatalog(supabase, {
+          expansionId: expansion.id,
+          expansionName: expansionData.displayName
+        })
+      } catch (syncError) {
+        // The seeder owns this cleanup so no caller has to: POST
+        // /api/guilds/[id]/expansions does not roll back, and a tier-less
+        // expansion row would block every retry with the "already has" error.
+        // Clear the pointer first so the delete is not held up by the guilds FK.
+        await rollbackSyncedExpansion(supabase, guildId, expansion.id, setAsCurrent)
+        throw syncError
+      }
       return { expansionId: expansion.id }
     }
 
