@@ -136,3 +136,45 @@ describe('ApiClient.submitAttendance (GH #320)', () => {
     expect(fetchMock.mock.calls[0][0]).toBe('https://lootlist.test/api/addon/attendance')
   })
 })
+
+/**
+ * FIX-02: when GET /api/addon/guild-data answers 500 (a database read failed),
+ * the companion must surface an error rather than syncing an empty guild.
+ */
+describe('ApiClient.getGuildData', () => {
+  function stubFetch(body: unknown, status: number) {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify(body), { status }))
+    vi.stubGlobal('fetch', fetchMock)
+    return fetchMock
+  }
+
+  it('C1 rejects with the route error message when guild-data answers 500', async () => {
+    const fetchMock = stubFetch({ error: 'Internal server error' }, 500)
+    await expect(client().getGuildData()).rejects.toThrow('Internal server error')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    const [url] = fetchMock.mock.calls[0] as unknown as [string]
+    expect(url).toBe('https://lootlist.test/api/addon/guild-data?guild_id=g1')
+  })
+
+  it('C2 rejects with a generic message when a failed response carries no JSON body', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>bad gateway</html>', { status: 502 })))
+    await expect(client().getGuildData()).rejects.toThrow('Unknown error')
+  })
+
+  it('C3 resolves the body of a 200, BLP included', async () => {
+    const body = {
+      guildId: 'g1',
+      guildName: 'Test Guild',
+      expansionId: 'exp-1',
+      phase: 4,
+      settings: {},
+      items: [],
+      members: [],
+      priorities: {},
+      blp: { c1: { li1: 2 } },
+      attendance: {},
+    }
+    stubFetch(body, 200)
+    await expect(client().getGuildData()).resolves.toEqual(body)
+  })
+})

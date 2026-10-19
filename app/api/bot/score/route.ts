@@ -14,8 +14,9 @@
  */
 
 import { NextResponse } from 'next/server'
-import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { createTypedServiceRoleClient } from '@/utils/supabase/typed-service-role'
 import { computeAttendance } from '@/domain/scoring'
+import type { AttendanceInput, ScoringConfig } from '@/domain/types'
 import { resolveRaidDays, resolveRollingWeeks } from '@/domain/raid-team/settings'
 import type { RaidDaysOverride } from '@/domain/raid-team/types'
 import { trackApiError } from '@/utils/analytics/server'
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
       )
     }
 
-    const supabase = createServiceRoleClient()
+    const supabase = createTypedServiceRoleClient()
     const guild = await resolveGuildFromDiscord(supabase, discordGuildId)
     if (!guild) {
       return NextResponse.json({ error: 'no_guild_linked' }, { status: 404 })
@@ -140,9 +141,16 @@ export async function GET(request: Request) {
     )
 
     const attendance = computeAttendance({
-      records: recordsResult.data || [],
+      // Cast only, no default substitution: the typed client reports these
+      // attendance flags as nullable, and the values must reach the scoring
+      // engine exactly as they did before the typed client (Pitfall 9).
+      records: (recordsResult.data || []) as AttendanceInput['records'],
       raidEvents,
-      config: { ...settings, rolling_attendance_weeks: rollingWeeks },
+      // Cast only: attendance_type is a string column that the database
+      // constrains to 'linear' | 'breakpoint' | 'points-per-raid'
+      // (guild_settings_attendance_type_check), and the nullable columns are
+      // passed through unchanged rather than defaulted.
+      config: { ...settings, rolling_attendance_weeks: rollingWeeks } as Partial<ScoringConfig>,
       raidDays,
       raiderTeamId,
       weekResetDay: settings.week_reset_day,

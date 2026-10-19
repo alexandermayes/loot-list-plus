@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest'
 // is .mjs (ESM) so Vitest imports it correctly, and is excluded from tsconfig.
 import help from './help.js'
 
-const { parseStructured } = help
+const { parseStructured, reviewEmbed } = help
 
 describe('parseStructured', () => {
   it('parses a "covered" reply and leaves the article draft empty', () => {
@@ -60,5 +60,17 @@ describe('parseStructured', () => {
   it('defaults coverage to "none" when the marker is missing', () => {
     const out = parseStructured('just some text with no markers')
     expect(out.coverage).toBe('none')
+  })
+})
+
+describe('reviewEmbed', () => {
+  it('titles the officer review post without an em dash', () => {
+    const embed = reviewEmbed('How do reserves work?', {
+      title: 'Reserved items',
+      description: 'How reserves are ranked.',
+      content: 'Reserved items cost 1 allocation point.',
+    })
+    expect(embed.title).toBe('\u{1F195} New help article (pending review)')
+    expect(embed.title).not.toContain('\u2014')
   })
 })

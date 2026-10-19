@@ -25,7 +25,8 @@
  *
  * fetchReceivedCounts reads the guild's loot_history in pages and checks
  * the error on every page (paginatedSelect ignores errors). A failed read
- * returns null, and the export then goes out without the skip, as before.
+ * returns null, and both export routes then answer 500 rather than send a list
+ * that looks complete without the skip (FIX-02, owner decisions 7 and 8).
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { pickReceivedEntries } from '@/domain/loot/apply-receive-skip'

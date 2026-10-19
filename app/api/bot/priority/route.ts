@@ -17,7 +17,8 @@
  * Ranks-on tiers. When the only matching item sits in a Loot-on, Ranks-off tier, the
  * route answers 403 { error: 'rankings_hidden' } instead of a false "nobody ranked
  * this". Every query here checks its error; a failed read returns 500, never an
- * empty or unfiltered list.
+ * empty or unfiltered list. The paged reads use the shared selectAllPagesOrThrow
+ * (utils/supabase/paginate.ts), which checks each page's error unlike paginatedSelect.
  *
  * Guilds without LootList+ Premium get 403 { error: 'premium_required',
  * guild_name, premium_url } before any guild data is read
@@ -25,43 +26,22 @@
  */
 
 import { NextResponse } from 'next/server'
-import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { createTypedServiceRoleClient } from '@/utils/supabase/typed-service-role'
+import { selectAllPagesOrThrow } from '@/utils/supabase/paginate'
 import { trackApiError } from '@/utils/analytics/server'
 import { checkBotAuth, resolveGuildFromDiscord, requireBotLookupAccess } from '../_helpers'
 import { findInvalidCharacterIds } from '@/lib/loot/guild-award-refs'
 import { fetchReceivedCounts } from '@/lib/addon/member-ranked-items'
 import { splitBotTiers, collectItemCandidates, orderItemCandidates } from '@/domain/loot/bot-item-priority'
+import { wowheadItemUrl } from '@/domain/expansion/wowhead'
 
 const MAX_RAIDERS = 5
-const PAGE_SIZE = 1000
 const CHARACTER_CHUNK_SIZE = 100
 
 interface LootItemRow {
   id: string
   name: string
   wowhead_id: number | null
-}
-
-/**
- * Reads every page of a query, checking the error on each page (unlike
- * utils/supabase/paginate.ts's paginatedSelect, which ignores errors). Throws on
- * any page's error so the route's catch can answer 500 instead of an undercounted
- * list. Pages of PAGE_SIZE, stopping as soon as a page comes back short.
- */
-async function selectAllPagesOrThrow<T>(
-  label: string,
-  fetchPage: (start: number, end: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>
-): Promise<T[]> {
-  const all: T[] = []
-  for (let start = 0; ; start += PAGE_SIZE) {
-    const { data, error } = await fetchPage(start, start + PAGE_SIZE - 1)
-    if (error) {
-      throw new Error(`Failed to read ${label}: ${error.message}`)
-    }
-    const rows = data ?? []
-    all.push(...rows)
-    if (rows.length < PAGE_SIZE) return all
-  }
 }
 
 export async function GET(request: Request) {
@@ -80,7 +60,7 @@ export async function GET(request: Request) {
       )
     }
 
-    const supabase = createServiceRoleClient()
+    const supabase = createTypedServiceRoleClient()
     const guild = await resolveGuildFromDiscord(supabase, discordGuildId)
     if (!guild) {
       return NextResponse.json({ error: 'no_guild_linked' }, { status: 404 })
@@ -150,6 +130,19 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'item_not_found', item_query: itemQuery }, { status: 404 })
     }
 
+    // The server decides the item link (Forever guilds get wowhead.com/forever);
+    // the bot is a separate deploy that cannot import app code, so it renders
+    // item_url after a shape check. A missing expansion row keeps today's retail link.
+    const { data: expansion, error: expansionError } = await supabase
+      .from('expansions')
+      .select('name')
+      .eq('id', guild.active_expansion_id)
+      .maybeSingle()
+    if (expansionError) {
+      throw new Error(`Failed to read the active expansion: ${expansionError.message}`)
+    }
+    const itemUrl = item.wowhead_id != null ? wowheadItemUrl(expansion?.name, item.wowhead_id) : null
+
     // Same real item can have several loot_items rows (several bosses or tiers)
     // sharing a wowhead_id. Only rows in ranked (visible) tiers count toward the
     // answer; `item` itself always counts.
@@ -206,7 +199,12 @@ export async function GET(request: Request) {
     }
 
     const emptyAnswer = () =>
-      NextResponse.json({ item_name: item!.name, item_wowhead_id: item!.wowhead_id, raiders: [] })
+      NextResponse.json({
+        item_name: item!.name,
+        item_wowhead_id: item!.wowhead_id,
+        item_url: itemUrl,
+        raiders: [],
+      })
 
     if (referencedCharacterIds.size === 0) {
       return emptyAnswer()
@@ -261,6 +259,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       item_name: item.name,
       item_wowhead_id: item.wowhead_id,
+      item_url: itemUrl,
       raiders: ordered.map((r) => ({ name: r.name, class: r.className, rank: r.rank })),
     })
   } catch (error) {

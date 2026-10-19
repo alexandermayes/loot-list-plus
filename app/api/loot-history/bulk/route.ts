@@ -12,11 +12,24 @@ import { resolveGuildLootItemIds, formatInvalidLootItemIdsError } from '@/lib/lo
 import { normalizeRefId, findInvalidRaidEventIds, findInvalidCharacterIds, formatInvalidAwardRefsError } from '@/lib/loot/guild-award-refs'
 import { buildBulkAwardRow } from '@/lib/loot/loot-history-rows'
 import { assignAwardCopies, isValidAwardCopy, nextAwardCopy } from '@/domain/loot/award-copies'
-import type { AwardReason, AwardOutcomeType } from '@/domain/types'
+import type { AwardReason, AwardOutcomeType, ScoreComponents } from '@/domain/types'
 
 const AWARD_REASON_VALUES = new Set<AwardReason>(['', 'score', 'loot_council', 'override', 'offspec', 'roll'])
 const OUTCOME_TYPE_VALUES = new Set<AwardOutcomeType>(['score', 'roll', 'loot_council', 'override', 'offspec'])
-const ALLOWED_COMPONENT_KEYS = ['itemRank', 'attendanceScore', 'rankModifier', 'roleBonus', 'priorityBonus', 'trialPenalty', 'badLuckBonus'] as const
+// The Record type makes a ScoreComponents key missing from this map a compile
+// error, so a future score component cannot be silently dropped from receipts again.
+const COMPONENT_KEY_MAP: Record<keyof ScoreComponents, true> = {
+  itemRank: true,
+  attendanceScore: true,
+  rankModifier: true,
+  roleBonus: true,
+  badLuckBonus: true,
+  priorityBonus: true,
+  trialPenalty: true,
+  donationBonus: true,
+  raiderBonus: true,
+}
+const ALLOWED_COMPONENT_KEYS = Object.keys(COMPONENT_KEY_MAP) as Array<keyof ScoreComponents>
 const REASON_LABELS: Record<Exclude<AwardReason, '' | 'score'> | 'score', string> = {
   score: 'Score winner',
   loot_council: 'Loot council decision',
@@ -122,6 +135,20 @@ function composeNotesFromReason(reason: AwardReason | null | undefined, note: st
   const label = reason ? REASON_LABELS[reason] : null
   const parts = [label, trimmedNote || null].filter(Boolean) as string[]
   return parts.length ? parts.join(': ') : null
+}
+
+/**
+ * The distinct loot_item_id values whose BLP a delete of these rows can change.
+ * Rows without a raid_event_id are skipped on purpose: the SQL behind
+ * recompute_blp_for_item reads only history rows that have a raid_event_id, so
+ * they cannot affect BLP.
+ */
+function blpItemsToRecompute(rows: ReadonlyArray<{ loot_item_id: string | null; raid_event_id: string | null }> | null): string[] {
+  const ids = new Set<string>()
+  for (const row of rows ?? []) {
+    if (row.loot_item_id && row.raid_event_id) ids.add(row.loot_item_id)
+  }
+  return [...ids]
 }
 
 /**
@@ -468,12 +495,17 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (raid_event_id) {
-      // Read what we're about to delete for the audit log
-      const { data: toDelete } = await serviceSupabase
+      // Read what we're about to delete for the audit log and the BLP recompute.
+      // A failed read stops here: deleting without it would skip the recompute.
+      const { data: toDelete, error: readError } = await serviceSupabase
         .from('loot_history')
-        .select('id, loot_item_id, character_id, character_name')
+        .select('id, loot_item_id, character_id, character_name, raid_event_id')
         .eq('raid_event_id', raid_event_id)
         .eq('guild_id', guild_id)
+
+      if (readError) {
+        return NextResponse.json({ error: readError.message }, { status: 500 })
+      }
 
       const { error } = await serviceSupabase
         .from('loot_history')
@@ -497,13 +529,25 @@ export async function DELETE(request: NextRequest) {
           oldData: { ...entry, raid_event_id },
         })
       }
+
+      // Same awaited recompute as the ids branch, once per distinct item of the
+      // night (order does not matter: each item is rebuilt from history).
+      const nightItems = blpItemsToRecompute(toDelete)
+      if (nightItems.length > 0) {
+        await recomputeBlpForItems(serviceSupabase, guild_id, nightItems)
+      }
     } else if (ids) {
-      // Read what we're about to delete for the audit log
-      const { data: toDelete } = await serviceSupabase
+      // Read what we're about to delete for the audit log and the BLP recompute.
+      // A failed read stops here: deleting without it would skip the recompute.
+      const { data: toDelete, error: readError } = await serviceSupabase
         .from('loot_history')
-        .select('id, loot_item_id, character_id, character_name')
+        .select('id, loot_item_id, character_id, character_name, raid_event_id')
         .in('id', ids)
         .eq('guild_id', guild_id)
+
+      if (readError) {
+        return NextResponse.json({ error: readError.message }, { status: 500 })
+      }
 
       const { error } = await serviceSupabase
         .from('loot_history')
@@ -526,6 +570,16 @@ export async function DELETE(request: NextRequest) {
           userId: user.id,
           oldData: entry,
         })
+      }
+
+      // BLP is derived from history, so rebuild the affected items now that the
+      // rows are gone. Awaited (not after()) so the officer's next read is
+      // already correct. guild_id is the permission-verified request value.
+      // recomputeBlpForItems logs RPC failures and never throws, so this cannot
+      // fail a delete that already committed.
+      const blpItems = blpItemsToRecompute(toDelete)
+      if (blpItems.length > 0) {
+        await recomputeBlpForItems(serviceSupabase, guild_id, blpItems)
       }
     }
 
@@ -602,12 +656,18 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Read current state for audit log
-    const { data: beforeRow } = await serviceSupabase
+    const { data: beforeRow, error: beforeError } = await serviceSupabase
       .from('loot_history')
       .select('character_id, character_name, notes, loot_item_id, raid_event_id, award_copy')
       .eq('id', id)
       .eq('guild_id', guild_id)
       .single()
+    // PGRST116 is PostgREST's no-row code for .single(): a missing id keeps
+    // today's 200. Any other read failure stops before the write, since the
+    // BLP recompute below depends on this row.
+    if (beforeError && beforeError.code !== 'PGRST116') {
+      return NextResponse.json({ error: beforeError.message }, { status: 500 })
+    }
     const before = beforeRow
       ? { character_id: beforeRow.character_id, character_name: beforeRow.character_name, notes: beforeRow.notes }
       : beforeRow
@@ -650,6 +710,20 @@ export async function PATCH(request: NextRequest) {
       oldData: before,
       newData: sanitized,
     })
+
+    // BLP is keyed on character_id, so moving a linked award to another raider,
+    // or unlinking it to null, changes that raider's history. Unlike the
+    // award-copy guard above, unlinking is included on purpose. Name-only and
+    // notes-only edits cannot change BLP and do not recompute. Awaited so the
+    // next read is correct; recomputeBlpForItems never throws.
+    if (
+      'character_id' in sanitized &&
+      sanitized.character_id !== beforeRow?.character_id &&
+      beforeRow?.loot_item_id &&
+      beforeRow.raid_event_id
+    ) {
+      await recomputeBlpForItems(serviceSupabase, guild_id, [beforeRow.loot_item_id])
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

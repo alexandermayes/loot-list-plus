@@ -342,7 +342,6 @@ export async function POST(request: Request) {
         submission_id,
         loot_item_id,
         item_name: lootItem?.name,
-        character_name: character?.name,
         already_obtained: !!already_obtained,
         removed_by: isOwner ? 'owner' : 'officer',
       },

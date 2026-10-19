@@ -6,7 +6,7 @@ import { POST } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyPermission } from '@/utils/server-roles'
-import { trackApiError } from '@/utils/analytics/server'
+import { trackApiError, trackEvent } from '@/utils/analytics/server'
 import { toDateString } from '@/utils/date'
 import { buildRemoveItemHistoryRow } from '@/lib/loot/loot-history-rows'
 import { logAudit } from '@/utils/audit/log'
@@ -248,6 +248,21 @@ describe('POST /api/loot-submissions/remove-item', () => {
     expect('history_recorded' in body).toBe(false)
     expect(submissionItemUpdates(calls)).toHaveLength(1)
     expect(lootHistoryInserts(calls)).toHaveLength(0)
+
+    // Hard Constraint 3: PostHog gets ids and the item name, never the raider's
+    // name. The fixture character is 'Thrall', so a leak would show here.
+    const removed = vi.mocked(trackEvent).mock.calls.filter(([arg]) => arg.event === 'loot_item_removed_from_list')
+    expect(removed).toHaveLength(1)
+    expect(removed[0][0].properties).toEqual({
+      guild_id: GUILD_ID,
+      submission_id: SUBMISSION_ID,
+      loot_item_id: ITEM_ID,
+      item_name: 'Sulfuras',
+      already_obtained: false,
+      removed_by: 'owner',
+    })
+    // The audit record is not analytics and keeps the character name.
+    expect(vi.mocked(logAudit).mock.calls[0][0].oldData).toMatchObject({ character_name: 'Thrall' })
   })
 
   it('restore works as today, and every loot_items query carries a raid_tier_id filter (no unscoped lookup)', async () => {

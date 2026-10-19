@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
-import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { createTypedServiceRoleClient } from '@/utils/supabase/typed-service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
 import { issueSyncToken } from '@/lib/addon/sync-tokens'
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'guild_id is required' }, { status: 400 })
     }
 
-    const supabase = createServiceRoleClient()
+    const supabase = createTypedServiceRoleClient()
 
     // Verify officer permissions
     const verification = await verifyOfficerPermissions(supabase, user.id, guild_id)
@@ -79,7 +79,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'guild_id is required' }, { status: 400 })
     }
 
-    const supabase = createServiceRoleClient()
+    const supabase = createTypedServiceRoleClient()
 
     const { error } = await supabase
       .from('addon_sync_tokens')

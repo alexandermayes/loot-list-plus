@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
-import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { createTypedServiceRoleClient } from '@/utils/supabase/typed-service-role'
+import type { TypedServiceClient } from '@/utils/supabase/typed-service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError, trackEvent } from '@/utils/analytics/server'
 import { notifyLootAward, type LootAward } from '@/lib/discord-loot-announcements'
@@ -167,7 +168,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing guild ID in export data' }, { status: 400 })
     }
 
-    const supabase = createServiceRoleClient()
+    const supabase = createTypedServiceRoleClient()
 
     // Verify officer permissions
     const verification = await verifyOfficerPermissions(supabase, user.id, payload.guildId)
@@ -325,7 +326,7 @@ interface ImportAwardScopes {
  * wowheadId resolution and never appear in either map here.
  */
 async function resolveImportAwardScopes(
-  supabase: ReturnType<typeof createServiceRoleClient>,
+  supabase: TypedServiceClient,
   guildId: string,
   awards: AddonAward[]
 ): Promise<ImportAwardScopes> {
@@ -372,7 +373,7 @@ type ProcessAwardOutcome =
   | { status: 'already_recorded' }
 
 async function processAward(
-  supabase: ReturnType<typeof createServiceRoleClient>,
+  supabase: TypedServiceClient,
   guildId: string,
   userId: string,
   award: AddonAward,
@@ -506,7 +507,7 @@ async function processAward(
 }
 
 async function processAttendance(
-  supabase: ReturnType<typeof createServiceRoleClient>,
+  supabase: TypedServiceClient,
   guildId: string,
   record: AddonAttendanceRecord,
   raidTimeZone: string | null

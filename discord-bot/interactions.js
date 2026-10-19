@@ -61,8 +61,8 @@ function scoreEmbed(payload) {
   const a = payload.attendance;
   const fmt = (n) => Number.isInteger(n) ? n.toString() : n.toFixed(2);
   const title = payload.team_name
-    ? `${payload.character_name} — Loot Score (${payload.team_name})`
-    : `${payload.character_name} — Loot Score`;
+    ? `${payload.character_name}: Loot Score (${payload.team_name})`
+    : `${payload.character_name}: Loot Score`;
   const lines = [
     `**Attendance credit:** ${fmt(a.score)} / ${fmt(a.max_score)} (${a.score_percent}%)`,
     `**Raids attended:** ${a.raids_attended} of ${a.raids_in_window} tracked (last ${payload.rolling_weeks} weeks)`,
@@ -75,24 +75,37 @@ function scoreEmbed(payload) {
   };
 }
 
+// The server decides the item link (GET /api/bot/priority sends item_url: a
+// Forever guild gets wowhead.com/forever). This strict shape check keeps
+// anything else out of a public markdown embed (same idea as
+// premiumRequiredEmbed's https check). An older app that sends no item_url
+// still works: the link is then built from item_wowhead_id as before.
+const WOWHEAD_ITEM_URL = /^https:\/\/www\.wowhead\.com\/(?:[a-z0-9-]+\/)?item=\d+$/;
+
 function priorityEmbed(payload) {
-  const itemLine = payload.item_wowhead_id
-    ? `[**${payload.item_name}**](https://www.wowhead.com/item=${payload.item_wowhead_id})`
+  const itemUrl =
+    typeof payload.item_url === 'string' && WOWHEAD_ITEM_URL.test(payload.item_url)
+      ? payload.item_url
+      : payload.item_wowhead_id
+        ? `https://www.wowhead.com/item=${payload.item_wowhead_id}`
+        : null;
+  const itemLine = itemUrl
+    ? `[**${payload.item_name}**](${itemUrl})`
     : `**${payload.item_name}**`;
   if (!payload.raiders || payload.raiders.length === 0) {
     return {
       color: EMBED_COLOR_ORANGE,
-      title: `Top priority — ${payload.item_name}`,
+      title: `Top priority: ${payload.item_name}`,
       description: `${itemLine}\n\n_No raiders have ranked this item._`,
     };
   }
   const lines = payload.raiders.map((r, i) => {
     const classPart = r.class ? ` *(${r.class})*` : '';
-    return `\`#${i + 1}\` **${r.name}**${classPart} — rank ${r.rank}`;
+    return `\`#${i + 1}\` **${r.name}**${classPart} · rank ${r.rank}`;
   });
   return {
     color: EMBED_COLOR_ORANGE,
-    title: `Top priority — ${payload.item_name}`,
+    title: `Top priority: ${payload.item_name}`,
     description: `${itemLine}\n\n${lines.join('\n')}`,
     footer: { text: 'Sorted by loot list rank. Loot Scores are on the Master Sheet.' },
   };
@@ -190,7 +203,7 @@ async function handleInteractionCreate(interaction) {
   if (!interaction.isChatInputCommand?.()) return;
 
   // Defer immediately so we don't hit Discord's 3s response window when the
-  // API call is slow. Public — anyone reading the channel can see the reply.
+  // API call is slow. Public: anyone reading the channel can see the reply.
   try {
     await interaction.deferReply();
   } catch (err) {
