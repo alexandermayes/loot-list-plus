@@ -132,8 +132,9 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 ### Blockers/Concerns
 
 - [Phase 1 follow-up] `lib/addon/sync-tokens.ts` stays on the untyped service-role client (accepted library debt) and the E-17 select-string columns were left for human review; neither blocks Phase 2.
-- [Phase 2 follow-up] The committed wago snapshot is the D-14 placeholder; the first `workflow_dispatch` run of refresh-wago-snapshot.yml after PR 5 merges confirms the wago endpoint, builds shape and CSV header assumptions (A4, A7) and fills it. The seeded Forever tiers on real guilds need the owner's `npm run sync:forever -- --apply` after deploy.
-- [Phase 2 follow-up] Residual risks recorded in 02-SECURITY.md and 02-REVIEW.md (fold into PR 5): promotable-boss matching ignores the raid map (WR-02), a header-only wago CSV would write an empty snapshot (WR-06), the bot branch is force-pushed over reviewer commits (WR-04), add-expansion leaves an empty expansion when the Forever sync fails (WR-01), and the data/expansions/** trigger on refresh-item-data.yml fires a Wowhead crawl that never reads it (WR-03). Phase 3 must not depend on any of them.
+- [Phase 2, shipped] Phase 2 reached main on 2026-10-19 through PRs #445, #447, #446, #450, #451, #449, #452, #453 and #454 (planning docs in #444). The first Refresh wago snapshot run pulled build 1.60.1.70450; Onyxia was promoted from encounter 1084 and the allowlist holds the 8 Barrow Deeps bosses (PR #455, PROVISIONAL_CEILING 8). GitHub Actions may now open the weekly snapshot PR itself. Still owed: the owner runs `npm run sync:forever` then `-- --apply` against production (UAT test 3), and the Barrow Deeps and Hyjal Summit boss names are due 2026-10-21.
+- [Phase 2, shipped] Code review warnings WR-01, WR-02, WR-03, WR-04 and WR-06 were fixed before shipping (02-REVIEW-FIX.md); WR-05 stays an accepted risk (R-02-05). Open residual items from 02-SECURITY.md: pin the Forever raid mapIds once known, and add the schema modules to the client-safe scan (residual risks 5 to 9).
+- [Phase 1, shipped] Phase 1 reached main through PR #456, cherry-picked onto main with both #355 list merging and the Phase 1 typed-client, paging and read-error 500 behaviour kept. `lib/addon/sync-tokens.ts` and `lib/addon/raid-night.ts` still use the untyped client (outside the route scan, accepted debt).
 
 - Phase 3: research lists two cost schemes for need rows (an allocation cost of 1/1/0, and a budget at Big 3, Medium 2, Standard 1). Settle which one the seeded rows carry before Phase 4 reads it.
 - Phase 3 to 4 gap: a Discovery tier can have need rows before raiders have a picker.
@@ -148,6 +149,6 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 
 ## Session Continuity
 
-Last session: 2026-10-19T20:03:02Z
-Stopped at: Phase 02 complete, ready to plan Phase 3
+Last session: 2026-10-19T21:51:42.855Z
+Stopped at: Phase 1 and Phase 2 shipped to main; ready to discuss Phase 3
 Resume file: None
