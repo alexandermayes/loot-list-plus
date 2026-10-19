@@ -36,6 +36,7 @@ import { notifySubmissionChanged } from '@/app/hooks/usePendingSubmissionCount'
 import { resolvePhaseGroups, getPhaseGroupLabel, getPhaseGroupShortLabel, getCanonicalPhase, type PhaseGroup } from '@/domain/expansion/phase-groups'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { Card } from '@/components/ui/card'
+import { getGuildGame } from '@/domain/expansion/game'
 import { detailRowKey, withoutDetailRow, restoreDetailRow, groupDetailRowsByRank } from '@/domain/loot/list-row-updates'
 import { diffListItems, type DiffEntry } from '@/domain/loot/list-diff'
 import { bulkDeleteIds, bulkDeleteNotice } from '@/domain/loot/bulk-delete'
@@ -930,7 +931,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                       {tiersInGroup.slice(0, 2).map((tier) => (
                         <img
                           key={tier.name}
-                          src={getRaidIcon(tier.name)}
+                          src={getRaidIcon(tier.name, getGuildGame(activeGuild))}
                           alt=""
                           width={16}
                           height={16}

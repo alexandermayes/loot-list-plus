@@ -1687,7 +1687,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
                           }`}>{getPhaseGroupShortLabel(group)}</span>
                           {iconTier && (
                             <img
-                              src={getRaidIcon(iconTier.name)}
+                              src={getRaidIcon(iconTier.name, getGuildGame(activeGuild))}
                               alt=""
                               width={20}
                               height={20}
