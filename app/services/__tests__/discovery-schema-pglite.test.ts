@@ -54,7 +54,16 @@ const ITEM_CLASSIC_ID = '00000000-0000-4000-8000-0000000000a1'
 const ITEM_FOREVER_ID = '00000000-0000-4000-8000-0000000000a2'
 const ITEM_FOREVER_SECOND_ID = '00000000-0000-4000-8000-0000000000a3'
 const NEED_TWO_ID = '00000000-0000-4000-8000-0000000000a4' // need 2, ring.tank in F1, ranked by nobody
-const PIN_ID = '00000000-0000-4000-8000-0000000000b1' // ITEM_FOREVER_ID pinned to NEED_ID
+const PIN_ID = '00000000-0000-4000-8000-0000000000b1' // ITEM_FOREVER_ID pinned to NEED_TWO_ID, so NEED_ID has no item behind it
+const DRAFT_LIST_ID = '00000000-0000-4000-8000-000000000032' // the raider's draft list (D-22)
+const USER_A_ID = '00000000-0000-4000-8000-00000000000c'
+const USER_B_ID = '00000000-0000-4000-8000-00000000000d'
+const CHARACTER_A_ID = '00000000-0000-4000-8000-000000000025'
+const CHARACTER_B_ID = '00000000-0000-4000-8000-000000000026'
+const LIST_A_ID = '00000000-0000-4000-8000-000000000033'
+const LIST_B_ID = '00000000-0000-4000-8000-000000000034'
+const EVENT_ONE_ID = '00000000-0000-4000-8000-000000000041'
+const EVENT_TWO_ID = '00000000-0000-4000-8000-000000000042'
 const SCRATCH_LIST_ID = '00000000-0000-4000-8000-000000000031' // only ever inside a rolled-back case
 
 const GUARD_TRIGGERS = [
@@ -191,7 +200,7 @@ beforeAll(async () => {
   )
   await db.query(
     `INSERT INTO loot_item_need_pins (id, guild_id, item_id, need_id, pinned_by) VALUES ($1, $2, $3, $4, $5)`,
-    [PIN_ID, GUILD_ID, ITEM_FOREVER_ID, NEED_ID, OFFICER_USER_ID],
+    [PIN_ID, GUILD_ID, ITEM_FOREVER_ID, NEED_TWO_ID, OFFICER_USER_ID],
   )
 }, 180000)
 
@@ -909,5 +918,287 @@ describe('column grants', () => {
          AND a.attname = 'awarded_item_id'`,
     )
     expect(foreignKeys).toEqual([])
+  })
+})
+
+describe('D-22 need-ranking hold', () => {
+  const MSG_HOLD = 'Need rows cannot be ranked yet'
+  const seededRows = [
+    { loot_item_id: ITEM_FOREVER_ID, rank: 1, slot: 1 },
+    { loot_item_id: ITEM_FOREVER_SECOND_ID, rank: 2, slot: 2 },
+  ]
+
+  beforeAll(async () => {
+    // A draft list stays writable for its owner (20260930000000), which is why
+    // the fixture is a draft: the hold is the only thing that can refuse.
+    await db.query(
+      `INSERT INTO loot_submissions (id, user_id, guild_id, raid_tier_id, character_id, status)
+       VALUES ($1, $2, $3, $4, $5, 'draft')`,
+      [DRAFT_LIST_ID, RAIDER_USER_ID, GUILD_ID, FOREVER_TIER_ID, RAIDER_CHARACTER_ID],
+    )
+    await db.query(
+      `INSERT INTO loot_submission_items (submission_id, loot_item_id, rank, slot)
+       VALUES ($1, $2, 1, 1), ($1, $3, 2, 2)`,
+      [DRAFT_LIST_ID, ITEM_FOREVER_ID, ITEM_FOREVER_SECOND_ID],
+    )
+  })
+
+  const liveRows = () =>
+    query(
+      db,
+      `SELECT loot_item_id, rank, slot FROM loot_submission_items
+       WHERE submission_id = $1 AND removed_at IS NULL ORDER BY rank`,
+      [DRAFT_LIST_ID],
+    )
+
+  it('[D-22] rejects a raider saving a list whose items include a need row, and leaves the live rows as they were', async () => {
+    const items = JSON.stringify([
+      { loot_item_id: ITEM_CLASSIC_ID, rank: 1, slot: 1 },
+      { loot_item_id: NEED_ID, rank: 2, slot: 2 },
+    ])
+    // A plain statement on purpose: a rolled-back transaction would hide a
+    // hold that fired after the RPC had already replaced the list.
+    await asRole(db, 'authenticated', RAIDER_USER_ID)
+    try {
+      await expect(
+        db.query(`SELECT public.save_submission_items($1, $2::jsonb)`, [DRAFT_LIST_ID, items]),
+      ).rejects.toThrow(MSG_HOLD)
+    } finally {
+      await resetRole(db)
+    }
+    expect(await liveRows()).toEqual(seededRows)
+  })
+
+  it('[D-22] rejects a raider inserting a loot_submission_items row for a need, and still lets the raider rank an item the same way', async () => {
+    await rejectedAs(
+      RAIDER_USER_ID,
+      `INSERT INTO loot_submission_items (submission_id, loot_item_id, rank, slot) VALUES ($1, $2, 3, 1)`,
+      [DRAFT_LIST_ID, NEED_ID],
+      MSG_HOLD,
+    )
+    expect(await liveRows()).toEqual(seededRows)
+
+    expect(
+      await changedAs(
+        RAIDER_USER_ID,
+        `INSERT INTO loot_submission_items (submission_id, loot_item_id, rank, slot) VALUES ($1, $2, 3, 1)`,
+        [DRAFT_LIST_ID, ITEM_CLASSIC_ID],
+      ),
+    ).toBe(1)
+  })
+
+  it('saves item rows through save_submission_items as before (positive control for the same role and RPC)', async () => {
+    await inRolledBackTransaction(db, async () => {
+      const items = JSON.stringify([
+        { loot_item_id: ITEM_CLASSIC_ID, rank: 1, slot: 1 },
+        { loot_item_id: ITEM_FOREVER_ID, rank: 2, slot: 2 },
+      ])
+      const result = await asUser(RAIDER_USER_ID, `SELECT public.save_submission_items($1, $2::jsonb) AS saved`, [
+        DRAFT_LIST_ID,
+        items,
+      ])
+      expect(result.rows).toEqual([{ saved: 2 }])
+      await resetRole(db)
+      expect(await liveRows()).toEqual([
+        { loot_item_id: ITEM_CLASSIC_ID, rank: 1, slot: 1 },
+        { loot_item_id: ITEM_FOREVER_ID, rank: 2, slot: 2 },
+      ])
+    })
+  })
+
+  it('[D-22] lets the superuser rank a need, which is how every fixture in this phase gets past the hold', async () => {
+    await inRolledBackTransaction(db, async () => {
+      const result = await db.query(
+        `INSERT INTO loot_submission_items (submission_id, loot_item_id, rank, slot) VALUES ($1, $2, 3, 1)`,
+        [DRAFT_LIST_ID, NEED_ID],
+      )
+      expect(result.affectedRows).toBe(1)
+    })
+  })
+})
+
+describe('BLP accrues on a need row (DISC-07)', () => {
+  beforeAll(async () => {
+    // Fixtures go in as the superuser, never by disabling a trigger: the hold
+    // checks only anon and authenticated sessions (D-22).
+    for (const [id, tag] of [
+      [USER_A_ID, 'a'],
+      [USER_B_ID, 'b'],
+    ]) {
+      await db.query(`INSERT INTO auth.users (id, email) VALUES ($1, $2)`, [id, `blp-${tag}@example.test`])
+    }
+    await db.query(
+      `INSERT INTO characters (id, user_id, name) VALUES ($1, $3, 'Test Raider A'), ($2, $4, 'Test Raider B')`,
+      [CHARACTER_A_ID, CHARACTER_B_ID, USER_A_ID, USER_B_ID],
+    )
+    await db.query(
+      `INSERT INTO character_guild_memberships (character_id, guild_id, role, is_active)
+       VALUES ($1, $3, 'Member', true), ($2, $3, 'Member', true)`,
+      [CHARACTER_A_ID, CHARACTER_B_ID, GUILD_ID],
+    )
+    const updated = await db.query(`UPDATE guild_settings SET blp_enabled = true WHERE guild_id = $1`, [GUILD_ID])
+    if (!updated.affectedRows) {
+      await db.query(`INSERT INTO guild_settings (guild_id, blp_enabled) VALUES ($1, true)`, [GUILD_ID])
+    }
+    await db.query(
+      `INSERT INTO raid_events (id, guild_id, raid_tier_id, raid_date)
+       VALUES ($1, $3, $4, '2026-10-06'), ($2, $3, $4, '2026-10-13')`,
+      [EVENT_ONE_ID, EVENT_TWO_ID, GUILD_ID, FOREVER_TIER_ID],
+    )
+    // Both raiders attended both nights.
+    for (const characterId of [CHARACTER_A_ID, CHARACTER_B_ID]) {
+      for (const eventId of [EVENT_ONE_ID, EVENT_TWO_ID]) {
+        await db.query(
+          `INSERT INTO attendance_records (raid_event_id, character_id, attended) VALUES ($1, $2, true)`,
+          [eventId, characterId],
+        )
+      }
+    }
+    // Both raiders have an approved list ranking need 1.
+    for (const [listId, userId, characterId] of [
+      [LIST_A_ID, USER_A_ID, CHARACTER_A_ID],
+      [LIST_B_ID, USER_B_ID, CHARACTER_B_ID],
+    ]) {
+      await db.query(
+        `INSERT INTO loot_submissions (id, user_id, guild_id, raid_tier_id, character_id, status)
+         VALUES ($1, $2, $3, $4, $5, 'approved')`,
+        [listId, userId, GUILD_ID, FOREVER_TIER_ID, characterId],
+      )
+      await db.query(
+        `INSERT INTO loot_submission_items (submission_id, loot_item_id, rank, slot) VALUES ($1, $2, 1, 1)`,
+        [listId, NEED_ID],
+      )
+    }
+    // Need 1 is awarded to A at the first night; awarded_item_id stays null
+    // because no item row exists for the need yet.
+    await db.query(
+      `INSERT INTO loot_history (character_id, character_name, loot_item_id, guild_id, raid_tier_id, raid_event_id)
+       VALUES ($1, 'Test Raider A', $2, $3, $4, $5)`,
+      [CHARACTER_A_ID, NEED_ID, GUILD_ID, FOREVER_TIER_ID, EVENT_ONE_ID],
+    )
+  })
+
+  const snapshot = async () => ({
+    tracking: await query(
+      db,
+      `SELECT character_id, loot_item_id, times_passed FROM blp_tracking
+       WHERE guild_id = $1 ORDER BY character_id, loot_item_id`,
+      [GUILD_ID],
+    ),
+    credits: await query(
+      db,
+      `SELECT character_id, loot_item_id, raid_event_id FROM blp_credits
+       WHERE guild_id = $1 ORDER BY character_id, loot_item_id, raid_event_id`,
+      [GUILD_ID],
+    ),
+  })
+
+  const recomputeItem = () => db.query(`SELECT public.recompute_blp_for_item($1, $2)`, [GUILD_ID, NEED_ID])
+  const recomputeEvent = () => db.query(`SELECT public.recompute_blp_for_event($1, $2)`, [GUILD_ID, EVENT_ONE_ID])
+  const recomputeGuild = () => db.query(`SELECT public.recompute_blp_for_guild($1)`, [GUILD_ID])
+
+  it('[DISC-07 adjacency] leaves the winner with no row and the other raider with times_passed 1, before any item exists for the need', async () => {
+    const award = await query(db, `SELECT awarded_item_id FROM loot_history WHERE loot_item_id = $1`, [NEED_ID])
+    expect(award).toEqual([{ awarded_item_id: null }])
+
+    await recomputeItem()
+    const { tracking, credits } = await snapshot()
+    expect(tracking).toEqual([{ character_id: CHARACTER_B_ID, loot_item_id: NEED_ID, times_passed: 1 }])
+    expect(credits).toEqual([
+      { character_id: CHARACTER_B_ID, loot_item_id: NEED_ID, raid_event_id: EVENT_ONE_ID },
+    ])
+  })
+
+  it('[DISC-07 ordering] leaves blp_tracking and blp_credits identical after repeated recomputes in any order', async () => {
+    await recomputeItem()
+    const first = await snapshot()
+    expect(first.tracking).toHaveLength(1)
+
+    await recomputeItem()
+    await recomputeItem()
+    await recomputeEvent()
+    await recomputeGuild()
+    expect(await snapshot()).toEqual(first)
+
+    await recomputeGuild()
+    await recomputeEvent()
+    await recomputeItem()
+    expect(await snapshot()).toEqual(first)
+  })
+
+  it('[DISC-07 empty] writes no blp_tracking row for a need that no approved list ranks', async () => {
+    await db.query(`SELECT public.recompute_blp_for_item($1, $2)`, [GUILD_ID, NEED_TWO_ID])
+    expect(await query(db, `SELECT 1 FROM blp_tracking WHERE loot_item_id = $1`, [NEED_TWO_ID])).toEqual([])
+    expect(await query(db, `SELECT 1 FROM blp_credits WHERE loot_item_id = $1`, [NEED_TWO_ID])).toEqual([])
+  })
+})
+
+// Last in the file: it reuses the BLP fixtures above (need 1 ranked by A and B,
+// awarded to A, B's blp_tracking row).
+describe('D-27 need-row delete lock', () => {
+  const countFor = async (sql: string) => (await query<{ n: number }>(db, sql, [NEED_ID]))[0].n
+
+  beforeAll(async () => {
+    await db.query(`SELECT public.recompute_blp_for_item($1, $2)`, [GUILD_ID, NEED_ID])
+  })
+
+  it('[D-27] rejects an officer deleting a ranked, awarded need row directly, and keeps the need, its rankings, its award and its BLP row', async () => {
+    expect(await countFor(`SELECT count(*)::int AS n FROM blp_tracking WHERE loot_item_id = $1`)).toBe(1)
+
+    // A plain statement outside any transaction on purpose: expectRejected
+    // always rolls back, so a read-back after it would pass with no lock at
+    // all. Only a plain statement shows the lock, not a rollback, kept the rows.
+    await asRole(db, 'authenticated', OFFICER_USER_ID)
+    try {
+      await expect(db.query(`DELETE FROM loot_items WHERE id = $1`, [NEED_ID])).rejects.toThrow(
+        'need rows are deleted only by the server',
+      )
+    } finally {
+      await resetRole(db)
+    }
+
+    expect(await countFor(`SELECT count(*)::int AS n FROM loot_items WHERE id = $1`)).toBe(1)
+    expect(await countFor(`SELECT count(*)::int AS n FROM loot_submission_items WHERE loot_item_id = $1`)).toBe(2)
+    expect(await countFor(`SELECT count(*)::int AS n FROM loot_history WHERE loot_item_id = $1`)).toBe(1)
+    expect(await countFor(`SELECT count(*)::int AS n FROM blp_tracking WHERE loot_item_id = $1`)).toBe(1)
+  })
+
+  it('[D-27] still lets the officer delete an item row (same role, table and loot_items_delete policy)', async () => {
+    await inRolledBackTransaction(db, async () => {
+      await db.query(
+        `INSERT INTO loot_items (id, raid_tier_id, name, wowhead_id)
+         VALUES ('00000000-0000-4000-8000-0000000000d1', $1, 'Disposable Item', 4400)`,
+        [CLASSIC_TIER_ID],
+      )
+      const result = await asUser(OFFICER_USER_ID, `DELETE FROM loot_items WHERE id = '00000000-0000-4000-8000-0000000000d1'`)
+      expect(result.affectedRows).toBe(1)
+    })
+  })
+
+  it('[D-27] still lets the superuser (the service role) delete a need row', async () => {
+    await inRolledBackTransaction(db, async () => {
+      const result = await db.query(`DELETE FROM loot_items WHERE id = $1`, [NEED_TWO_ID])
+      expect(result.affectedRows).toBe(1)
+    })
+  })
+
+  it('[D-27] lets the guild creator delete the guild, whose expansion and tier cascade removes the need rows', async () => {
+    const tierIds = [CLASSIC_TIER_ID, FOREVER_TIER_ID, FOREVER_TIER_TWO_ID, FOREVER_TIER_KNOWN_ID]
+    const itemsInGuild = async () =>
+      (
+        await query<{ n: number }>(
+          db,
+          `SELECT count(*)::int AS n FROM loot_items WHERE raid_tier_id = ANY ($1::uuid[])`,
+          [tierIds],
+        )
+      )[0].n
+
+    await inRolledBackTransaction(db, async () => {
+      expect(await itemsInGuild()).toBeGreaterThan(0)
+      await asUser(CREATOR_USER_ID, `SELECT public.delete_guild($1)`, [GUILD_ID])
+      await resetRole(db)
+      expect(await itemsInGuild()).toBe(0)
+      expect(await query(db, `SELECT 1 FROM guilds WHERE id = $1`, [GUILD_ID])).toEqual([])
+    })
   })
 })
