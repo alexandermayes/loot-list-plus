@@ -148,7 +148,49 @@ Plans:
   3. A need-ranked submission moves through approval, snapshot, master sheet, exports and BLP without being silently dropped or crashing any reader; every reader has a tested mode branch, and addon exports contain item rows only
   4. A raider ranked on a need who attends a raid accrues bad-luck protection for that need before any item for it exists, and recomputing BLP twice gives the same result
 
-**Plans**: TBD
+**Plans**: 19 plans in 7 waves, shipped as 4 PRs (PR 1 migration-only, plans 03-01 and 03-15; PR 2 pure need primitives, 03-03 to 03-05; PR 3 need readers after the PR 1 deploy, 03-06 to 03-12 and 03-16 to 03-19; PR 4 seeding and list mode after PR 3 deploys, 03-13 and 03-14, then the owner's `sync:forever` backfill). Plans 03-15 to 03-19 were split out at plan check and keep the next free numbers so no existing plan or threat id changed; waves carry the order.
+
+Plans:
+**Wave 1**
+
+- [ ] 03-01-PLAN.md (wave 1): Discovery migration (list_mode, kind, need_key, awarded_item_id without an FK yet, loot_item_need_pins with RLS and trigger, kind and need_key column grant, WHEN-gated guard triggers for D-17, D-03 and need rows, the D-22 need-ranking hold, the D-24 Forever name lock, the D-26 tier-move lock and the D-27 need-row delete lock), committed PGlite chain test, regex contract test (DISC-12, DISC-01, DISC-06)
+- [ ] 03-03-PLAN.md (wave 1): frozen 145-row need taxonomy with fixture gate and aliases, D-23 costs, need-row column mapping, list-mode rules for D-03 and D-17 (DISC-01, DISC-06)
+- [ ] 03-04-PLAN.md (wave 1): pure need branches: identity key for receive skips, ranked-needs filter, display wowhead id, need copy caps, bracket-rule exemption (DISC-06)
+- [ ] 03-05-PLAN.md (wave 1): NeedLabel and the hooks-free ItemLink fallback; warn-once need-skip helper (DISC-06)
+
+**Wave 2** *(blocked on 03-01)*
+
+- [ ] 03-15-PLAN.md (wave 2): PGlite behaviour proofs: guards as the officer and raider roles with positive controls, constraints, four-role RLS matrix, grants, D-22 hold, need BLP accrual (DISC-12, DISC-07, DISC-01, DISC-06)
+
+**Wave 3** *(blocked on 03-01 and 03-15)*
+
+- [ ] 03-02-PLAN.md (wave 3): [BLOCKING] open PR 1, owner merges with `--admin` on a non-raid day, confirm the deploy run, regenerate database types (DISC-12)
+
+**Wave 4** *(blocked on 03-02)*
+
+- [ ] 03-06-PLAN.md (wave 4): addon, companion, Gargul and bot exports stay item-only (DISC-06)
+- [ ] 03-07-PLAN.md (wave 4): raider picker holds needs back behind includeNeeds; BIS and officer item editors exclude or refuse need rows (DISC-06)
+- [ ] 03-08-PLAN.md (wave 4): soft-reserve item reads, join and awards exclude needs (DISC-06)
+- [ ] 03-09-PLAN.md (wave 4): D-22 hold in the submit route through one pure predicate, plus the need branch for bracket rules and copy caps behind it (DISC-06)
+- [ ] 03-10-PLAN.md (wave 4): master sheet and Summary show ranked needs only under "Needs" with identity-keyed skips; Raid Mode guard (DISC-06)
+- [ ] 03-11-PLAN.md (wave 4): award history screens and character gear handle need awards (DISC-06)
+- [ ] 03-16-PLAN.md (wave 4): no reserve runs on Discovery tiers, Known-only reserve tier list, item-only admin sheet import with its first test (DISC-06)
+- [ ] 03-17-PLAN.md (wave 4): approval, snapshot, revert, removal, counts and visibility proven with need-ranked fixtures past the hold (DISC-06)
+- [ ] 03-18-PLAN.md (wave 4): need-row tests for the bootstrap, loot-submissions and prio-list routes and the wowhead lookups (DISC-06)
+- [ ] 03-19-PLAN.md (wave 4): need awards keyed on the need row with BLP recompute, history-row builders and Discord posts, proven with fixtures past the hold; split from 03-17 per D-28 (DISC-07, DISC-06)
+
+**Wave 5** *(blocked on Wave 4)*
+
+- [ ] 03-12-PLAN.md (wave 5): reader inventory over code, scripts and SQL functions with source markers and need-test citations; 'Needs' boss sentinel test (DISC-06)
+
+**Wave 6**
+
+- [ ] 03-13-PLAN.md (wave 6): need-row seeder; Forever sync creates Discovery tiers with needs and backfills existing Forever tiers, switching before seeding; dry-run report counts (DISC-01, DISC-06)
+
+**Wave 7**
+
+- [ ] 03-14-PLAN.md (wave 7): PATCH /api/raid-tiers list_mode with the tier-to-guild ownership fix, D-03 409 and D-17 guard, switch then seed with compensation; no toggle until Phase 4 (DISC-01)
+
 **Research**: Needs `/gsd-plan-phase 3 --research-phase`. Topics: the reader audit (every reader of `loot_submission_items` and `loot_history`, including BLP SQL, `buildMemberRankedItems`, export, `/priority`, master sheet, `gargul-dft.ts`); BLP keying for need awards (`loot_history.loot_item_id` is the need row, `awarded_item_id` is the real item, recompute SQL unchanged); need key format and stat-family names, settled once.
 **Defaults applied**: per-raid-tier need rows with one picker fanning out (owner decision); `list_mode` values `known` and `discovery`; pins in a `loot_item_need_pins` table; stat families keep Healing and Spell damage separate (Decision 2); "Tier piece" off the default picker (Decision 3); separate lists per raid size off (Decision 4); loot-cost columns ship at zero.
 **Risk**: Biggest blast radius in the milestone. Between this phase and Phase 4, a Discovery tier has need rows but raiders have no picker yet. Plan-phase decides whether the officer switch is held back until the Phase 4 picker merges. Research gives two cost schemes for need rows: an allocation cost of 1/1/0 by restriction class, and a 10-point budget at Big 3, Medium 2, Standard 1. Settle which one the seeded rows carry here, because Phase 4's budget reads it.

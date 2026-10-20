@@ -52,6 +52,21 @@ Out of this phase: the need picker and score split (Phase 4), the Drop Desk and 
 - **D-20:** `@electric-sql/pglite` is added as an exact-pinned devDependency at `0.5.8` with no execution checkpoint, so the DISC-12 migration test is committed and runs in CI.
 - **D-21:** ROADMAP success criterion 2 ("every tier that existed before stays Known") is read as every non-Forever tier. Forever tiers are Discovery after the D-05 backfill, and tests assert exactly that. [informational]
 
+### Plan-check review (owner answers, 2026-10-19)
+- **D-22:** The D-02 hold on ranking needs is enforced server-side, not only in the UI. Until Phase 4 lifts it, the submit route and the `save_submission_items` RPC reject `kind = 'need'` rows, so no raider can rank a need (and start accruing BLP) by calling the API directly. The approval, snapshot, master sheet, export and BLP flow for need rows is proven with fixture tests. Phase 4 removes the guard, including the small SQL part.
+- **D-23:** Shield, Off-hand item and Relic need rows cost Medium (2 points, `Limited`), as the research proposed. Wands fold into the Ranged weapon need rows. These costs ship in the seeded rows; the Oct 26 review covers display names only.
+
+### Second plan-check review (owner answers, 2026-10-20)
+- **D-24:** Close the expansion-rename route around D-17. Browser sessions (anon, authenticated) cannot rename an expansion to or from 'Forever', and cannot insert one, unless the planner finds a browser path that legitimately needs to insert it (then explain and keep inserts open). One narrow, WHEN-gated trigger on `expansions`; no accepted residual for this.
+- **D-25:** The owner reviews the frozen need key list (`need_key` values and stat families from `domain/loot/needs.ts`) at the existing PR 1 merge stop (03-02). PR 2, which freezes the keys, does not merge until the owner confirms the list there. Display names are still reviewed Oct 26.
+
+### Third plan-check review (owner answer, 2026-10-20)
+- **D-26:** Close the tier-move route around D-17. Browser sessions (anon, authenticated) cannot change `raid_tiers.expansion_id`; one WHEN-gated trigger, since no app path moves a tier between expansions. Plans that may fix a reader in-task (03-17, 03-18) list those candidate source files as conditional edits. Plans at the file or size limit (03-06, 03-10, 03-13) stay unsplit; the risk is recorded in their summaries. [informational for the size note]
+
+### Final plan-check review (owner answers, 2026-10-20)
+- **D-27:** Browser sessions (anon, authenticated) cannot delete need rows from `loot_items`; one WHEN-gated `BEFORE DELETE` trigger (`OLD.kind = 'need'`), so a direct delete can never silently drop need rankings or BLP credit. Item deletes are unchanged. The service role keeps delete rights.
+- **D-28:** Plan 03-17 splits in two so each half stays at or under 10 files. Plans at the 10-file mark (03-04, 03-07, 03-18) carry the same size note as 03-06, 03-10 and 03-13. Planning finishes on the deterministic gates (frontmatter, plan structure, decision coverage, wave and file overlap) with no further checker round. [informational]
+
 ### Claude's Discretion
 - The exact stat family list per slot and which slots carry an armour class, within D-09 and Decision 2 (planner proposes from research; owner reviews with the picker copy).
 - The flag or rendering mechanism that holds the switch until Phase 4 (D-02).

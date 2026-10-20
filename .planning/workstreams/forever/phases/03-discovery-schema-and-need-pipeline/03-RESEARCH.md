@@ -187,7 +187,7 @@ domain/loot/
 ├── __tests__/needs.test.ts       # manifest-gate style: hand-transcribed fixture, shape checks
 ├── __fixtures__/need-keys.json   # independent transcription of the 145 keys (like shipped-names.json)
 app/services/
-├── needRowSeeder.ts              # planNeedRows (pure) + seedNeedRows (read-then-insert), used by sync and the PATCH route
+├── need-row-seeder.ts              # planNeedRows (pure) + seedNeedRows (read-then-insert), used by sync and the PATCH route
 ├── expansionCatalogSync.ts       # MOD: tiers inserted with list_mode 'discovery', then need rows
 app/components/NeedLabel.tsx      # neutral icon + name, no link; ItemLink delegates here when wowheadId is null
 lib/loot/ranked-need-rows.ts      # one tier-scoped query for need rows that appear in a live ranking (master sheet, summary)
@@ -744,29 +744,29 @@ const ItemLink = memo(function ItemLink(props: ItemLinkProps) {
 | A11 | `lib/database.types.ts` can be hand-edited in the style of PR #342 as an alternative to `npm run gen:types` | Migration Spec | Mismatch with a regenerated file; `typecheck` and a later regen reconcile it |
 | A12 | Analytics SQL under `scripts/analytics/queries/` will count need rows after Phase 4 | Reader Audit scripts | Skewed Forever metrics only; not request-time |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Does the ROADMAP success criterion 2 mean legacy tiers only?**
+1. **Does the ROADMAP success criterion 2 mean legacy tiers only?** RESOLVED by D-21: it means every non-Forever tier; Forever tiers are Discovery after the D-05 backfill, and tests assert exactly that.
    - What we know: D-05 flips existing Forever tiers; ROADMAP SC2 says "every tier that existed before stays Known".
    - What's unclear: whether verification will be read literally.
    - Recommendation: record in the plan that the test asserts "non-Forever tiers stay Known; Forever tiers are Discovery after the backfill"; ask the owner to confirm the reading when approving the plan.
 
-2. **May a non-Forever guild switch a tier to Discovery in Phase 3?**
+2. **May a non-Forever guild switch a tier to Discovery in Phase 3?** RESOLVED by D-17: no; the list-mode PATCH accepts discovery only for tiers of the Forever expansion, with the guard in one place so Phase 4 or the owner can lift it.
    - What we know: DISC-01 says "an officer can set a raid tier's list mode to Discovery"; the taxonomy is built for Forever; legacy readers assume items.
    - Recommendation: Forever expansions only for now (A6), keep the check in one place so Phase 4 or the owner can lift it.
 
-3. **Should a need award remove the winner's list entry for that need (A7)?**
+3. **Should a need award remove the winner's list entry for that need (A7)?** RESOLVED by D-19: yes; a need award consumes the winner's entry for that need, built now as the pure identity-key logic and wired into the receive-skip sites.
    - What we know: for items, a received copy skips one entry (`pickReceivedEntries`). No Phase 3 flow awards a need except `already_obtained` removal and the master sheet award modal.
    - Recommendation: implement `itemIdentityKey` now (pure, tested, unused by Known guilds) and wire it in the skip sites; owner confirms the semantics before the Desk ships.
 
-4. **Do the loot-cost columns ship in this migration (D-00c "loot-cost columns ship at zero")?**
+4. **Do the loot-cost columns ship in this migration (D-00c "loot-cost columns ship at zero")?** RESOLVED by D-18: no; they are deferred to the phase that reads them (4 or 5), so the guild-data addon payload is unchanged.
    - What we know: not in any Phase 3 requirement; ARCHITECTURE sketched them in the schema PR; `guild-data` would add keys to the addon payload.
    - Recommendation: defer to the phase that reads them (4 or 5), unless the owner wants a single schema PR for the whole milestone.
 
-5. **Shield, Off-hand item, Relic, Wand classification (A2, A5) and the stat families on accessories (A3).**
+5. **Shield, Off-hand item, Relic, Wand classification (A2, A5) and the stat families on accessories (A3).** RESOLVED by D-23: Shield, Off-hand item and Relic are Medium (2 points, Limited); wands fold into Ranged weapon; the accessory stat families and display names ship as proposed, and the owner reviews names on Oct 26; keys are additive-safe and names aliasable.
    - Recommendation: ship the proposal; the owner reviews with the picker copy (Oct 26). Keys are additive-safe, names are aliasable.
 
-6. **Is the Discord "Loot awarded" post acceptable for a need award before the Desk?** It renders `**Trinket, Healing** -> name`. Works, no link. Recommend accept; the Desk replaces it in Phase 5/6.
+6. **Is the Discord "Loot awarded" post acceptable for a need award before the Desk?** RESOLVED: accepted; the need-award Discord tests are in plan 03-19 (split from 03-09 into 03-17, then from 03-17 per D-28). It renders `**Trinket, Healing** -> name`. Works, no link. Recommend accept; the Desk replaces it in Phase 5/6.
 
 ## Environment Availability
 
