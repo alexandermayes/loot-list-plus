@@ -221,24 +221,97 @@ export const NEED_DEFINITIONS: readonly NeedDefinition[] = buildDefinitions()
 // Looked up through a Map, never by indexing an object with the input, so
 // 'constructor' and '__proto__' cannot answer from the prototype (T-03-03-02).
 // Previous keys go in first so a current key always wins over an alias.
-const DEFINITION_BY_KEY: ReadonlyMap<string, NeedDefinition> = (() => {
+function indexDefinitions(definitions: readonly NeedDefinition[]): ReadonlyMap<string, NeedDefinition> {
   const map = new Map<string, NeedDefinition>()
-  for (const definition of NEED_DEFINITIONS) {
+  for (const definition of definitions) {
     for (const previous of definition.previousKeys) map.set(previous, definition)
   }
-  for (const definition of NEED_DEFINITIONS) map.set(definition.key, definition)
+  for (const definition of definitions) map.set(definition.key, definition)
   return map
-})()
+}
 
-/** The definition for a current or previous key, else null. */
-export function findNeedDefinition(key: unknown): NeedDefinition | null {
+const DEFINITION_BY_KEY = indexDefinitions(NEED_DEFINITIONS)
+
+/**
+ * The definition for a current or previous key, else null. The optional
+ * definitions argument exists so the alias rules can be tested on a clone.
+ */
+export function findNeedDefinition(
+  key: unknown,
+  definitions: readonly NeedDefinition[] = NEED_DEFINITIONS,
+): NeedDefinition | null {
   if (typeof key !== 'string') return null
-  return DEFINITION_BY_KEY.get(key) ?? null
+  const index = definitions === NEED_DEFINITIONS ? DEFINITION_BY_KEY : indexDefinitions(definitions)
+  return index.get(key) ?? null
 }
 
 /** The current key for a current or previous key, else null. */
-export function resolveNeedKey(key: unknown): string | null {
-  return findNeedDefinition(key)?.key ?? null
+export function resolveNeedKey(
+  key: unknown,
+  definitions: readonly NeedDefinition[] = NEED_DEFINITIONS,
+): string | null {
+  return findNeedDefinition(key, definitions)?.key ?? null
+}
+
+const EM_DASH = String.fromCharCode(0x2014)
+const EN_DASH = String.fromCharCode(0x2013)
+
+/**
+ * One message per broken rule, empty when the list is sound. Catches a
+ * duplicate key or name, a key that no longer equals its slot, armour and stat,
+ * a cost or classification that breaks the tier mirror, a dash in a name, and
+ * an alias that equals a current key or sits on two rows. A consistent rename
+ * of a shipped key is caught by the fixture comparison in the test, which is
+ * why the fixture is written by hand.
+ */
+export function validateNeedDefinitions(
+  definitions: readonly NeedDefinition[] = NEED_DEFINITIONS,
+): string[] {
+  const errors: string[] = []
+  const currentKeys = new Set(definitions.map((definition) => definition.key))
+  const seenKeys = new Set<string>()
+  const seenNames = new Set<string>()
+  const seenAliases = new Set<string>()
+  const seenPreviousNames = new Set<string>()
+  const currentNames = new Set(definitions.map((definition) => definition.name))
+
+  for (const definition of definitions) {
+    const { key, name } = definition
+    if (seenKeys.has(key)) errors.push(`duplicate key: ${key}`)
+    seenKeys.add(key)
+    if (seenNames.has(name)) errors.push(`duplicate name: ${name} (${key})`)
+    seenNames.add(name)
+
+    const parts = [definition.slot, definition.armour, definition.stat].filter(Boolean)
+    if (key !== parts.join('.')) {
+      errors.push(`key ${key} does not match its slot, armour and stat (${parts.join('.')})`)
+    }
+    if (definition.cost !== NEED_COST_BY_TIER[definition.tier]) {
+      errors.push(`cost ${definition.cost} on ${key} does not match tier ${definition.tier}`)
+    }
+    if (definition.classification !== NEED_CLASSIFICATION_BY_TIER[definition.tier]) {
+      errors.push(`classification ${definition.classification} on ${key} does not match tier ${definition.tier}`)
+    }
+    if (name.includes(EM_DASH) || name.includes(EN_DASH)) {
+      errors.push(`name of ${key} contains a dash`)
+    }
+
+    for (const alias of definition.previousKeys) {
+      if (currentKeys.has(alias)) errors.push(`alias ${alias} on ${key} equals a current key`)
+      if (seenAliases.has(alias)) errors.push(`alias ${alias} is used on more than one row`)
+      seenAliases.add(alias)
+    }
+    for (const previousName of definition.previousNames) {
+      if (currentNames.has(previousName)) {
+        errors.push(`previous name ${previousName} on ${key} equals a current name`)
+      }
+      if (seenPreviousNames.has(previousName)) {
+        errors.push(`previous name ${previousName} is used on more than one row`)
+      }
+      seenPreviousNames.add(previousName)
+    }
+  }
+  return errors
 }
 
 function rolesForStat(stat: NeedStatKey): Role[] {
