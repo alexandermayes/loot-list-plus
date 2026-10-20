@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 03
 current_phase_name: Discovery Schema and Need Pipeline
 status: executing
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-10-20T20:31:50.259Z"
+stopped_at: Completed 03-03-PLAN.md
+last_updated: "2026-10-20T20:37:58.893Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 03 execution started
-state_head: 3632f7d87bae44e74dfd90e8cd94f35079ca57a9
+state_head: 2700b90545b5fcf83b5f1101d49622231b6ee921
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 41
-  completed_plans: 23
+  completed_plans: 24
   percent: 25
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 03 (Discovery Schema and Need Pipeline) — EXECUTING
-Plan: 2 of 19
+Plan: 3 of 19
 Status: Ready to execute
 Last activity: 2026-10-20 — Phase 03 execution started
 
@@ -93,6 +93,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 | Phase 02 P06 | 25 min | 2 tasks | 4 files |
 | Phase 02 P09 | 25min | 2 tasks | 3 files |
 | Phase 03 P01 | 17 min | 2 tasks | 6 files |
+| Phase 03 P03 | 6 min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -125,6 +126,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 - [Phase 02]: 02-11: the Forever raid list renders only in the setup guide (isForeverGuild and raidTierStatus available, after the steps list); tier names are matched, never displayed — D-02 as amended 2026-10-14; copy and placement held for owner sign-off before the PR merges
 - [Phase 03]: 03-01: Discovery migration ships seven guard functions and ten WHEN-gated triggers (D-03, D-12, D-17, D-22, D-24, D-26, D-27); loot_history.awarded_item_id has no FK until Phase 5 — A second FK to loot_items makes PostgREST embeds ambiguous (PGRST201); WHEN gating keeps Known writes from calling any guard; D-22 hold is its own trigger so Phase 4 drops it cleanly
 - [Phase 03]: 03-01: package-lock.json edited by hand to add only @electric-sql/pglite 0.5.8 (local npm stripped libc fields from ~90 unrelated lines) — Keeps the lockfile diff to 8 lines for review
+- [Phase 03]: 03-03: NEED_DEFINITIONS is generated from the slot table in fixed order and gated by a hand-written 145-key fixture; list-mode rules fail closed (integer 0 counts, exact name Forever) — A consistent rename of a shipped key is caught only by the fixture comparison, so the fixture stays hand-written; PR 2 waits for the D-25 owner confirmation of the key list in 03-02-SUMMARY.md
 
 ### Pending Owner Inputs
 
@@ -152,6 +154,6 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 
 ## Session Continuity
 
-Last session: 2026-10-20T20:31:50.167Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-10-20T20:37:58.797Z
+Stopped at: Completed 03-03-PLAN.md
 Resume file: None
