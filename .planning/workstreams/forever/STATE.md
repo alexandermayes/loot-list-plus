@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 03
 current_phase_name: Discovery Schema and Need Pipeline
 status: executing
-stopped_at: Completed 03-03-PLAN.md
-last_updated: "2026-10-20T20:37:58.893Z"
+stopped_at: Completed 03-04-PLAN.md
+last_updated: "2026-10-20T20:43:25.860Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 03 execution started
-state_head: 2700b90545b5fcf83b5f1101d49622231b6ee921
+state_head: 0ee571f20e78ba27c3658c684348775af6bf1a51
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 41
-  completed_plans: 24
+  completed_plans: 25
   percent: 25
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 03 (Discovery Schema and Need Pipeline) — EXECUTING
-Plan: 3 of 19
+Plan: 4 of 19
 Status: Ready to execute
 Last activity: 2026-10-20 — Phase 03 execution started
 
@@ -94,6 +94,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 | Phase 02 P09 | 25min | 2 tasks | 3 files |
 | Phase 03 P01 | 17 min | 2 tasks | 6 files |
 | Phase 03 P03 | 6 min | 3 tasks | 5 files |
+| Phase 03 P04 | 8 min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -127,6 +128,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 - [Phase 03]: 03-01: Discovery migration ships seven guard functions and ten WHEN-gated triggers (D-03, D-12, D-17, D-22, D-24, D-26, D-27); loot_history.awarded_item_id has no FK until Phase 5 — A second FK to loot_items makes PostgREST embeds ambiguous (PGRST201); WHEN gating keeps Known writes from calling any guard; D-22 hold is its own trigger so Phase 4 drops it cleanly
 - [Phase 03]: 03-01: package-lock.json edited by hand to add only @electric-sql/pglite 0.5.8 (local npm stripped libc fields from ~90 unrelated lines) — Keeps the lockfile diff to 8 lines for review
 - [Phase 03]: 03-03: NEED_DEFINITIONS is generated from the slot table in fixed order and gated by a hand-written 145-key fixture; list-mode rules fail closed (integer 0 counts, exact name Forever) — A consistent rename of a shipped key is caught only by the fixture comparison, so the fixture stays hand-written; PR 2 waits for the D-25 owner confirmation of the key list in 03-02-SUMMARY.md
+- [Phase 03]: 03-04: need rows key receive skips on 'need:<row id>' and items on wowhead_id; bracket rules exclude kind need (departs from D-08, Phase 4 budget check DISC-03 governs need costs) — Bracket functions sum allocation_cost against 3 and need costs are 3, 2, 1, so no classification mirror keeps need lists valid (Pitfall 2); item rows unchanged
 
 ### Pending Owner Inputs
 
@@ -154,6 +156,6 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 
 ## Session Continuity
 
-Last session: 2026-10-20T20:37:58.797Z
-Stopped at: Completed 03-03-PLAN.md
+Last session: 2026-10-20T20:43:25.758Z
+Stopped at: Completed 03-04-PLAN.md
 Resume file: None
