@@ -63,6 +63,32 @@ export interface BracketItem {
   item_type?: string
   item_slot?: string
   allocation_cost?: number
+  // 'need' marks a Discovery need row, which sits outside the bracket rules.
+  kind?: string | null
+}
+
+/**
+ * Need rows are outside the bracket rules: their 10-point budget is Phase 4's
+ * server check (DISC-03), and their costs of 3, 2 and 1 (D-06) would raise
+ * allocation_limit whatever the classification says (research Pitfall 2).
+ */
+function isNeed(item: { kind?: string | null } | undefined): boolean {
+  return item?.kind === 'need'
+}
+
+/**
+ * Whether a placement key holds a row that counts for the Reserved companion
+ * rule. An id that does not resolve to a row still counts, as it always has;
+ * only a resolved need row is ignored.
+ */
+function holdsBracketItem(
+  placements: Map<string, string>,
+  itemsById: Map<string, BracketItem>,
+  key: string,
+): boolean {
+  const id = placements.get(key)
+  if (!id) return false
+  return !isNeed(itemsById.get(id))
 }
 
 /**
@@ -109,6 +135,10 @@ export function canPlaceInBracket(
   itemsById: Map<string, BracketItem>,
   limits?: BracketLimits
 ): boolean {
+  // A need adds no points, type or slot counts and never needs a companion
+  // slot, so nothing below applies to it.
+  if (isNeed(item)) return true
+
   const cost = item.allocation_cost || 0
   const isReserved = item.classification === 'Reserved'
   const maxCategory = limits?.maxCategory ?? DEFAULT_MAX_CATEGORY
@@ -143,7 +173,7 @@ export function canPlaceInBracket(
       return false // Reserved can't go in slot 2
     }
     // Check if slot 2 at this rank already has an item
-    if (bracket.placements.has(`${rank}-2`)) {
+    if (holdsBracketItem(bracket.placements, itemsById, `${rank}-2`)) {
       return false
     }
   }
@@ -153,7 +183,7 @@ export function canPlaceInBracket(
     const slot1ItemId = bracket.placements.get(`${rank}-1`)
     if (slot1ItemId) {
       const slot1Item = itemsById.get(slot1ItemId)
-      if (slot1Item?.classification === 'Reserved') {
+      if (!isNeed(slot1Item) && slot1Item?.classification === 'Reserved') {
         return false
       }
     }
@@ -172,6 +202,7 @@ export function placeInBracket(
   slot: 1 | 2
 ): void {
   bracket.placements.set(`${rank}-${slot}`, item.id)
+  if (isNeed(item)) return
   bracket.currentPoints += item.allocation_cost || 0
   if (item.item_type && item.item_type !== 'Token') {
     const count = bracket.itemTypesUsed.get(item.item_type) ?? 0
@@ -238,6 +269,8 @@ export function validateBracketRules(
   limits?: BracketLimits
 ): BracketViolation[] {
   const violations: BracketViolation[] = []
+  // Need rows are outside the bracket rules entirely; see isNeed.
+  items = items.filter(i => !isNeed(i.item))
   const itemsById = new Map(items.map(i => [i.item.id, i.item]))
 
   const maxAlloc = limits?.maxAllocationPoints ?? DEFAULT_MAX_ALLOCATION_POINTS
@@ -344,7 +377,8 @@ export function findNextNoBracketSlot(
   placements: Map<string, string>,
   itemsById: Map<string, BracketItem>
 ): { rank: number; slot: 1 | 2 } | null {
-  const isReserved = item.classification === 'Reserved'
+  // A need never needs a companion slot, so it is never treated as Reserved.
+  const isReserved = item.classification === 'Reserved' && !isNeed(item)
 
   for (const rank of NO_BRACKET_RANKS) {
     const hasSlot1 = placements.has(`${rank}-1`)
@@ -353,7 +387,7 @@ export function findNextNoBracketSlot(
     // Try slot 1 first
     if (!hasSlot1) {
       // If Reserved, make sure slot 2 is empty
-      if (isReserved && hasSlot2) {
+      if (isReserved && holdsBracketItem(placements, itemsById, `${rank}-2`)) {
         continue
       }
       return { rank, slot: 1 }
@@ -365,7 +399,7 @@ export function findNextNoBracketSlot(
       const slot1ItemId = placements.get(`${rank}-1`)
       if (slot1ItemId) {
         const slot1Item = itemsById.get(slot1ItemId)
-        if (slot1Item?.classification === 'Reserved') {
+        if (!isNeed(slot1Item) && slot1Item?.classification === 'Reserved') {
           continue
         }
       }
