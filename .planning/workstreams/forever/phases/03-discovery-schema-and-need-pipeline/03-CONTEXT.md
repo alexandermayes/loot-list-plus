@@ -18,7 +18,7 @@ Out of this phase: the need picker and score split (Phase 4), the Drop Desk and 
 ### Carried forward (already decided, not re-asked)
 - **D-00a:** Need rows live per raid tier; one picker fans a raider's ranking out to all three Forever raids (owner Decision 1).
 - **D-00b:** Column `raid_tiers.list_mode`, values `known` and `discovery`, default `known`.
-- **D-00c:** Stat families keep Healing and Spell damage separate (Decision 2); "Tier piece" is off the default picker (Decision 3); separate lists per raid size off (Decision 4); loot-cost columns ship at zero; pins live in `loot_item_need_pins`.
+- **D-00c:** Stat families keep Healing and Spell damage separate (Decision 2); "Tier piece" is off the default picker (Decision 3); separate lists per raid size off (Decision 4); pins live in `loot_item_need_pins`. The loot-cost columns no longer ship in this phase (see D-18).
 - **D-00d:** The migration is expand-only, ships in its own migration-only PR (`--admin` merge, non-raid day) and is live before any code that reads it; RLS matrix (raider, officer, non-member, ex-member) per new table; PGlite migration test (DISC-12).
 
 ### Officer switch and timing
@@ -44,6 +44,13 @@ Out of this phase: the need picker and score split (Phase 4), the Drop Desk and 
 - **D-14:** These surfaces exclude Discovery tiers or need rows outright rather than branching: reserves and soft-reserve runs; BIS import; addon and companion exports (filter `kind = 'item'`, so the addon never sees a row without a `wowhead_id`); bot `/priority` stays item-only until the Drop Desk (Phase 5).
 - **D-15:** An award against a need records `loot_history.loot_item_id` = the need row and a new `loot_history.awarded_item_id` = the real item (null until the Desk exists). The BLP recompute SQL stays unchanged because it already keys on `loot_item_id`; only reports that show item names read `awarded_item_id`. — **Reversibility:** one-way — new column on `loot_history`, and the keying defines how BLP accrues for every Discovery award.
 - **D-16:** A reader that meets a need row it was not written for skips it and logs a warning once per request: never crash, never drop silently. Every reader still gets an explicit, tested mode branch (DISC-06); the fallback is a safety net, not the plan.
+
+### Plan-phase review of research (owner answers, 2026-10-19)
+- **D-17:** In Phase 3 the list-mode PATCH accepts `discovery` only for tiers of the Forever expansion. The guard lives in one place so Phase 4 or the owner can lift it. Legacy tiers can never be switched to Discovery in this phase.
+- **D-18:** The loot-cost `guild_settings` columns are deferred to the phase that reads them (Phase 4 or 5). They do not ship in the Discovery migration, so the `guild-data` addon payload is unchanged.
+- **D-19:** A need award consumes the winner's list entry for that need, the same way receiving an item skips one entry today. Build the pure identity-key logic now (tested, unused by Known guilds) and wire it into the receive-skip sites.
+- **D-20:** `@electric-sql/pglite` is added as an exact-pinned devDependency at `0.5.8` with no execution checkpoint, so the DISC-12 migration test is committed and runs in CI.
+- **D-21:** ROADMAP success criterion 2 ("every tier that existed before stays Known") is read as every non-Forever tier. Forever tiers are Discovery after the D-05 backfill, and tests assert exactly that. [informational]
 
 ### Claude's Discretion
 - The exact stat family list per slot and which slots carry an armour class, within D-09 and Decision 2 (planner proposes from research; owner reviews with the picker copy).
@@ -110,6 +117,7 @@ Out of this phase: the need picker and score split (Phase 4), the Drop Desk and 
 - Bot `/priority` for need rows: arrives with the Drop Desk (Phase 5).
 - Known-mode transition (mapping needs to revealed items, closing generic entries): deferred milestone, after Dec 9 plus three resets.
 - Pinning revealed items onto needs through the Desk UI: Phases 5 and 6 (the table ships here).
+- Loot-cost `guild_settings` columns: the phase that reads them, Phase 4 or 5 (D-18).
 
 </deferred>
 
