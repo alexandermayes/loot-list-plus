@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 03
 current_phase_name: Discovery Schema and Need Pipeline
 status: executing
-stopped_at: Completed 03-05-PLAN.md
-last_updated: "2026-10-20T20:46:26.506Z"
+stopped_at: Completed 03-15-PLAN.md
+last_updated: "2026-10-20T21:09:17.881Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 03 execution started
-state_head: a91aae60bff5691f52eb1b8c8503ab7840ece9c6
+state_head: c68c9458a785b0d0f4a51ba9a8a7903e7ef7ecb8
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 41
-  completed_plans: 26
+  completed_plans: 27
   percent: 25
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 03 (Discovery Schema and Need Pipeline) — EXECUTING
-Plan: 5 of 19
+Plan: 6 of 19
 Status: Ready to execute
 Last activity: 2026-10-20 — Phase 03 execution started
 
@@ -96,6 +96,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 | Phase 03 P03 | 6 min | 3 tasks | 5 files |
 | Phase 03 P04 | 8 min | 3 tasks | 10 files |
 | Phase 03 P05 | 6 min | 2 tasks | 6 files |
+| Phase 03 P15 | 29 min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -131,6 +132,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 - [Phase 03]: 03-03: NEED_DEFINITIONS is generated from the slot table in fixed order and gated by a hand-written 145-key fixture; list-mode rules fail closed (integer 0 counts, exact name Forever) — A consistent rename of a shipped key is caught only by the fixture comparison, so the fixture stays hand-written; PR 2 waits for the D-25 owner confirmation of the key list in 03-02-SUMMARY.md
 - [Phase 03]: 03-04: need rows key receive skips on 'need:<row id>' and items on wowhead_id; bracket rules exclude kind need (departs from D-08, Phase 4 budget check DISC-03 governs need costs) — Bracket functions sum allocation_cost against 3 and need costs are 3, 2, 1, so no classification mirror keeps need lists valid (Pitfall 2); item rows unchanged
 - [Phase 03]: 03-05: ItemLink is a hooks-free wrapper that renders NeedLabel for a null wowheadId, with the old body unchanged in WowheadItemLink; noteNeedSkipped warns once per scope with a fixed first argument — One guard covers all 43 call sites and hooks stay unconditional; a fixed log string keeps request data out of format strings (CodeQL); NeedLabel look held for the Phase 4 copy review
+- [Phase 03]: 03-15: Discovery guard proofs run as officer, raider and superuser with a same-role positive control beside every rejection; pin UPDATE is asserted as permission denied (no UPDATE grant), not 0 rows — A rejection from RLS can never pass as a guard rejection; the missing UPDATE grant is stronger than the plan's 0-row wording
 
 ### Pending Owner Inputs
 
@@ -158,6 +160,6 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 
 ## Session Continuity
 
-Last session: 2026-10-20T20:46:26.410Z
-Stopped at: Completed 03-05-PLAN.md
+Last session: 2026-10-20T21:09:17.780Z
+Stopped at: Completed 03-15-PLAN.md
 Resume file: None
