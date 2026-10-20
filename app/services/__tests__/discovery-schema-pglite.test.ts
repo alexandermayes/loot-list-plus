@@ -54,6 +54,7 @@ const ITEM_CLASSIC_ID = '00000000-0000-4000-8000-0000000000a1'
 const ITEM_FOREVER_ID = '00000000-0000-4000-8000-0000000000a2'
 const ITEM_FOREVER_SECOND_ID = '00000000-0000-4000-8000-0000000000a3'
 const NEED_TWO_ID = '00000000-0000-4000-8000-0000000000a4' // need 2, ring.tank in F1, ranked by nobody
+const PIN_ID = '00000000-0000-4000-8000-0000000000b1' // ITEM_FOREVER_ID pinned to NEED_ID
 const SCRATCH_LIST_ID = '00000000-0000-4000-8000-000000000031' // only ever inside a rolled-back case
 
 const GUARD_TRIGGERS = [
@@ -187,6 +188,10 @@ beforeAll(async () => {
      VALUES ($1, $3, 'Trinket, healing', 'Needs', 'need', 'trinket.healing', NULL),
             ($2, $3, 'Ring, tank', 'Needs', 'need', 'ring.tank', NULL)`,
     [NEED_ID, NEED_TWO_ID, FOREVER_TIER_ID],
+  )
+  await db.query(
+    `INSERT INTO loot_item_need_pins (id, guild_id, item_id, need_id, pinned_by) VALUES ($1, $2, $3, $4, $5)`,
+    [PIN_ID, GUILD_ID, ITEM_FOREVER_ID, NEED_ID, OFFICER_USER_ID],
   )
 }, 180000)
 
@@ -593,5 +598,316 @@ describe('guards stop direct writes', () => {
     for (const row of rows) {
       expect(row.def, `${row.tgname} WHEN clause`).toMatch(/ WHEN \([\s\S]*(list_mode|kind|name|expansion_id)/i)
     }
+  })
+})
+
+describe('constraints', () => {
+  // Every need row goes into a Forever Discovery tier, so the loot_items guard
+  // passes and the constraint under test is what rejects.
+  const insertRow = `INSERT INTO loot_items (raid_tier_id, name, kind, need_key, wowhead_id)
+                     VALUES ($1, 'Constraint probe', $2, $3, $4)`
+
+  it('rejects a need row that carries a wowhead_id with loot_items_need_shape_check', async () => {
+    await expectRejected(
+      db,
+      () => db.query(insertRow, [FOREVER_TIER_ID, 'need', 'probe.wowhead', 9001]),
+      'loot_items_need_shape_check',
+    )
+  })
+
+  it('rejects a need row with no need_key with loot_items_need_shape_check', async () => {
+    await expectRejected(
+      db,
+      () => db.query(insertRow, [FOREVER_TIER_ID, 'need', null, null]),
+      'loot_items_need_shape_check',
+    )
+  })
+
+  it('rejects an item row that carries a need_key with loot_items_need_shape_check', async () => {
+    await expectRejected(
+      db,
+      () => db.query(insertRow, [FOREVER_TIER_ID, 'item', 'probe.item', 9002]),
+      'loot_items_need_shape_check',
+    )
+  })
+
+  it('rejects a kind other than item or need with loot_items_kind_check', async () => {
+    await expectRejected(
+      db,
+      () => db.query(insertRow, [FOREVER_TIER_ID, 'other', null, 9003]),
+      'loot_items_kind_check',
+    )
+  })
+
+  it('rejects a list_mode other than known or discovery with raid_tiers_list_mode_check', async () => {
+    await expectRejected(
+      db,
+      () =>
+        db.query(`INSERT INTO raid_tiers (expansion_id, name, list_mode) VALUES ($1, 'Odd Tier', 'other')`, [
+          FOREVER_EXPANSION_ID,
+        ]),
+      'raid_tiers_list_mode_check',
+    )
+  })
+
+  it('rejects a second need row with the same need_key in one raid tier with idx_loot_items_tier_need_key', async () => {
+    await expectRejected(
+      db,
+      () => db.query(insertRow, [FOREVER_TIER_ID, 'need', 'trinket.healing', null]),
+      'idx_loot_items_tier_need_key',
+    )
+  })
+
+  it('[DISC-06 adjacency] accepts the same need_key in two different Forever Discovery tiers, so each Forever raid holds its own need rows', async () => {
+    await inRolledBackTransaction(db, async () => {
+      const result = await db.query(insertRow, [FOREVER_TIER_TWO_ID, 'need', 'trinket.healing', null])
+      expect(result.affectedRows).toBe(1)
+      const { rows } = await db.query<{ n: number }>(
+        `SELECT count(*)::int AS n FROM loot_items WHERE need_key = 'trinket.healing' AND kind = 'need'`,
+      )
+      expect(rows).toEqual([{ n: 2 }])
+    })
+  })
+})
+
+describe('pin integrity trigger', () => {
+  const insertPin = `INSERT INTO loot_item_need_pins (guild_id, item_id, need_id) VALUES ($1, $2, $3)`
+  const CHECK_VIOLATION = '23514'
+
+  it('stores a pin whose item is an item row and whose need is a need row of the same guild and tier', async () => {
+    await inRolledBackTransaction(db, async () => {
+      const result = await db.query(insertPin, [GUILD_ID, ITEM_FOREVER_SECOND_ID, NEED_TWO_ID])
+      expect(result.affectedRows).toBe(1)
+    })
+  })
+
+  it('rejects a pin whose item is a need row, for the superuser too', async () => {
+    const error = await expectRejected(
+      db,
+      () => db.query(insertPin, [GUILD_ID, NEED_TWO_ID, NEED_ID]),
+      'loot_item_need_pins.item_id is not an item row',
+    )
+    expect(error.code).toBe(CHECK_VIOLATION)
+  })
+
+  it('rejects a pin whose need is an item row', async () => {
+    const error = await expectRejected(
+      db,
+      () => db.query(insertPin, [GUILD_ID, ITEM_FOREVER_SECOND_ID, ITEM_CLASSIC_ID]),
+      'loot_item_need_pins.need_id is not a need row',
+    )
+    expect(error.code).toBe(CHECK_VIOLATION)
+  })
+
+  it('rejects a pin whose need belongs to another guild', async () => {
+    const error = await expectRejected(
+      db,
+      async () => {
+        await db.query(
+          `INSERT INTO loot_items (id, raid_tier_id, name, kind, need_key, wowhead_id)
+           VALUES ('00000000-0000-4000-8000-0000000000c1', $1, 'Other guild need', 'need', 'trinket.healing', NULL)`,
+          [OTHER_FOREVER_TIER_ID],
+        )
+        await db.query(insertPin, [GUILD_ID, ITEM_FOREVER_SECOND_ID, '00000000-0000-4000-8000-0000000000c1'])
+      },
+      'loot_item_need_pins.need_id is not a need of this guild',
+    )
+    expect(error.code).toBe(CHECK_VIOLATION)
+  })
+
+  it('rejects a pin whose item and need sit in different raid tiers', async () => {
+    const error = await expectRejected(
+      db,
+      async () => {
+        await db.query(
+          `INSERT INTO loot_items (id, raid_tier_id, name, kind, need_key, wowhead_id)
+           VALUES ('00000000-0000-4000-8000-0000000000c2', $1, 'Tier two need', 'need', 'trinket.healing', NULL)`,
+          [FOREVER_TIER_TWO_ID],
+        )
+        await db.query(insertPin, [GUILD_ID, ITEM_FOREVER_SECOND_ID, '00000000-0000-4000-8000-0000000000c2'])
+      },
+      'loot_item_need_pins.item_id and need_id are not in the same raid tier',
+    )
+    expect(error.code).toBe(CHECK_VIOLATION)
+  })
+
+  it('gives an officer the check detail and a non-officer the row-level-security error for the same bad pin', async () => {
+    await rejectedAs(
+      OFFICER_USER_ID,
+      insertPin,
+      [GUILD_ID, NEED_TWO_ID, NEED_ID],
+      'loot_item_need_pins.item_id is not an item row',
+    )
+    const hidden = await rejectedAs(
+      RAIDER_USER_ID,
+      insertPin,
+      [GUILD_ID, NEED_TWO_ID, NEED_ID],
+      'new row violates row-level security policy for table "loot_item_need_pins"',
+    )
+    expect(hidden.message).not.toContain('is not an item row')
+
+    // A raider inserting a pin that crosses guilds learns nothing either.
+    const crossGuild = await expectRejected(
+      db,
+      async () => {
+        await db.query(
+          `INSERT INTO loot_items (id, raid_tier_id, name, kind, need_key, wowhead_id)
+           VALUES ('00000000-0000-4000-8000-0000000000c1', $1, 'Other guild need', 'need', 'trinket.healing', NULL)`,
+          [OTHER_FOREVER_TIER_ID],
+        )
+        await asUser(RAIDER_USER_ID, insertPin, [
+          GUILD_ID,
+          ITEM_FOREVER_SECOND_ID,
+          '00000000-0000-4000-8000-0000000000c1',
+        ])
+      },
+      'row-level security',
+    )
+    expect(crossGuild.message).not.toContain('is not a need of this guild')
+  })
+})
+
+describe('RLS matrix on loot_item_need_pins', () => {
+  const insertPin = `INSERT INTO loot_item_need_pins (guild_id, item_id, need_id) VALUES ($1, $2, $3)`
+  const NEW_PIN = [GUILD_ID, ITEM_FOREVER_SECOND_ID, NEED_TWO_ID]
+  const RLS = 'new row violates row-level security policy for table "loot_item_need_pins"'
+
+  const roles = [
+    { role: 'officer', userId: OFFICER_USER_ID, sees: 1, canInsert: true, canDelete: true },
+    { role: 'raider', userId: RAIDER_USER_ID, sees: 1, canInsert: false, canDelete: false },
+    { role: 'ex-member', userId: EX_MEMBER_USER_ID, sees: 0, canInsert: false, canDelete: false },
+    { role: 'non-member', userId: NON_MEMBER_USER_ID, sees: 0, canInsert: false, canDelete: false },
+  ]
+
+  for (const { role, userId, sees, canInsert, canDelete } of roles) {
+    it(`gives the ${role} ${sees} of the guild's pins, ${canInsert ? 'lets it insert' : 'refuses its insert'}, never lets it update, and ${canDelete ? 'lets it delete' : 'deletes nothing'}`, async () => {
+      // select
+      await inRolledBackTransaction(db, async () => {
+        const result = await asUser(userId, `SELECT id FROM loot_item_need_pins WHERE guild_id = $1`, [GUILD_ID])
+        expect(result.rows).toHaveLength(sees)
+      })
+
+      // insert
+      if (canInsert) {
+        expect(await changedAs(userId, insertPin, NEW_PIN)).toBe(1)
+      } else {
+        await rejectedAs(userId, insertPin, NEW_PIN, RLS)
+      }
+
+      // update: no UPDATE privilege and no UPDATE policy, so unpin is a delete
+      await rejectedAs(
+        userId,
+        `UPDATE loot_item_need_pins SET pinned_by = NULL WHERE id = $1`,
+        [PIN_ID],
+        'permission denied for table loot_item_need_pins',
+      )
+
+      // delete
+      expect(await changedAs(userId, `DELETE FROM loot_item_need_pins WHERE id = $1`, [PIN_ID])).toBe(
+        canDelete ? 1 : 0,
+      )
+      const pins = await query(db, `SELECT 1 FROM loot_item_need_pins WHERE id = $1`, [PIN_ID])
+      expect(pins).toHaveLength(1)
+    })
+  }
+
+  it('lets the officer delete the pin and read the table empty afterwards (the delete is the unpin)', async () => {
+    await inRolledBackTransaction(db, async () => {
+      await asUser(OFFICER_USER_ID, `DELETE FROM loot_item_need_pins WHERE id = $1`, [PIN_ID])
+      const result = await db.query(`SELECT id FROM loot_item_need_pins WHERE guild_id = $1`, [GUILD_ID])
+      expect(result.rows).toHaveLength(0)
+    })
+  })
+})
+
+describe('column grants', () => {
+  it('lets anon and authenticated select loot_items.kind and need_key', async () => {
+    for (const [role, userId] of [
+      ['anon', null],
+      ['authenticated', RAIDER_USER_ID],
+    ] as const) {
+      await inRolledBackTransaction(db, async () => {
+        await asRole(db, role, userId)
+        const { rows } = await db.query(`SELECT kind, need_key FROM loot_items WHERE id = $1`, [NEED_ID])
+        expect(rows, role).toEqual([{ kind: 'need', need_key: 'trinket.healing' }])
+      })
+    }
+  })
+
+  it('still refuses officer_notes and select star to a browser session', async () => {
+    for (const [role, userId] of [
+      ['anon', null],
+      ['authenticated', OFFICER_USER_ID],
+    ] as const) {
+      await expectRejected(
+        db,
+        async () => {
+          await asRole(db, role, userId)
+          await db.query(`SELECT officer_notes FROM loot_items`)
+        },
+        'permission denied',
+      )
+      await expectRejected(
+        db,
+        async () => {
+          await asRole(db, role, userId)
+          await db.query(`SELECT * FROM loot_items`)
+        },
+        'permission denied',
+      )
+    }
+  })
+
+  it('lets authenticated select raid_tiers.list_mode and loot_history.awarded_item_id', async () => {
+    await inRolledBackTransaction(db, async () => {
+      await asRole(db, 'authenticated', RAIDER_USER_ID)
+      await expect(db.query(`SELECT list_mode FROM raid_tiers`)).resolves.toBeDefined()
+      await expect(db.query(`SELECT awarded_item_id FROM loot_history`)).resolves.toBeDefined()
+    })
+  })
+
+  it('gives anon no privilege on loot_item_need_pins and authenticated SELECT, INSERT and DELETE but not UPDATE', async () => {
+    const [grants] = await query<Record<string, boolean>>(
+      db,
+      `SELECT
+         has_table_privilege('anon', 'public.loot_item_need_pins', 'SELECT, INSERT, UPDATE, DELETE') AS anon_any,
+         has_table_privilege('authenticated', 'public.loot_item_need_pins', 'SELECT') AS auth_select,
+         has_table_privilege('authenticated', 'public.loot_item_need_pins', 'INSERT') AS auth_insert,
+         has_table_privilege('authenticated', 'public.loot_item_need_pins', 'DELETE') AS auth_delete,
+         has_table_privilege('authenticated', 'public.loot_item_need_pins', 'UPDATE') AS auth_update`,
+    )
+    expect(grants).toEqual({
+      anon_any: false,
+      auth_select: true,
+      auth_insert: true,
+      auth_delete: true,
+      auth_update: false,
+    })
+    await expectRejected(
+      db,
+      async () => {
+        await asRole(db, 'anon', null)
+        await db.query(`SELECT id FROM loot_item_need_pins`)
+      },
+      'permission denied for table loot_item_need_pins',
+    )
+  })
+
+  it('[D-15] keeps loot_history.awarded_item_id a nullable uuid with no foreign key on it', async () => {
+    const columns = await query<{ data_type: string; is_nullable: string }>(
+      db,
+      `SELECT data_type, is_nullable FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = 'loot_history' AND column_name = 'awarded_item_id'`,
+    )
+    expect(columns).toEqual([{ data_type: 'uuid', is_nullable: 'YES' }])
+
+    const foreignKeys = await query(
+      db,
+      `SELECT c.conname FROM pg_constraint c
+       JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY (c.conkey)
+       WHERE c.contype = 'f' AND c.conrelid = 'public.loot_history'::regclass
+         AND a.attname = 'awarded_item_id'`,
+    )
+    expect(foreignKeys).toEqual([])
   })
 })
