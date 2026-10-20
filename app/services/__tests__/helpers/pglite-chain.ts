@@ -86,3 +86,63 @@ export async function resetRole(db: PGlite): Promise<void> {
   await db.query("SELECT set_config('request.jwt.claim.sub', '', false)")
   await db.query("SELECT set_config('request.jwt.claim.role', '', false)")
 }
+
+/** Run one statement and return its rows. */
+export async function query<T extends Record<string, unknown> = Record<string, unknown>>(
+  db: PGlite,
+  sql: string,
+  params?: unknown[],
+): Promise<T[]> {
+  const result = await db.query<T>(sql, params)
+  return result.rows
+}
+
+/**
+ * Run `run` inside BEGIN ... ROLLBACK and hand back whatever it returns, so a
+ * case that changes data (a positive control, a fixture) leaves the shared
+ * seed as it found it. The role goes back to the superuser either way, even
+ * when `run` throws.
+ */
+export async function inRolledBackTransaction<T>(db: PGlite, run: () => Promise<T>): Promise<T> {
+  await db.exec('BEGIN')
+  try {
+    return await run()
+  } finally {
+    await db.exec('ROLLBACK')
+    await resetRole(db)
+  }
+}
+
+/**
+ * Assert that `run` is rejected by the database with a message that contains
+ * `messageFragment`. It runs inside BEGIN ... ROLLBACK (a failed statement
+ * aborts its transaction, so each rejection case needs its own) and always
+ * rolls back and returns to the superuser session, so cases stay independent.
+ * Returns the error so a caller can also check its SQLSTATE `code`.
+ */
+export async function expectRejected(
+  db: PGlite,
+  run: () => Promise<unknown>,
+  messageFragment: string,
+): Promise<{ message: string; code?: string }> {
+  await db.exec('BEGIN')
+  let rejection: unknown
+  let rejected = false
+  try {
+    await run()
+  } catch (error) {
+    rejected = true
+    rejection = error
+  } finally {
+    await db.exec('ROLLBACK')
+    await resetRole(db)
+  }
+  if (!rejected) {
+    throw new Error(`Expected a rejection containing "${messageFragment}" but the statement succeeded`)
+  }
+  const message = rejection instanceof Error ? rejection.message : String(rejection)
+  if (!message.includes(messageFragment)) {
+    throw new Error(`Expected a rejection containing "${messageFragment}" but got: ${message}`)
+  }
+  return { message, code: (rejection as { code?: string }).code }
+}
