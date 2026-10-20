@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: "WoW Forever Loot: Discovery to Known"
-current_phase: 3
+current_phase: 03
 current_phase_name: Discovery Schema and Need Pipeline
 status: executing
-stopped_at: Phase 3 context gathered
-last_updated: "2026-10-20T19:24:07.397Z"
-last_activity: 2026-10-19
-last_activity_desc: Phase 02 complete, transitioned to Phase 3
-state_head: cd4012a902c70b8c7944f844b11e3a5370d52004
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-10-20T20:31:50.259Z"
+last_activity: 2026-10-20
+last_activity_desc: Phase 03 execution started
+state_head: 3632f7d87bae44e74dfd90e8cd94f35079ca57a9
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 41
-  completed_plans: 22
+  completed_plans: 23
   percent: 25
 ---
 
@@ -33,12 +33,12 @@ Research: `.planning/research/SUMMARY.md`
 
 ## Current Position
 
-Phase: 3 (Discovery Schema and Need Pipeline) — READY TO EXECUTE
-Plan: Not started
+Phase: 03 (Discovery Schema and Need Pipeline) — EXECUTING
+Plan: 2 of 19
 Status: Ready to execute
-Last activity: 2026-10-19 — Phase 02 complete, transitioned to Phase 3
+Last activity: 2026-10-20 — Phase 03 execution started
 
-Progress: [███░░░░░░░] 2/8 phases ([████████████████████] 22/22 plans, 100% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning
+Progress: [███░░░░░░░] 2/8 phases ([████████████████████] 22/22 plans, [███░░░░░░░] 25% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning
 
 ## Hard Dates
 
@@ -92,6 +92,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 | Phase 02 P05 | 15 min | 2 tasks | 2 files |
 | Phase 02 P06 | 25 min | 2 tasks | 4 files |
 | Phase 02 P09 | 25min | 2 tasks | 3 files |
+| Phase 03 P01 | 17 min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -122,6 +123,8 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 - [Phase 02]: EXPANSION_NAME_TO_SLUG keeps no Forever key; tests and new callers read slugs from the registry (getExpansionMeta) because the reserve-run route keys off that map
 - [Phase 02]: 02-10: sync:forever is dry-run by default, --apply writes, unknown flags exit 1; duplicates after apply are reported, never deleted — No unique index on raid_tiers (expansion_id, name) and a migration is out of phase scope; a typo must not silently run as the wrong mode
 - [Phase 02]: 02-11: the Forever raid list renders only in the setup guide (isForeverGuild and raidTierStatus available, after the steps list); tier names are matched, never displayed — D-02 as amended 2026-10-14; copy and placement held for owner sign-off before the PR merges
+- [Phase 03]: 03-01: Discovery migration ships seven guard functions and ten WHEN-gated triggers (D-03, D-12, D-17, D-22, D-24, D-26, D-27); loot_history.awarded_item_id has no FK until Phase 5 — A second FK to loot_items makes PostgREST embeds ambiguous (PGRST201); WHEN gating keeps Known writes from calling any guard; D-22 hold is its own trigger so Phase 4 drops it cleanly
+- [Phase 03]: 03-01: package-lock.json edited by hand to add only @electric-sql/pglite 0.5.8 (local npm stripped libc fields from ~90 unrelated lines) — Keeps the lockfile diff to 8 lines for review
 
 ### Pending Owner Inputs
 
@@ -149,6 +152,6 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 
 ## Session Continuity
 
-Last session: 2026-10-20T03:31:47.367Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/workstreams/forever/phases/03-discovery-schema-and-need-pipeline/03-CONTEXT.md
+Last session: 2026-10-20T20:31:50.167Z
+Stopped at: Completed 03-01-PLAN.md
+Resume file: None

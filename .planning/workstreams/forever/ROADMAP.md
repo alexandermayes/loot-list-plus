@@ -148,12 +148,12 @@ Plans:
   3. A need-ranked submission moves through approval, snapshot, master sheet, exports and BLP without being silently dropped or crashing any reader; every reader has a tested mode branch, and addon exports contain item rows only
   4. A raider ranked on a need who attends a raid accrues bad-luck protection for that need before any item for it exists, and recomputing BLP twice gives the same result
 
-**Plans**: 19 plans in 7 waves, shipped as 4 PRs (PR 1 migration-only, plans 03-01 and 03-15; PR 2 pure need primitives, 03-03 to 03-05; PR 3 need readers after the PR 1 deploy, 03-06 to 03-12 and 03-16 to 03-19; PR 4 seeding and list mode after PR 3 deploys, 03-13 and 03-14, then the owner's `sync:forever` backfill). Plans 03-15 to 03-19 were split out at plan check and keep the next free numbers so no existing plan or threat id changed; waves carry the order.
+**Plans**: 1/19 plans executed in 7 waves, shipped as 4 PRs (PR 1 migration-only, plans 03-01 and 03-15; PR 2 pure need primitives, 03-03 to 03-05; PR 3 need readers after the PR 1 deploy, 03-06 to 03-12 and 03-16 to 03-19; PR 4 seeding and list mode after PR 3 deploys, 03-13 and 03-14, then the owner's `sync:forever` backfill). Plans 03-15 to 03-19 were split out at plan check and keep the next free numbers so no existing plan or threat id changed; waves carry the order.
 
 Plans:
 **Wave 1**
 
-- [ ] 03-01-PLAN.md (wave 1): Discovery migration (list_mode, kind, need_key, awarded_item_id without an FK yet, loot_item_need_pins with RLS and trigger, kind and need_key column grant, WHEN-gated guard triggers for D-17, D-03 and need rows, the D-22 need-ranking hold, the D-24 Forever name lock, the D-26 tier-move lock and the D-27 need-row delete lock), committed PGlite chain test, regex contract test (DISC-12, DISC-01, DISC-06)
+- [x] 03-01-PLAN.md (wave 1): Discovery migration (list_mode, kind, need_key, awarded_item_id without an FK yet, loot_item_need_pins with RLS and trigger, kind and need_key column grant, WHEN-gated guard triggers for D-17, D-03 and need rows, the D-22 need-ranking hold, the D-24 Forever name lock, the D-26 tier-move lock and the D-27 need-row delete lock), committed PGlite chain test, regex contract test (DISC-12, DISC-01, DISC-06)
 - [ ] 03-03-PLAN.md (wave 1): frozen 145-row need taxonomy with fixture gate and aliases, D-23 costs, need-row column mapping, list-mode rules for D-03 and D-17 (DISC-01, DISC-06)
 - [ ] 03-04-PLAN.md (wave 1): pure need branches: identity key for receive skips, ranked-needs filter, display wowhead id, need copy caps, bracket-rule exemption (DISC-06)
 - [ ] 03-05-PLAN.md (wave 1): NeedLabel and the hooks-free ItemLink fallback; warn-once need-skip helper (DISC-06)
@@ -323,7 +323,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Forever Defect and Privacy Fixes | 9/9 | Complete    | 2026-10-13 |
 | 2. Expansion Onboarding Manifest | 13/13 | Complete    | 2026-10-19 |
-| 3. Discovery Schema and Need Pipeline | 0/TBD | Not started | - |
+| 3. Discovery Schema and Need Pipeline | 1/19 | In Progress|  |
 | 4. Discovery Lists and Score Split | 0/TBD | Not started | - |
 | 5. Drop Desk Core | 0/TBD | Not started | - |
 | 6. Live Raid Night | 0/TBD | Not started | - |
