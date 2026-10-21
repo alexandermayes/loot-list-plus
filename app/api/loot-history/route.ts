@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { trackApiError } from '@/utils/analytics/server'
 import { batchGetDisplayNames } from '@/utils/batch-display-names'
+import { wowheadIdForDisplay } from '@/domain/loot/item-identity'
 
 export interface LootHistoryEntry {
   id: string
@@ -11,7 +12,8 @@ export interface LootHistoryEntry {
   character_name: string
   character_class_color: string | null
   item_name: string
-  wowhead_id: number
+  // D-13: null for a need award, so screens render a NeedLabel instead of an item=0 link
+  wowhead_id: number | null
   boss_name: string
   raid_tier_name: string
   awarded_by_name: string | null
@@ -109,6 +111,7 @@ export async function GET(request: NextRequest) {
         loot_items (
           name,
           wowhead_id,
+          kind,
           boss_name,
           raid_tiers (
             id,
@@ -241,7 +244,7 @@ export async function GET(request: NextRequest) {
       // Batch fetch loot_items data for fallback records
       const itemIds = [...new Set((fallbackData || []).map((h: { loot_item_id?: string | null }) => h.loot_item_id).filter(Boolean))]
       const { data: itemsData } = itemIds.length > 0
-        ? await supabase.from('loot_items').select('id, name, wowhead_id, boss_name, raid_tiers(id, name)').in('id', itemIds)
+        ? await supabase.from('loot_items').select('id, name, wowhead_id, kind, boss_name, raid_tiers(id, name)').in('id', itemIds)
         : { data: [] }
 
       const itemsMap = new Map((itemsData || []).map((i: { id: string }) => [i.id, i]))
@@ -279,7 +282,8 @@ export async function GET(request: NextRequest) {
     }
     interface LootItemData {
       name?: string
-      wowhead_id?: number
+      wowhead_id?: number | null
+      kind?: string | null
       boss_name?: string
       raid_tiers?: RaidTierData | RaidTierData[]
     }
@@ -321,7 +325,8 @@ export async function GET(request: NextRequest) {
         character_name: charName,
         character_class_color: classColor || null,
         item_name: lootItem?.name || 'Unknown Item',
-        wowhead_id: lootItem?.wowhead_id || 0,
+        // D-13: wowheadIdForDisplay is null for a need award and keeps the legacy 0 otherwise
+        wowhead_id: wowheadIdForDisplay(lootItem),
         boss_name: lootItem?.boss_name || 'Unknown',
         raid_tier_name: tierData?.name || 'Unknown',
         awarded_by_name: typedEntry.awarded_by ? (displayNames.get(typedEntry.awarded_by) || 'Unknown') : null,
