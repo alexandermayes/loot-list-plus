@@ -30,6 +30,14 @@ export interface TierNeedRow {
   need_key: string | null
 }
 
+/** One live ranking of a need row, in the shape the visibility route returns. */
+export interface TierNeedRanking {
+  loot_item_id: string
+  rank: number
+  slot: number
+  submission_id: string
+}
+
 /** Every need row of the given tiers, ordered by name then id. [] for no tiers. */
 export async function fetchTierNeedRows(
   supabase: QueryClient,
@@ -48,4 +56,35 @@ export async function fetchTierNeedRows(
       .order('id', { ascending: true })
       .range(start, end),
   )
+}
+
+type NeedRankingRow = TierNeedRanking & { id?: string }
+
+/**
+ * Every live (not removed) ranking of a need row in the given tiers. Tier
+ * scoped through an inner embed, so no need id enters a URL. [] for no tiers.
+ */
+export async function fetchTierNeedRankings(
+  supabase: QueryClient,
+  tierIds: readonly string[],
+): Promise<TierNeedRanking[]> {
+  if (tierIds.length === 0) return []
+
+  const rows = await selectAllPagesOrThrow<NeedRankingRow>('loot_submission_items need rankings', (start, end) =>
+    supabase
+      .from('loot_submission_items')
+      .select('loot_item_id, rank, slot, submission_id, loot_items!inner(raid_tier_id, kind)')
+      .eq('loot_items.kind', 'need')
+      .in('loot_items.raid_tier_id', [...tierIds])
+      .is('removed_at', null)
+      .order('id', { ascending: true })
+      .range(start, end),
+  )
+
+  return rows.map(r => ({
+    loot_item_id: r.loot_item_id,
+    rank: r.rank,
+    slot: r.slot,
+    submission_id: r.submission_id,
+  }))
 }
