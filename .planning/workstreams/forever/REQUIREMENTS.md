@@ -40,7 +40,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **DISC-09**: Raider sees a "What would it take" line on every score
 - [ ] **DISC-10**: Officer picks one of three loot style presets at setup, with Fine-tune behind disclosure
 - [ ] **DISC-11**: Raider can open the picker from a Discord "Set your 5" link
-- [ ] **DISC-12**: Discovery schema ships expand-only, before the code that reads it, with an RLS matrix per new table and a PGlite migration test
+- [x] **DISC-12**: Discovery schema ships expand-only, before the code that reads it, with an RLS matrix per new table and a PGlite migration test
 
 ### Drop Desk
 
@@ -148,7 +148,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DISC-09 | Phase 6 | Pending |
 | DISC-10 | Phase 4 | Pending |
 | DISC-11 | Phase 4 | Pending |
-| DISC-12 | Phase 3 | Pending |
+| DISC-12 | Phase 3 | Complete |
 | DESK-01 | Phase 5 | Pending |
 | DESK-02 | Phase 5 | Pending |
 | DESK-03 | Phase 5 | Pending |
