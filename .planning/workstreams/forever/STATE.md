@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 03
 current_phase_name: Discovery Schema and Need Pipeline
 status: executing
-stopped_at: Completed 03-12-PLAN.md
-last_updated: "2026-10-21T22:59:07.973Z"
+stopped_at: Completed 03-13-PLAN.md
+last_updated: "2026-10-21T23:10:52.263Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 03 execution started
-state_head: 77c0770265a979070ed030d120f195451b125551
+state_head: dc0be458055aa170655be9ae9b8edb230c3980cd
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 41
-  completed_plans: 39
+  completed_plans: 40
   percent: 25
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 03 (Discovery Schema and Need Pipeline) — EXECUTING
-Plan: 18 of 19
+Plan: 19 of 19
 Status: Ready to execute
 Last activity: 2026-10-20 — Phase 03 execution started
 
@@ -109,6 +109,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 | Phase 03 P18 | 12 min | 3 tasks | 5 files |
 | Phase 03 P19 | 10 min | 2 tasks | 4 files |
 | Phase 03 P12 | 12 min | 3 tasks | 2 files |
+| Phase 03 P13 | 11 min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -157,6 +158,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 - [Phase 03]: 03-18: bootstrap, loot-submissions, prio-list, wowhead lookups and addonAwardKeys all handle need rows; no reader fix needed (Reader fixes for 03-12: none); the D-02 hold is asserted as exactly three fetchFilteredLootItems arguments — Fixture tests past the D-22 hold pass against unchanged source, matching research A1, A8, B10 and D6
 - [Phase 03]: 03-19: bulk award route, history-row builders and both Discord helpers handle need rows; no reader fix needed (Reader fixes for 03-12: none); post-raid summary renders the plain need name, not bold — Fixture tests past the D-22 hold pass against unchanged source, matching research E3 and E5; the summary has never bolded item names
 - [Phase 03]: 03-12: enforce_loot_item_need_rules is listed as a SQL branch reader; findBadVia requires every via file to be an exclude entry; reader and boss_name inventories fail CI on any unlisted file
+- [Phase 03]: 03-13: sync reads matched tiers' need keys before any write; write order is tier insert, flip (Known to Discovery, no need rows), then seed; dry run counts new-tier rows via placeholder ids — The database refuses a need row in a non-Discovery tier (D-17); a failed read must leave the expansion untouched
 
 ### Pending Owner Inputs
 
@@ -184,6 +186,6 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 
 ## Session Continuity
 
-Last session: 2026-10-21T22:59:07.615Z
-Stopped at: Completed 03-12-PLAN.md
+Last session: 2026-10-21T23:10:52.166Z
+Stopped at: Completed 03-13-PLAN.md
 Resume file: None
