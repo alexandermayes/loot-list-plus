@@ -11,6 +11,8 @@ import { calculateDonationsBatch } from '@/lib/donations/batch'
 import { getSpecRoles } from '@/domain/loot/spec-role-mapping'
 import { formatRankingsForGargul } from '@/domain/loot/gargul-dft'
 import { applyGlobalReceiveSkip, pickReceivedEntries } from '@/domain/loot/apply-receive-skip'
+import { itemIdentityKey, keepRankedNeedRows } from '@/domain/loot/item-identity'
+import { fetchTierNeedRows } from '@/lib/loot/tier-need-rows'
 import { buildTeamVisibility } from '@/domain/loot/apply-team-filter'
 import { loadMasterSheetSummary } from '@/lib/loot/master-sheet-summary'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
@@ -54,7 +56,10 @@ interface LootItem {
   name: string
   boss_name: string
   item_slot: string
-  wowhead_id: number
+  /** Null for a need row (D-13): it has no Wowhead item yet. */
+  wowhead_id: number | null
+  /** 'need' for a Discovery need row; absent or 'item' for a catalog item. */
+  kind?: string | null
   raid_tier_id?: string
   is_loot_council?: boolean
 }
@@ -713,22 +718,32 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
       setContentLoading(true)
 
       try {
-        // Get all loot items for all active tiers in this phase
-        const { data: itemsData } = await supabase
-          .from('loot_items')
-          .select('id, name, boss_name, item_slot, wowhead_id, raid_tier_id, is_loot_council')
-          .in('raid_tier_id', activeTierIds)
-          .eq('is_available', true)
-          .order('boss_name')
-          .order('name')
+        // Get all loot items for all active tiers in this phase. D-19: the
+        // item read is item-only; need rows are read by tier below so a Discovery
+        // tier's seeded needs never reach this query or a URL (Pitfall 7).
+        const [{ data: itemsDataRaw }, needRows] = await Promise.all([
+          supabase
+            .from('loot_items')
+            .select('id, name, boss_name, item_slot, wowhead_id, raid_tier_id, is_loot_council, kind')
+            .in('raid_tier_id', activeTierIds)
+            .eq('kind', 'item')
+            .eq('is_available', true)
+            .order('boss_name')
+            .order('name'),
+          fetchTierNeedRows(supabase, activeTierIds),
+        ])
+        const itemsData: LootItem[] = (itemsDataRaw || []) as LootItem[]
 
-        if (!itemsData || itemsData.length === 0) {
+        // D-02: nothing to show only when the phase has neither items nor needs.
+        if (itemsData.length === 0 && needRows.length === 0) {
           setAllItemRankings([])
           setContentLoading(false)
           return
         }
 
         const itemIds = itemsData.map((i: { id: string }) => i.id)
+        // Need ids travel in the POST body only (T-03-10-02), never in a GET URL.
+        const needIds = needRows.map(n => n.id)
 
         // PERFORMANCE: Parallelize independent queries that only need itemIds.
         // Query 1 (visibility) routes through a service-role API so RLS on
@@ -749,7 +764,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
             const res = await fetch('/api/master-sheet/visibility', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ guild_id: guildId, item_ids: itemIds }),
+              body: JSON.stringify({ guild_id: guildId, item_ids: [...itemIds, ...needIds] }),
             })
             if (!res.ok) {
               const body = await res.json().catch(() => ({}))
@@ -777,18 +792,22 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
 
           // Load loot history to filter out characters who already received items.
           // Match by wowhead_id (not loot_item_id) so awards from other tiers with the same physical item are caught.
+          // D-19: a need row matches by its own id, so the embed also reads id and kind
+          // and the key comes from itemIdentityKey (item keys are unchanged).
           // Paginated + ordered to defeat Supabase's 1000-row cap — see utils/supabase/paginate.
-          paginatedSelect<{ character_id: string; loot_item: { wowhead_id: number } | null }>((start, end) =>
+          paginatedSelect<{ character_id: string; loot_item: { id: string; wowhead_id: number | null; kind: string | null } | null }>((start, end) =>
             supabase
               .from('loot_history')
-              .select('character_id, loot_item:loot_items(wowhead_id)')
+              .select('character_id, loot_item:loot_items(id, wowhead_id, kind)')
               .eq('guild_id', guildId)
               .order('id', { ascending: true })
               .range(start, end)
           ).then(data => ({ data })),
 
-          // BLP data (if enabled)
-          guildSettings.blp_enabled
+          // BLP data (if enabled). Item ids only (Pitfall 7): BLP for the
+          // ranked need rows is requested separately below, once we know which
+          // needs anyone ranked.
+          guildSettings.blp_enabled && itemIds.length > 0
             ? fetch(`/api/blp?guild_id=${guildId}&item_ids=${itemIds.join(',')}`)
                 .then(res => res.ok ? res.json() : { data: {} })
                 .catch(() => ({ data: {} }))
@@ -806,7 +825,29 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
 
         const allRankingsData = visibility.rankings
         const { data: lootHistoryData } = lootHistoryResult
-        const blpDataMap: Record<string, number> = blpResult.data || {}
+        const blpDataMap: Record<string, number> = { ...(blpResult.data || {}) }
+
+        // D-02 (held until Phase 4): a need row shows only when the visibility
+        // route returned a ranking for it, so a tier with 145 seeded, unranked
+        // needs looks exactly as it does today. The route already applied the
+        // earned-phase filter to need ids (T-03-10-01).
+        const rankedNeedIds = new Set<string>()
+        const needIdSet = new Set(needIds)
+        for (const r of allRankingsData) {
+          if (needIdSet.has(r.loot_item_id)) rankedNeedIds.add(r.loot_item_id)
+        }
+        const shownNeeds = keepRankedNeedRows(needRows, rankedNeedIds)
+        const shownNeedIds = shownNeeds.map(n => n.id)
+        if (guildSettings.blp_enabled && shownNeedIds.length > 0) {
+          // Pitfall 7: only the ranked need ids reach this GET, in their own request.
+          const needBlp = await fetch(`/api/blp?guild_id=${guildId}&item_ids=${shownNeedIds.join(',')}`)
+            .then(res => res.ok ? res.json() : { data: {} })
+            .catch(() => ({ data: {} }))
+          Object.assign(blpDataMap, needBlp.data || {})
+        }
+        // Items first, then the ranked needs (they group under 'Needs' after
+        // every boss because getBossOrder falls to 999, D-13).
+        const shownRows: LootItem[] = [...itemsData, ...(shownNeeds as LootItem[])]
 
         // Merge priorities from all tiers
         const prioritiesMap: Record<string, ItemPriority> = {}
@@ -823,12 +864,18 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
         // main spec and off-spec, a non-unique ring twice), so each award skips
         // one entry, the best-ranked one across every row of the item (see
         // pickReceivedEntries below), not every entry.
-        const wowheadIdSet = new Set(itemsData.map((i: LootItem) => i.wowhead_id))
+        // D-19: keyed by itemIdentityKey (wowhead id for items, 'need:<id>' for
+        // needs); a null identity is skipped, as a null wowhead id always was.
+        const identitySet = new Set<string>()
+        for (const row of shownRows) {
+          const identity = itemIdentityKey(row)
+          if (identity != null) identitySet.add(identity)
+        }
         const receivedItemCounts = new Map<string, number>()
-        for (const h of (lootHistoryData || []) as { character_id: string; loot_item: { wowhead_id: number } | null }[]) {
-          const wowheadId = h.loot_item?.wowhead_id
-          if (wowheadId == null || !wowheadIdSet.has(wowheadId)) continue
-          const key = `${h.character_id}-${wowheadId}`
+        for (const h of (lootHistoryData || []) as { character_id: string; loot_item: { id: string; wowhead_id: number | null; kind: string | null } | null }[]) {
+          const identity = itemIdentityKey(h.loot_item)
+          if (identity == null || !identitySet.has(identity)) continue
+          const key = `${h.character_id}-${identity}`
           receivedItemCounts.set(key, (receivedItemCounts.get(key) || 0) + 1)
         }
         setLootReceivedCounts(receivedItemCounts)
@@ -910,20 +957,24 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
         // award, best rank first (slot 1 before slot 2 on a tie), chosen across
         // every row of the wowhead_id at once so the skip never depends on which
         // row is processed first (GH #293).
-        const itemById = new Map<string, LootItem>(itemsData.map((i: LootItem) => [i.id, i]))
+        const itemById = new Map<string, LootItem>(shownRows.map((i: LootItem) => [i.id, i]))
         const skipCandidates: { key: string; rank: number; slot: number; row: RankingData }[] = []
         for (const r of allRankingsData as RankingData[]) {
           const rowItem = itemById.get(r.loot_item_id)
           const sub = rowItem ? subsById.get(r.submission_id) : undefined
           const character = sub?.character_id ? characterById.get(sub.character_id) : undefined
           if (!rowItem || !character) continue
-          skipCandidates.push({ key: `${character.id}-${rowItem.wowhead_id}`, rank: r.rank, slot: r.slot, row: r })
+          // D-19: a need row skips by its own id, so winning one need removes
+          // exactly that need's best entry and never another need's.
+          const identity = itemIdentityKey(rowItem)
+          if (identity == null) continue
+          skipCandidates.push({ key: `${character.id}-${identity}`, rank: r.rank, slot: r.slot, row: r })
         }
         const skippedRows = new Set(
           [...pickReceivedEntries(skipCandidates, receivedItemCounts)].map(e => e.row)
         )
 
-        for (const item of itemsData) {
+        for (const item of shownRows) {
           const itemRankingsData = allRankingsData
             .filter((r: RankingData) => r.loot_item_id === item.id)
             .sort((a: RankingData, b: RankingData) => b.rank - a.rank)
@@ -998,7 +1049,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
         }
 
         // Convert to array and sort by boss name
-        const sortedItemRankings = itemsData.map((item: LootItem) => itemRankingsMap[item.id])
+        const sortedItemRankings = shownRows.map((item: LootItem) => itemRankingsMap[item.id])
         setAllItemRankings(sortedItemRankings)
 
       } catch (err) {
