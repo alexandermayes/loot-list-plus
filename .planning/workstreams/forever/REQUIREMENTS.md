@@ -35,7 +35,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [ ] **DISC-04**: Raider gets a spec-based default list and can accept it with one tap ("Looks right")
 - [ ] **DISC-05**: Raider's one picker fans out to every Discovery raid tier in the expansion (per-raid need rows, no synthetic tier)
 - [ ] **DISC-06**: Need rows flow through submissions, approval, snapshots, master sheet, exports and BLP as `loot_items` rows with `kind = 'need'`; every reader has a tested mode branch
-- [ ] **DISC-07**: Raider ranked on a need accrues BLP for that need before any item exists
+- [x] **DISC-07**: Raider ranked on a need accrues BLP for that need before any item exists
 - [ ] **DISC-08**: Score shows standing and interest separately, each with a one-sentence explanation; totals unchanged for Known guilds
 - [ ] **DISC-09**: Raider sees a "What would it take" line on every score
 - [ ] **DISC-10**: Officer picks one of three loot style presets at setup, with Fine-tune behind disclosure
@@ -143,7 +143,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DISC-04 | Phase 4 | Pending |
 | DISC-05 | Phase 4 | Pending |
 | DISC-06 | Phase 3 | Pending |
-| DISC-07 | Phase 3 | Pending |
+| DISC-07 | Phase 3 | Complete |
 | DISC-08 | Phase 4 | Pending |
 | DISC-09 | Phase 6 | Pending |
 | DISC-10 | Phase 4 | Pending |

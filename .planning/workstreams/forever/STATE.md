@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 03
 current_phase_name: Discovery Schema and Need Pipeline
 status: executing
-stopped_at: Completed 03-18-PLAN.md
-last_updated: "2026-10-21T22:26:51.125Z"
+stopped_at: Completed 03-19-PLAN.md
+last_updated: "2026-10-21T22:34:46.695Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 03 execution started
-state_head: 513009b4035c546b9c96fcd7cb90b64ee18e9f1c
+state_head: 72b80aee2a6dfa193ffd25434507119950cf669e
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 41
-  completed_plans: 37
+  completed_plans: 38
   percent: 25
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 03 (Discovery Schema and Need Pipeline) — EXECUTING
-Plan: 16 of 19
+Plan: 17 of 19
 Status: Ready to execute
 Last activity: 2026-10-20 — Phase 03 execution started
 
@@ -107,6 +107,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 | Phase 03 P16 | 12 min | 2 tasks | 6 files |
 | Phase 03 P17 | 15 min | 2 tasks | 5 files |
 | Phase 03 P18 | 12 min | 3 tasks | 5 files |
+| Phase 03 P19 | 10 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -153,6 +154,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 - [Phase 03]: 03-16: reserve run creation refuses Discovery and missing tiers (400 RESERVES_UNAVAILABLE_ERROR, 500 on tier read error) and the reserve tier list shows Known only; admin sheet import reads kind item only — The tier read sits after membership and Premium checks so Known responses are unchanged; the kind filter is the service-role guard because the database refuses need-row writes only for browser sessions (D-14). Reserve copy is proposed for the owner's Oct 26 sign-off
 - [Phase 03]: 03-17: all five lifecycle readers (review, revert, remove-item, item-counts, master-sheet visibility) handle need rows by id; no reader fix needed (Reader fixes for 03-12: none) — Fixture tests past the D-22 hold pass against unchanged routes, matching research B6, B7, B9, B10, C6
 - [Phase 03]: 03-18: bootstrap, loot-submissions, prio-list, wowhead lookups and addonAwardKeys all handle need rows; no reader fix needed (Reader fixes for 03-12: none); the D-02 hold is asserted as exactly three fetchFilteredLootItems arguments — Fixture tests past the D-22 hold pass against unchanged source, matching research A1, A8, B10 and D6
+- [Phase 03]: 03-19: bulk award route, history-row builders and both Discord helpers handle need rows; no reader fix needed (Reader fixes for 03-12: none); post-raid summary renders the plain need name, not bold — Fixture tests past the D-22 hold pass against unchanged source, matching research E3 and E5; the summary has never bolded item names
 
 ### Pending Owner Inputs
 
@@ -180,6 +182,6 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 
 ## Session Continuity
 
-Last session: 2026-10-21T22:26:50.690Z
-Stopped at: Completed 03-18-PLAN.md
+Last session: 2026-10-21T22:34:46.420Z
+Stopped at: Completed 03-19-PLAN.md
 Resume file: None

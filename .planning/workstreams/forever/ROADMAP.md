@@ -148,7 +148,7 @@ Plans:
   3. A need-ranked submission moves through approval, snapshot, master sheet, exports and BLP without being silently dropped or crashing any reader; every reader has a tested mode branch, and addon exports contain item rows only
   4. A raider ranked on a need who attends a raid accrues bad-luck protection for that need before any item for it exists, and recomputing BLP twice gives the same result
 
-**Plans**: 15/19 plans executed in 7 waves, shipped as 4 PRs (PR 1 migration-only, plans 03-01 and 03-15; PR 2 pure need primitives, 03-03 to 03-05; PR 3 need readers after the PR 1 deploy, 03-06 to 03-12 and 03-16 to 03-19; PR 4 seeding and list mode after PR 3 deploys, 03-13 and 03-14, then the owner's `sync:forever` backfill). Plans 03-15 to 03-19 were split out at plan check and keep the next free numbers so no existing plan or threat id changed; waves carry the order.
+**Plans**: 16/19 plans executed in 7 waves, shipped as 4 PRs (PR 1 migration-only, plans 03-01 and 03-15; PR 2 pure need primitives, 03-03 to 03-05; PR 3 need readers after the PR 1 deploy, 03-06 to 03-12 and 03-16 to 03-19; PR 4 seeding and list mode after PR 3 deploys, 03-13 and 03-14, then the owner's `sync:forever` backfill). Plans 03-15 to 03-19 were split out at plan check and keep the next free numbers so no existing plan or threat id changed; waves carry the order.
 
 Plans:
 **Wave 1**
@@ -177,7 +177,7 @@ Plans:
 - [x] 03-16-PLAN.md (wave 4): no reserve runs on Discovery tiers, Known-only reserve tier list, item-only admin sheet import with its first test (DISC-06)
 - [x] 03-17-PLAN.md (wave 4): approval, snapshot, revert, removal, counts and visibility proven with need-ranked fixtures past the hold (DISC-06)
 - [x] 03-18-PLAN.md (wave 4): need-row tests for the bootstrap, loot-submissions and prio-list routes and the wowhead lookups (DISC-06)
-- [ ] 03-19-PLAN.md (wave 4): need awards keyed on the need row with BLP recompute, history-row builders and Discord posts, proven with fixtures past the hold; split from 03-17 per D-28 (DISC-07, DISC-06)
+- [x] 03-19-PLAN.md (wave 4): need awards keyed on the need row with BLP recompute, history-row builders and Discord posts, proven with fixtures past the hold; split from 03-17 per D-28 (DISC-07, DISC-06)
 
 **Wave 5** *(blocked on Wave 4)*
 
@@ -323,7 +323,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Forever Defect and Privacy Fixes | 9/9 | Complete    | 2026-10-13 |
 | 2. Expansion Onboarding Manifest | 13/13 | Complete    | 2026-10-19 |
-| 3. Discovery Schema and Need Pipeline | 15/19 | In Progress|  |
+| 3. Discovery Schema and Need Pipeline | 16/19 | In Progress|  |
 | 4. Discovery Lists and Score Split | 0/TBD | Not started | - |
 | 5. Drop Desk Core | 0/TBD | Not started | - |
 | 6. Live Raid Night | 0/TBD | Not started | - |
