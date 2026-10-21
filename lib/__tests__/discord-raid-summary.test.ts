@@ -73,4 +73,20 @@ describe('formatRaidSummaryLootLine', () => {
       `[Third](https://www.wowhead.com/forever/item=3)${ARROW}C`,
     ])
   })
+
+  // D-15, DISC-06: a need award has no Wowhead id, so the summary line is the
+  // plain name with no link (the summary has never bolded item names). The
+  // fixture stands past the D-22 hold, which refuses real need rankings in Phase 3.
+  it('need row (past the D-22 hold): renders the need name with no wowhead link', () => {
+    const needRow = { name: 'Trinket, Healing', kind: 'need', need_key: 'trinket.healing', wowhead_id: null }
+    const line = formatRaidSummaryLootLine({
+      itemName: needRow.name,
+      wowheadId: needRow.wowhead_id,
+      characterName: 'Thrall',
+      expansionName: 'Forever',
+    })
+    expect(line).toBe(`Trinket, Healing${ARROW}Thrall`)
+    expect(line).not.toContain('wowhead.com')
+    expect(line).not.toContain('](')
+  })
 })
