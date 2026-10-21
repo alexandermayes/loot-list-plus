@@ -152,7 +152,11 @@ export async function POST(request: NextRequest) {
       const flag = Array.isArray(tier) ? tier[0]?.is_guild_active : tier?.is_guild_active
       return flag !== false
     })
-    const validationItems = checkedRows.map((si) => ({
+    // Need rows are outside the bracket rules: their cost is the need's size
+    // (3, 2, 1), not a classification, so summing it against the bracket limit
+    // would reject valid need lists. Their 10-point budget is Phase 4's check
+    // (DISC-03). Copy caps below still apply to them.
+    const validationItems = checkedRows.filter((si) => !isNeedRow(si.loot_item)).map((si) => ({
       rank: si.rank,
       slot: si.slot,
       item: {
@@ -178,6 +182,7 @@ export async function POST(request: NextRequest) {
           name: si.loot_item?.name,
           item_slot: si.loot_item?.item_slot,
           wowhead_id: si.loot_item?.wowhead_id,
+          kind: si.loot_item?.kind,
         },
       }))),
     ]
