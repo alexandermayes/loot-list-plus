@@ -5,10 +5,11 @@
  * so it can be tested against a fake client without credentials (the
  * scripts/lib/gift-code.ts precedent).
  *
- * Writes go only through syncExpansionCatalog, which is insert-only. This file
- * reads the expansions and raid_tiers tables and nothing else, and the report
- * carries expansion ids, guild ids, manifest tier names and counts only
- * (Standing Constraint 3).
+ * Writes go only through syncExpansionCatalog, which inserts tiers and need rows
+ * and makes the one guarded Discovery switch (D-05). This file itself reads the
+ * expansions and raid_tiers tables and nothing else, and the report carries
+ * expansion ids, guild ids, manifest tier names and counts only, including the
+ * tiers-to-switch and need-row counts (Standing Constraint 3).
  */
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { syncExpansionCatalog } from '@/app/services/expansionCatalogSync'
@@ -35,6 +36,10 @@ export interface ForeverSyncExpansionReport {
   guildId: string | null
   matched: number
   toInsert: ForeverSyncTierPlan[]
+  /** Pre-Discovery tiers switched to Discovery; what a dry run would switch. */
+  tiersToFlip: number
+  /** Need rows written; what a dry run would write. */
+  needRowsToInsert: number
 }
 
 export interface ForeverSyncFailure {
@@ -160,6 +165,8 @@ export async function runForeverSync(
         guildId: row.guild_id,
         matched: result.matched.length,
         toInsert: result.inserted.map(({ name, phase, sort_order }) => ({ name, phase, sort_order })),
+        tiersToFlip: result.tiersFlipped,
+        needRowsToInsert: result.needRowsInserted,
       })
     } catch (error) {
       report.failures.push({ expansionId: row.id, message: describeError(error) })
@@ -174,8 +181,8 @@ export function formatForeverSyncReport(report: ForeverSyncReport): string {
   const lines: string[] = []
   lines.push(
     report.apply
-      ? 'APPLIED: missing tiers were inserted (existing rows were not touched)'
-      : 'DRY RUN: nothing was written (pass --apply to insert the tiers listed below)'
+      ? 'APPLIED: missing tiers and need rows were inserted and Forever tiers switched to Discovery (no row was deleted or renamed)'
+      : 'DRY RUN: nothing was written (pass --apply to insert missing tiers and need rows and switch Forever tiers to Discovery)'
   )
   lines.push('')
 
@@ -185,10 +192,13 @@ export function formatForeverSyncReport(report: ForeverSyncReport): string {
     const tiers = entry.toInsert.map(
       tier => `${tier.name} (phase ${tier.phase}, sort ${tier.sort_order})`
     )
+    const tail = report.apply
+      ? `switched ${entry.tiersToFlip} to Discovery, need rows inserted ${entry.needRowsToInsert}`
+      : `switch ${entry.tiersToFlip} to Discovery, need rows would insert ${entry.needRowsToInsert}`
     lines.push(
       tiers.length > 0
-        ? `${head}, ${verb} ${tiers.length}: ${tiers.join(', ')}`
-        : `${head}, ${verb} 0`
+        ? `${head}, ${verb} ${tiers.length}: ${tiers.join(', ')}, ${tail}`
+        : `${head}, ${verb} 0, ${tail}`
     )
   }
 
@@ -216,10 +226,14 @@ export function formatForeverSyncReport(report: ForeverSyncReport): string {
   }
 
   const tierCount = report.expansions.reduce((sum, entry) => sum + entry.toInsert.length, 0)
+  const flipCount = report.expansions.reduce((sum, entry) => sum + entry.tiersToFlip, 0)
+  const needCount = report.expansions.reduce((sum, entry) => sum + entry.needRowsToInsert, 0)
   lines.push('')
   lines.push(
     `Totals: expansions scanned ${report.expansions.length + report.failures.length}, ` +
       `tiers ${report.apply ? 'inserted' : 'would insert'} ${tierCount}, ` +
+      `tiers switched to Discovery ${flipCount}, ` +
+      `need rows ${report.apply ? 'inserted' : 'would insert'} ${needCount}, ` +
       `failures ${report.failures.length}, duplicates ${report.duplicates.length}`
   )
   return lines.join('\n')

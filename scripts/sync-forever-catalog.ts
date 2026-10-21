@@ -1,14 +1,17 @@
 /**
  * Owner-run sync: give every existing Forever guild the manifest raid tiers
  * (Barrow Deeps, Hyjal Summit, Onyxia's Lair) that guilds created before the
- * onboarding manifest do not have yet. Insert-only and idempotent, so a second
- * run changes nothing, and re-running it after a manifest addition is how new
- * tiers reach existing guilds (D-08, D-10; EXPN-05).
+ * onboarding manifest do not have yet, switch its pre-Discovery tiers to
+ * Discovery and seed each Discovery tier's need rows (D-05). Idempotent, so a
+ * second run changes nothing, and re-running it after a manifest addition is
+ * how new tiers reach existing guilds (D-08, D-10; EXPN-05). It never deletes
+ * or renames a row; the only update is list_mode 'known' to 'discovery' on a
+ * tier that holds no need rows.
  *
  * SAFE BY DEFAULT: dry-run unless you pass --apply.
  *
- *   npm run sync:forever               # dry run, lists what would be inserted
- *   npm run sync:forever -- --apply    # inserts the missing tiers
+ *   npm run sync:forever               # dry run, lists what would be inserted and switched
+ *   npm run sync:forever -- --apply    # inserts missing tiers and need rows, switches tiers
  *   npm run sync:forever -- --help
  *
  * Run from the repo root with .env.local present. Prints expansion ids, guild
@@ -29,8 +32,8 @@ import {
 
 const USAGE = [
   'Usage:',
-  '  npm run sync:forever               dry run (default): lists the tiers each Forever expansion would get',
-  '  npm run sync:forever -- --apply    inserts the missing tiers',
+  '  npm run sync:forever               dry run (default): lists the tiers each Forever expansion would get or switch to Discovery, and the need rows it would get',
+  '  npm run sync:forever -- --apply    inserts the missing tiers and need rows and switches Forever tiers to Discovery',
   '  npm run sync:forever -- --help     prints this message',
   '',
   'Prints expansion ids, guild ids, tier names and counts only. Requires .env.local.',
