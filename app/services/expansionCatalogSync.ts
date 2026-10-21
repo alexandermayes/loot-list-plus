@@ -34,7 +34,12 @@ import { getRaidPhase } from '@/data/expansion-phases'
 import { FOREVER_MANIFEST } from '@/data/expansions/forever/manifest'
 import { findManifestRaid } from '@/data/expansions/forever/lookup'
 import type { ManifestRaid } from '@/domain/expansion/manifest-schema'
-import { seedNeedRows } from '@/app/services/need-row-seeder'
+import {
+  flipTiersToDiscovery,
+  planDiscoveryFlip,
+  readNeedKeysByTier,
+  seedNeedRows,
+} from '@/app/services/need-row-seeder'
 
 export interface ForeverTierInsert {
   expansion_id: string
@@ -62,6 +67,10 @@ export interface CatalogSyncResult {
 interface ExistingTier {
   id: string
   name: string
+}
+
+interface ReadTier extends ExistingTier {
+  list_mode: string
 }
 
 /**
@@ -148,6 +157,12 @@ export async function syncExpansionCatalog(
     existingTiers: (data ?? []) as ExistingTier[],
   })
 
+  // Read before any write so a failed read leaves the expansion untouched. Only
+  // the first tier to claim each manifest raid is a candidate: a duplicate or an
+  // officer-made tier is never flipped or seeded.
+  const matchedIds = matched.map(match => match.tierId)
+  const keysByTier = await readNeedKeysByTier(supabase, matchedIds)
+
   let insertedTierIds: string[] = []
   if (!dryRun && inserted.length > 0) {
     const { data: insertedRows, error: insertError } = await supabase
@@ -167,21 +182,37 @@ export async function syncExpansionCatalog(
     }
   }
 
-  // A dry run has no ids for tiers it has not inserted, so placeholders stand in
-  // to count the rows the real run would write.
-  const seedTierIds = dryRun
-    ? inserted.map((_, index) => `planned-tier-${index}`)
-    : insertedTierIds
-  const seeded = await seedNeedRows(supabase, seedTierIds, {
+  const modeById = new Map(((data ?? []) as ReadTier[]).map(tier => [tier.id, tier.list_mode]))
+
+  // A Known tier with no need rows is switched; one that already holds some was
+  // switched back by an officer and stays Known (D-03).
+  const flipIds = planDiscoveryFlip(
+    matchedIds.map(id => ({ id, list_mode: modeById.get(id) ?? '' })),
+    keysByTier
+  )
+  // Required order (D-17): the database refuses a need row in a tier that is
+  // not yet 'discovery', so the flip lands before any seeding.
+  if (!dryRun) await flipTiersToDiscovery(supabase, flipIds)
+
+  // Tiers that end up in Discovery: the ones just inserted, the ones just
+  // flipped, and matched tiers that already were. A dry run has no ids for tiers
+  // it has not inserted, so placeholders stand in to count the rows.
+  const newTierIds = dryRun ? inserted.map((_, index) => `planned-tier-${index}`) : insertedTierIds
+  const discoveryIds = [
+    ...newTierIds,
+    ...flipIds,
+    ...matchedIds.filter(id => modeById.get(id) === 'discovery'),
+  ]
+  const seeded = await seedNeedRows(supabase, discoveryIds, {
     dryRun,
-    existingKeysByTier: new Map(),
+    existingKeysByTier: keysByTier,
   })
 
   return {
     expansionId,
     matched,
     inserted,
-    tiersFlipped: 0,
+    tiersFlipped: flipIds.length,
     needRowsInserted: dryRun ? seeded.planned.length : seeded.inserted,
     dryRun,
   }
