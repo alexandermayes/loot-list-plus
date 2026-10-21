@@ -718,3 +718,68 @@ describe('resolveGuildLootItemIds', () => {
     ).rejects.toThrow(/loot_items/i)
   })
 })
+
+describe("need rows (kind: 'need')", () => {
+  const ITEM_ID = '11111111-1111-1111-1111-1111111111aa'
+  const NEED_ID = '22222222-2222-2222-2222-2222222222bb'
+  const FOREIGN_NEED_ID = '33333333-3333-3333-3333-3333333333cc'
+
+  // A need row has no wowhead id (D-14). The fake's ItemRow type predates need
+  // rows, so the fixtures cast instead of widening a shared type.
+  const NEED_ROW = {
+    id: NEED_ID,
+    name: 'Trinket, Healing',
+    kind: 'need',
+    need_key: 'trinket.healing',
+    wowhead_id: null,
+    boss_name: 'Needs',
+    raid_tier_id: 'tier-a',
+  } as unknown as ItemRow
+  const FOREIGN_NEED_ROW = {
+    ...NEED_ROW,
+    id: FOREIGN_NEED_ID,
+    raid_tier_id: 'tier-b',
+  } as unknown as ItemRow
+  const ITEM_ROW: ItemRow = { id: ITEM_ID, name: 'Seal of the Dawn', raid_tier_id: 'tier-a', wowhead_id: 19019 }
+
+  function twoGuildFixture(): Fixture {
+    return {
+      expansions: [{ id: 'exp-a', guild_id: GUILD_A }, { id: 'exp-b', guild_id: GUILD_B }],
+      tiers: [{ id: 'tier-a', expansion_id: 'exp-a' }, { id: 'tier-b', expansion_id: 'exp-b' }],
+      items: [ITEM_ROW, NEED_ROW, FOREIGN_NEED_ROW],
+    }
+  }
+
+  it('findGuildLootItemsByWowheadIds returns the item and never the need row', async () => {
+    const { client } = makeClient(twoGuildFixture())
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await findGuildLootItemsByWowheadIds(client as any, GUILD_A, [19019])
+    expect(result).toEqual([{ id: ITEM_ID, name: 'Seal of the Dawn', raid_tier_id: 'tier-a' }])
+  })
+
+  it('findGuildLootItemsByWowheadIds returns no need row for an empty or unknown id list', async () => {
+    const { client } = makeClient(twoGuildFixture())
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(await findGuildLootItemsByWowheadIds(client as any, GUILD_A, [])).toEqual([])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(await findGuildLootItemsByWowheadIds(client as any, GUILD_A, [0, 1, 99999])).toEqual([])
+  })
+
+  it('resolveGuildLootItemIds resolves a need row of the guild exactly like an item id', async () => {
+    const { client } = makeClient(twoGuildFixture())
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await resolveGuildLootItemIds(client as any, GUILD_A, [NEED_ID, ITEM_ID])
+    expect(result.resolved.get(NEED_ID)).toEqual({ id: NEED_ID, raid_tier_id: 'tier-a', expansion_id: 'exp-a' })
+    expect(result.resolved.get(ITEM_ID)).toEqual({ id: ITEM_ID, raid_tier_id: 'tier-a', expansion_id: 'exp-a' })
+    expect(result.invalidIds).toEqual([])
+  })
+
+  it("resolveGuildLootItemIds puts another guild's need row in invalidIds", async () => {
+    const { client } = makeClient(twoGuildFixture())
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await resolveGuildLootItemIds(client as any, GUILD_A, [NEED_ID, FOREIGN_NEED_ID])
+    expect(result.resolved.has(NEED_ID)).toBe(true)
+    expect(result.resolved.has(FOREIGN_NEED_ID)).toBe(false)
+    expect(result.invalidIds).toEqual([FOREIGN_NEED_ID])
+  })
+})
