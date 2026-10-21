@@ -142,6 +142,9 @@ export async function GET(
       .from('loot_items')
       .select('id, name, boss_name, item_slot, wowhead_id, classification, armor_type, weapon_type')
       .eq('raid_tier_id', run.raid_tier_id)
+      // D-14: soft reserves stay item-only; this route is public, so a need
+      // row must never be listed here.
+      .eq('kind', 'item')
       .eq('is_available', true)
       .order('boss_name')
 
@@ -395,6 +398,8 @@ export async function POST(
       .from('loot_items')
       .select('id, name, armor_type')
       .eq('raid_tier_id', run.raid_tier_id)
+      // D-14: a submitted need row id does not match, so the invalid-items 400 answers.
+      .eq('kind', 'item')
       .eq('is_available', true)
       .in('id', uniqueItemIds)
 

@@ -81,6 +81,8 @@ export async function POST(
       .select('id')
       .eq('id', loot_item_id)
       .eq('raid_tier_id', run.raid_tier_id)
+      // D-14: a need row is never awardable here; it answers like any id outside the run.
+      .eq('kind', 'item')
       .maybeSingle()
     if (itemError) {
       console.error('Error checking award item:', itemError)

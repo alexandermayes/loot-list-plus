@@ -29,6 +29,7 @@ const TIER_ID = 'aaaaaaaa-0000-0000-0000-000000000002'
 const OTHER_TIER_ID = 'aaaaaaaa-0000-0000-0000-000000000003'
 const ITEM_ID = 'aaaaaaaa-0000-0000-0000-000000000004'
 const OTHER_TIER_ITEM_ID = 'aaaaaaaa-0000-0000-0000-000000000005'
+const NEED_ROW_ID = 'aaaaaaaa-0000-0000-0000-00000000000a'
 const SUBMISSION_ID = 'aaaaaaaa-0000-0000-0000-000000000006'
 const FOREIGN_SUBMISSION_ID = 'aaaaaaaa-0000-0000-0000-000000000007'
 const USER_ID = 'aaaaaaaa-0000-0000-0000-000000000008'
@@ -39,6 +40,8 @@ const MISMATCH_MESSAGE = "This award doesn't match this reserve run. Refresh the
 interface Fixture {
   /** loot_items rows that exist in this run's raid tier (TIER_ID). */
   tierItemIds?: Set<string>
+  /** loot_items need rows in this run's raid tier: only a read that does not filter kind = 'item' can see them. */
+  tierNeedIds?: Set<string>
   /** reserve_submissions ids that belong to this run. */
   runSubmissionIds?: Set<string>
   submissionLookupError?: boolean
@@ -77,7 +80,8 @@ function makeClient(fixture: Fixture) {
           if (table === 'loot_items') {
             if (fixture.itemLookupError) return Promise.resolve({ data: null, error: { message: 'boom' } })
             const id = call.filters.find(([col]) => col === 'id')?.[1] as string
-            const found = fixture.tierItemIds?.has(id)
+            const itemOnly = call.filters.some(([col, val]) => col === 'kind' && val === 'item')
+            const found = fixture.tierItemIds?.has(id) || (!itemOnly && fixture.tierNeedIds?.has(id))
             return Promise.resolve({ data: found ? { id } : null, error: null })
           }
           return Promise.resolve({ data: null, error: null })
@@ -194,6 +198,27 @@ describe('POST /api/reserve-runs/[id]/awards (quick task 261003-t28 amendment A1
     expect(res.status).toBe(400)
     expect(json.error).toBe(MISMATCH_MESSAGE)
     expect(calls.some(c => c.table === 'reserve_awards')).toBe(false)
+  })
+
+  it('rejects a need row id with the same 400 and writes nothing (D-14)', async () => {
+    const { client, calls, inserts } = makeClient({
+      runSubmissionIds: new Set([SUBMISSION_ID]),
+      tierItemIds: new Set([ITEM_ID]),
+      tierNeedIds: new Set([NEED_ROW_ID]),
+    })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(makeRequest({ loot_item_id: NEED_ROW_ID, character_name: 'Raiderone', submission_id: SUBMISSION_ID }), {
+      params: Promise.resolve({ id: RUN_ID }),
+    })
+    const json = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(json.error).toBe(MISMATCH_MESSAGE)
+    expect(calls.some(c => c.table === 'reserve_awards')).toBe(false)
+    expect(inserts).toHaveLength(0)
+    const itemCall = calls.find(c => c.table === 'loot_items')
+    expect(itemCall?.filters).toContainEqual(['kind', 'item'])
   })
 
   it('accepts a loot_item_id of the run raid tier', async () => {
