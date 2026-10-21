@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 
 /**
@@ -862,6 +863,150 @@ export const NEED_READERS: readonly NeedReader[] = [
   },
 ]
 
+// Positive markers: the source must contain one for each listed disposition.
+// 'ok' (a cited test), 'writer' and 'script' (a note) and 'consumer' (a via)
+// have no source marker.
+export const DISPOSITION_MARKERS: Partial<Record<NeedDisposition, RegExp>> = {
+  exclude:
+    /\.eq\(\s*['"]kind['"]\s*,\s*['"]item['"]\s*\)|\.eq\(\s*['"]list_mode['"]\s*,\s*['"]known['"]\s*\)|isNeedRow\(/,
+  guard: /isNeedRow\(|noteNeedSkipped\(|isHeldNeedRanking\(/,
+  key: /itemIdentityKey\(/,
+  branch: /isNeedRow\(|\.eq\(\s*['"](loot_items\.)?kind['"]\s*,\s*['"]need['"]\s*\)/,
+  label: /wowheadIdForDisplay\(|<ItemLink\b|<NeedLabel\b/,
+}
+// Negative marker for 'agnostic': a reader that names an item column can tell
+// a need row from an item, so it must be 'exclude', 'branch' or 'label'.
+export const AGNOSTIC_FORBIDDEN = /wowhead_id|wowheadId|boss_name|item_slot|allocation_cost/
+// A SQL function body is a reader when it names one of the tables.
+const SQL_TABLE_PATTERN = /\b(loot_items|loot_submission_items|loot_history)\b/i
+// 'ok' fixtures: a TypeScript test builds a row with kind: 'need'; the PGlite
+// test seeds the string 'need' into SQL.
+const NEED_FIXTURE_TS = /kind: 'need'/
+const NEED_FIXTURE_SQL = /'need'/
+const SQL_BODY_NEED = /'need'/
+const MIGRATIONS_DIR = 'supabase/migrations'
+
+export interface SqlFunctionReader {
+  name: string
+  dispositions: readonly NeedDisposition[]
+  /** Timestamp of the migration holding the latest definition. */
+  definedIn: string
+  note: string
+  test?: string
+}
+
+const PGLITE = 'app/services/__tests__/discovery-schema-pglite.test.ts'
+
+// Every SQL function whose latest definition names a table, sorted by name.
+// The D-27 lock (enforce_loot_item_need_delete_lock) names none of them today.
+export const SQL_FUNCTION_READERS: readonly SqlFunctionReader[] = [
+  {
+    name: 'delete_guild',
+    dispositions: ['agnostic'],
+    definedIn: '20261004020000',
+    note: 'deletes a guild\'s rows; need rows cascade like items',
+  },
+  {
+    name: 'enforce_loot_history_guild_refs',
+    dispositions: ['ok'],
+    definedIn: '20260929180000',
+    note: 'resolves a need row\'s tier and guild like an item (need-keyed award insert in 03-15)',
+    test: PGLITE,
+  },
+  {
+    name: 'enforce_loot_item_need_pin_refs',
+    dispositions: ['branch'],
+    definedIn: '20261020120000',
+    note: 'pin integrity (03-01, 03-15)',
+    test: PGLITE,
+  },
+  {
+    name: 'enforce_loot_item_need_rules',
+    dispositions: ['branch'],
+    definedIn: '20261020120000',
+    note: 'D-12 and D-17: need rows come only from the service role and sit only in Forever Discovery tiers; listed because its body names loot_items in error text (03-01, 03-15)',
+    test: PGLITE,
+  },
+  {
+    name: 'enforce_loot_submission_item_rules',
+    dispositions: ['agnostic'],
+    definedIn: '20260930000000',
+    note: 'list status rules by parent list',
+  },
+  {
+    name: 'enforce_need_ranking_hold',
+    dispositions: ['guard'],
+    definedIn: '20261020120000',
+    note: 'D-22 hold on rankings from browser sessions, dropped in Phase 4',
+    test: PGLITE,
+  },
+  {
+    name: 'enforce_raid_tier_list_mode_rules',
+    dispositions: ['branch'],
+    definedIn: '20261020120000',
+    note: 'D-17 and the D-03 backstop',
+    test: PGLITE,
+  },
+  {
+    name: 'enforce_reserve_award_refs',
+    dispositions: ['agnostic'],
+    definedIn: '20261003230000',
+    note: 'reserve item reads exclude needs (03-08)',
+  },
+  {
+    name: 'get_guild_submissions',
+    dispositions: ['agnostic'],
+    definedIn: '20260101000000',
+    note: 'item_count counts a list\'s live rows',
+  },
+  {
+    name: 'increment_blp',
+    dispositions: ['agnostic'],
+    definedIn: '20260101000000',
+    note: 'legacy incremental counter keyed on loot_item_id; no app caller',
+  },
+  {
+    name: 'increment_blp_bulk',
+    dispositions: ['agnostic'],
+    definedIn: '20260101000000',
+    note: 'same',
+  },
+  {
+    name: 'recompute_blp_for_event',
+    dispositions: ['ok'],
+    definedIn: '20260609000001',
+    note: 'DISC-07 ordering case',
+    test: PGLITE,
+  },
+  {
+    name: 'recompute_blp_for_guild',
+    dispositions: ['ok'],
+    definedIn: '20260721000001',
+    note: 'DISC-07 ordering case',
+    test: PGLITE,
+  },
+  {
+    name: 'recompute_blp_for_item',
+    dispositions: ['ok'],
+    definedIn: '20260721000001',
+    note: 'DISC-07 adjacency, ordering and empty cases',
+    test: PGLITE,
+  },
+  {
+    name: 'reset_guild_season',
+    dispositions: ['agnostic'],
+    definedIn: '20260721000002',
+    note: 'resets a guild\'s history by guild',
+  },
+  {
+    name: 'save_submission_items',
+    dispositions: ['ok'],
+    definedIn: '20260727000001',
+    note: 'body unchanged; its insert hits enforce_need_ranking_hold (D-22), proven by the raider RPC case in 03-15',
+    test: PGLITE,
+  },
+]
+
 /** Recursive walk of one root under baseDir; paths come back repo-relative with forward slashes. */
 function walkSourceFiles(baseDir: string, root: string, extension: RegExp): string[] {
   const start = path.join(baseDir, root)
@@ -929,6 +1074,145 @@ export function findInventoryGaps(
     missing: [...scanned].filter((file) => !listed.has(file)).sort(),
     stale: [...listed].filter((file) => !scanned.has(file)).sort(),
   }
+}
+
+type MarkerEntry = { file: string; dispositions: readonly NeedDisposition[] }
+
+/** Reports each disposition whose source marker is absent, and each 'agnostic' source that names an item column. */
+export function findMissingMarkers(
+  entries: readonly MarkerEntry[],
+  readSource: (file: string) => string,
+): string[] {
+  const problems: string[] = []
+  for (const entry of entries) {
+    const source = readSource(entry.file)
+    for (const disposition of entry.dispositions) {
+      const marker = DISPOSITION_MARKERS[disposition]
+      if (marker && !marker.test(source)) {
+        problems.push(`${entry.file}: '${disposition}' but the source has no ${disposition} marker`)
+      }
+      if (disposition === 'agnostic') {
+        const named = AGNOSTIC_FORBIDDEN.exec(source)
+        if (named) problems.push(`${entry.file}: 'agnostic' but the source names ${named[0]}`)
+      }
+    }
+  }
+  return problems
+}
+
+type CitableEntry = {
+  file?: string
+  name?: string
+  dispositions: readonly NeedDisposition[]
+  test?: string
+}
+
+/**
+ * Reports each entry that needs a test and has none, and each cited test that
+ * is missing or holds no need fixture. `needsTest` names the dispositions that
+ * must cite one: 'ok' for code, 'ok', 'guard' and 'branch' for SQL functions.
+ */
+export function findBadCitations(
+  entries: readonly CitableEntry[],
+  readFile: (file: string) => string,
+  exists: (file: string) => boolean,
+  needsTest: readonly NeedDisposition[] = ['ok'],
+): string[] {
+  const problems: string[] = []
+  for (const entry of entries) {
+    const label = entry.file ?? entry.name ?? '(unnamed)'
+    const required = entry.dispositions.some((disposition) => needsTest.includes(disposition))
+    if (entry.test === undefined) {
+      if (required) problems.push(`${label}: needs a test citation`)
+      continue
+    }
+    if (!exists(entry.test)) {
+      problems.push(`${label}: cited test ${entry.test} does not exist`)
+      continue
+    }
+    const fixture = entry.test.includes('-pglite.') ? NEED_FIXTURE_SQL : NEED_FIXTURE_TS
+    if (!fixture.test(readFile(entry.test))) {
+      problems.push(`${label}: cited test ${entry.test} holds no need fixture`)
+    }
+  }
+  return problems
+}
+
+/** Every 'consumer' entry's via files must be inventory entries carrying 'exclude'. */
+export function findBadVia(
+  entries: ReadonlyArray<{
+    file: string
+    dispositions: readonly NeedDisposition[]
+    via?: readonly string[]
+  }>,
+  inventory: ReadonlyArray<{ file: string; dispositions: readonly NeedDisposition[] }>,
+): string[] {
+  const problems: string[] = []
+  for (const entry of entries) {
+    if (!entry.dispositions.includes('consumer')) continue
+    const via = entry.via ?? []
+    if (via.length === 0) problems.push(`${entry.file}: 'consumer' has no via`)
+    for (const route of via) {
+      const listed = inventory.find((candidate) => candidate.file === route)
+      if (!listed) problems.push(`${entry.file}: via ${route} is not a NEED_READERS entry`)
+      else if (!listed.dispositions.includes('exclude')) {
+        problems.push(`${entry.file}: via ${route} is not an 'exclude' entry`)
+      }
+    }
+  }
+  return problems
+}
+
+const SQL_CREATE_FUNCTION =
+  /CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?:"?public"?\.)?"?([A-Za-z_][A-Za-z0-9_]*)"?\s*\(/gi
+const SQL_DROP_FUNCTION =
+  /DROP\s+FUNCTION\s+(?:IF\s+EXISTS\s+)?(?:"?public"?\.)?"?([A-Za-z_][A-Za-z0-9_]*)"?\s*\(/gi
+
+/**
+ * Functions whose latest definition names one of the three tables. Files are
+ * applied in name order; a later CREATE replaces an earlier body, and a DROP
+ * with no re-create after it removes the function. Bodies are dollar-quoted
+ * with any tag.
+ */
+export function findSqlFunctionReaders(
+  files: ReadonlyArray<{ name: string; sql: string }>,
+): Array<{ name: string; definedIn: string; body: string }> {
+  const latest = new Map<string, { definedIn: string; body: string }>()
+  for (const file of [...files].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))) {
+    const definedIn = file.name.split('_')[0]
+    const events: Array<{ index: number; end: number; kind: 'create' | 'drop'; fn: string; body: string }> = []
+    for (const match of file.sql.matchAll(SQL_CREATE_FUNCTION)) {
+      const headerEnd = match.index + match[0].length
+      const open = /\$([A-Za-z_]*)\$/.exec(file.sql.slice(headerEnd))
+      let body = ''
+      let end = headerEnd
+      if (open && !file.sql.slice(headerEnd, headerEnd + open.index).includes(';')) {
+        const bodyStart = headerEnd + open.index + open[0].length
+        const close = file.sql.indexOf(open[0], bodyStart)
+        if (close !== -1) {
+          body = file.sql.slice(bodyStart, close)
+          end = close + open[0].length
+        }
+      }
+      events.push({ index: match.index, end, kind: 'create', fn: match[1], body })
+    }
+    for (const match of file.sql.matchAll(SQL_DROP_FUNCTION)) {
+      events.push({ index: match.index, end: match.index + match[0].length, kind: 'drop', fn: match[1], body: '' })
+    }
+    events.sort((a, b) => a.index - b.index)
+    let cursor = 0
+    for (const event of events) {
+      // An event inside an earlier function body is body text, not a statement.
+      if (event.index < cursor) continue
+      cursor = event.end
+      if (event.kind === 'create') latest.set(event.fn, { definedIn, body: event.body })
+      else latest.delete(event.fn)
+    }
+  }
+  return [...latest.entries()]
+    .filter(([, definition]) => SQL_TABLE_PATTERN.test(definition.body))
+    .map(([name, definition]) => ({ name, ...definition }))
+    .sort((a, b) => (a.name < b.name ? -1 : 1))
 }
 
 const codeReaderFiles = findReaderFiles(CODE_ROOTS)
@@ -1023,5 +1307,227 @@ describe('need reader inventory: entry shape', () => {
       return isConsumer && (entry.via ?? []).length === 0
     }).map((entry) => entry.file)
     expect(bad).toEqual([])
+  })
+})
+
+const readRepoFile = (file: string) => fs.readFileSync(path.join(REPO_ROOT, file), 'utf8')
+const repoFileExists = (file: string) => fs.existsSync(path.join(REPO_ROOT, file))
+const sqlFunctions = findSqlFunctionReaders(
+  fs
+    .readdirSync(path.join(REPO_ROOT, MIGRATIONS_DIR))
+    .filter((name) => name.endsWith('.sql'))
+    .sort()
+    .map((name) => ({ name, sql: readRepoFile(`${MIGRATIONS_DIR}/${name}`) })),
+)
+const sqlFunctionByName = new Map(sqlFunctions.map((fn) => [fn.name, fn]))
+const codeEntries = NEED_READERS.filter((entry) => !entry.file.endsWith('.sql'))
+
+describe('need reader inventory: dispositions are checked in the source', () => {
+  it('finds each disposition marker in the source (agnostic sources name no item column)', () => {
+    expect(findMissingMarkers(codeEntries, readRepoFile)).toEqual([])
+  })
+
+  it('makes every ok entry cite an existing test that holds a need fixture', () => {
+    expect(findBadCitations(NEED_READERS, readRepoFile, repoFileExists)).toEqual([])
+  })
+
+  it('ties every payload consumer to an item-only route', () => {
+    expect(findBadVia(NEED_READERS, NEED_READERS)).toEqual([])
+  })
+})
+
+describe('need reader inventory: SQL functions', () => {
+  it(`finds at least ${MIN_SQL_FUNCTION_READERS} functions whose latest definition names a table`, () => {
+    expect(sqlFunctions.length).toBeGreaterThanOrEqual(MIN_SQL_FUNCTION_READERS)
+    for (const name of [
+      'save_submission_items',
+      'reset_guild_season',
+      'delete_guild',
+      'get_guild_submissions',
+      'recompute_blp_for_item',
+      'recompute_blp_for_event',
+      'recompute_blp_for_guild',
+    ]) {
+      expect(sqlFunctionByName.has(name), name).toBe(true)
+    }
+  })
+
+  it('lists every such function, and only functions the scan still finds', () => {
+    const { missing, stale } = findInventoryGaps(
+      sqlFunctions.map((fn) => fn.name),
+      SQL_FUNCTION_READERS.map((fn) => ({ file: fn.name })),
+    )
+    expect(missing, `SQL functions missing from SQL_FUNCTION_READERS:\n${missing.join('\n')}`).toEqual([])
+    expect(stale, `stale SQL_FUNCTION_READERS entries:\n${stale.join('\n')}`).toEqual([])
+  })
+
+  it('keeps SQL_FUNCTION_READERS sorted by name with a note on every entry', () => {
+    const names = SQL_FUNCTION_READERS.map((fn) => fn.name)
+    expect(names).toEqual([...names].sort())
+    expect(new Set(names).size).toBe(names.length)
+    expect(
+      SQL_FUNCTION_READERS.filter((fn) => fn.dispositions.length === 0 || fn.note.trim() === ''),
+    ).toEqual([])
+  })
+
+  it('records the migration that holds each latest definition, so a redefinition forces a re-review', () => {
+    const wrong = SQL_FUNCTION_READERS.filter(
+      (fn) => sqlFunctionByName.get(fn.name)?.definedIn !== fn.definedIn,
+    ).map((fn) => `${fn.name}: listed ${fn.definedIn}, latest ${sqlFunctionByName.get(fn.name)?.definedIn}`)
+    expect(wrong).toEqual([])
+  })
+
+  it("keeps 'agnostic' bodies free of item columns", () => {
+    const bad = SQL_FUNCTION_READERS.filter(
+      (fn) =>
+        fn.dispositions.includes('agnostic') &&
+        AGNOSTIC_FORBIDDEN.test(sqlFunctionByName.get(fn.name)?.body ?? ''),
+    ).map((fn) => fn.name)
+    expect(bad).toEqual([])
+  })
+
+  it("makes 'ok', 'guard' and 'branch' functions cite a test, and 'guard' and 'branch' bodies name 'need'", () => {
+    expect(
+      findBadCitations(SQL_FUNCTION_READERS, readRepoFile, repoFileExists, ['ok', 'guard', 'branch']),
+    ).toEqual([])
+    const bad = SQL_FUNCTION_READERS.filter(
+      (fn) =>
+        (fn.dispositions.includes('guard') || fn.dispositions.includes('branch')) &&
+        !SQL_BODY_NEED.test(sqlFunctionByName.get(fn.name)?.body ?? ''),
+    ).map((fn) => fn.name)
+    expect(bad).toEqual([])
+  })
+
+  it('inventories every function a scanned .rpc call can reach', () => {
+    const listed = new Set(SQL_FUNCTION_READERS.map((fn) => fn.name))
+    expect(RPC_NAMES.filter((name) => !listed.has(name))).toEqual([])
+  })
+})
+
+describe('need reader inventory: synthetic self-checks (the scan has teeth)', () => {
+  it('1: reports an unlisted reader as missing', () => {
+    const found = ['app/api/synthetic-reader/route.ts', ...NEED_READERS.map((entry) => entry.file)]
+    expect(findInventoryGaps(found, NEED_READERS).missing).toEqual(['app/api/synthetic-reader/route.ts'])
+  })
+
+  it('1b: reports an entry that no longer matches as stale', () => {
+    const found = NEED_READERS.map((entry) => entry.file).slice(1)
+    expect(findInventoryGaps(found, NEED_READERS).stale).toEqual([NEED_READERS[0].file])
+  })
+
+  it("2: reports an 'exclude' entry with no marker, and passes one with an item kind filter", () => {
+    const entry = { file: 'synthetic.ts', dispositions: ['exclude'] as const }
+    const plain = () => "await supabase.from('loot_items').select('id')"
+    const filtered = () => "await supabase.from('loot_items').select('id').eq('kind', 'item')"
+    expect(findMissingMarkers([entry], plain)).toHaveLength(1)
+    expect(findMissingMarkers([entry], filtered)).toEqual([])
+  })
+
+  it('3: matches embeds and not prose', () => {
+    expect(READER_PATTERN.test('loot_item:loot_items(wowhead_id)')).toBe(true)
+    expect(READER_PATTERN.test('loot_items!inner(kind)')).toBe(true)
+    expect(READER_PATTERN.test("supabase.from('loot_history')")).toBe(true)
+    expect(READER_PATTERN.test('// the loot_items table holds every row')).toBe(false)
+  })
+
+  it("4: reports an 'ok' entry citing a missing test, or a test with no need fixture", () => {
+    const missing = { file: 'a.ts', dispositions: ['ok'] as const, test: 'gone.test.ts' }
+    const noFixture = { file: 'b.ts', dispositions: ['ok'] as const, test: 'plain.test.ts' }
+    const uncited = { file: 'c.ts', dispositions: ['ok'] as const }
+    const good = { file: 'd.ts', dispositions: ['ok'] as const, test: 'need.test.ts' }
+    const files: Record<string, string> = {
+      'plain.test.ts': "const row = { kind: 'item' }",
+      'need.test.ts': "const row = { kind: 'need' }",
+    }
+    const problems = findBadCitations(
+      [missing, noFixture, uncited, good],
+      (file) => files[file],
+      (file) => file in files,
+    )
+    expect(problems).toHaveLength(3)
+    expect(problems.join('\n')).toContain('does not exist')
+    expect(problems.join('\n')).toContain('holds no need fixture')
+    expect(problems.join('\n')).toContain('needs a test citation')
+  })
+
+  it("5: reports an 'agnostic' entry whose source names wowhead_id", () => {
+    const entry = { file: 'synthetic.ts', dispositions: ['agnostic'] as const }
+    expect(findMissingMarkers([entry], () => "select('id, wowhead_id')")).toHaveLength(1)
+    expect(findMissingMarkers([entry], () => "select('id')")).toEqual([])
+  })
+
+  it('6: lists a function by its latest body, drops one a later migration drops', () => {
+    const create = (fn: string, table: string, tag = '$$') =>
+      `CREATE OR REPLACE FUNCTION "public"."${fn}"() RETURNS void\n    LANGUAGE plpgsql\n    AS ${tag}\nBEGIN\n  DELETE FROM public.${table};\nEND;\n${tag};\n`
+    const named = (files: Array<{ name: string; sql: string }>) =>
+      findSqlFunctionReaders(files).map((fn) => fn.name)
+
+    expect(named([{ name: '1_a.sql', sql: create('synthetic_fn', 'loot_history') }])).toEqual(['synthetic_fn'])
+    // Re-created without the tables: leaves the list.
+    expect(
+      named([
+        { name: '1_a.sql', sql: create('synthetic_fn', 'loot_history') },
+        { name: '2_b.sql', sql: create('synthetic_fn', 'raid_events') },
+      ]),
+    ).toEqual([])
+    // Created, then dropped: not listed.
+    expect(
+      named([
+        { name: '1_a.sql', sql: create('synthetic_fn', 'loot_history') },
+        { name: '2_b.sql', sql: 'DROP FUNCTION IF EXISTS "public"."synthetic_fn"();\n' },
+      ]),
+    ).toEqual([])
+    // Dropped, then re-created: listed again. Any dollar tag works.
+    expect(
+      named([
+        { name: '1_a.sql', sql: create('synthetic_fn', 'loot_history') },
+        { name: '2_b.sql', sql: 'DROP FUNCTION "public"."synthetic_fn"();\n' },
+        { name: '3_c.sql', sql: create('synthetic_fn', 'loot_items', '$fn$') },
+      ]),
+    ).toEqual(['synthetic_fn'])
+  })
+
+  it("7: reports a consumer whose via names an 'ok'-only entry or an unlisted file", () => {
+    const okOnly = {
+      file: 'companion/src/synthetic.ts',
+      dispositions: ['consumer'] as const,
+      via: ['app/api/loot-submissions/route.ts'],
+    }
+    const absent = {
+      file: 'discord-bot/synthetic.js',
+      dispositions: ['consumer'] as const,
+      via: ['app/api/synthetic-missing/route.ts'],
+    }
+    const good = {
+      file: 'discord-bot/synthetic-ok.js',
+      dispositions: ['consumer'] as const,
+      via: ['app/api/bot/priority/route.ts'],
+    }
+    expect(findBadVia([okOnly], NEED_READERS)).toHaveLength(1)
+    expect(findBadVia([absent], NEED_READERS)).toHaveLength(1)
+    expect(findBadVia([good], NEED_READERS)).toEqual([])
+  })
+
+  it('8: finds a synthetic companion consumer and skips build output, node_modules and test files', () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), 'need-inventory-'))
+    try {
+      const source = "const key = String(item.wowhead_id)\n"
+      for (const file of [
+        'companion/src/synthetic.ts',
+        'companion/out/synthetic.ts',
+        'companion/release/synthetic.ts',
+        'companion/node_modules/pkg/synthetic.ts',
+        'companion/src/synthetic.test.mjs',
+        'companion/src/synthetic.d.ts',
+      ]) {
+        fs.mkdirSync(path.dirname(path.join(base, file)), { recursive: true })
+        fs.writeFileSync(path.join(base, file), source)
+      }
+      expect(findConsumerFiles(['companion'], base)).toEqual(['companion/src/synthetic.ts'])
+      const found = findConsumerFiles(['companion'], base)
+      expect(findInventoryGaps(found, NEED_READERS).missing).toEqual(['companion/src/synthetic.ts'])
+    } finally {
+      fs.rmSync(base, { recursive: true, force: true })
+    }
   })
 })
