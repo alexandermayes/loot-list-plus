@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { fetchTierNeedRows } from '@/lib/loot/tier-need-rows'
+import { fetchTierNeedRows, fetchTierNeedRankings } from '@/lib/loot/tier-need-rows'
 
 // Recording fake in the style of master-sheet-summary.test.ts: it records the
 // table, select and filters of every read so a test can assert the read shape
@@ -123,6 +123,41 @@ describe('fetchTierNeedRows', () => {
     const { client } = makeClient({}, { fail: true })
     await expect(fetchTierNeedRows(client as never, [TIER_A])).rejects.toThrow(
       'Failed to read loot_items need rows: boom',
+    )
+  })
+})
+
+describe('fetchTierNeedRankings', () => {
+  it('R1: with no tier ids it makes no query and returns []', async () => {
+    const { client, calls } = makeClient({})
+    expect(await fetchTierNeedRankings(client as never, [])).toEqual([])
+    expect(calls).toHaveLength(0)
+  })
+
+  it('R2: reads live need rankings through the inner embed, tier scoped, and maps the four fields', async () => {
+    const { client, calls } = makeClient({
+      loot_submission_items: [
+        { id: 1, loot_item_id: NEED_1, rank: 2, slot: 1, submission_id: 's1', removed_at: null, 'loot_items.kind': 'need', 'loot_items.raid_tier_id': TIER_A },
+        { id: 2, loot_item_id: NEED_2, rank: 1, slot: 2, submission_id: 's2', removed_at: '2026-01-01T00:00:00Z', 'loot_items.kind': 'need', 'loot_items.raid_tier_id': TIER_A },
+        { id: 3, loot_item_id: NEED_2, rank: 4, slot: 1, submission_id: 's3', removed_at: null, 'loot_items.kind': 'item', 'loot_items.raid_tier_id': TIER_A },
+        { id: 4, loot_item_id: NEED_2, rank: 5, slot: 1, submission_id: 's4', removed_at: null, 'loot_items.kind': 'need', 'loot_items.raid_tier_id': TIER_B },
+      ],
+    })
+    const rows = await fetchTierNeedRankings(client as never, [TIER_A])
+
+    expect(rows).toEqual([{ loot_item_id: NEED_1, rank: 2, slot: 1, submission_id: 's1' }])
+    expect(calls).toHaveLength(1)
+    expect(calls[0].select).toContain('loot_items!inner(raid_tier_id, kind)')
+    expect(calls[0].filters).toContainEqual({ type: 'eq', col: 'loot_items.kind', val: 'need' })
+    expect(calls[0].filters).toContainEqual({ type: 'in', col: 'loot_items.raid_tier_id', val: [TIER_A] })
+    expect(calls[0].filters).toContainEqual({ type: 'is', col: 'removed_at', val: null })
+    expect(calls[0].orders).toEqual(['id'])
+  })
+
+  it('R3: a read error throws the labelled message', async () => {
+    const { client } = makeClient({}, { fail: true })
+    await expect(fetchTierNeedRankings(client as never, [TIER_A])).rejects.toThrow(
+      'Failed to read loot_submission_items need rankings: boom',
     )
   })
 })
