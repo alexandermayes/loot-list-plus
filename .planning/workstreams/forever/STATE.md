@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 03
 current_phase_name: Discovery Schema and Need Pipeline
 status: executing
-stopped_at: Completed 03-17-PLAN.md
-last_updated: "2026-10-21T22:19:05.277Z"
+stopped_at: Completed 03-18-PLAN.md
+last_updated: "2026-10-21T22:26:51.125Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 03 execution started
-state_head: 3c5552521dbbf625dda8b36c9abba3dc2023be38
+state_head: 513009b4035c546b9c96fcd7cb90b64ee18e9f1c
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 41
-  completed_plans: 36
+  completed_plans: 37
   percent: 25
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 03 (Discovery Schema and Need Pipeline) — EXECUTING
-Plan: 15 of 19
+Plan: 16 of 19
 Status: Ready to execute
 Last activity: 2026-10-20 — Phase 03 execution started
 
@@ -106,6 +106,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 | Phase 03 P11 | 8 min | 2 tasks | 6 files |
 | Phase 03 P16 | 12 min | 2 tasks | 6 files |
 | Phase 03 P17 | 15 min | 2 tasks | 5 files |
+| Phase 03 P18 | 12 min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -151,6 +152,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 - [Phase 03]: 03-11: need awards skip awarded gear with one need-skip warning per request, come back from loot history with a null wowhead id, and the dashboard skips received needs by identity key; RaidLootEntry.item_wowhead_id widened to number | null — A need award names no real item until the Desk writes awarded_item_id (D-15); null lets ItemLink render a NeedLabel instead of an item=0 link. Open for Phase 5: editing a raid event deletes and re-imports loot from wowhead lines, which would drop need awards
 - [Phase 03]: 03-16: reserve run creation refuses Discovery and missing tiers (400 RESERVES_UNAVAILABLE_ERROR, 500 on tier read error) and the reserve tier list shows Known only; admin sheet import reads kind item only — The tier read sits after membership and Premium checks so Known responses are unchanged; the kind filter is the service-role guard because the database refuses need-row writes only for browser sessions (D-14). Reserve copy is proposed for the owner's Oct 26 sign-off
 - [Phase 03]: 03-17: all five lifecycle readers (review, revert, remove-item, item-counts, master-sheet visibility) handle need rows by id; no reader fix needed (Reader fixes for 03-12: none) — Fixture tests past the D-22 hold pass against unchanged routes, matching research B6, B7, B9, B10, C6
+- [Phase 03]: 03-18: bootstrap, loot-submissions, prio-list, wowhead lookups and addonAwardKeys all handle need rows; no reader fix needed (Reader fixes for 03-12: none); the D-02 hold is asserted as exactly three fetchFilteredLootItems arguments — Fixture tests past the D-22 hold pass against unchanged source, matching research A1, A8, B10 and D6
 
 ### Pending Owner Inputs
 
@@ -178,6 +180,6 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 
 ## Session Continuity
 
-Last session: 2026-10-21T22:19:05.119Z
-Stopped at: Completed 03-17-PLAN.md
+Last session: 2026-10-21T22:26:50.690Z
+Stopped at: Completed 03-18-PLAN.md
 Resume file: None
