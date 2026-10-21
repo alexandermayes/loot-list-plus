@@ -282,9 +282,17 @@ function createFakeClient(options: FakeOptions) {
   }
 }
 
-function tier(id: string, expansionId: string, name: string): TierRow {
-  return { id, expansion_id: expansionId, name }
+function tier(id: string, expansionId: string, name: string, listMode = 'discovery'): TierRow {
+  return { id, expansion_id: expansionId, name, list_mode: listMode }
 }
+
+const NEEDS_PER_TIER = 145
+
+const THREE_KNOWN_E2: TierRow[] = [
+  tier('t-a', 'e2', 'Barrow Deeps', 'known'),
+  tier('t-b', 'e2', 'Hyjal Summit', 'known'),
+  tier('t-c', 'e2', "Onyxia's Lair", 'known'),
+]
 
 const THREE_TIERS_E2: TierRow[] = [
   tier('t-a', 'e2', 'Barrow Deeps'),
@@ -448,7 +456,7 @@ describe('runForeverSync apply', () => {
     expect(dry.expansions.every(entry => entry.toInsert.length === 0)).toBe(true)
   })
 
-  it('never issues an update, delete or upsert', async () => {
+  it('[D-05] issues no write other than the Discovery flip and the inserts', async () => {
     const fake = createFakeClient({
       expansions: TWO_EXPANSIONS,
       tiers: [...THREE_TIERS_E2, tier('t-x', 'e1', 'Officer Made Raid')],
@@ -458,6 +466,109 @@ describe('runForeverSync apply', () => {
 
     expect(report.failures).toEqual([])
     expect(namesFor(fake, 'e1')).toContain('Officer Made Raid')
+  })
+})
+
+describe('runForeverSync Discovery backfill', () => {
+  const ONE_FOREVER: ExpansionRow[] = [{ id: 'e2', guild_id: 'g2', name: 'Forever' }]
+
+  it('[D-05] a dry run over three known tiers with no needs reports 3 to switch and 435 need rows, and writes nothing', async () => {
+    const fake = createFakeClient({ expansions: ONE_FOREVER, tiers: THREE_KNOWN_E2 })
+
+    const report = await runForeverSync(fake.client, { apply: false })
+
+    expect(report.expansions).toHaveLength(1)
+    expect(report.expansions[0].tiersToFlip).toBe(3)
+    expect(report.expansions[0].needRowsToInsert).toBe(3 * NEEDS_PER_TIER)
+    expect(fake.flips()).toEqual([])
+    expect(fake.needInserts()).toEqual([])
+    expect(fake.needs).toHaveLength(0)
+    expect(fake.tiers.map(row => row.list_mode)).toEqual(['known', 'known', 'known'])
+
+    const text = formatForeverSyncReport(report)
+    const expansionLine = text.split('\n').find(line => line.startsWith('e2 '))
+    expect(expansionLine?.endsWith(', switch 3 to Discovery, need rows would insert 435')).toBe(true)
+    const totals = text.split('\n').at(-1) as string
+    expect(totals).toContain('tiers switched to Discovery 3')
+    expect(totals).toContain('need rows would insert 435')
+    expect(text).not.toContain(EM_DASH)
+  })
+
+  it('[D-05] apply switches the tiers and seeds the needs, then a dry run reports zero of each', async () => {
+    const fake = createFakeClient({ expansions: ONE_FOREVER, tiers: THREE_KNOWN_E2 })
+
+    const applied = await runForeverSync(fake.client, { apply: true })
+
+    expect(applied.failures).toEqual([])
+    expect(applied.expansions[0].tiersToFlip).toBe(3)
+    expect(applied.expansions[0].needRowsToInsert).toBe(3 * NEEDS_PER_TIER)
+    expect(fake.tiers.map(row => row.list_mode)).toEqual(['discovery', 'discovery', 'discovery'])
+    expect(fake.needs).toHaveLength(3 * NEEDS_PER_TIER)
+    const appliedLine = formatForeverSyncReport(applied)
+      .split('\n')
+      .find(line => line.startsWith('e2 '))
+    expect(appliedLine?.endsWith(', switched 3 to Discovery, need rows inserted 435')).toBe(true)
+
+    const dry = await runForeverSync(fake.client, { apply: false })
+
+    expect(dry.expansions[0].tiersToFlip).toBe(0)
+    expect(dry.expansions[0].needRowsToInsert).toBe(0)
+    expect(fake.flips()).toHaveLength(1)
+    expect(fake.needInserts()).toHaveLength(1)
+    expect(syncExitCode(dry)).toBe(0)
+  })
+
+  it('an empty Forever expansion reports its three tiers and 435 need rows', async () => {
+    const fake = createFakeClient({ expansions: ONE_FOREVER })
+
+    const report = await runForeverSync(fake.client, { apply: false })
+
+    expect(report.expansions[0].toInsert).toHaveLength(3)
+    expect(report.expansions[0].tiersToFlip).toBe(0)
+    expect(report.expansions[0].needRowsToInsert).toBe(3 * NEEDS_PER_TIER)
+  })
+
+  it('header lines name the need rows and the Discovery switch for a dry run and an apply', async () => {
+    const fake = createFakeClient({ expansions: ONE_FOREVER, tiers: THREE_KNOWN_E2 })
+
+    const dry = formatForeverSyncReport(await runForeverSync(fake.client, { apply: false }))
+    const applied = formatForeverSyncReport(await runForeverSync(fake.client, { apply: true }))
+
+    expect(dry.split('\n')[0]).toBe(
+      'DRY RUN: nothing was written (pass --apply to insert missing tiers and need rows and switch Forever tiers to Discovery)'
+    )
+    expect(applied.split('\n')[0]).toBe(
+      'APPLIED: missing tiers and need rows were inserted and Forever tiers switched to Discovery (no row was deleted or renamed)'
+    )
+  })
+
+  it('[D-03] leaves a known tier that holds need rows alone and reports nothing to switch for it', async () => {
+    const fake = createFakeClient({
+      expansions: ONE_FOREVER,
+      tiers: [tier('t-a', 'e2', 'Barrow Deeps', 'known'), ...THREE_TIERS_E2.slice(1)],
+      needs: [{ raid_tier_id: 't-a', need_key: 'trinket.healing' }],
+    })
+
+    const report = await runForeverSync(fake.client, { apply: true })
+
+    expect(report.expansions[0].tiersToFlip).toBe(0)
+    expect(fake.tiers[0].list_mode).toBe('known')
+    expect(report.expansions[0].needRowsToInsert).toBe(2 * NEEDS_PER_TIER)
+  })
+
+  it('[D-21] never syncs a non-Forever expansion, even with known tiers', async () => {
+    const fake = createFakeClient({
+      expansions: [{ id: 'e-classic', guild_id: 'g3', name: 'Classic' }],
+      tiers: [tier('c1', 'e-classic', 'Molten Core', 'known')],
+    })
+
+    const report = await runForeverSync(fake.client, { apply: true })
+
+    expect(report.expansions).toEqual([])
+    expect(fake.flips()).toEqual([])
+    expect(fake.needInserts()).toEqual([])
+    expect(fake.tiers[0].list_mode).toBe('known')
+    expect([...new Set(fake.fromCalls)]).toEqual(['expansions'])
   })
 })
 
