@@ -51,6 +51,7 @@ import { resolveRaidDays } from '@/domain/raid-team/settings'
 import { paginatedSelect } from '@/utils/supabase/paginate'
 import { findInvalidCharacterIds } from '@/lib/loot/guild-award-refs'
 import { isActiveCompetitor, buildItemCompetition } from '@/domain/loot/item-competition'
+import { itemIdentityKey, wowheadIdForDisplay } from '@/domain/loot/item-identity'
 
 // Get next N raid dates from configured raid days
 function getNextRaidDates(raidDays: number[], timezone: string, count = 2): Date[] {
@@ -331,7 +332,7 @@ interface TiedCharacter {
 interface LootPriorityItem {
   item_id: string
   item_name: string
-  wowhead_id: number
+  wowhead_id: number | null // D-13: null for a need row (NeedLabel)
   character_name: string
   character_id: string
   rank: number
@@ -346,7 +347,7 @@ interface LootPriorityItem {
 interface ReceivedItem {
   id: string
   item_name: string
-  wowhead_id: number
+  wowhead_id: number | null // D-13: null for a need award (NeedLabel)
   boss_name: string
   classification: string
   awarded_date: string
@@ -439,7 +440,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
   const [lowCompetitionItems, setLowCompetitionItems] = useState<Array<{
     item_id: string
     item_name: string
-    wowhead_id: number
+    wowhead_id: number | null
     boss_name: string
     competitors: number
   }>>([])
@@ -1179,7 +1180,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
       // Fetch item details
       const { data: items } = await supabase
         .from('loot_items')
-        .select('id, name, wowhead_id, boss_name, classification, raid_tier_id, is_loot_council')
+        .select('id, name, wowhead_id, kind, boss_name, classification, raid_tier_id, is_loot_council')
         .in('id', itemIds)
 
       if (!items) {
@@ -1245,7 +1246,9 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
       const blpData: Record<string, number> = {}
       const competitionMap: Record<string, { totalWanting: number; userRank: number }> = {}
       let totalReceivedCount = 0
-      const receivedWowheadIds = new Set<number>()
+      // D-19: identity keys, so a need is skipped only when that exact need was
+      // awarded; items keep the wowhead_id key (every award of that wowhead is skipped).
+      const receivedIdentityKeys = new Set<string>()
       const prioritiesMap: Record<string, ItemPriority> = {}
 
       await Promise.all([
@@ -1361,11 +1364,11 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                 .select('id', { count: 'exact', head: true })
                 .eq('character_id', characterId)
                 .eq('guild_id', activeGuild.id),
-              paginatedSelect<{ loot_item: { wowhead_id: number } | null }>(
+              paginatedSelect<{ loot_item: { id: string; wowhead_id: number | null; kind: string | null } | null }>(
                 (start, end) =>
                   supabase
                     .from('loot_history')
-                    .select('loot_item:loot_items(wowhead_id)')
+                    .select('loot_item:loot_items(id, wowhead_id, kind)')
                     .eq('character_id', characterId)
                     .eq('guild_id', activeGuild.id)
                     .order('id', { ascending: true })
@@ -1374,8 +1377,9 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
             ])
             totalReceivedCount = countResult.count || 0
             for (const h of allAwards) {
-              if (h.loot_item?.wowhead_id != null) {
-                receivedWowheadIds.add(h.loot_item.wowhead_id)
+              const identityKey = itemIdentityKey(h.loot_item)
+              if (identityKey != null) {
+                receivedIdentityKeys.add(identityKey)
               }
             }
           } catch {
@@ -1402,7 +1406,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
       }
 
       // Collect all item/rank pairs we need to check for ties (BATCHED - avoids N+1)
-      type LootItemData = { id: string; name: string; wowhead_id: number; boss_name: string; classification: string | null; raid_tier_id: string }
+      type LootItemData = { id: string; name: string; wowhead_id: number | null; kind?: string | null; boss_name: string; classification: string | null; raid_tier_id: string }
       const itemRankPairs = filteredItems
         .map((item: LootItemData) => {
           const rank = bestRankByItemId.get(item.id)
@@ -1514,8 +1518,10 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
       }
 
       for (const item of filteredItems) {
-        // Skip items already received (matched by wowhead_id for cross-tier awards)
-        if (receivedWowheadIds.has(item.wowhead_id)) continue
+        // Skip items already received (matched by wowhead_id for cross-tier awards);
+        // a need is skipped only when that need was awarded (D-19)
+        const itemKey = itemIdentityKey(item)
+        if (itemKey != null && receivedIdentityKeys.has(itemKey)) continue
 
         // Use the character's best (highest) rank for this item — see comment
         // above bestRankByItemId.
@@ -1717,7 +1723,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
 
       // Quick Win 4: Low-competition items (not in top 5, 0-1 competitors)
       const topItemIds = new Set(topPriority.map(p => p.item_id))
-      const lowComp: Array<{ item_id: string; item_name: string; wowhead_id: number; boss_name: string; competitors: number }> = []
+      const lowComp: Array<{ item_id: string; item_name: string; wowhead_id: number | null; boss_name: string; competitors: number }> = []
       for (const item of filteredItems) {
         if (topItemIds.has(item.id)) continue
         if (item.is_loot_council) continue // LC items aren't competing
@@ -1756,6 +1762,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
             id,
             name,
             wowhead_id,
+            kind,
             boss_name,
             classification
           ),
@@ -1782,13 +1789,14 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
       type LootHistoryRow = {
         id: string
         awarded_date: string
-        loot_item?: { name?: string; wowhead_id?: number; boss_name?: string; classification?: string } | null
+        loot_item?: { name?: string; wowhead_id?: number | null; kind?: string | null; boss_name?: string; classification?: string } | null
         raid_tier?: { name?: string } | null
       }
       const transformedItems: ReceivedItem[] = (historyData as unknown as LootHistoryRow[]).map((h) => ({
         id: h.id,
         item_name: h.loot_item?.name || 'Unknown Item',
-        wowhead_id: h.loot_item?.wowhead_id || 0,
+        // D-13: null for a need award so ItemLink renders a NeedLabel, never item=0
+        wowhead_id: wowheadIdForDisplay(h.loot_item),
         boss_name: h.loot_item?.boss_name || 'Unknown Boss',
         classification: h.loot_item?.classification || 'Unlimited',
         awarded_date: h.awarded_date,
