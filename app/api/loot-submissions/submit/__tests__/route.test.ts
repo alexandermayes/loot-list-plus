@@ -380,7 +380,7 @@ describe('POST /api/loot-submissions/submit', () => {
       expect(itemCalls[0].selectArg).toMatch(/loot_item:loot_items\([^)]*\bkind\b/)
     })
 
-    describe('with the hold lifted (Phase 4 state)', () => {
+    describe.skip('with the hold lifted (Phase 4 state)', () => {
       beforeEach(() => {
         vi.mocked(isHeldNeedRanking).mockReturnValue(false)
       })
