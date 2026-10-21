@@ -1275,11 +1275,13 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
   // Build set of character IDs that already received the selected item
   const candidateReceivedIds = useMemo(() => {
     if (!candidateModalData) return new Set<string>()
-    const wowheadId = candidateModalData.item.wowhead_id
+    // D-19: the key is the item's identity (wowhead id for items, 'need:<id>' for needs)
+    const identity = itemIdentityKey(candidateModalData.item)
     const ids = new Set<string>()
-    // Keys are `${character_id}-${wowhead_id}` — match candidates by checking their specific key
+    if (identity == null) return ids
+    // Keys are `${character_id}-${identity}` — match candidates by checking their specific key
     for (const r of candidateModalData.rankings) {
-      const key = `${r.character_id}-${wowheadId}`
+      const key = `${r.character_id}-${identity}`
       if (lootReceivedCounts.has(key)) {
         ids.add(r.character_id)
       }
@@ -1305,6 +1307,8 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
       .from('loot_items')
       .select('id, name, boss_name, item_slot, wowhead_id, is_loot_council')
       .eq('raid_tier_id', tierId)
+      // D-14: the Gargul import is item-only (a need has no wowhead id to match on)
+      .eq('kind', 'item')
       .eq('is_available', true)
       .order('boss_name')
       .order('name')
@@ -1556,10 +1560,10 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
       // SSC + TK), and one award would drop the raider from both blocks.
       const [tierResults, lootHistoryData] = await Promise.all([
         Promise.all(raidTiers.map(tier => fetchTierRankings(tier.id))),
-        paginatedSelect<{ character_id: string; loot_item: { wowhead_id: number } | null }>((start, end) =>
+        paginatedSelect<{ character_id: string; loot_item: { id: string; wowhead_id: number | null; kind: string | null } | null }>((start, end) =>
           supabase
             .from('loot_history')
-            .select('character_id, loot_item:loot_items(wowhead_id)')
+            .select('character_id, loot_item:loot_items(id, wowhead_id, kind)')
             .eq('guild_id', guildId)
             .order('id', { ascending: true })
             .range(start, end)
@@ -1568,9 +1572,11 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
 
       const receivedByCharAndWowhead = new Map<string, number>()
       for (const h of lootHistoryData) {
-        const wowheadId = h.loot_item?.wowhead_id
-        if (wowheadId == null) continue
-        const key = `${h.character_id}-${wowheadId}`
+        // D-19: identical strings for items; a need award keys on 'need:<id>',
+        // which no item-only export row carries, so it never skips an item.
+        const identity = itemIdentityKey(h.loot_item)
+        if (identity == null) continue
+        const key = `${h.character_id}-${identity}`
         receivedByCharAndWowhead.set(key, (receivedByCharAndWowhead.get(key) || 0) + 1)
       }
 
