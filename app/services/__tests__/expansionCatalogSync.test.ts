@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { planCatalogSync, syncExpansionCatalog } from '../expansionCatalogSync'
 import { FOREVER_MANIFEST } from '@/data/expansions/forever/manifest'
 import type { ManifestRaid } from '@/domain/expansion/manifest-schema'
+import { NEED_DEFINITIONS } from '@/domain/loot/needs'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySupabase = any
@@ -242,9 +243,24 @@ function createCatalogFake(
 
 const EXP = 'exp-1'
 
+// Stored tiers default to 'discovery' so the older scenarios stay about tier matching;
+// the Discovery scenarios below set list_mode on purpose.
 function tierRow(id: string, name: string, extra: Record<string, unknown> = {}): FakeRow {
-  return { id, expansion_id: EXP, name, ...extra }
+  return { id, expansion_id: EXP, name, list_mode: 'discovery', ...extra }
 }
+
+function needRow(tierId: string, key: string): StoredNeed {
+  return { id: `n-${tierId}-${key}`, raid_tier_id: tierId, need_key: key, kind: 'need' }
+}
+
+const ALL_KEYS = NEED_DEFINITIONS.map(definition => definition.key)
+const FULL = ALL_KEYS.length
+
+const THREE_KNOWN = [
+  tierRow('t1', 'Barrow Deeps', { list_mode: 'known' }),
+  tierRow('t2', 'Hyjal Summit', { list_mode: 'known' }),
+  tierRow('t3', "Onyxia's Lair", { list_mode: 'known' }),
+]
 
 const EXPECTED_ROWS = [
   {
@@ -491,7 +507,7 @@ describe('syncExpansionCatalog', () => {
   })
 
   it.each(['Classic', 'forever', '', 'constructor'])(
-    'throws before any from() call for the name %j (D-11)',
+    '[D-21] throws before any from() call for the name %j',
     async name => {
       const fake = createCatalogFake()
 
@@ -503,12 +519,13 @@ describe('syncExpansionCatalog', () => {
     }
   )
 
-  it('never calls update, delete or upsert in any scenario', async () => {
+  it('[D-05] makes no write other than the Discovery flip in any scenario', async () => {
     const scenarios: FakeRow[][] = [
       [],
       [tierRow('t1', 'Barrow Deeps')],
       [tierRow('t1', 'Onyxia’s Lair'), tierRow('t2', 'Custom Raid')],
       [tierRow('t1', 'Barrow Deeps'), tierRow('t2', 'Barrow Deeps')],
+      THREE_KNOWN,
     ]
     for (const initial of scenarios) {
       const fake = createCatalogFake(initial)
@@ -520,6 +537,172 @@ describe('syncExpansionCatalog', () => {
       })
       expect(fake.writes()).toEqual([])
     }
+  })
+})
+
+describe('syncExpansionCatalog Discovery flip and need rows', () => {
+  const run = (fake: ReturnType<typeof createCatalogFake>, dryRun = false) =>
+    syncExpansionCatalog(fake.supabase, { expansionId: EXP, expansionName: 'Forever', dryRun })
+
+  it('[D-05] switches three known, need-less tiers to Discovery with one filtered update, then seeds 435 rows in one insert', async () => {
+    const fake = createCatalogFake(THREE_KNOWN)
+
+    const result = await run(fake)
+
+    expect(result.tiersFlipped).toBe(3)
+    expect(result.needRowsInserted).toBe(3 * FULL)
+    expect(result.inserted).toEqual([])
+    expect(fake.flips()).toEqual([
+      { table: 'raid_tiers', method: 'update', args: [{ list_mode: 'discovery' }] },
+    ])
+    expect(fake.calls).toContainEqual({
+      table: 'raid_tiers',
+      method: 'in',
+      args: ['id', ['t1', 't2', 't3']],
+    })
+    expect(fake.calls).toContainEqual({
+      table: 'raid_tiers',
+      method: 'eq',
+      args: ['list_mode', 'known'],
+    })
+    expect(fake.rows.map(row => row.list_mode)).toEqual(['discovery', 'discovery', 'discovery'])
+    expect(fake.needInserts()).toHaveLength(1)
+    expect(fake.needs).toHaveLength(3 * FULL)
+    // [D-17] the flip lands before the first need row (the fake refuses a need row in a Known tier).
+    expect(fake.firstIndex('raid_tiers', 'update')).toBeLessThan(
+      fake.firstIndex('loot_items', 'insert')
+    )
+    expect(fake.inserts()).toHaveLength(0)
+  })
+
+  it('[EXPN-05 idempotent] a second run flips nothing, inserts nothing and leaves the rows deep-equal', async () => {
+    const fake = createCatalogFake(THREE_KNOWN)
+    await run(fake)
+    const rowsAfterFirst = structuredClone(fake.rows)
+    const needsAfterFirst = structuredClone(fake.needs)
+
+    const second = await run(fake)
+
+    expect(second.tiersFlipped).toBe(0)
+    expect(second.needRowsInserted).toBe(0)
+    expect(fake.flips()).toHaveLength(1)
+    expect(fake.needInserts()).toHaveLength(1)
+    expect(fake.rows).toEqual(rowsAfterFirst)
+    expect(fake.needs).toEqual(needsAfterFirst)
+  })
+
+  it('[D-03] a known tier that already holds need rows is neither flipped nor seeded', async () => {
+    const fake = createCatalogFake(
+      [tierRow('t1', 'Barrow Deeps', { list_mode: 'known' }), tierRow('t2', 'Hyjal Summit'), tierRow('t3', "Onyxia's Lair")],
+      { initialNeeds: [needRow('t1', ALL_KEYS[0])] }
+    )
+
+    const result = await run(fake)
+
+    expect(result.tiersFlipped).toBe(0)
+    expect(fake.rows[0].list_mode).toBe('known')
+    expect(fake.flips()).toEqual([])
+    // Only the two Discovery tiers are seeded.
+    expect(result.needRowsInserted).toBe(2 * FULL)
+    expect(fake.needs.filter(need => need.raid_tier_id === 't1')).toHaveLength(1)
+  })
+
+  it('[D-05] a Discovery tier missing two keys gets exactly those two', async () => {
+    const missing = [ALL_KEYS[3], ALL_KEYS[40]]
+    const fake = createCatalogFake(
+      [tierRow('t1', 'Barrow Deeps'), tierRow('t2', 'Hyjal Summit'), tierRow('t3', "Onyxia's Lair")],
+      {
+        initialNeeds: [
+          ...ALL_KEYS.filter(key => !missing.includes(key)).map(key => needRow('t1', key)),
+          ...ALL_KEYS.map(key => needRow('t2', key)),
+          ...ALL_KEYS.map(key => needRow('t3', key)),
+        ],
+      }
+    )
+
+    const result = await run(fake)
+
+    expect(result.tiersFlipped).toBe(0)
+    expect(result.needRowsInserted).toBe(2)
+    const payload = fake.needInserts()[0].args[0] as Array<{ raid_tier_id: string; need_key: string }>
+    expect(payload.map(row => [row.raid_tier_id, row.need_key])).toEqual([
+      ['t1', missing[0]],
+      ['t1', missing[1]],
+    ])
+    expect(fake.flips()).toEqual([])
+  })
+
+  it('[D-05] a duplicate manifest tier and an unmatched custom tier are neither flipped nor seeded', async () => {
+    const fake = createCatalogFake([
+      tierRow('t1', 'Barrow Deeps', { list_mode: 'known' }),
+      tierRow('t2', 'Barrow Deeps', { list_mode: 'known' }),
+      tierRow('t3', 'Custom Raid', { list_mode: 'known' }),
+      tierRow('t4', 'Hyjal Summit'),
+      tierRow('t5', "Onyxia's Lair"),
+    ])
+
+    const result = await run(fake)
+
+    expect(result.tiersFlipped).toBe(1)
+    expect(fake.rows.map(row => [row.id, row.list_mode])).toEqual([
+      ['t1', 'discovery'],
+      ['t2', 'known'],
+      ['t3', 'known'],
+      ['t4', 'discovery'],
+      ['t5', 'discovery'],
+    ])
+    const seededTiers = new Set(fake.needs.map(need => need.raid_tier_id))
+    expect([...seededTiers].sort()).toEqual(['t1', 't4', 't5'])
+  })
+
+  it('[D-05] seeds a missing raid tier and flips a known one in the same run, tier insert then flip then seed', async () => {
+    const fake = createCatalogFake([
+      tierRow('t1', 'Barrow Deeps', { list_mode: 'known' }),
+      tierRow('t2', 'Hyjal Summit'),
+    ])
+
+    const result = await run(fake)
+
+    expect(result.inserted.map(row => row.name)).toEqual(["Onyxia's Lair"])
+    expect(result.tiersFlipped).toBe(1)
+    expect(result.needRowsInserted).toBe(3 * FULL)
+    expect(fake.firstIndex('raid_tiers', 'insert')).toBeLessThan(fake.firstIndex('raid_tiers', 'update'))
+    expect(fake.firstIndex('raid_tiers', 'update')).toBeLessThan(fake.firstIndex('loot_items', 'insert'))
+    expect(fake.needInserts()).toHaveLength(1)
+  })
+
+  it('dryRun writes nothing and reports the counts the real run would produce', async () => {
+    const fake = createCatalogFake(THREE_KNOWN)
+
+    const result = await run(fake, true)
+
+    expect(result.dryRun).toBe(true)
+    expect(result.tiersFlipped).toBe(3)
+    expect(result.needRowsInserted).toBe(3 * FULL)
+    expect(fake.flips()).toEqual([])
+    expect(fake.needInserts()).toEqual([])
+    expect(fake.inserts()).toEqual([])
+    expect(fake.rows.map(row => row.list_mode)).toEqual(['known', 'known', 'known'])
+
+    const empty = createCatalogFake()
+    const emptyResult = await run(empty, true)
+    expect(emptyResult.needRowsInserted).toBe(3 * FULL)
+    expect(emptyResult.tiersFlipped).toBe(0)
+    expect(empty.calls.filter(c => ['insert', 'update'].includes(c.method))).toEqual([])
+  })
+
+  it('throws with the label on a need-key read error and writes nothing', async () => {
+    const fake = createCatalogFake(THREE_KNOWN, { needReadError: 'boom' })
+
+    await expect(run(fake)).rejects.toThrow('Failed to read loot_items need keys: boom')
+    expect(fake.flips()).toEqual([])
+    expect(fake.needInserts()).toEqual([])
+  })
+
+  it('throws with the tier ids on a need-row insert error', async () => {
+    const fake = createCatalogFake([], { needInsertError: 'nope' })
+
+    await expect(run(fake)).rejects.toThrow(/Failed to insert need rows for raid tiers tier-new-1, tier-new-2, tier-new-3: nope/)
   })
 })
 
@@ -565,5 +748,15 @@ describe('expansionCatalogSync source', () => {
       .replace(/\/\/.*$/gm, '')
 
     expect(/\.(update|delete|upsert)\(/.test(source)).toBe(false)
+  })
+
+  it('[D-05] the seeder file has exactly one update, the Discovery flip, and no delete or upsert', () => {
+    const source = readFileSync(join(process.cwd(), 'app/services/need-row-seeder.ts'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/\/\/.*$/gm, '')
+
+    expect(source.match(/\.update\(/g) ?? []).toHaveLength(1)
+    expect(source).toContain(".update({ list_mode: 'discovery' })")
+    expect(/\.(delete|upsert)\(/.test(source)).toBe(false)
   })
 })
