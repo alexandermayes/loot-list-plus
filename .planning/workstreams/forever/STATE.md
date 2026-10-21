@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 03
 current_phase_name: Discovery Schema and Need Pipeline
 status: executing
-stopped_at: Completed 03-11-PLAN.md
-last_updated: "2026-10-21T22:07:00.381Z"
+stopped_at: Completed 03-16-PLAN.md
+last_updated: "2026-10-21T22:15:18.243Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 03 execution started
-state_head: bd9cde2bb66d5948b8fda8c78baefaa092d8e23a
+state_head: 26969c2fecb13b9a71219d705d6f30be703d30d3
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 41
-  completed_plans: 34
+  completed_plans: 35
   percent: 25
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 03 (Discovery Schema and Need Pipeline) — EXECUTING
-Plan: 13 of 19
+Plan: 14 of 19
 Status: Ready to execute
 Last activity: 2026-10-20 — Phase 03 execution started
 
@@ -104,6 +104,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 | Phase 03 P09 | 3 min | 2 tasks | 4 files |
 | Phase 03 P10 | 9 min | 3 tasks | 10 files |
 | Phase 03 P11 | 8 min | 2 tasks | 6 files |
+| Phase 03 P16 | 12 min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -147,6 +148,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 - [Phase 03]: 03-09: submit route refuses any need row with 422 before any write through one predicate (isHeldNeedRanking) and already excludes need rows from bracket rules with need copy caps — Phase 4 deletes one call, one module and one trigger; the hold reads every loaded row so a need in a turned-off tier is still refused
 - [Phase 03]: 03-10: master sheet, Summary and Raid Mode show only needs someone ranked, read by tier with need ids in the POST body and only ranked need ids in a second BLP GET; receive skips and award counts key by itemIdentityKey — A tier with 145 unranked seeded needs adds no row (D-02); Phase 4 stops calling keepRankedNeedRows in loadAllRankings; LootListAggregateItem.wowhead_id widened to number | null
 - [Phase 03]: 03-11: need awards skip awarded gear with one need-skip warning per request, come back from loot history with a null wowhead id, and the dashboard skips received needs by identity key; RaidLootEntry.item_wowhead_id widened to number | null — A need award names no real item until the Desk writes awarded_item_id (D-15); null lets ItemLink render a NeedLabel instead of an item=0 link. Open for Phase 5: editing a raid event deletes and re-imports loot from wowhead lines, which would drop need awards
+- [Phase 03]: 03-16: reserve run creation refuses Discovery and missing tiers (400 RESERVES_UNAVAILABLE_ERROR, 500 on tier read error) and the reserve tier list shows Known only; admin sheet import reads kind item only — The tier read sits after membership and Premium checks so Known responses are unchanged; the kind filter is the service-role guard because the database refuses need-row writes only for browser sessions (D-14). Reserve copy is proposed for the owner's Oct 26 sign-off
 
 ### Pending Owner Inputs
 
@@ -174,6 +176,6 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 
 ## Session Continuity
 
-Last session: 2026-10-21T22:07:00.251Z
-Stopped at: Completed 03-11-PLAN.md
+Last session: 2026-10-21T22:15:18.079Z
+Stopped at: Completed 03-16-PLAN.md
 Resume file: None
