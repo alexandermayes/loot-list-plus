@@ -148,7 +148,7 @@ Plans:
   3. A need-ranked submission moves through approval, snapshot, master sheet, exports and BLP without being silently dropped or crashing any reader; every reader has a tested mode branch, and addon exports contain item rows only
   4. A raider ranked on a need who attends a raid accrues bad-luck protection for that need before any item for it exists, and recomputing BLP twice gives the same result
 
-**Plans**: 10/19 plans executed in 7 waves, shipped as 4 PRs (PR 1 migration-only, plans 03-01 and 03-15; PR 2 pure need primitives, 03-03 to 03-05; PR 3 need readers after the PR 1 deploy, 03-06 to 03-12 and 03-16 to 03-19; PR 4 seeding and list mode after PR 3 deploys, 03-13 and 03-14, then the owner's `sync:forever` backfill). Plans 03-15 to 03-19 were split out at plan check and keep the next free numbers so no existing plan or threat id changed; waves carry the order.
+**Plans**: 11/19 plans executed in 7 waves, shipped as 4 PRs (PR 1 migration-only, plans 03-01 and 03-15; PR 2 pure need primitives, 03-03 to 03-05; PR 3 need readers after the PR 1 deploy, 03-06 to 03-12 and 03-16 to 03-19; PR 4 seeding and list mode after PR 3 deploys, 03-13 and 03-14, then the owner's `sync:forever` backfill). Plans 03-15 to 03-19 were split out at plan check and keep the next free numbers so no existing plan or threat id changed; waves carry the order.
 
 Plans:
 **Wave 1**
@@ -172,7 +172,7 @@ Plans:
 - [x] 03-07-PLAN.md (wave 4): raider picker holds needs back behind includeNeeds; BIS and officer item editors exclude or refuse need rows (DISC-06)
 - [x] 03-08-PLAN.md (wave 4): soft-reserve item reads, join and awards exclude needs (DISC-06)
 - [x] 03-09-PLAN.md (wave 4): D-22 hold in the submit route through one pure predicate, plus the need branch for bracket rules and copy caps behind it (DISC-06)
-- [ ] 03-10-PLAN.md (wave 4): master sheet and Summary show ranked needs only under "Needs" with identity-keyed skips; Raid Mode guard (DISC-06)
+- [x] 03-10-PLAN.md (wave 4): master sheet and Summary show ranked needs only under "Needs" with identity-keyed skips; Raid Mode guard (DISC-06)
 - [ ] 03-11-PLAN.md (wave 4): award history screens and character gear handle need awards (DISC-06)
 - [ ] 03-16-PLAN.md (wave 4): no reserve runs on Discovery tiers, Known-only reserve tier list, item-only admin sheet import with its first test (DISC-06)
 - [ ] 03-17-PLAN.md (wave 4): approval, snapshot, revert, removal, counts and visibility proven with need-ranked fixtures past the hold (DISC-06)
@@ -323,7 +323,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Forever Defect and Privacy Fixes | 9/9 | Complete    | 2026-10-13 |
 | 2. Expansion Onboarding Manifest | 13/13 | Complete    | 2026-10-19 |
-| 3. Discovery Schema and Need Pipeline | 10/19 | In Progress|  |
+| 3. Discovery Schema and Need Pipeline | 11/19 | In Progress|  |
 | 4. Discovery Lists and Score Split | 0/TBD | Not started | - |
 | 5. Drop Desk Core | 0/TBD | Not started | - |
 | 6. Live Raid Night | 0/TBD | Not started | - |
