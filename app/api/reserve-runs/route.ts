@@ -86,6 +86,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Discovery tiers have no items to reserve (D-14). Proposed copy, held for
+// the owner's Oct 26 sign-off.
+const RESERVES_UNAVAILABLE_ERROR = 'Soft reserves are not available for this raid.'
+
 /**
  * POST /api/reserve-runs
  *
@@ -154,6 +158,23 @@ export async function POST(request: NextRequest) {
     // Premium feature (guilds with pre-cutoff runs are grandfathered)
     const access = await requireReserveAccess(serviceSupabase, user.id, guild_id)
     if (!access.allowed) return access.error
+
+    // D-14: only Known tiers can hold a reserve run. A tier that is missing
+    // fails closed the same way as a Discovery tier.
+    const { data: tier, error: tierError } = await serviceSupabase
+      .from('raid_tiers')
+      .select('id, list_mode')
+      .eq('id', raid_tier_id)
+      .maybeSingle()
+
+    if (tierError) {
+      console.error('Error reading raid tier for reserve run:', tierError)
+      return NextResponse.json({ error: 'Failed to create run' }, { status: 500 })
+    }
+
+    if (!tier || tier.list_mode !== 'known') {
+      return NextResponse.json({ error: RESERVES_UNAVAILABLE_ERROR }, { status: 400 })
+    }
 
     // Build rule snapshot
     const rule_snapshot = {

@@ -63,6 +63,39 @@ describe('GET /api/reserve-runs/raid-tiers', () => {
     expect(tables).toEqual(['expansions'])
   })
 
+  // D-14: a Discovery tier holds no items to reserve, so the reserve tier
+  // list shows Known tiers only.
+  it('lists only Known tiers: the raid_tiers read filters list_mode to known', async () => {
+    const eqCalls: Array<[string, unknown]> = []
+    const tierRows = [{ id: 'tier-1', name: 'Tier 1', phase: 1 }]
+    const tiersBuilder: Record<string, unknown> = {}
+    tiersBuilder.eq = vi.fn((col: string, val: unknown) => {
+      eqCalls.push([col, val])
+      return tiersBuilder
+    })
+    tiersBuilder.order = vi.fn(() => tiersBuilder)
+    tiersBuilder.then = (resolve: (v: unknown) => unknown) =>
+      Promise.resolve({ data: tierRows, error: null }).then(resolve)
+    const expansionsBuilder = {
+      eq: () => ({ limit: () => Promise.resolve({ data: [{ id: 'exp-1' }], error: null }) }),
+    }
+    const client = {
+      from: (table: string) => ({
+        select: () => (table === 'expansions' ? expansionsBuilder : tiersBuilder),
+      }),
+    }
+    vi.mocked(createServiceRoleClient).mockReturnValue(
+      client as unknown as ReturnType<typeof createServiceRoleClient>
+    )
+
+    const res = await GET(tiersRequest('Classic'))
+
+    expect(res.status).toBe(200)
+    expect(eqCalls).toContainEqual(['expansion_id', 'exp-1'])
+    expect(eqCalls).toContainEqual(['list_mode', 'known'])
+    expect((await res.json()).tiers).toEqual(tierRows)
+  })
+
   it('has no public slug for Forever', () => {
     expect(getExpansionSlug('Forever')).toBeNull()
   })
