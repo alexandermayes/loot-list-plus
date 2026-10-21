@@ -368,6 +368,12 @@ export const NEED_READERS: readonly NeedReader[] = [
     test: 'app/api/prio-list/__tests__/route.test.ts',
   },
   {
+    file: 'app/api/raid-tiers/route.ts',
+    dispositions: ['branch'],
+    plan: '03-14',
+    note: 'reads the tier\'s need rows to decide the D-03 switch',
+  },
+  {
     file: 'app/api/reserve-runs/[id]/awards/route.ts',
     dispositions: ['exclude'],
     plan: '03-08',
