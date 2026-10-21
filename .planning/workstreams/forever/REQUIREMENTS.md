@@ -29,7 +29,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Discovery lists
 
-- [ ] **DISC-01**: Officer can set a raid tier's list mode to Discovery; existing tiers stay Known with unchanged scores (golden fixtures)
+- [x] **DISC-01**: Officer can set a raid tier's list mode to Discovery; existing tiers stay Known with unchanged scores (golden fixtures)
 - [ ] **DISC-02**: Raider in a Discovery guild fills one five-row, one-column need picker (slot, armour class where it matters, stat family) in under 60 seconds on a phone
 - [ ] **DISC-03**: Raider sees a points budget as one sentence and cannot exceed it (weapons and trinkets Reserved, jewellery and tier Limited, others Unlimited)
 - [ ] **DISC-04**: Raider gets a spec-based default list and can accept it with one tap ("Looks right")
@@ -137,7 +137,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXPN-04 | Phase 2 | Complete |
 | EXPN-05 | Phase 2 | Complete |
 | EXPN-06 | Phase 2 | Complete |
-| DISC-01 | Phase 3 | Pending |
+| DISC-01 | Phase 3 | Complete |
 | DISC-02 | Phase 4 | Pending |
 | DISC-03 | Phase 4 | Pending |
 | DISC-04 | Phase 4 | Pending |
