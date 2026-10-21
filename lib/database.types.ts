@@ -1212,6 +1212,7 @@ export type Database = {
           award_copy: number
           awarded_by: string | null
           awarded_date: string
+          awarded_item_id: string | null
           character_id: string | null
           character_name: string | null
           created_at: string | null
@@ -1230,6 +1231,7 @@ export type Database = {
           award_copy?: number
           awarded_by?: string | null
           awarded_date?: string
+          awarded_item_id?: string | null
           character_id?: string | null
           character_name?: string | null
           created_at?: string | null
@@ -1248,6 +1250,7 @@ export type Database = {
           award_copy?: number
           awarded_by?: string | null
           awarded_date?: string
+          awarded_item_id?: string | null
           character_id?: string | null
           character_name?: string | null
           created_at?: string | null
@@ -1346,6 +1349,55 @@ export type Database = {
           },
         ]
       }
+      loot_item_need_pins: {
+        Row: {
+          created_at: string
+          guild_id: string
+          id: string
+          item_id: string
+          need_id: string
+          pinned_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          guild_id: string
+          id?: string
+          item_id: string
+          need_id: string
+          pinned_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          guild_id?: string
+          id?: string
+          item_id?: string
+          need_id?: string
+          pinned_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loot_item_need_pins_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loot_item_need_pins_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "loot_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loot_item_need_pins_need_id_fkey"
+            columns: ["need_id"]
+            isOneToOne: false
+            referencedRelation: "loot_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loot_items: {
         Row: {
           allocation_cost: number | null
@@ -1359,7 +1411,9 @@ export type Database = {
           is_loot_council: boolean
           item_slot: string | null
           item_type: string | null
+          kind: string
           name: string
+          need_key: string | null
           notes: string | null
           officer_notes: string | null
           primary_stat: string | null
@@ -1380,7 +1434,9 @@ export type Database = {
           is_loot_council?: boolean
           item_slot?: string | null
           item_type?: string | null
+          kind?: string
           name: string
+          need_key?: string | null
           notes?: string | null
           officer_notes?: string | null
           primary_stat?: string | null
@@ -1401,7 +1457,9 @@ export type Database = {
           is_loot_council?: boolean
           item_slot?: string | null
           item_type?: string | null
+          kind?: string
           name?: string
+          need_key?: string | null
           notes?: string | null
           officer_notes?: string | null
           primary_stat?: string | null
@@ -1797,6 +1855,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_guild_active: boolean
+          list_mode: string
           master_sheet_visible: boolean | null
           name: string
           phase: number | null
@@ -1808,6 +1867,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_guild_active?: boolean
+          list_mode?: string
           master_sheet_visible?: boolean | null
           name: string
           phase?: number | null
@@ -1819,6 +1879,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_guild_active?: boolean
+          list_mode?: string
           master_sheet_visible?: boolean | null
           name?: string
           phase?: number | null
