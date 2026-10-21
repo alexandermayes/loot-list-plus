@@ -5,16 +5,16 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 03
 current_phase_name: Discovery Schema and Need Pipeline
 status: executing
-stopped_at: Completed 03-07-PLAN.md
-last_updated: "2026-10-21T21:44:34.756Z"
+stopped_at: Completed 03-08-PLAN.md
+last_updated: "2026-10-21T21:47:49.615Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 03 execution started
-state_head: f37550dd3b4e1d9788d632a9bd65a27c86bbc2e2
+state_head: ca1c99580e44e56a4f5899b852012cfdd39743d6
 progress:
   total_phases: 8
   completed_phases: 2
   total_plans: 41
-  completed_plans: 30
+  completed_plans: 31
   percent: 25
 ---
 
@@ -34,7 +34,7 @@ Research: `.planning/research/SUMMARY.md`
 ## Current Position
 
 Phase: 03 (Discovery Schema and Need Pipeline) — EXECUTING
-Plan: 9 of 19
+Plan: 10 of 19
 Status: Ready to execute
 Last activity: 2026-10-20 — Phase 03 execution started
 
@@ -100,6 +100,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 | Phase 03 P02 | 1 day (owner checkpoint) | 3 tasks | 1 files |
 | Phase 03 P06 | 6 min | 3 tasks | 10 files |
 | Phase 03 P07 | 25 min | 3 tasks | 10 files |
+| Phase 03 P08 | 10 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -139,6 +140,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 - [Phase 03]: [03-02] database types hand-applied from gen:types hunks; generator output carried unrelated drift
 - [Phase 03]: [03-06] External consumers stay item-only: guild-data and bot /priority filter kind = item in the query, export-string filters in the tier flatten, need rankings and need BLP are skipped with one need-skip warning per request — The companion keys items by String(wowhead_id), so one need row would collide every need on null (D-14); a visible skip (D-16) keeps a need ranking from vanishing silently
 - [Phase 03]: 03-07: includeNeeds is a default-false option on fetchFilteredLootItems; need-row 400 on PATCH and specs follows the guild ownership check — Phase 4 flips one argument per caller with no data change; a need row of another guild still answers 404 and enforce_loot_item_need_rules stays the database backstop
+- [Phase 03]: 03-08: every reserve-run loot_items read filters kind = item at the query (public list, run detail, join list and submit check, awards check); a need id fails the existing membership checks so no new error text — Keeps Known-tier responses identical and the unauthenticated join route from ever listing or accepting a need row (D-14)
 
 ### Pending Owner Inputs
 
@@ -166,6 +168,6 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 
 ## Session Continuity
 
-Last session: 2026-10-21T21:44:34.645Z
-Stopped at: Completed 03-07-PLAN.md
+Last session: 2026-10-21T21:47:49.496Z
+Stopped at: Completed 03-08-PLAN.md
 Resume file: None
