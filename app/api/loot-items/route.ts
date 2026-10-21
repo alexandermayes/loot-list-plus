@@ -9,6 +9,7 @@ import {
   fetchFilteredLootItems,
   resolveTierIdsForPhases,
 } from '@/lib/loot-items-query'
+import { NEED_ROW_FIXED_ERROR, isNeedRow } from '@/domain/loot/item-identity'
 
 export const dynamic = 'force-dynamic'
 
@@ -176,7 +177,7 @@ export async function PATCH(request: NextRequest) {
     // Verify the item belongs to this guild (loot_items → raid_tiers → expansions → guild)
     const { data: item } = await serviceSupabase
       .from('loot_items')
-      .select('id, raid_tier_id')
+      .select('id, raid_tier_id, kind')
       .eq('id', item_id)
       .single()
 
@@ -202,6 +203,13 @@ export async function PATCH(request: NextRequest) {
           return NextResponse.json({ error: 'Item not found in this guild' }, { status: 404 })
         }
       }
+    }
+
+    // Need rows come only from the frozen taxonomy (D-12); their cost and class
+    // mirror are fixed too (D-06, D-08). Checked after the guild ownership
+    // check so a need row of another guild still answers 404.
+    if (isNeedRow(item)) {
+      return NextResponse.json({ error: NEED_ROW_FIXED_ERROR }, { status: 400 })
     }
 
     const { data, error } = await serviceSupabase
