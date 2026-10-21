@@ -411,6 +411,12 @@ export const NEED_READERS: readonly NeedReader[] = [
     note: 'legacy insert payload golden-pinned; column defaults',
   },
   {
+    file: 'app/services/need-row-seeder.ts',
+    dispositions: ['writer'],
+    plan: '03-13',
+    note: 'need rows from NEED_DEFINITIONS; one guarded list_mode flip',
+  },
+  {
     file: 'companion/src/main/addon-format.ts',
     dispositions: ['consumer'],
     plan: '03-06',

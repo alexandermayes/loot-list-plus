@@ -35,22 +35,34 @@ interface FakeOptions {
   failReads?: string[]
   /** Expansion ids whose raid_tiers read fails once a tier has been inserted for them. */
   failReadsAfterInsert?: string[]
+  /** Need rows already stored, as { raid_tier_id, need_key } (kind is always 'need'). */
+  needs?: Array<{ raid_tier_id: string; need_key: string }>
 }
 
 const EM_DASH = '—'
 
 /**
- * Fake service-role client with exactly two tables. expansions supports
+ * Fake service-role client with exactly three tables. expansions supports
  * select, eq, order and range and records each call's arguments so a test can
  * pin the exact query. raid_tiers is stateful: select and eq read, insert
- * appends, update, delete and upsert throw. Any other table throws, which is
- * how the privacy guarantee (no guilds or characters read) is enforced.
+ * appends (and can be followed by select), update succeeds only with exactly
+ * { list_mode: 'discovery' } and applies its in/eq filters, delete and upsert
+ * throw. loot_items serves the need-key read and a bulk need-row insert that is
+ * refused for a tier whose stored list_mode is not 'discovery', mirroring
+ * enforce_loot_item_need_rules. Any other table throws, which is how the
+ * privacy guarantee (no guilds or characters read) is enforced.
  */
 function createFakeClient(options: FakeOptions) {
   const tiers: TierRow[] = (options.tiers ?? []).map(row => ({ ...row }))
   const fromCalls: string[] = []
   const expansionCalls: Array<{ method: string; args: unknown[] }> = []
   const tierCalls: Array<{ method: string; args: unknown[] }> = []
+  const needCalls: Array<{ method: string; args: unknown[] }> = []
+  const needs: Array<{ id: string; raid_tier_id: string; need_key: string; kind: 'need' }> = (
+    options.needs ?? []
+  ).map((row, index) => ({ id: `seed-need-${index}`, kind: 'need' as const, ...row }))
+  const needInsertCalls: Array<Array<Record<string, unknown>>> = []
+  const flipCalls: unknown[] = []
   const insertedFor = new Set<string>()
   const tierSelectLog: Array<{ cols: string; expansionId: string | null }> = []
   let nextId = 1
@@ -93,10 +105,16 @@ function createFakeClient(options: FakeOptions) {
   function tiersBuilder() {
     let columns: string[] | null = null
     let expansionFilter: string | null = null
+    const eqFilters: Array<[string, unknown]> = []
+    let inFilter: { column: string; values: string[] } | null = null
+    let updating = false
     const forbidden = (method: string) => () => {
       tierCalls.push({ method, args: [] })
       throw new Error(`forbidden write: ${method}`)
     }
+    const matches = (row: TierRow) =>
+      eqFilters.every(([column, value]) => row[column] === value) &&
+      (!inFilter || inFilter.values.includes(row.id))
     const builder = {
       select(cols: string) {
         tierCalls.push({ method: 'select', args: [cols] })
@@ -106,23 +124,62 @@ function createFakeClient(options: FakeOptions) {
       eq(column: string, value: string) {
         tierCalls.push({ method: 'eq', args: [column, value] })
         if (column === 'expansion_id') expansionFilter = value
+        else eqFilters.push([column, value])
+        return builder
+      },
+      in(column: string, values: string[]) {
+        tierCalls.push({ method: 'in', args: [column, values] })
+        inFilter = { column, values }
         return builder
       },
       insert(payload: Array<Record<string, unknown>>) {
         tierCalls.push({ method: 'insert', args: [payload] })
+        const created: TierRow[] = []
         for (const row of payload) {
-          tiers.push({ id: `tier-new-${nextId++}`, ...row } as TierRow)
+          const stored = { id: `tier-new-${nextId++}`, ...row } as TierRow
+          tiers.push(stored)
+          created.push(stored)
           insertedFor.add(String(row.expansion_id))
         }
-        return Promise.resolve({ data: null, error: null })
+        return {
+          select(cols: string) {
+            tierCalls.push({ method: 'select', args: [cols] })
+            const wanted = cols.split(',').map(column => column.trim())
+            return Promise.resolve({
+              data: created.map(row => Object.fromEntries(wanted.map(column => [column, row[column]]))),
+              error: null,
+            })
+          },
+          then(
+            onFulfilled?: (value: { data: unknown; error: unknown }) => unknown,
+            onRejected?: (reason: unknown) => unknown
+          ) {
+            return Promise.resolve({ data: null, error: null }).then(onFulfilled, onRejected)
+          },
+        }
       },
-      update: forbidden('update'),
+      update(body: unknown) {
+        tierCalls.push({ method: 'update', args: [body] })
+        const isFlip =
+          typeof body === 'object' &&
+          body !== null &&
+          Object.keys(body).length === 1 &&
+          (body as { list_mode?: unknown }).list_mode === 'discovery'
+        if (!isFlip) throw new Error('forbidden write: update')
+        flipCalls.push(body)
+        updating = true
+        return builder
+      },
       delete: forbidden('delete'),
       upsert: forbidden('upsert'),
       then(
         onFulfilled?: (value: { data: unknown; error: unknown }) => unknown,
         onRejected?: (reason: unknown) => unknown
       ) {
+        if (updating) {
+          for (const row of tiers) if (matches(row)) row.list_mode = 'discovery'
+          return Promise.resolve({ data: null, error: null }).then(onFulfilled, onRejected)
+        }
         tierSelectLog.push({ cols: (columns ?? []).join(', '), expansionId: expansionFilter })
         const failing =
           expansionFilter !== null &&
@@ -146,11 +203,68 @@ function createFakeClient(options: FakeOptions) {
     return builder
   }
 
+  function needsBuilder() {
+    const eqFilters: Array<[string, unknown]> = []
+    let inFilter: { column: string; values: string[] } | null = null
+    const builder = {
+      select(cols: string) {
+        needCalls.push({ method: 'select', args: [cols] })
+        return builder
+      },
+      eq(column: string, value: unknown) {
+        needCalls.push({ method: 'eq', args: [column, value] })
+        eqFilters.push([column, value])
+        return builder
+      },
+      in(column: string, values: string[]) {
+        needCalls.push({ method: 'in', args: [column, values] })
+        inFilter = { column, values }
+        return builder
+      },
+      order(column: string, opts?: unknown) {
+        needCalls.push({ method: 'order', args: [column, opts] })
+        return builder
+      },
+      range(start: number, end: number) {
+        needCalls.push({ method: 'range', args: [start, end] })
+        const data = needs
+          .filter(row => eqFilters.every(([column, value]) => (row as never)[column] === value))
+          .filter(row => !inFilter || inFilter.values.includes((row as never)[inFilter.column]))
+          .slice(start, end + 1)
+        return Promise.resolve({ data, error: null })
+      },
+      insert(payload: Array<Record<string, unknown>>) {
+        needCalls.push({ method: 'insert', args: [payload] })
+        needInsertCalls.push(payload)
+        const refused = payload.find(
+          row => tiers.find(tier => tier.id === row.raid_tier_id)?.list_mode !== 'discovery'
+        )
+        if (refused) {
+          return Promise.resolve({
+            data: null,
+            error: { message: `need row refused for tier ${String(refused.raid_tier_id)}` },
+          })
+        }
+        for (const row of payload) {
+          needs.push({
+            id: `need-${needs.length}`,
+            raid_tier_id: row.raid_tier_id as string,
+            need_key: row.need_key as string,
+            kind: 'need',
+          })
+        }
+        return Promise.resolve({ data: null, error: null })
+      },
+    }
+    return builder
+  }
+
   const client: AnySupabase = {
     from(table: string) {
       fromCalls.push(table)
       if (table === 'expansions') return expansionsBuilder()
       if (table === 'raid_tiers') return tiersBuilder()
+      if (table === 'loot_items') return needsBuilder()
       throw new Error(`unexpected table: ${table}`)
     },
   }
@@ -160,7 +274,10 @@ function createFakeClient(options: FakeOptions) {
     tiers,
     fromCalls,
     expansionCalls,
+    needs,
     inserts: () => tierCalls.filter(call => call.method === 'insert'),
+    needInserts: () => needInsertCalls,
+    flips: () => flipCalls,
     tierSelects: () => tierSelectLog,
   }
 }
@@ -383,11 +500,11 @@ describe('runForeverSync duplicates', () => {
 
     await runForeverSync(fake.client, { apply: true })
 
-    // The tier fake records calls per builder; a re-read adds a second
-    // select('id, name') + eq('expansion_id', ...) pair after the insert.
+    // The sync reads id, name and list_mode; the duplicate re-read after the
+    // apply adds a second select('id, name') + eq('expansion_id', ...) pair.
     expect(namesFor(fake, 'e1')).toEqual(MANIFEST_NAMES)
     expect(fake.tierSelects()).toEqual([
-      { cols: 'id, name', expansionId: 'e1' },
+      { cols: 'id, name, list_mode', expansionId: 'e1' },
       { cols: 'id, name', expansionId: 'e1' },
     ])
   })
@@ -486,7 +603,7 @@ describe('runForeverSync privacy', () => {
     const applied = await runForeverSync(fake.client, { apply: true })
     const dry = await runForeverSync(fake.client, { apply: false })
 
-    expect([...new Set(fake.fromCalls)].sort()).toEqual(['expansions', 'raid_tiers'])
+    expect([...new Set(fake.fromCalls)].sort()).toEqual(['expansions', 'loot_items', 'raid_tiers'])
     for (const report of [applied, dry]) {
       const text = formatForeverSyncReport(report)
       for (const value of PLANTED) {

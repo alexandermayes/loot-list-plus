@@ -16,70 +16,183 @@ interface FakeRow {
   [column: string]: unknown
 }
 
+interface StoredNeed {
+  id: string
+  raid_tier_id: string
+  need_key: string
+  kind: 'need'
+}
+
+interface FakeCall {
+  table: string
+  method: string
+  args: unknown[]
+}
+
 /**
- * Stateful raid_tiers fake. select(cols).eq('expansion_id', id) resolves the
- * stored rows for that expansion; insert(array) appends rows with ids
- * tier-new-<n>. update, delete and upsert record the call and throw, so any
- * write other than an insert fails the scenario. Any other table throws.
+ * Stateful fake for the two tables the sync touches. raid_tiers: select(cols)
+ * .eq('expansion_id', id) resolves the stored rows for that expansion;
+ * insert(array) appends rows with ids tier-new-<n> and can be followed by
+ * select(); update succeeds only with exactly { list_mode: 'discovery' } and
+ * applies its in/eq filters to the stored rows (the one write the sync may
+ * make, D-05). loot_items: the need-key read (eq kind, in raid_tier_id, order,
+ * range) and a bulk insert that is refused, all or nothing, for a tier whose
+ * stored list_mode is not 'discovery', mirroring enforce_loot_item_need_rules
+ * (D-17). Every other write records the call and throws 'forbidden write', and
+ * any other table throws.
  */
-function createRaidTiersFake(
+function createCatalogFake(
   initialRows: FakeRow[] = [],
-  options: { readError?: string; insertError?: string } = {}
+  options: {
+    readError?: string
+    insertError?: string
+    needReadError?: string
+    needInsertError?: string
+    initialNeeds?: StoredNeed[]
+  } = {}
 ) {
   const rows: FakeRow[] = initialRows.map(row => ({ ...row }))
-  const calls: Array<{ method: string; args: unknown[] }> = []
+  const needs: StoredNeed[] = (options.initialNeeds ?? []).map(row => ({ ...row }))
+  const calls: FakeCall[] = []
   const fromCalls: string[] = []
   let nextId = 1
+  let nextNeedId = 1
 
-  function forbidden(method: string) {
-    return (...args: unknown[]) => {
-      calls.push({ method, args })
-      throw new Error(`forbidden write: ${method}`)
-    }
-  }
+  const isDiscoveryFlip = (body: unknown) =>
+    typeof body === 'object' &&
+    body !== null &&
+    Object.keys(body).length === 1 &&
+    (body as { list_mode?: unknown }).list_mode === 'discovery'
 
-  function buildBuilder() {
+  function buildBuilder(table: 'raid_tiers' | 'loot_items') {
     let selectedColumns: string[] | null = null
     let expansionFilter: string | null = null
+    const eqFilters: Array<[string, unknown]> = []
+    let inFilter: { column: string; values: string[] } | null = null
+    let updateBody: unknown = null
+
+    const project = (list: Array<Record<string, unknown>>) =>
+      list.map(row =>
+        selectedColumns ? Object.fromEntries(selectedColumns.map(column => [column, row[column]])) : row
+      )
+
+    const matches = (row: Record<string, unknown>) =>
+      eqFilters.every(([column, value]) => row[column] === value) &&
+      (!inFilter || inFilter.values.includes(row[inFilter.column] as string))
 
     const builder = {
       select(columns: string) {
-        calls.push({ method: 'select', args: [columns] })
+        calls.push({ table, method: 'select', args: [columns] })
         selectedColumns = columns.split(',').map(column => column.trim())
         return builder
       },
-      eq(column: string, value: string) {
-        calls.push({ method: 'eq', args: [column, value] })
-        if (column === 'expansion_id') expansionFilter = value
+      eq(column: string, value: unknown) {
+        calls.push({ table, method: 'eq', args: [column, value] })
+        if (column === 'expansion_id') expansionFilter = value as string
+        else eqFilters.push([column, value])
         return builder
       },
-      insert(payload: Array<Record<string, unknown>>) {
-        calls.push({ method: 'insert', args: [payload] })
-        if (options.insertError) {
-          return Promise.resolve({ data: null, error: { message: options.insertError } })
-        }
-        for (const row of payload) {
-          rows.push({ id: `tier-new-${nextId++}`, ...row } as FakeRow)
-        }
-        return Promise.resolve({ data: null, error: null })
+      in(column: string, values: string[]) {
+        calls.push({ table, method: 'in', args: [column, values] })
+        inFilter = { column, values }
+        return builder
       },
-      update: forbidden('update'),
-      delete: forbidden('delete'),
-      upsert: forbidden('upsert'),
+      order(column: string, opts?: unknown) {
+        calls.push({ table, method: 'order', args: [column, opts] })
+        return builder
+      },
+      range(start: number, end: number) {
+        calls.push({ table, method: 'range', args: [start, end] })
+        if (options.needReadError) {
+          return Promise.resolve({ data: null, error: { message: options.needReadError } })
+        }
+        const data = needs.filter(row => matches(row as never)).slice(start, end + 1)
+        return Promise.resolve({ data: project(data as never), error: null })
+      },
+      insert(payload: Array<Record<string, unknown>>) {
+        calls.push({ table, method: 'insert', args: [payload] })
+        let result: { data: unknown; error: { message: string } | null }
+        if (table === 'raid_tiers') {
+          if (options.insertError) {
+            result = { data: null, error: { message: options.insertError } }
+          } else {
+            const created = payload.map(row => ({ id: `tier-new-${nextId++}`, ...row }) as FakeRow)
+            rows.push(...created)
+            result = { data: created, error: null }
+          }
+        } else if (options.needInsertError) {
+          result = { data: null, error: { message: options.needInsertError } }
+        } else {
+          const refused = payload.find(
+            row => rows.find(tier => tier.id === row.raid_tier_id)?.list_mode !== 'discovery'
+          )
+          if (refused) {
+            result = {
+              data: null,
+              error: { message: `need row refused: tier ${String(refused.raid_tier_id)} is not discovery` },
+            }
+          } else {
+            for (const row of payload) {
+              needs.push({
+                id: `need-${nextNeedId++}`,
+                raid_tier_id: row.raid_tier_id as string,
+                need_key: row.need_key as string,
+                kind: 'need',
+              })
+            }
+            result = { data: null, error: null }
+          }
+        }
+        const done = {
+          select(columns: string) {
+            calls.push({ table, method: 'select', args: [columns] })
+            const cols = columns.split(',').map(column => column.trim())
+            const projected = result.data
+              ? (result.data as FakeRow[]).map(row =>
+                  Object.fromEntries(cols.map(column => [column, row[column]]))
+                )
+              : result.data
+            return Promise.resolve({ data: projected, error: result.error })
+          },
+          then(
+            onFulfilled?: (value: { data: unknown; error: unknown }) => unknown,
+            onRejected?: (reason: unknown) => unknown
+          ) {
+            return Promise.resolve(result).then(onFulfilled, onRejected)
+          },
+        }
+        return done
+      },
+      update(body: unknown) {
+        calls.push({ table, method: 'update', args: [body] })
+        if (table !== 'raid_tiers' || !isDiscoveryFlip(body)) {
+          throw new Error('forbidden write: update')
+        }
+        updateBody = body
+        return builder
+      },
+      delete() {
+        calls.push({ table, method: 'delete', args: [] })
+        throw new Error('forbidden write: delete')
+      },
+      upsert() {
+        calls.push({ table, method: 'upsert', args: [] })
+        throw new Error('forbidden write: upsert')
+      },
       then(
         onFulfilled?: (value: { data: unknown; error: unknown }) => unknown,
         onRejected?: (reason: unknown) => unknown
       ) {
+        if (updateBody !== null) {
+          for (const row of rows) if (matches(row as never)) row.list_mode = 'discovery'
+          return Promise.resolve({ data: null, error: null }).then(onFulfilled, onRejected)
+        }
         const result = options.readError
           ? { data: null, error: { message: options.readError } }
           : {
-              data: rows
-                .filter(row => expansionFilter === null || row.expansion_id === expansionFilter)
-                .map(row =>
-                  selectedColumns
-                    ? Object.fromEntries(selectedColumns.map(column => [column, row[column]]))
-                    : row
-                ),
+              data: project(
+                rows.filter(row => expansionFilter === null || row.expansion_id === expansionFilter)
+              ),
               error: null,
             }
         return Promise.resolve(result).then(onFulfilled, onRejected)
@@ -91,15 +204,40 @@ function createRaidTiersFake(
   const supabase: AnySupabase = {
     from(table: string) {
       fromCalls.push(table)
-      if (table !== 'raid_tiers') throw new Error(`unexpected table: ${table}`)
-      return buildBuilder()
+      if (table !== 'raid_tiers' && table !== 'loot_items') {
+        throw new Error(`unexpected table: ${table}`)
+      }
+      return buildBuilder(table)
     },
   }
 
-  const inserts = () => calls.filter(call => call.method === 'insert')
-  const writes = () => calls.filter(call => ['update', 'delete', 'upsert'].includes(call.method))
+  const tierInserts = () => calls.filter(c => c.table === 'raid_tiers' && c.method === 'insert')
+  const needInserts = () => calls.filter(c => c.table === 'loot_items' && c.method === 'insert')
+  // The one write the sync may make: the Discovery flip.
+  const flips = () => calls.filter(c => c.method === 'update' && isDiscoveryFlip(c.args[0]))
+  // Anything else that tried to write; the fake throws on each, so a pass means none was attempted.
+  const writes = () =>
+    calls.filter(
+      c =>
+        ['delete', 'upsert'].includes(c.method) ||
+        (c.method === 'update' && !isDiscoveryFlip(c.args[0]))
+    )
+  // Index of the first call matching table, method, in the recorded order.
+  const firstIndex = (table: string, method: string) =>
+    calls.findIndex(c => c.table === table && c.method === method)
 
-  return { supabase, rows, calls, fromCalls, inserts, writes }
+  return {
+    supabase,
+    rows,
+    needs,
+    calls,
+    fromCalls,
+    inserts: tierInserts,
+    needInserts,
+    flips,
+    writes,
+    firstIndex,
+  }
 }
 
 const EXP = 'exp-1'
@@ -117,6 +255,7 @@ const EXPECTED_ROWS = [
     master_sheet_visible: true,
     phase: 1,
     sort_order: 1,
+    list_mode: 'discovery',
   },
   {
     expansion_id: EXP,
@@ -126,6 +265,7 @@ const EXPECTED_ROWS = [
     master_sheet_visible: true,
     phase: 1,
     sort_order: 2,
+    list_mode: 'discovery',
   },
   {
     expansion_id: EXP,
@@ -135,12 +275,34 @@ const EXPECTED_ROWS = [
     master_sheet_visible: true,
     phase: 1,
     sort_order: 3,
+    list_mode: 'discovery',
   },
 ]
 
 describe('syncExpansionCatalog', () => {
+  it('[DISC-01 empty] an expansion with zero tiers ends with three Discovery tiers and 435 need rows, tiers first', async () => {
+    const fake = createCatalogFake()
+
+    const result = await syncExpansionCatalog(fake.supabase, {
+      expansionId: EXP,
+      expansionName: 'Forever',
+    })
+
+    expect(fake.rows.map(row => row.list_mode)).toEqual(['discovery', 'discovery', 'discovery'])
+    expect(fake.needs).toHaveLength(435)
+    expect(result.needRowsInserted).toBe(435)
+    expect(result.tiersFlipped).toBe(0)
+    expect(fake.needInserts()).toHaveLength(1)
+    expect(fake.firstIndex('raid_tiers', 'insert')).toBeLessThan(
+      fake.firstIndex('loot_items', 'insert')
+    )
+    for (const tier of fake.rows) {
+      expect(fake.needs.filter(need => need.raid_tier_id === tier.id)).toHaveLength(145)
+    }
+  })
+
   it('[EXPN-05 idempotent] a second run inserts nothing and leaves the rows deep-equal', async () => {
-    const fake = createRaidTiersFake()
+    const fake = createCatalogFake()
 
     const first = await syncExpansionCatalog(fake.supabase, {
       expansionId: EXP,
@@ -171,7 +333,7 @@ describe('syncExpansionCatalog', () => {
   })
 
   it('[E-EXPN-04 encoding] curly apostrophe, case and whitespace variants match and are not duplicated', async () => {
-    const fake = createRaidTiersFake([
+    const fake = createCatalogFake([
       tierRow('t1', 'Onyxia’s Lair'),
       tierRow('t2', 'barrow deeps'),
       tierRow('t3', '  Hyjal   Summit '),
@@ -217,7 +379,7 @@ describe('syncExpansionCatalog', () => {
       is_active: false,
       submission_deadline: null,
     })
-    const fake = createRaidTiersFake([barrow])
+    const fake = createCatalogFake([barrow])
     const before = structuredClone(fake.rows[0])
 
     const result = await syncExpansionCatalog(fake.supabase, {
@@ -236,7 +398,7 @@ describe('syncExpansionCatalog', () => {
   })
 
   it('[E-EXPN-04 ordering] sort_order is the manifest index + 1 when only the last raid exists', async () => {
-    const fake = createRaidTiersFake([tierRow('t3', "Onyxia's Lair")])
+    const fake = createCatalogFake([tierRow('t3', "Onyxia's Lair")])
 
     const result = await syncExpansionCatalog(fake.supabase, {
       expansionId: EXP,
@@ -253,7 +415,7 @@ describe('syncExpansionCatalog', () => {
     const hyjal = FOREVER_MANIFEST.raids.find(raid => raid.name === 'Hyjal Summit')
     expect(hyjal?.bosses).toEqual([])
 
-    const fake = createRaidTiersFake()
+    const fake = createCatalogFake()
     const result = await syncExpansionCatalog(fake.supabase, {
       expansionId: EXP,
       expansionName: 'Forever',
@@ -263,7 +425,7 @@ describe('syncExpansionCatalog', () => {
   })
 
   it('leaves duplicates of a manifest tier and unmatched tiers untouched', async () => {
-    const fake = createRaidTiersFake([
+    const fake = createCatalogFake([
       tierRow('t1', 'Barrow Deeps'),
       tierRow('t2', 'Barrow Deeps'),
       tierRow('t3', 'Custom Raid'),
@@ -283,7 +445,7 @@ describe('syncExpansionCatalog', () => {
   })
 
   it('only considers tiers of the given expansion', async () => {
-    const fake = createRaidTiersFake([
+    const fake = createCatalogFake([
       { id: 'other-1', expansion_id: 'exp-other', name: 'Barrow Deeps' },
     ])
 
@@ -297,7 +459,7 @@ describe('syncExpansionCatalog', () => {
   })
 
   it('dryRun returns the rows it would insert and performs zero insert calls', async () => {
-    const fake = createRaidTiersFake()
+    const fake = createCatalogFake()
 
     const result = await syncExpansionCatalog(fake.supabase, {
       expansionId: EXP,
@@ -312,7 +474,7 @@ describe('syncExpansionCatalog', () => {
   })
 
   it('throws with context on a read error and inserts nothing', async () => {
-    const fake = createRaidTiersFake([], { readError: 'boom' })
+    const fake = createCatalogFake([], { readError: 'boom' })
 
     await expect(
       syncExpansionCatalog(fake.supabase, { expansionId: EXP, expansionName: 'Forever' })
@@ -321,7 +483,7 @@ describe('syncExpansionCatalog', () => {
   })
 
   it('throws with context on an insert error', async () => {
-    const fake = createRaidTiersFake([], { insertError: 'nope' })
+    const fake = createCatalogFake([], { insertError: 'nope' })
 
     await expect(
       syncExpansionCatalog(fake.supabase, { expansionId: EXP, expansionName: 'Forever' })
@@ -331,7 +493,7 @@ describe('syncExpansionCatalog', () => {
   it.each(['Classic', 'forever', '', 'constructor'])(
     'throws before any from() call for the name %j (D-11)',
     async name => {
-      const fake = createRaidTiersFake()
+      const fake = createCatalogFake()
 
       await expect(
         syncExpansionCatalog(fake.supabase, { expansionId: EXP, expansionName: name })
@@ -349,7 +511,7 @@ describe('syncExpansionCatalog', () => {
       [tierRow('t1', 'Barrow Deeps'), tierRow('t2', 'Barrow Deeps')],
     ]
     for (const initial of scenarios) {
-      const fake = createRaidTiersFake(initial)
+      const fake = createCatalogFake(initial)
       await syncExpansionCatalog(fake.supabase, { expansionId: EXP, expansionName: 'Forever' })
       await syncExpansionCatalog(fake.supabase, {
         expansionId: EXP,
