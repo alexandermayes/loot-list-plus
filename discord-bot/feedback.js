@@ -100,7 +100,7 @@ async function generateTitle(description) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 100,
         messages: [{
           role: 'user',
@@ -108,7 +108,10 @@ async function generateTitle(description) {
         }]
       })
     });
-    if (!res.ok) return fallback;
+    if (!res.ok) {
+      console.warn(`[feedback] title generation failed: ${res.status}`);
+      return fallback;
+    }
     const json = await res.json();
     const title = json.content?.[0]?.text?.trim();
     return (title && title.length > 0 && title.length < 100) ? title : fallback;
@@ -181,7 +184,7 @@ Return ONLY the issue number (e.g. "42") if the new report is clearly a duplicat
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 20,
         messages: [{ role: 'user', content: prompt }],
       }),

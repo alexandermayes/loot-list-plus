@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       // Continue without user info
     }
 
-    // Generate a concise title using Claude (used for both Discord and Linear)
+    // Generate a concise title using Claude (used for both Discord and GitHub)
     const anthropicApiKey = process.env.ANTHROPIC_API_KEY
     let generatedTitle = description.trim().slice(0, 80) + (description.trim().length > 80 ? '...' : '')
 
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
             'anthropic-version': '2023-06-01'
           },
           body: JSON.stringify({
-            model: 'claude-3-5-haiku-20241022',
+            model: 'claude-haiku-4-5-20251001',
             max_tokens: 100,
             messages: [{
               role: 'user',
@@ -88,6 +88,8 @@ export async function POST(request: Request) {
           if (title && title.length > 0 && title.length < 100) {
             generatedTitle = title
           }
+        } else {
+          console.warn(`[feedback] title generation failed: ${claudeResponse.status}`)
         }
       } catch (claudeError) {
         console.error('Error generating title with Claude:', claudeError)
