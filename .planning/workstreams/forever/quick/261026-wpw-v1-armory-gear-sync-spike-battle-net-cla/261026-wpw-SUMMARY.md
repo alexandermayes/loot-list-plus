@@ -37,15 +37,21 @@ Not run: `npm run lint`, `npm run typecheck`, `npm test` on the full code branch
 
 ## What the owner must run
 
-Provide credentials to the probe in either of two ways, then run it from the main checkout.
+Update 2026-10-27: both variables already exist in the Vercel production environment (names confirmed with `vercel env ls production`; no values were read). The automated run that would have piped them from `vercel env pull` into the probe was stopped by the auto-mode permission classifier as a production read, so the probe is still waiting on the owner: either run Option A, or allow that read and ask the agent to rerun.
 
-Option A, add to `.env.local` (a Blizzard developer client, https://develop.battle.net/access/clients) the variables `BLIZZARD_CLIENT_ID` and `BLIZZARD_CLIENT_SECRET`, then:
+Option A, pull the production values into a temporary file, run the probe with them preloaded, then delete `/tmp/llp-prod.env` by hand. Nothing is added to `.env.local`:
+
+```
+cd /Users/alexander.mayes/Code/personal/loot-list-plus && vercel env pull /tmp/llp-prod.env --environment=production --yes && DOTENV_CONFIG_PATH=/tmp/llp-prod.env npx tsx --require dotenv/config /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code/scripts/spikes/armory-item-level-spike.ts --from-db 10 | tee /tmp/spike-report.json
+```
+
+Option B, add `BLIZZARD_CLIENT_ID` and `BLIZZARD_CLIENT_SECRET` to `.env.local` (copied from Vercel, or a Blizzard developer client at https://develop.battle.net/access/clients), then:
 
 ```
 cd /Users/alexander.mayes/Code/personal/loot-list-plus && npx tsx /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code/scripts/spikes/armory-item-level-spike.ts --from-db 10
 ```
 
-Option B, samples of your own characters instead of the database (still needs the two Blizzard variables). Replace the placeholders with region/realm-slug/name entries separated by semicolons:
+Option C, samples of your own characters instead of the database (still needs the two Blizzard variables in the environment, as in A or B). Replace the placeholders with region/realm-slug/name entries separated by semicolons:
 
 ```
 cd /Users/alexander.mayes/Code/personal/loot-list-plus && SPIKE_CHARACTERS="us/<realm-slug>/<name>;us/<realm-slug>/<name2>;us/<realm-slug>/<name3>" npx tsx /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code/scripts/spikes/armory-item-level-spike.ts

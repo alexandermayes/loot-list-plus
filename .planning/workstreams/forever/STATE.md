@@ -36,7 +36,7 @@ Research: `.planning/research/SUMMARY.md`
 Phase: 3 — Discovery Schema and Need Pipeline
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-10-26 — Quick task 261026-wpw halted at spike gate (INCONCLUSIVE, awaiting Blizzard credentials)
+Last activity: 2026-10-27 — Quick task 261026-wpw still at spike gate (INCONCLUSIVE); Blizzard credentials located in Vercel production, probe run needs the owner (command in the quick SUMMARY)
 
 Progress: [███░░░░░░░] 2/8 phases ([████████████████████] 22/22 plans, 100% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning
 
