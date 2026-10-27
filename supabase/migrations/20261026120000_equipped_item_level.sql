@@ -5,9 +5,11 @@
 -- Officers settling a drop want to see the item level each candidate has
 -- equipped in the slot the item fills, from data they can check. The
 -- Battle.net gear sync and the Battle.net character import already fetch
--- the profile equipment endpoint, which carries a level per equipped item,
--- but character_equipped_items has no column for it, so both writers drop
--- the value.
+-- the profile equipment endpoint, but character_equipped_items has no column
+-- for a level, so the writers drop it. The Classic profile equipment
+-- response carries no level per item (quick task 261026-wpw spike), so the
+-- writers take the profile level when it is present, else the Game Data base
+-- level cached in item_base_levels (20261027120000).
 --
 -- Fix
 -- ---
@@ -24,14 +26,13 @@
 -- ---------------------------
 -- Three service-role routes write character_equipped_items from Battle.net:
 -- POST /api/battlenet/characters/sync-gear, the Battle.net character import
--- and the link-battlenet route. Only sync-gear and the import are changed on
--- the code branch to set item_level, and they are the only writers that set
--- it. The link-battlenet route and the WowSims import (character-gear) name
--- no item_level in their insert maps, so their rows read null, which the
--- CHECK and the guard both allow. The code branch adds a read route that
--- reads item_level through the RLS-scoped client, so the guildmate read
--- policy stays the boundary. No SECURITY DEFINER function, view, trigger or
--- publication touches the table.
+-- and the link-battlenet route. All three set item_level on the code branch,
+-- and they are the only writers that set it. The WowSims import
+-- (character-gear) names no item_level in its insert map, so its rows read
+-- null, which the CHECK and the guard both allow. The code branch adds a
+-- read route that reads item_level through the RLS-scoped client, so the
+-- guildmate read policy stays the boundary. No SECURITY DEFINER function,
+-- view, trigger or publication touches the table.
 --
 -- Why the guard: the owner policy "Users can manage their own characters'
 -- equipped items" lets a session insert and update rows of its own
@@ -63,8 +64,8 @@
 -- One migration-only PR, merged with --admin on a non-raid day; it deploys
 -- about 12 seconds after merge. It must be live before the
 -- feat/armory-item-level code PR merges, because that PR names item_level
--- in the sync-gear and import insert maps, which fail against a table
--- without the column.
+-- in the sync-gear, import and link-battlenet insert maps, which fail
+-- against a table without the column.
 --
 -- Not changed
 -- -----------
@@ -92,7 +93,7 @@ ALTER TABLE "public"."character_equipped_items" DROP CONSTRAINT IF EXISTS "chara
 
 ALTER TABLE "public"."character_equipped_items" ADD CONSTRAINT "character_equipped_items_item_level_range" CHECK ("item_level" IS NULL OR "item_level" BETWEEN 1 AND 1999);
 
-COMMENT ON COLUMN "public"."character_equipped_items"."item_level" IS 'Equipped item level from the Battle.net profile equipment API at the last gear sync, or null when the source gave none. Written only by the server gear sync, see public.enforce_equipped_item_level_server_only().';
+COMMENT ON COLUMN "public"."character_equipped_items"."item_level" IS 'Equipped item level at the last Battle.net gear sync: the profile level when Blizzard returns one, else the base item level from the Game Data item endpoint (MoP upgrades not counted), null when neither is known. Written only by the server gear sync, see public.enforce_equipped_item_level_server_only().';
 
 CREATE OR REPLACE FUNCTION "public"."enforce_equipped_item_level_server_only"() RETURNS "trigger"
     LANGUAGE "plpgsql"
