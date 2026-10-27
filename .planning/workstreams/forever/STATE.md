@@ -36,7 +36,7 @@ Research: `.planning/research/SUMMARY.md`
 Phase: 3 — Discovery Schema and Need Pipeline
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-10-19 — Phase 02 complete, transitioned to Phase 3
+Last activity: 2026-10-26 — Quick task 261026-wpw halted at spike gate (INCONCLUSIVE, awaiting Blizzard credentials)
 
 Progress: [███░░░░░░░] 2/8 phases ([████████████████████] 22/22 plans, 100% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning
 
@@ -139,6 +139,12 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 - Phase 3: research lists two cost schemes for need rows (an allocation cost of 1/1/0, and a budget at Big 3, Medium 2, Standard 1). Settle which one the seeded rows carry before Phase 4 reads it.
 - Phase 3 to 4 gap: a Discovery tier can have need rows before raiders have a picker.
 - Research flags: Phases 3, 5, 6 and 8 need `/gsd-plan-phase N --research-phase`.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 261026-wpw | v1 armory gear sync (INCOMPLETE: halted at Task 1 spike gate, verdict INCONCLUSIVE; owner must supply Blizzard credentials and run the spike, tasks 2 and 3 not built) | 2026-10-26 | a11e3d86 (spike script, branch feat/armory-item-level) | [261026-wpw-v1-armory-gear-sync-spike-battle-net-cla](./quick/261026-wpw-v1-armory-gear-sync-spike-battle-net-cla/) |
 
 ## Deferred Items
 
