@@ -173,3 +173,13 @@ Counts and aggregates only. No guild, character, realm or account names, ids or 
 
 - Files present in their worktrees: migration, migration test, helper, helper test, probe.
 - Commits present: cfde98ff, ef7715d4, 0e21e509, 07ef423a.
+
+## Pull requests (opened 2026-10-27)
+
+| PR | Branch | Base | Merge when |
+|---|---|---|---|
+| #462 | feat/equipped-item-level-migration | main | First. Migration-only: --admin merge on a non-raid day, confirm the deploy about 12 seconds after merge. |
+| #463 | feat/armory-item-level | main | After #462 is live, the probe JSON is pasted into the PR with levelFieldPresentOnAll true, and the copy is signed off. |
+| #464 | gsd/quick-261026-wpw-v1-armory-gear-sync-spike-battle-net-cla | main | Any time; docs only. |
+| #465 | gsd/quick-261027-lzm-base-item-level-cache-from-game-data-for | #464's branch | After #464; it retargets to main on its own. Docs only. |
+
