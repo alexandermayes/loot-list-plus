@@ -36,7 +36,7 @@ Research: `.planning/research/SUMMARY.md`
 Phase: 3 — Discovery Schema and Need Pipeline
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-10-19 — Phase 02 complete, transitioned to Phase 3
+Last activity: 2026-10-27, quick task 261026-wpw spike ran with verdict NO-GO (Classic returns no per-slot item level); a parallel session built Tasks 2 and 3 unmerged on feat/armory-item-level and feat/equipped-item-level-migration reading the missing field; owner decision pending (see the quick SUMMARY)
 
 Progress: [███░░░░░░░] 2/8 phases ([████████████████████] 22/22 plans, 100% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning
 
@@ -128,6 +128,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 - Oct 21: Forever boss names (Phase 2); addon scope and owner for the separate repo (Phase 5); community asks for in-game loot list viewing through the addon without a web login (addon scope input)
 - Oct 26: spec defaults review and copy sign-off for picker, presets, "Set your 5" (Phase 4); simplicity audit scope and sidebar direction (Phase 8); community input for the Phase 4 presets review: how often raiders may re-rank need rows within a tier; a council-style preset that shows attendance, bad luck protection and a future preparation score side by side
 - Nov 9: beta guild, named paper-fallback officer, void rule (Phase 7); master loot or Gargul export scope (Phase 5)
+- Oct 27: armory gear sync after the NO-GO spike (quick 261026-wpw): base item level from the static-classic item endpoint, the summary's average item level, or drop it; and whether to keep the probe script on feat/armory-item-level
 
 ### Blockers/Concerns
 
@@ -139,6 +140,12 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 - Phase 3: research lists two cost schemes for need rows (an allocation cost of 1/1/0, and a budget at Big 3, Medium 2, Standard 1). Settle which one the seeded rows carry before Phase 4 reads it.
 - Phase 3 to 4 gap: a Discovery tier can have need rows before raiders have a picker.
 - Research flags: Phases 3, 5, 6 and 8 need `/gsd-plan-phase N --research-phase`.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 261026-wpw | v1 armory gear sync (spike verdict NO-GO: the Classic equipment API returns no per-slot item level, 0 of 90 items across 6 characters; tasks 2 and 3 not built; the alternative is an owner decision) | 2026-10-27 | a11e3d86 (spike script, branch feat/armory-item-level) | [261026-wpw-v1-armory-gear-sync-spike-battle-net-cla](./quick/261026-wpw-v1-armory-gear-sync-spike-battle-net-cla/) |
 
 ## Deferred Items
 
