@@ -116,9 +116,11 @@ async function guildExpansionNames(): Promise<string[]> {
 
 beforeAll(async () => {
   // Every existing migration, in filename order, then the Discovery file a
-  // second time. The default 10 s hook timeout is too short for the chain.
+  // second time. The hook checks that the chain holds the Discovery file,
+  // not that it is the newest file, so a later migration cannot fail it
+  // (#309). The default 10 s hook timeout is too short for the chain.
   const files = listMigrationFiles()
-  expect(files[files.length - 1]).toBe(DISCOVERY_FILE)
+  expect(files).toContain(DISCOVERY_FILE)
   db = await createChainedDb(files)
   await db.exec('SET search_path TO public, extensions; RESET role;')
   await db.exec(fs.readFileSync(DISCOVERY_FILE, 'utf8'))
