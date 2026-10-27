@@ -20,7 +20,7 @@ export interface BattlenetAccount {
 
 export type GameVersion = 'cata-classic' | 'classic-era' | 'tbc-anniversary'
 
-const REGION_API_HOSTS: Record<string, string> = {
+export const REGION_API_HOSTS: Record<string, string> = {
   us: 'https://us.api.blizzard.com',
   eu: 'https://eu.api.blizzard.com',
 }
@@ -283,6 +283,11 @@ export const SLOT_MAPPING: Record<string, string> = {
  * equipped_items[].level.value. Only an integer from 1 to 1999 is kept: the
  * bounds match the character_equipped_items item_level CHECK, so a bad value
  * becomes null instead of failing the whole gear insert.
+ *
+ * Classic profile equipment returned no level in the 261026-wpw spike, so
+ * the gear writers fall back to the Game Data base level
+ * (lib/battlenet-item-levels.ts). This reader stays so a profile level wins
+ * should Blizzard add one.
  */
 export function readEquippedItemLevel(item: { level?: { value?: unknown } | null }): number | null {
   const value = item.level?.value

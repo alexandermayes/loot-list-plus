@@ -57,11 +57,13 @@ const AWARD_REASONS: { value: AwardReason; label: string }[] = [
 
 /**
  * Equipped column copy (quick task 261026-wpw). Proposed wording; owner
- * sign-off is pending before the code PR merges.
+ * sign-off is pending before the code PR merges. The header title says Base
+ * because the level is the Game Data base item level and MoP upgrades are not
+ * counted (quick task 261027-lzm).
  */
 const EQUIPPED_COPY = {
   header: 'Equipped',
-  headerTitle: 'Item level this player has equipped in the slot this item fills, from their last Battle.net gear sync',
+  headerTitle: 'Base item level of what this player has equipped in the slot this item fills, from their last Battle.net gear sync',
   empty: 'Empty',
   emptyTitle: 'Nothing equipped in this slot at the last sync.',
   noItemLevel: 'No ilvl',

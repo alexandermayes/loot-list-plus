@@ -1162,6 +1162,24 @@ export type Database = {
           },
         ]
       }
+      item_base_levels: {
+        Row: {
+          fetched_at: string
+          item_level: number
+          wowhead_id: number
+        }
+        Insert: {
+          fetched_at?: string
+          item_level: number
+          wowhead_id: number
+        }
+        Update: {
+          fetched_at?: string
+          item_level?: number
+          wowhead_id?: number
+        }
+        Relationships: []
+      }
       loot_deadlines: {
         Row: {
           allow_late: boolean | null
