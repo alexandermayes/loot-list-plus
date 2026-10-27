@@ -383,6 +383,7 @@ export type Database = {
           gem_ids: number[] | null
           id: string
           imported_at: string | null
+          item_level: number | null
           item_name: string | null
           slot: string
           wowhead_id: number
@@ -393,6 +394,7 @@ export type Database = {
           gem_ids?: number[] | null
           id?: string
           imported_at?: string | null
+          item_level?: number | null
           item_name?: string | null
           slot: string
           wowhead_id: number
@@ -403,6 +405,7 @@ export type Database = {
           gem_ids?: number[] | null
           id?: string
           imported_at?: string | null
+          item_level?: number | null
           item_name?: string | null
           slot?: string
           wowhead_id?: number
@@ -1158,6 +1161,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      item_base_levels: {
+        Row: {
+          fetched_at: string
+          item_level: number
+          wowhead_id: number
+        }
+        Insert: {
+          fetched_at?: string
+          item_level: number
+          wowhead_id: number
+        }
+        Update: {
+          fetched_at?: string
+          item_level?: number
+          wowhead_id?: number
+        }
+        Relationships: []
       }
       loot_deadlines: {
         Row: {

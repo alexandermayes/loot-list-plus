@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, cleanup, waitFor } from '@testing-library/react'
+import { render, screen, cleanup, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ItemCandidateModal } from '../ItemCandidateModal'
 import type { PlayerRanking, LootItem } from '../BossSection'
@@ -57,10 +57,18 @@ const SUCCESS = 'Qiraji Bindings of Command awarded to Thrall'
 
 type PostBody = { guild_id: string; items: Array<Record<string, unknown>> }
 
-/** Stubs fetch: the recent-awards GET answers an empty list, and each POST
- * to the bulk route answers the next scripted per-item result. */
-function stubFetch(postResults: Array<Record<string, unknown>>) {
+type EquippedCharacters = Record<string, { synced_at: string | null; slots: Record<string, number | null> }>
+
+/** Stubs fetch: the recent-awards GET answers an empty list, each POST to
+ * the bulk route answers the next scripted per-item result, and the
+ * equipped-item-levels GET answers the given status and characters map
+ * (default 200 with an empty map). */
+function stubFetch(
+  postResults: Array<Record<string, unknown>>,
+  equipped: { status?: number; characters?: EquippedCharacters } = {},
+) {
   const posts: PostBody[] = []
+  const equippedRequests: string[] = []
   const queue = [...postResults]
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     if (init?.method === 'POST' && url === '/api/loot-history/bulk') {
@@ -68,22 +76,32 @@ function stubFetch(postResults: Array<Record<string, unknown>>) {
       const result = queue.shift() ?? { index: 0, success: true, id: 'hist-x' }
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ results: [result] }) } as Response)
     }
+    if (url.includes('equipped-item-levels')) {
+      equippedRequests.push(url)
+      const status = equipped.status ?? 200
+      return Promise.resolve({
+        ok: status >= 200 && status < 300,
+        status,
+        json: () => Promise.resolve(status === 200 ? { characters: equipped.characters ?? {} } : { error: 'boom' }),
+      } as Response)
+    }
     return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ data: [] }) } as Response)
   })
   vi.stubGlobal('fetch', fetchMock)
-  return { posts }
+  return { posts, equippedRequests }
 }
 
 function renderModal(
   rankings: PlayerRanking[] = [ranking()],
   onAwardComplete = vi.fn(),
   guildSettings: ComponentProps<typeof ItemCandidateModal>['guildSettings'] = {},
+  item: LootItem = ITEM,
 ) {
   render(
     <ItemCandidateModal
       open
       onClose={() => {}}
-      item={ITEM}
+      item={item}
       rankings={rankings}
       priority={null}
       receivedCharacterIds={new Set()}
@@ -257,5 +275,66 @@ describe('ItemCandidateModal raider bonus reasons (GH #357)', () => {
   it('M7 the inline breakdown shows only the number when the entry belongs to another raider', async () => {
     renderModal([ranking({ raider_bonus: 2, loot_score: 12 })], vi.fn(), settingsFor('char-other'))
     expect(await inlineLine('Raider bonus: +2.00')).toBeInTheDocument()
+  })
+})
+
+// Quick task 261026-wpw: the Equipped column shows each candidate's item
+// level for the item's slot, read once per open from the guild route, and
+// only when the slot is comparable and the read succeeded (T-wpw-06).
+describe('ItemCandidateModal equipped item level column', () => {
+  const RING: LootItem = { id: 'item-ring', name: 'Band of the Sandworm', boss_name: 'Boss', item_slot: 'Finger', wowhead_id: 1 }
+  const MOUNT: LootItem = { id: 'item-mount', name: 'Reins of Something', boss_name: 'Boss', item_slot: 'Mount', wowhead_id: 2 }
+  const THRALL = ranking()
+  const JAINA = ranking({ player_name: 'Jaina', character_id: 'char-jaina', loot_score: 5 })
+  const RECENT_EMPTY = "This item hasn't been awarded yet."
+
+  const rowOf = (playerName: string) => {
+    const row = screen.getByText(playerName).closest('tr')
+    if (!row) throw new Error(`no row for ${playerName}`)
+    return within(row)
+  }
+
+  beforeEach(() => {
+    showNotification.mockReset()
+    vi.unstubAllGlobals()
+  })
+
+  afterEach(() => {
+    cleanup()
+    vi.unstubAllGlobals()
+  })
+
+  it('E1 a ring shows the Equipped header, the lower ring level for a synced candidate and Not synced for one without data', async () => {
+    const { equippedRequests } = stubFetch([], {
+      characters: { 'char-thrall': { synced_at: '2026-10-20T12:00:00.000Z', slots: { 'Finger 1': 489, 'Finger 2': 476 } } },
+    })
+    renderModal([THRALL, JAINA], vi.fn(), {}, RING)
+
+    expect(await screen.findByRole('columnheader', { name: 'Equipped' })).toBeInTheDocument()
+    expect(rowOf('Thrall').getByText('476')).toBeInTheDocument()
+    expect(rowOf('Jaina').getByText('Not synced')).toBeInTheDocument()
+    expect(equippedRequests).toHaveLength(1)
+    expect(equippedRequests[0]).toBe(
+      `/api/guilds/guild-1/equipped-item-levels?character_ids=${encodeURIComponent('char-thrall,char-jaina')}`,
+    )
+  })
+
+  it('E2 a mount makes no equipped-item-levels request and shows no Equipped header', async () => {
+    const { equippedRequests } = stubFetch([])
+    renderModal([THRALL, JAINA], vi.fn(), {}, MOUNT)
+
+    expect(await screen.findByText(RECENT_EMPTY)).toBeInTheDocument()
+    expect(equippedRequests).toEqual([])
+    expect(screen.queryByRole('columnheader', { name: 'Equipped' })).not.toBeInTheDocument()
+  })
+
+  it('E3 a failed read shows no Equipped header instead of Not synced for everyone', async () => {
+    const { equippedRequests } = stubFetch([], { status: 500 })
+    renderModal([THRALL, JAINA], vi.fn(), {}, RING)
+
+    await waitFor(() => expect(equippedRequests).toHaveLength(1))
+    expect(await screen.findByText(RECENT_EMPTY)).toBeInTheDocument()
+    expect(screen.queryByRole('columnheader', { name: 'Equipped' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Not synced')).not.toBeInTheDocument()
   })
 })

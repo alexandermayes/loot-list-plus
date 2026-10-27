@@ -10,8 +10,10 @@ import {
   battlenetFetch,
   getWowProfileNamespaces,
   SLOT_MAPPING,
+  readEquippedItemLevel,
   type GameVersion,
 } from '@/lib/battlenet'
+import { resolveBaseItemLevels } from '@/lib/battlenet-item-levels'
 import { invalidateCache, cacheKeys } from '@/utils/cache'
 import { trackEvent } from '@/utils/analytics/server'
 import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
@@ -61,6 +63,10 @@ interface EquipmentResponse {
         id: number
       }
     }>
+    level?: {
+      value: number
+      display_string?: LocalizedString
+    }
   }>
 }
 
@@ -392,6 +398,16 @@ export async function POST(request: NextRequest) {
           const equipment: EquipmentResponse = await equipResponse.json()
 
           if (equipment.equipped_items && equipment.equipped_items.length > 0) {
+            // Classic profile equipment carries no level (261026-wpw), so the
+            // Game Data base level fills it, and the profile level wins if
+            // Blizzard adds one.
+            const baseLevels = await resolveBaseItemLevels(
+              supabase,
+              account.region,
+              account.access_token,
+              equipment.equipped_items.map((item) => item.item.id)
+            )
+
             const itemsToInsert = equipment.equipped_items
               .filter((item) => {
                 // Only import slots we track
@@ -408,6 +424,7 @@ export async function POST(request: NextRequest) {
                   item.sockets
                     ?.map((s) => s.item?.id)
                     .filter((id): id is number => !!id) || null,
+                item_level: readEquippedItemLevel(item) ?? baseLevels.get(item.item.id) ?? null,
               }))
 
             if (itemsToInsert.length > 0) {
