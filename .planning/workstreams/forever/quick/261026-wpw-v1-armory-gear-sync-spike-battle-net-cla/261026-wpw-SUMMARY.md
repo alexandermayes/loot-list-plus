@@ -2,9 +2,9 @@
 phase: quick-261026-wpw
 plan: 01
 subsystem: battle-net-armory-gear-sync
-tags: [spike, battle-net, item-level, blocked]
-status: incomplete
-verdict: INCONCLUSIVE
+tags: [spike, battle-net, item-level, no-go]
+status: complete
+verdict: NO-GO
 requirements: [WPW-R1, WPW-R2, WPW-R3, WPW-R4, WPW-R5, DELIVERY-R1]
 key-files:
   created:
@@ -12,96 +12,85 @@ key-files:
     - .planning/workstreams/forever/quick/261026-wpw-v1-armory-gear-sync-spike-battle-net-cla/261026-wpw-SPIKE.md
 actuals:
   tasks: 1
-  commits: 1
+  commits: 3
 ---
 
-# Quick 261026-wpw: v1 armory gear sync, spike stopped at the gate
+# Quick 261026-wpw: v1 armory gear sync, spike says NO-GO
 
-**Spike probe written, linted and committed, but it could not run: Blizzard credentials are not available to it, so the verdict is INCONCLUSIVE and Tasks 2 and 3 were not executed.**
+**The Battle.net Classic equipment endpoint returns no per-slot item level: 0 of 90 non-cosmetic equipped items across 6 fetched characters carry `level.value`, and no `level` key exists on Classic equipment items at all. Per the plan's gate rules the verdict is NO-GO, so Tasks 2 and 3 were not built. The alternative is an owner decision.**
 
 ## Verdict
 
-**INCONCLUSIVE.** Per the plan, execution halted after Task 1. No guess was made.
+**NO-GO.** The gate needed at least 3 characters at HTTP 200 (got 6) and at least 90 percent coverage of `equipped_items[].level.value` (got 0 percent).
 
-Why: the probe ran from the main checkout (so `.env.local` resolves) and exited with code 2, printing only the names `BLIZZARD_CLIENT_ID` and `BLIZZARD_CLIENT_SECRET` as missing. `.env.local` exists but does not provide them. A further attempt to list which variable names `.env.local` does contain was blocked by the permission system, and I did not work around it. No variable values were read or printed.
+The probe ran on 2026-10-27 from the main checkout against 10 linked characters sampled from the production database. The Blizzard client lives only in Vercel production, so the owner pulled a production env file to a temporary path outside the repo and the probe read it through `node --env-file`; the file was deleted right after the run and no value was printed. The report passed its own privacy self-check (exit 0).
+
+## What the probe found
+
+| Measure | Value |
+|---|---|
+| Samples tried | 10 |
+| Samples fetched (HTTP 200) | 6 (the other 4 returned 404 in both Classic namespaces) |
+| Non-cosmetic equipped items | 90 |
+| Items with `level.value` | 0 (coverage 0 percent) |
+| Other level-like numeric keys on items | none |
+| Character summary has `equipped_item_level` or `average_item_level` | 6 of 6 |
+| Median / max hours since last login | 6837 / 7122 (about 285 / 297 days) |
+| Last-Modified header | present on all 6, same age as last login |
+| Equipment call latency | 112 to 353 ms |
+
+Full detail, including the observed item key set, is in SPIKE.md.
 
 ## Task status
 
 | Task | Status | Notes |
 |---|---|---|
-| 1 Spike and gate | Probe built, not run live. Verdict INCONCLUSIVE | SPIKE.md written with exactly one verdict line (grep count 1). `eslint` on the script is clean. |
-| 2 Storage (migration and writers) | Blocked | Needs a GO verdict. No migration worktree or branch created. Timestamp collision check not yet done. |
-| 3 Slot rules, read route, panel column | Blocked | Needs Task 2 Part B. Nothing written. |
+| 1 Spike and gate | Done. Verdict NO-GO | SPIKE.md has exactly one verdict line. |
+| 2 Storage (migration and writers) | Not executed (NO-GO) | No migration branch or worktree created. |
+| 3 Slot rules, read route, panel column | Not executed (NO-GO) | Nothing written. The Equipped column copy in the plan is moot until the owner picks an alternative. |
 
-Not run: `npm run lint`, `npm run typecheck`, `npm test` on the full code branch. The only change on it is the standalone spike script (eslint and a strict tsc check of that file pass), so full-suite results would say nothing about the feature.
+## Owner decision: what next
 
-## What the owner must run
+The plan's per-slot design (Task 3 compares the candidate's equipped item in the slot the loot item fills) needs a per-slot item level, which the Classic profile does not return. Three ways forward, none implemented here:
 
-Update 2026-10-27: both variables already exist in the Vercel production environment (names confirmed with `vercel env ls production`; no values were read). The automated run that would have piped them from `vercel env pull` into the probe was stopped by the auto-mode permission classifier as a production read, so the probe is still waiting on the owner: either run Option A, or allow that read and ask the agent to rerun.
+1. **Game Data item endpoint**, `GET /data/wow/item/{itemId}` in `static-classic-{region}`. Gives the base item level per item id, so the per-slot column stays as designed. Costs one extra request per distinct item id per sync, cacheable in an item table since base level never changes. It ignores MoP item upgrades, which can raise an item up to 8 levels above base, so an upgraded item under-reads by up to 8.
+2. **Character summary average**, the `equipped_item_level` or `average_item_level` field that the summary endpoint already returns on Classic (6 of 6). One number per character, no per-slot comparison, no extra requests. The panel column would show average equipped item level instead of the slot the item fills.
+3. **Drop the feature** for v1.
 
-Option A, pull the production values into a temporary file, run the probe with them preloaded, then delete `/tmp/llp-prod.env` by hand. Nothing is added to `.env.local`:
-
-```
-cd /Users/alexander.mayes/Code/personal/loot-list-plus && vercel env pull /tmp/llp-prod.env --environment=production --yes && DOTENV_CONFIG_PATH=/tmp/llp-prod.env npx tsx --require dotenv/config /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code/scripts/spikes/armory-item-level-spike.ts --from-db 10 | tee /tmp/spike-report.json
-```
-
-Option B, add `BLIZZARD_CLIENT_ID` and `BLIZZARD_CLIENT_SECRET` to `.env.local` (copied from Vercel, or a Blizzard developer client at https://develop.battle.net/access/clients), then:
-
-```
-cd /Users/alexander.mayes/Code/personal/loot-list-plus && npx tsx /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code/scripts/spikes/armory-item-level-spike.ts --from-db 10
-```
-
-Option C, samples of your own characters instead of the database (still needs the two Blizzard variables in the environment, as in A or B). Replace the placeholders with region/realm-slug/name entries separated by semicolons:
-
-```
-cd /Users/alexander.mayes/Code/personal/loot-list-plus && SPIKE_CHARACTERS="us/<realm-slug>/<name>;us/<realm-slug>/<name2>;us/<realm-slug>/<name3>" npx tsx /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code/scripts/spikes/armory-item-level-spike.ts
-```
-
-At least 3 samples must return 200. The printed JSON contains only labels, numbers, booleans and key names (no character or realm names, and the script exits 3 rather than print if one slipped in). Paste that JSON back and the verdict can be set:
-
-- GO: at least 3 samples at 200 and at least 90 percent of non-cosmetic equipped items carry a positive integer at `equipped_items[].level.value`. Then re-run this plan from Task 2.
-- NO-GO: coverage below 90 percent. The alternative (Game Data item endpoint in `static-classic-{region}`, base item level only) is an owner decision.
-
-If the app token returns 403 for Classic character profiles, a user-token run is the next step; the production sync uses the linked user's token.
+Side note from the sample: the 10 sampled characters last logged in about 9 to 10 months ago (the query takes the first 10 linked rows, so it skews old), and 4 of them no longer resolve on Battle.net. Any production sync should treat a 404 as "character not found at Blizzard" and keep the last stored data rather than clear it.
 
 ## Branches and commits
 
 | Branch | Where | Commit | Content |
 |---|---|---|---|
 | `feat/armory-item-level` (from origin/main 1b8c5b0a) | `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code` | a11e3d86 | chore(spike): Battle.net Classic equipped item level probe |
-| `feat/equipped-item-level-migration` | not created | none | blocked |
-| `gsd/quick-261026-wpw-v1-armory-gear-sync-spike-battle-net-cla` | main checkout | none by me | SPIKE.md and this SUMMARY are uncommitted for the orchestrator's docs commit |
+| `feat/equipped-item-level-migration` | not created | none | not needed (NO-GO) |
+| `gsd/quick-261026-wpw-v1-armory-gear-sync-spike-battle-net-cla` | main checkout | bbb8522a, then this run's docs commit | PLAN, SPIKE, SUMMARY, STATE |
 
-Final migration timestamp: not chosen (planned 20261026120000, not yet collision checked). Anchored older test: none.
+The probe script is privacy-safe and reusable (for re-running against fresh samples, or adapting to option 1). Keep it by merging `feat/armory-item-level` as a small chore PR, or delete the branch; either is fine.
 
 ## Deviations from Plan
 
-- **SPIKE.md not committed.** The plan says to commit it on the gsd/quick branch, but the run constraints say the orchestrator commits docs artifacts. It is left in the working tree.
-- **Rate limits unverified.** WebFetch is not available to this agent; a curl of the getting-started page returned no readable text. SPIKE.md marks the limits unverified.
-- **Probe typecheck.** The script sits outside the app's tsconfig include, so it was checked with an explicit strict `tsc` invocation plus eslint.
+- **Credentials.** The plan assumed the Blizzard client lives in `.env.local`. It lived only in Vercel production, and this harness is not allowed to pull credentials itself, so the owner pulled a production env file to a temporary path and the probe read it through `node --env-file`. The file was deleted after the run.
+- **Rate limits.** Still unverified. The developer portal pages are rendered client-side and give no figures to a plain fetch; SPIKE.md names the page to check in a browser before any bulk use.
+- **Probe typecheck.** The script sits outside the app's tsconfig include, so it was checked with an explicit strict `tsc` invocation plus eslint (unchanged from the first run).
 
 ## Awaiting owner sign-off
 
-The Equipped column copy (Equipped header, Empty, No ilvl, Not synced, hover text) is specified in the plan but nothing is implemented yet, so there is no copy to approve. Still pending for when Task 3 runs.
+- The alternative to pursue (1, 2 or 3 above). Nothing is built until this is decided.
+- Whether to keep the probe script (merge `feat/armory-item-level`) or delete the branch.
+- Go-ahead to push the `gsd/quick-261026-...` branch and open the docs-only PR.
 
-## Recommended merge order (once a GO is obtained and Tasks 2 and 3 are done)
+## Worktrees to remove after the decision
 
-1. Push `feat/equipped-item-level-migration`, open the migration-only PR, merge with `--admin` on a non-raid day, confirm the deploy (about 12 seconds after merge).
-2. Push `feat/armory-item-level`, open the code PR, give copy sign-off on the Equipped column, merge after the migration is live.
-3. Push the `gsd/quick-261026-...` branch and open the docs-only PR.
-
-Until then, the only thing on `feat/armory-item-level` is the spike script, which is safe to merge or discard at any time.
-
-## Worktrees to remove after merge
-
-- `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code` (exists; contains a node_modules symlink, remove it with `git worktree remove`)
-- `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-migration` (not created yet)
+- `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code` (contains a node_modules symlink; remove with `git worktree remove`)
 
 ## Privacy check
 
-No guild, character or realm names, ids, tokens or credentials appear in the script, SPIKE.md, this SUMMARY or the commit message.
+No guild, character or realm names, ids, tokens or credentials appear in the script, the report, SPIKE.md, this SUMMARY or the commit messages. Counts and aggregates only.
 
 ## Self-Check: PASSED
 
-- Probe script exists on `feat/armory-item-level`; commit a11e3d86 present.
-- SPIKE.md exists with exactly one verdict line.
+- Probe exited 0 with a report that passed the privacy self-check.
+- SPIKE.md has exactly one verdict line (grep count 1).
+- No files changed on the code branch during this run.

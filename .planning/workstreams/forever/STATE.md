@@ -128,6 +128,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 - Oct 21: Forever boss names (Phase 2); addon scope and owner for the separate repo (Phase 5); community asks for in-game loot list viewing through the addon without a web login (addon scope input)
 - Oct 26: spec defaults review and copy sign-off for picker, presets, "Set your 5" (Phase 4); simplicity audit scope and sidebar direction (Phase 8); community input for the Phase 4 presets review: how often raiders may re-rank need rows within a tier; a council-style preset that shows attendance, bad luck protection and a future preparation score side by side
 - Nov 9: beta guild, named paper-fallback officer, void rule (Phase 7); master loot or Gargul export scope (Phase 5)
+- Oct 27: armory gear sync after the NO-GO spike (quick 261026-wpw): base item level from the static-classic item endpoint, the summary's average item level, or drop it; and whether to keep the probe script on feat/armory-item-level
 
 ### Blockers/Concerns
 
@@ -144,7 +145,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
-| 261026-wpw | v1 armory gear sync (INCOMPLETE: halted at Task 1 spike gate, verdict INCONCLUSIVE; owner must supply Blizzard credentials and run the spike, tasks 2 and 3 not built) | 2026-10-26 | a11e3d86 (spike script, branch feat/armory-item-level) | [261026-wpw-v1-armory-gear-sync-spike-battle-net-cla](./quick/261026-wpw-v1-armory-gear-sync-spike-battle-net-cla/) |
+| 261026-wpw | v1 armory gear sync (spike verdict NO-GO: the Classic equipment API returns no per-slot item level, 0 of 90 items across 6 characters; tasks 2 and 3 not built; the alternative is an owner decision) | 2026-10-27 | a11e3d86 (spike script, branch feat/armory-item-level) | [261026-wpw-v1-armory-gear-sync-spike-battle-net-cla](./quick/261026-wpw-v1-armory-gear-sync-spike-battle-net-cla/) |
 
 ## Deferred Items
 
