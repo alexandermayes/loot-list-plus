@@ -17,12 +17,18 @@ vi.mock('@/utils/supabase/server', () => ({
   getAuthenticatedUser: vi.fn(),
 }))
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
-vi.mock('@/lib/battlenet', () => ({
-  getBattlenetAccount: vi.fn(),
-  battlenetFetch: vi.fn(),
-  getWowProfileNamespaces: vi.fn(),
-  SLOT_MAPPING: {},
-}))
+vi.mock('@/lib/battlenet', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/battlenet')>()
+  return {
+    getBattlenetAccount: vi.fn(),
+    battlenetFetch: vi.fn(),
+    getWowProfileNamespaces: vi.fn(),
+    // Real slot map and item level reader, so the gear case proves what the
+    // route stores rather than a stub of the reader.
+    SLOT_MAPPING: actual.SLOT_MAPPING,
+    readEquippedItemLevel: actual.readEquippedItemLevel,
+  }
+})
 vi.mock('@/lib/cache/user-bundle', () => ({ revalidateUserBundle: vi.fn() }))
 vi.mock('@/utils/cache', () => ({
   invalidateCache: vi.fn(),
@@ -285,6 +291,28 @@ describe('POST /api/battlenet/characters/import applies the guild rule before cr
       trial_started_at: '2026-09-01T00:00:00.000Z',
     })
     expect(service.calls.some(c => c.table === 'guild_settings')).toBe(false)
+  })
+
+  it('stores each equipped slot item level from level.value, and null when the response has none', async () => {
+    const equipment = {
+      equipped_items: [
+        { slot: { type: 'HEAD', name: 'Head' }, item: { id: 101, name: 'Helm' }, level: { value: 489, display_string: 'Item Level 489' } },
+        { slot: { type: 'CHEST', name: 'Chest' }, item: { id: 102, name: 'Chestpiece' } },
+      ],
+    }
+    vi.mocked(battlenetFetch).mockImplementation(async (_account, path) =>
+      new Response(JSON.stringify(path.endsWith('/equipment') ? equipment : PROFILE), { status: 200 }))
+    const { service } = setup()
+
+    const res = await POST(request({ guildId: GUILD, importGear: true }))
+
+    expect(res.status).toBe(201)
+    const insert = service.writes().find(c => c.table === 'character_equipped_items')
+    expect(insert?.op).toBe('insert')
+    expect(insert?.payload).toEqual([
+      expect.objectContaining({ character_id: CHARACTER, slot: 'Head', wowhead_id: 101, item_level: 489 }),
+      expect.objectContaining({ character_id: CHARACTER, slot: 'Chest', wowhead_id: 102, item_level: null }),
+    ])
   })
 
   it.each([

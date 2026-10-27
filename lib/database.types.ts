@@ -383,6 +383,7 @@ export type Database = {
           gem_ids: number[] | null
           id: string
           imported_at: string | null
+          item_level: number | null
           item_name: string | null
           slot: string
           wowhead_id: number
@@ -393,6 +394,7 @@ export type Database = {
           gem_ids?: number[] | null
           id?: string
           imported_at?: string | null
+          item_level?: number | null
           item_name?: string | null
           slot: string
           wowhead_id: number
@@ -403,6 +405,7 @@ export type Database = {
           gem_ids?: number[] | null
           id?: string
           imported_at?: string | null
+          item_level?: number | null
           item_name?: string | null
           slot?: string
           wowhead_id?: number

@@ -277,3 +277,16 @@ export const SLOT_MAPPING: Record<string, string> = {
   SHIRT: 'Shirt',
   TABARD: 'Tabard',
 }
+
+/**
+ * Equipped item level of one profile equipment item, read at
+ * equipped_items[].level.value. Only an integer from 1 to 1999 is kept: the
+ * bounds match the character_equipped_items item_level CHECK, so a bad value
+ * becomes null instead of failing the whole gear insert.
+ */
+export function readEquippedItemLevel(item: { level?: { value?: unknown } | null }): number | null {
+  const value = item.level?.value
+  if (typeof value !== 'number' || !Number.isInteger(value)) return null
+  if (value < 1 || value > 1999) return null
+  return value
+}

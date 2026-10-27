@@ -10,6 +10,7 @@ import {
   battlenetFetch,
   getWowProfileNamespaces,
   SLOT_MAPPING,
+  readEquippedItemLevel,
   type GameVersion,
 } from '@/lib/battlenet'
 import { invalidateCache, cacheKeys } from '@/utils/cache'
@@ -61,6 +62,10 @@ interface EquipmentResponse {
         id: number
       }
     }>
+    level?: {
+      value: number
+      display_string?: LocalizedString
+    }
   }>
 }
 
@@ -408,6 +413,7 @@ export async function POST(request: NextRequest) {
                   item.sockets
                     ?.map((s) => s.item?.id)
                     .filter((id): id is number => !!id) || null,
+                item_level: readEquippedItemLevel(item),
               }))
 
             if (itemsToInsert.length > 0) {
