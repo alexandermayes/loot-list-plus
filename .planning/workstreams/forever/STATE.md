@@ -36,7 +36,7 @@ Research: `.planning/research/SUMMARY.md`
 Phase: 3 — Discovery Schema and Need Pipeline
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-10-28 - Completed fast task 261028-fast: Sync gear button in the edit character modal (PR #472); quick task 261028-0gx (award slot lock) merged the same day
+Last activity: 2026-10-28 - Completed fast task 261028-fast-2: October 28 changelog entry for locked ranks and Sync gear (PR #475)
 
 Progress: [███░░░░░░░] 2/8 phases ([████████████████████] 22/22 plans, 100% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning
 
@@ -150,6 +150,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 | 261027-fast | Changelog entry for the Equipped column (October 27, 2026 entry in lib/updates-data.ts; the changelog, updates page, landing line, sitemap lastmod and Discord updates cron all read it) | 2026-10-27 | 3c5356ac (branch feat/changelog-equipped-item-level, PR #466) | none (gsd-fast, no PLAN or SUMMARY) |
 | 261028-0gx | Award slot lock: keep awarded loot list ranks locked for the tier (opt-in guild setting; migration PR #468, code PR #469) | 2026-10-28 | 3df61a15 (feat/slot-lock-migration), a5a869d4, 8713c671 (feat/award-slot-lock) | [261028-0gx-award-slot-lock-keep-awarded-loot-list-r](./quick/261028-0gx-award-slot-lock-keep-awarded-loot-list-r/) |
 | 261028-fast | Sync gear button in the edit character modal (the only button lived on the unlinked /characters/[id]/edit page; EditCharacterModal now shows the Battle.net gear sync card for linked characters, officer feedback 2026-10-28) | 2026-10-28 | cf0c1d61 (branch fix/sync-gear-in-edit-modal, PR #472) | none (gsd-fast, no PLAN or SUMMARY) |
+| 261028-fast-2 | Changelog entry for October 28, 2026 (Lock awarded ranks and Sync gear from Manage Characters in lib/updates-data.ts; the changelog, updates page, landing line, sitemap lastmod and Discord updates cron all read it) | 2026-10-28 | b4bee9a8 (branch feat/changelog-slot-lock-sync-gear, PR #475) | none (gsd-fast, no PLAN or SUMMARY) |
 
 
 ## Deferred Items
