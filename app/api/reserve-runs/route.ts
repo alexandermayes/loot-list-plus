@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
     // fails closed the same way as a Discovery tier.
     const { data: tier, error: tierError } = await serviceSupabase
       .from('raid_tiers')
-      .select('id, list_mode')
+      .select('id, list_mode, expansion_id')
       .eq('id', raid_tier_id)
       .maybeSingle()
 
@@ -172,7 +172,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create run' }, { status: 500 })
     }
 
-    if (!tier || tier.list_mode !== 'known') {
+    // review WR-05: a guild run sits on one of that guild's own tiers, checked
+    // before list_mode so a foreign tier gives away nothing about its mode and
+    // answers exactly like a missing one. A personal run (no guild_id) keeps the
+    // shared catalog that /api/reserve-runs/raid-tiers offers, which is any
+    // guild's Known tier of the chosen expansion, so no guild check applies.
+    let tierBelongsToGuild = true
+    if (guild_id && tier) {
+      if (!tier.expansion_id) {
+        tierBelongsToGuild = false
+      } else {
+        const { data: expansion, error: expansionError } = await serviceSupabase
+          .from('expansions')
+          .select('id, guild_id')
+          .eq('id', tier.expansion_id)
+          .maybeSingle()
+        if (expansionError) {
+          console.error('Error reading expansion for reserve run:', expansionError)
+          return NextResponse.json({ error: 'Failed to create run' }, { status: 500 })
+        }
+        tierBelongsToGuild = !!expansion && expansion.guild_id === guild_id
+      }
+    }
+
+    if (!tier || !tierBelongsToGuild || tier.list_mode !== 'known') {
       return NextResponse.json({ error: RESERVES_UNAVAILABLE_ERROR }, { status: 400 })
     }
 

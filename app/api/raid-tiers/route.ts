@@ -241,12 +241,16 @@ export async function PATCH(request: NextRequest) {
 
     let updatedTier: unknown = tier
 
+    // review WR-01: the mode and the other fields travel in one statement, so a
+    // request never half-lands with the mode switched and the rest refused.
+    const otherUpdate = otherFields as TablesUpdate<'raid_tiers'>
+
     if (modeChange === 'discovery') {
       // enforce_loot_item_need_rules refuses need rows in a tier that is not yet
       // Discovery, so the order is switch first, seed second.
       const { data: switched, error: switchError } = await serviceSupabase
         .from('raid_tiers')
-        .update({ list_mode: 'discovery' })
+        .update({ ...otherUpdate, list_mode: 'discovery' })
         .eq('id', tier_id)
         .eq('list_mode', 'known')
         .select()
@@ -265,9 +269,13 @@ export async function PATCH(request: NextRequest) {
         // The seed is one insert, so no need row exists and the database backstop
         // allows the switch back. If this fails too, the owner's sync:forever
         // seeds the missing keys of a Discovery tier.
+        // The other fields go back to what the tier held before this request.
+        const previousOtherFields = Object.fromEntries(
+          Object.keys(otherFields).map(key => [key, (tier as Record<string, unknown>)[key]])
+        ) as TablesUpdate<'raid_tiers'>
         const { error: revertError } = await serviceSupabase
           .from('raid_tiers')
-          .update({ list_mode: 'known' })
+          .update({ ...previousOtherFields, list_mode: 'known' })
           .eq('id', tier_id)
           .eq('list_mode', 'discovery')
         if (revertError) {
@@ -278,7 +286,7 @@ export async function PATCH(request: NextRequest) {
     } else if (modeChange === 'known') {
       const { data: switched, error: switchError } = await serviceSupabase
         .from('raid_tiers')
-        .update({ list_mode: 'known' })
+        .update({ ...otherUpdate, list_mode: 'known' })
         .eq('id', tier_id)
         .eq('list_mode', 'discovery')
         .select()
@@ -304,10 +312,10 @@ export async function PATCH(request: NextRequest) {
       })
     }
 
-    if (Object.keys(otherFields).length > 0) {
+    if (modeChange === null && Object.keys(otherFields).length > 0) {
       const { data, error } = await serviceSupabase
         .from('raid_tiers')
-        .update(otherFields as TablesUpdate<'raid_tiers'>)
+        .update(otherUpdate)
         .eq('id', tier_id)
         .select()
 

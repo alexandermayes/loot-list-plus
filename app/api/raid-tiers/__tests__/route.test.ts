@@ -332,6 +332,39 @@ describe('PATCH /api/raid-tiers list_mode: switching a Forever tier to Discovery
     expect(logged.filter(first => first === 'Error switching raid tier back to Known after a failed seed:')).toHaveLength(1)
   })
 
+  it('[WR-01] list_mode beside another field lands in one update statement, so nothing half-lands', async () => {
+    const { res, json, calls, tiers } = await run(baseFixture(), {
+      tier_id: T1,
+      updates: { list_mode: 'discovery', master_sheet_visible: false },
+    })
+
+    expect(res.status).toBe(200)
+    expect(json.tier.list_mode).toBe('discovery')
+    expect(json.tier.master_sheet_visible).toBe(false)
+    const updates = tierUpdates(calls)
+    expect(updates).toHaveLength(1)
+    expect(updates[0].payload).toEqual({ list_mode: 'discovery', master_sheet_visible: false })
+    expect(tiers.find(t => t.id === T1)).toMatchObject({ list_mode: 'discovery', master_sheet_visible: false })
+    expect(needInserts(calls)).toHaveLength(1)
+  })
+
+  it('[WR-01] a failed seed puts the other field back together with the mode', async () => {
+    const fixture = baseFixture()
+    fixture.errors = { 'loot_items:insert': 'insert exploded' }
+    const { res, calls, tiers } = await run(fixture, {
+      tier_id: T1,
+      updates: { list_mode: 'discovery', master_sheet_visible: false },
+    })
+
+    expect(res.status).toBe(500)
+    const updates = tierUpdates(calls)
+    expect(updates).toHaveLength(2)
+    expect(updates[0].payload).toEqual({ list_mode: 'discovery', master_sheet_visible: false })
+    expect(updates[1].payload).toEqual({ list_mode: 'known', master_sheet_visible: true })
+    expect(tiers.find(t => t.id === T1)).toMatchObject({ list_mode: 'known', master_sheet_visible: true })
+    expect(logAudit).not.toHaveBeenCalled()
+  })
+
   it('[D-17] the same request for a tier of a non-Forever expansion answers 400 with the reason and writes nothing', async () => {
     const { res, json, calls } = await run(baseFixture(), { tier_id: T_CLASSIC, updates: { list_mode: 'discovery' } })
 
@@ -389,6 +422,19 @@ describe('PATCH /api/raid-tiers list_mode: guards', () => {
       oldData: { list_mode: 'discovery' },
       newData: { list_mode: 'known' },
     }))
+  })
+
+  it('[WR-01] the switch to Known carries the other field in the same statement', async () => {
+    const { res, calls, tiers } = await run(baseFixture(), {
+      tier_id: T_DISC,
+      updates: { list_mode: 'known', is_guild_active: false },
+    })
+
+    expect(res.status).toBe(200)
+    const updates = tierUpdates(calls)
+    expect(updates).toHaveLength(1)
+    expect(updates[0].payload).toEqual({ list_mode: 'known', is_guild_active: false })
+    expect(tiers.find(t => t.id === T_DISC)).toMatchObject({ list_mode: 'known', is_guild_active: false })
   })
 
   it('[D-03] a tier with no need rows switches to Known with no count queries', async () => {
