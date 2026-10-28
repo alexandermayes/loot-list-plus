@@ -17,6 +17,7 @@ import {
 } from '@/lib/loot/guild-scoped-lookup'
 import { buildImportStringAwardRow, type LootItemScope } from '@/lib/loot/loot-history-rows'
 import { addonAwardKeys, insertAddonAward } from '@/lib/loot/addon-award-insert'
+import { lockAwardedSlots, type SlotLockAward } from '@/lib/loot/slot-locks'
 import { matchAwardSession } from '@/lib/addon/award-session'
 import { inflateRawSync } from 'zlib'
 
@@ -246,6 +247,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Process awards, each linked to its session's raid night when one matches.
+    const lockAwards: SlotLockAward[] = []
     for (let i = 0; i < awards.length; i++) {
       const award = awards[i]
       try {
@@ -264,11 +266,19 @@ export async function POST(request: NextRequest) {
           continue
         }
         announceQueue.push(outcome.announce)
+        // Addon awards carry no reason, so they lock (owner veto).
+        if (outcome.lootHistoryId) lockAwards.push({ lootHistoryId: outcome.lootHistoryId, reason: null })
         if (outcome.raidEventId) linkedItemIds.add(outcome.announce.itemId)
       } catch (err) {
         console.error('Failed to process award:', err)
         results.awards.errors++
       }
+    }
+
+    // Awaited in input order so two copies of one item lock copy 1 first;
+    // lockAwardedSlots never rejects, so the import result is unaffected.
+    if (lockAwards.length > 0) {
+      await lockAwardedSlots(supabase, payload.guildId, lockAwards)
     }
 
     // BLP is derived and idempotent (GH #98). Recompute for the nights the
@@ -369,7 +379,7 @@ async function resolveImportAwardScopes(
 }
 
 type ProcessAwardOutcome =
-  | { status: 'inserted'; announce: LootAward; raidEventId: string | null }
+  | { status: 'inserted'; announce: LootAward; raidEventId: string | null; lootHistoryId: string | null }
   | { status: 'already_recorded' }
 
 async function processAward(
@@ -503,6 +513,7 @@ async function processAward(
     status: 'inserted',
     announce: { itemId: item.id, characterName: award.characterName, raidEventId },
     raidEventId,
+    lootHistoryId: result.id,
   }
 }
 

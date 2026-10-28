@@ -16,6 +16,9 @@ import ClassPrioritySubline from './ClassPrioritySubline'
 import { getBossOrder, normalizeBossName } from '@/utils/bossOrder'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { Card } from '@/components/ui/card'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { LockIcon } from '@hugeicons/core-free-icons'
+import { LOCKED_RANK_LABEL } from '@/domain/loot/slot-locks'
 
 interface Item {
   id: string
@@ -58,6 +61,11 @@ interface SearchableItemSelectProps {
   readOnly?: boolean
   /** Called when X is clicked in read-only mode. If not set, falls back to onChange('') */
   onRemove?: () => void
+  /**
+   * When set, the slot is locked to its item (an award slot lock): no dropdown,
+   * no X button, and a lock icon with this text as its title in the X's place.
+   */
+  lockedTitle?: string
   /** When true, renders a full-screen modal instead of positioned dropdown (for mobile) */
   mobile?: boolean
   /**
@@ -81,9 +89,13 @@ export default function SearchableItemSelect({
   ownedWowheadIds = new Set(),
   readOnly = false,
   onRemove,
+  lockedTitle,
   mobile = false,
   valueFallbackItems,
 }: SearchableItemSelectProps) {
+  // A locked slot behaves like a read-only one that also drops the X button.
+  const isLocked = lockedTitle !== undefined
+  const inert = readOnly || isLocked
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0, maxHeight: 384 })
@@ -218,7 +230,7 @@ export default function SearchableItemSelect({
 
   // Handle opening the dropdown with position calculation
   const handleOpen = () => {
-    if (isSlotDisabled || readOnly) return
+    if (isSlotDisabled || inert) return
     const next = computeDropdownPosition()
     if (next) setDropdownPosition(next)
     setIsOpen(true)
@@ -257,14 +269,14 @@ export default function SearchableItemSelect({
         role="combobox"
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        aria-disabled={isSlotDisabled || readOnly}
-        tabIndex={isSlotDisabled || readOnly ? -1 : 0}
+        aria-disabled={isSlotDisabled || inert}
+        tabIndex={isSlotDisabled || inert ? -1 : 0}
         onClick={() => {
-          if (isSlotDisabled || readOnly) return
+          if (isSlotDisabled || inert) return
           isOpen ? setIsOpen(false) : handleOpen()
         }}
         onKeyDown={(e) => {
-          if (isSlotDisabled || readOnly) return
+          if (isSlotDisabled || inert) return
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
             isOpen ? setIsOpen(false) : handleOpen()
@@ -273,7 +285,7 @@ export default function SearchableItemSelect({
         className={`w-full px-3 py-2 bg-background-elevated border rounded-[52px] text-left focus:outline-none flex items-center justify-between gap-2 ${
           isSlotDisabled
             ? 'opacity-50 cursor-not-allowed text-muted-foreground border-border-strong'
-            : readOnly
+            : inert
               ? 'text-foreground border-border-strong'
               : hasError
                 ? 'text-foreground cursor-pointer border-destructive border-2 focus:border-destructive'
@@ -301,7 +313,7 @@ export default function SearchableItemSelect({
               dropdown can be disabled by a Reserved companion in the sibling
               slot, but the user must still be able to remove an item that's
               already there. Otherwise they get "locked" (GH #44). */}
-          {selectedItem && (
+          {selectedItem && !isLocked && (
             <Button
               type="button"
               variant="ghost"
@@ -323,7 +335,17 @@ export default function SearchableItemSelect({
               </svg>
             </Button>
           )}
-          {!readOnly && (
+          {selectedItem && isLocked && (
+            <span
+              role="img"
+              aria-label={LOCKED_RANK_LABEL}
+              title={lockedTitle}
+              className="inline-flex items-center text-muted-foreground"
+            >
+              <HugeiconsIcon icon={LockIcon} size={14} />
+            </span>
+          )}
+          {!inert && (
             <svg
               className="w-4 h-4 transition-transform"
               style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}

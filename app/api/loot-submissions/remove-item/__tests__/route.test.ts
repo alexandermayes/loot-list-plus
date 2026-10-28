@@ -10,11 +10,16 @@ import { trackApiError, trackEvent } from '@/utils/analytics/server'
 import { toDateString } from '@/utils/date'
 import { buildRemoveItemHistoryRow } from '@/lib/loot/loot-history-rows'
 import { logAudit } from '@/utils/audit/log'
+import { fetchActiveSlotLocks, releaseSlotLock } from '@/lib/loot/slot-locks'
 
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
 vi.mock('@/utils/server-roles', () => ({ verifyPermission: vi.fn() }))
 vi.mock('@/utils/audit/log', () => ({ logAudit: vi.fn() }))
+vi.mock('@/lib/loot/slot-locks', () => ({
+  fetchActiveSlotLocks: vi.fn(async () => []),
+  releaseSlotLock: vi.fn(async () => undefined),
+}))
 vi.mock('@/utils/analytics/server', () => ({ trackEvent: vi.fn(), trackApiError: vi.fn() }))
 
 const GUILD_ID = 'aaaaaaaa-0000-0000-0000-000000000001'
@@ -506,5 +511,111 @@ describe('POST /api/loot-submissions/remove-item', () => {
       expect(body.error).toBe('Couldn\'t restore item. Try again.')
       expect(logAudit).not.toHaveBeenCalled()
     })
+  })
+})
+
+describe('POST /api/loot-submissions/remove-item award slot locks (quick task 261028-0gx)', () => {
+  const LOCK = {
+    id: 'lock-1',
+    rank: 1,
+    slot: 1,
+    loot_item_id: ITEM_ID,
+    locked_at: '2026-10-24T12:00:00Z',
+    item_name: 'Sulfuras',
+  }
+  const lockFixture = (): Fixture => ({
+    ...baseFixture(),
+    itemRows: [{ id: 'row-1', rank: 1, slot: '1', loot_item_id: ITEM_ID, removed_at: null }],
+  })
+  const lockBody = { guild_id: GUILD_ID, submission_id: SUBMISSION_ID, loot_item_id: ITEM_ID, rank: 1, slot: 1 }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: OWNER_USER_ID }, error: null } as never)
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: true } as never)
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([LOCK])
+    vi.mocked(releaseSlotLock).mockResolvedValue(undefined)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+
+  it('refuses an owner without manage_submissions with 403 and the lock message, changing nothing', async () => {
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: false } as never)
+    const { client, calls } = makeClient(lockFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request(lockBody))
+    const body = await res.json()
+
+    expect(res.status).toBe(403)
+    expect(body.error).toBe('Rank 1 is locked to Sulfuras')
+    expect(submissionItemUpdates(calls)).toHaveLength(0)
+    expect(releaseSlotLock).not.toHaveBeenCalled()
+  })
+
+  it('lets an officer remove a locked row, releasing the lock before the soft delete and auditing it', async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: OFFICER_USER_ID }, error: null } as never)
+    const { client, calls } = makeClient(lockFixture())
+    let callsWhenReleased = -1
+    vi.mocked(releaseSlotLock).mockImplementation(async () => {
+      callsWhenReleased = calls.length
+    })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request(lockBody))
+
+    expect(res.status).toBe(200)
+    expect(releaseSlotLock).toHaveBeenCalledWith(client, 'lock-1', OFFICER_USER_ID, 'removed_by_officer')
+    // The soft delete is a later call than the one recorded at release time.
+    const updateIndex = calls.findIndex(c => c.table === 'loot_submission_items' && c.updatePayload)
+    expect(callsWhenReleased).toBeGreaterThan(-1)
+    expect(callsWhenReleased).toBeLessThanOrEqual(updateIndex)
+    expect(vi.mocked(logAudit).mock.calls[0][0].oldData).toMatchObject({ lock_released: true })
+  })
+
+  it('treats an owner who holds manage_submissions as an officer', async () => {
+    const { client, calls } = makeClient(lockFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request(lockBody))
+
+    expect(res.status).toBe(200)
+    expect(verifyPermission).toHaveBeenCalledWith(client, OWNER_USER_ID, GUILD_ID, 'manage_submissions')
+    expect(releaseSlotLock).toHaveBeenCalledWith(client, 'lock-1', OWNER_USER_ID, 'removed_by_officer')
+    expect(submissionItemUpdates(calls)).toHaveLength(1)
+  })
+
+  it('never releases for an unlocked row and audits lock_released false', async () => {
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([])
+    const { client } = makeClient(lockFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request(lockBody))
+
+    expect(res.status).toBe(200)
+    expect(releaseSlotLock).not.toHaveBeenCalled()
+    expect(vi.mocked(logAudit).mock.calls[0][0].oldData).toMatchObject({ lock_released: false })
+  })
+
+  it('ignores a lock held at another position of the same item', async () => {
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([{ ...LOCK, rank: 9 }])
+    const { client } = makeClient(lockFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request(lockBody))
+
+    expect(res.status).toBe(200)
+    expect(releaseSlotLock).not.toHaveBeenCalled()
+  })
+
+  it('returns 500 with no row update when the release fails', async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: OFFICER_USER_ID }, error: null } as never)
+    vi.mocked(releaseSlotLock).mockRejectedValue(new Error('Failed to release loot list slot lock'))
+    const { client, calls } = makeClient(lockFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request(lockBody))
+
+    expect(res.status).toBe(500)
+    expect(submissionItemUpdates(calls)).toHaveLength(0)
   })
 })

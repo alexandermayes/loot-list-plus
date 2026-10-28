@@ -24,7 +24,8 @@ import {
 } from '@/app/hooks/use-api'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { buildSlotCoverageMap, computeUpgradeTier } from '@/domain/loot/slot-normalization'
-import { removeRankingAt } from '@/domain/loot/list-row-updates'
+import { removeRankingAt, positionKey } from '@/domain/loot/list-row-updates'
+import type { ListSlotLock } from '@/domain/loot/slot-locks'
 // preloadItemIcons is lazy-loaded (190KB module) - only imported when items are ready
 import {
   createBracketStates,
@@ -116,6 +117,8 @@ interface LootListDataContextType {
   initialRankings: Record<string, string>
   originalStatus: string | null
   removedItems: Array<{ loot_item_id: string; rank: number; slot: number }>
+  /** Award slot locks of the open list, keyed "{rank}-{slot}" (quick task 261028-0gx). */
+  lockedPositions: Record<string, ListSlotLock>
 }
 
 // Separate interface for actions (stable functions, rarely trigger re-renders)
@@ -260,6 +263,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         submission: LootSubmission | null
         rankings: Record<string, string>
         removedItems: Array<{ loot_item_id: string; rank: number; slot: number }>
+        locks?: ListSlotLock[]
       }) => {
         // Seed the SWR cache for each of the three hooks with the shapes
         // they expect. `revalidate: false` prevents SWR from immediately
@@ -290,6 +294,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
               submission: data.submission,
               rankings: data.rankings,
               removedItems: data.removedItems,
+              locks: data.locks ?? [],
             },
             { revalidate: false }
           )
@@ -407,6 +412,21 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     submissionDataRef.current = submissionData || null
   }, [submissionData])
+
+  // Award slot locks by position. save_submission_items refuses a save that
+  // breaks one, so the guards below keep the editor from building a list the
+  // save would bounce. The ref keeps the action callbacks stable.
+  const lockedPositions = useMemo(() => {
+    const byKey: Record<string, ListSlotLock> = {}
+    for (const lock of submissionData?.locks ?? []) {
+      byKey[positionKey(Number(lock.rank), Number(lock.slot))] = lock
+    }
+    return byKey
+  }, [submissionData?.locks])
+  const lockedPositionsRef = useRef(lockedPositions)
+  useEffect(() => {
+    lockedPositionsRef.current = lockedPositions
+  }, [lockedPositions])
 
   // Set initial phase from URL or first available (uses canonical phases from groups)
   useEffect(() => {
@@ -539,10 +559,12 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
   // Handle item selection
   const handleItemSelect = useCallback((rank: number, slot: number, itemId: string) => {
+    const key = `${rank}-${slot}`
+    if (lockedPositionsRef.current[key]) return
+
     // Mark that user made local changes - prevents sync effect from overwriting
     localChangesRef.current = true
 
-    const key = `${rank}-${slot}`
     if (itemId === '') {
       setRankings(prev => {
         const newRankings = { ...prev }
@@ -557,6 +579,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   // Move or swap a ranked item between slots. Drop on empty = move; drop on filled = swap.
   const moveRanking = useCallback((sourceKey: string, targetKey: string) => {
     if (sourceKey === targetKey) return
+    if (lockedPositionsRef.current[sourceKey] || lockedPositionsRef.current[targetKey]) return
     localChangesRef.current = true
     setRankings(prev => {
       const src = prev[sourceKey]
@@ -577,7 +600,14 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   // Clear all rankings
   const clearAllRankings = useCallback(() => {
     localChangesRef.current = true
-    setRankings({})
+    setRankings(prev => {
+      // A locked rank keeps its awarded item; everything else is cleared.
+      const kept: Record<string, string> = {}
+      for (const [key, lock] of Object.entries(lockedPositionsRef.current)) {
+        if (prev[key] === lock.loot_item_id) kept[key] = prev[key]
+      }
+      return kept
+    })
   }, [])
 
   // Import BIS items into rankings using smart bracket-aware placement
@@ -652,7 +682,27 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       const newRankings: Record<string, string> = {}
       let importedCount = 0
 
+      // Locked ranks survive the import: seed them first so their points and
+      // positions are taken before any BiS item is placed, and so the save
+      // does not bounce on a lock the import dropped.
+      const lockedItemIds = new Set<string>()
+      for (const [key, lock] of Object.entries(lockedPositionsRef.current)) {
+        if (rankingsRef.current[key] !== lock.loot_item_id) continue
+        newRankings[key] = lock.loot_item_id
+        lockedItemIds.add(lock.loot_item_id)
+        const lockedItem = itemsById.get(lock.loot_item_id) ?? { id: lock.loot_item_id }
+        const bracket = bracketStates.find(state => state.config.ranks.includes(lock.rank))
+        if (bracket) {
+          placeInBracket(lockedItem, bracket, lock.rank, lock.slot as 1 | 2)
+        } else {
+          noBracketPlacements.set(key, lock.loot_item_id)
+        }
+      }
+
       for (const bisItem of sortedBisItems) {
+        // The raider already has an item locked to a rank
+        if (lockedItemIds.has(bisItem.loot_item_id)) continue
+
         // Skip if item not available in this tier's loot table
         const wowheadId = validWowheadIds.get(bisItem.loot_item_id)
         if (wowheadId === undefined) continue
@@ -995,7 +1045,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
       // Optimistically update the SWR submission data so the status banner updates immediately
       mutateSubmission(
-        { submission: { ...submissionData?.submission, ...upsertedSub, status: finalStatus } as LootSubmission, rankings },
+        { ...submissionData, submission: { ...submissionData?.submission, ...upsertedSub, status: finalStatus } as LootSubmission, rankings },
         false // don't revalidate — we already have the correct data
       )
 
@@ -1189,7 +1239,8 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     hasChanges,
     initialRankings,
     originalStatus,
-    removedItems: submissionData?.removedItems || []
+    removedItems: submissionData?.removedItems || [],
+    lockedPositions
   }), [
     filteredLootItems,
     submissionData?.submission,
@@ -1213,7 +1264,8 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     hasChanges,
     initialRankings,
     originalStatus,
-    submissionData?.removedItems
+    submissionData?.removedItems,
+    lockedPositions
   ])
 
   // Memoize actions value - these are stable functions that rarely change
