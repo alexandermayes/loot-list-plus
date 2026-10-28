@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { trackApiError } from '@/utils/analytics/server'
+import { fetchActiveSlotLocks } from '@/lib/loot/slot-locks'
+import type { ListSlotLock } from '@/domain/loot/slot-locks'
 
 // GET - Fetch loot submission and rankings for a character/tier
 export async function GET(request: NextRequest) {
@@ -62,7 +64,7 @@ export async function GET(request: NextRequest) {
 
     // If no submission, return null with empty rankings
     if (!submission) {
-      return NextResponse.json({ submission: null, rankings: {} })
+      return NextResponse.json({ submission: null, rankings: {}, locks: [] })
     }
 
     // Get rankings for this submission (including removed items)
@@ -87,7 +89,17 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({ submission, rankings, removedItems })
+    // Award slot locks. A failed read degrades to no locks so the editor
+    // still loads; save_submission_items enforces them regardless.
+    let locks: ListSlotLock[] = []
+    try {
+      const active = await fetchActiveSlotLocks(supabase, submission.id)
+      locks = active.map(({ rank, slot, loot_item_id, locked_at }) => ({ rank, slot, loot_item_id, locked_at }))
+    } catch {
+      console.error('Error fetching slot locks for GET /api/loot-submissions')
+    }
+
+    return NextResponse.json({ submission, rankings, removedItems, locks })
   } catch (error) {
     console.error('Error in GET /api/loot-submissions:', error)
     trackApiError('unknown', 'GET /api/loot-submissions', error instanceof Error ? error : new Error(String(error)))

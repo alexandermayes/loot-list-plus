@@ -40,6 +40,7 @@ import { useLootList, type LootItem } from '@/app/contexts/LootListContext'
 import { getPhaseGroupShortLabel } from '@/domain/expansion/phase-groups'
 import { copyLimitState } from '@/domain/loot/item-copies'
 import { positionKey } from '@/domain/loot/list-row-updates'
+import { lockedRankTitle, type ListSlotLock } from '@/domain/loot/slot-locks'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent, usePagePerf } from '@/utils/analytics/client'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
@@ -183,6 +184,8 @@ interface RankRowProps {
    * have been placed in this bracket (GH #79).
    */
   allLootItems?: LootItem[]
+  /** Award slot locks of this list, keyed "{rank}-{slot}": a locked cell cannot be moved, replaced or removed */
+  lockedPositions?: Record<string, ListSlotLock>
 }
 
 const RankRow = memo(function RankRow({
@@ -203,6 +206,7 @@ const RankRow = memo(function RankRow({
   onRestoreItem,
   enforceReservedAlone = true,
   allLootItems,
+  lockedPositions = {},
 }: RankRowProps) {
   // Lookup uses the bracket-filtered pool first, then falls back to the broad
   // pool so an item placed via a path the bracket filter doesn't allow still
@@ -217,6 +221,12 @@ const RankRow = memo(function RankRow({
   const removedItem2 = removedItemId2 ? resolveItem(removedItemId2) : null
   const isDuplicate1 = selectedItemId1 && duplicateItems.includes(selectedItemId1)
   const isDuplicate2 = selectedItemId2 && duplicateItems.includes(selectedItemId2)
+
+  // A slot is locked while its cell still holds the awarded item.
+  const lock1 = lockedPositions[`${rank}-1`]
+  const lock2 = lockedPositions[`${rank}-2`]
+  const isLocked1 = !!lock1 && selectedItemId1 === lock1.loot_item_id
+  const isLocked2 = !!lock2 && selectedItemId2 === lock2.loot_item_id
 
   // Disable sibling slot if a Reserved item is selected — only in zones that
   // enforce bracket rules.
@@ -254,9 +264,9 @@ const RankRow = memo(function RankRow({
             </span>
           </Card>
         ) : (
-          <DroppableSlot id={`${rank}-1`} disabled={isApproved || isSlot1DisabledByReserved}>
+          <DroppableSlot id={`${rank}-1`} disabled={isApproved || isSlot1DisabledByReserved || isLocked1}>
             <div className="space-y-1">
-              {selectedItemId1 && !isApproved ? (
+              {selectedItemId1 && !isApproved && !isLocked1 ? (
                 <DraggableSlot id={`${rank}-1`}>
                   <SearchableItemSelect
                     items={lootItems}
@@ -286,11 +296,12 @@ const RankRow = memo(function RankRow({
                   isSlotDisabled={isSlot1DisabledByReserved}
                   hasError={hasSlot1Error}
                   ownedWowheadIds={ownedWowheadIds}
-                  readOnly={isApproved}
-                  onRemove={isApproved && onRemoveItem && selectedItemId1 ? () => {
+                  readOnly={isApproved || isLocked1}
+                  onRemove={isApproved && !isLocked1 && onRemoveItem && selectedItemId1 ? () => {
                     const item = resolveItem(selectedItemId1)
                     if (item) onRemoveItem(item.id, item.name, { rank, slot: 1 })
                   } : undefined}
+                  lockedTitle={isLocked1 ? lockedRankTitle(lock1.locked_at) : undefined}
                 />
               )}
               {hasSlot1Error && (
@@ -333,9 +344,9 @@ const RankRow = memo(function RankRow({
             </span>
           </Card>
         ) : (
-          <DroppableSlot id={`${rank}-2`} disabled={isApproved || isSlot2DisabledByReserved}>
+          <DroppableSlot id={`${rank}-2`} disabled={isApproved || isSlot2DisabledByReserved || isLocked2}>
             <div className="space-y-1">
-              {selectedItemId2 && !isApproved ? (
+              {selectedItemId2 && !isApproved && !isLocked2 ? (
                 <DraggableSlot id={`${rank}-2`}>
                   <SearchableItemSelect
                     items={lootItems}
@@ -365,11 +376,12 @@ const RankRow = memo(function RankRow({
                   isSlotDisabled={isSlot2DisabledByReserved}
                   hasError={hasSlot2Error}
                   ownedWowheadIds={ownedWowheadIds}
-                  readOnly={isApproved}
-                  onRemove={isApproved && onRemoveItem && selectedItemId2 ? () => {
+                  readOnly={isApproved || isLocked2}
+                  onRemove={isApproved && !isLocked2 && onRemoveItem && selectedItemId2 ? () => {
                     const item = resolveItem(selectedItemId2)
                     if (item) onRemoveItem(item.id, item.name, { rank, slot: 2 })
                   } : undefined}
+                  lockedTitle={isLocked2 ? lockedRankTitle(lock2.locked_at) : undefined}
                 />
               )}
               {hasSlot2Error && (
@@ -418,6 +430,7 @@ const MobileRankCard = memo(function MobileRankCard({
   onRestoreItem,
   enforceReservedAlone = true,
   allLootItems,
+  lockedPositions = {},
 }: RankRowProps) {
   // Same fallback resolver as RankRow — see GH #79.
   const resolveItem = (id: string) =>
@@ -451,7 +464,11 @@ const MobileRankCard = memo(function MobileRankCard({
     hasError: boolean,
     errorMessages: string[],
     onRestore?: typeof onRestoreItem
-  ) => (
+  ) => {
+    // A slot is locked while its cell still holds the awarded item.
+    const lock = lockedPositions[`${rank}-${slotNum}`]
+    const isLocked = !!lock && selectedItemId === lock.loot_item_id
+    return (
     <div className="px-3 py-2.5 border-t border-border/50">
       <p className="text-11 text-muted-foreground font-medium mb-1.5">Slot {slotNum}</p>
       {!selectedItemId && removedItem ? (
@@ -481,11 +498,12 @@ const MobileRankCard = memo(function MobileRankCard({
             isSlotDisabled={isSlotDisabledByReserved}
             hasError={hasError}
             ownedWowheadIds={ownedWowheadIds}
-            readOnly={isApproved}
-            onRemove={isApproved && onRemoveItem && selectedItemId ? () => {
+            readOnly={isApproved || isLocked}
+            onRemove={isApproved && !isLocked && onRemoveItem && selectedItemId ? () => {
               const item = resolveItem(selectedItemId)
               if (item) onRemoveItem(item.id, item.name, { rank, slot: slotNum })
             } : undefined}
+            lockedTitle={isLocked ? lockedRankTitle(lock.locked_at) : undefined}
             mobile
           />
           {/* Boss + classification inline below the select */}
@@ -507,7 +525,8 @@ const MobileRankCard = memo(function MobileRankCard({
         </div>
       )}
     </div>
-  )
+    )
+  }
 
   return (
     <Card className={`overflow-hidden ${hasCardError ? 'border-destructive/50 bg-red-900/10' : ''}`}>
@@ -550,6 +569,8 @@ interface BracketSectionProps {
   removingItemId: string | null
   removedRankings: Record<string, string>
   onRestoreItem: (lootItemId: string, itemName: string, position: { rank: number; slot: number }) => void
+  /** Award slot locks of this list, keyed "{rank}-{slot}" (passed through to the rows) */
+  lockedPositions: Record<string, ListSlotLock>
   validation?: { allocationPoints: number; maxPoints: number; violations: string[] }
   maxAllocationPoints?: number
   expandedErrors: Set<string>
@@ -581,6 +602,7 @@ function BracketSection({
   removingItemId,
   removedRankings,
   onRestoreItem,
+  lockedPositions,
   validation,
   maxAllocationPoints,
   expandedErrors,
@@ -710,6 +732,7 @@ function BracketSection({
                   removedRankings={removedRankings}
                   onRestoreItem={onRestoreItem}
                   enforceReservedAlone={enforceReservedAlone}
+                  lockedPositions={lockedPositions}
                 />
               ))}
             </tbody>
@@ -738,6 +761,7 @@ function BracketSection({
               removingItemId={removingItemId}
               removedRankings={removedRankings}
               onRestoreItem={onRestoreItem}
+              lockedPositions={lockedPositions}
             />
           ))}
         </div>
@@ -781,6 +805,7 @@ export default function LootListContent({
     hasChanges,
     originalStatus,
     removedItems,
+    lockedPositions,
     setSelectedPhase,
     handleItemSelect,
     moveRanking,
@@ -1456,6 +1481,10 @@ export default function LootListContent({
     const targetKey = event.over ? String(event.over.id) : null
     if (!targetKey || sourceKey === targetKey) return
 
+    // A locked rank cannot be dragged out of or onto (the cells are not
+    // draggable or droppable either; this covers an unranked-panel drop).
+    if (lockedPositions[sourceKey] || lockedPositions[targetKey]) return
+
     const poolForRank = (rank: number) =>
       rank >= 39 ? bracket14Items : rank >= 25 ? noBracketItems : offSpecItems
 
@@ -1506,7 +1535,7 @@ export default function LootListContent({
     }
 
     moveRanking(sourceKey, targetKey)
-  }, [moveRanking, handleItemSelect, rankings, bracket14Items, noBracketItems, offSpecItems, showNotification])
+  }, [moveRanking, handleItemSelect, rankings, lockedPositions, bracket14Items, noBracketItems, offSpecItems, showNotification])
 
   return (
     <ExpansionGuard serverHeading={serverHeading}>
@@ -2047,6 +2076,7 @@ export default function LootListContent({
             removingItemId={removingItemId}
             removedRankings={removedRankings}
             onRestoreItem={handleRestoreItem}
+            lockedPositions={lockedPositions}
             validation={getBracketValidation(bracket.name)}
             maxAllocationPoints={bracketLimits.maxAllocationPoints}
             expandedErrors={expandedErrors}

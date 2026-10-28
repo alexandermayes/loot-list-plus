@@ -3,10 +3,12 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { validateBracketRules, type BracketItem, type BracketLimits } from '@/domain/loot/bracket-validation'
 import { validateItemCopyLimits } from '@/domain/loot/item-copies'
+import { findLockViolations, lockViolationMessage } from '@/domain/loot/slot-locks'
 import { logStatusChange } from '@/utils/audit/log'
 import { trackEvent, setUserMilestone } from '@/utils/analytics/server'
 import { revalidatePendingSubmissions } from '@/lib/cache/submission-tag'
 import { findInvalidCharacterIds } from '@/lib/loot/guild-award-refs'
+import { fetchActiveSlotLocks } from '@/lib/loot/slot-locks'
 
 // Shown to the raider when the list's character is not an active member of
 // the list's guild (the same text auto-save shows).
@@ -96,6 +98,22 @@ export async function POST(request: NextRequest) {
 
     if (itemsError) {
       return NextResponse.json({ error: 'Failed to read submission items' }, { status: 500 })
+    }
+
+    // Award slot locks: every saved live row counts here, including rows of
+    // tiers hidden from the editor, because the database lock does not skip
+    // them either. A fetch error reaches the catch (500) rather than skipping
+    // the check. The message matches the one save_submission_items raises.
+    const locks = await fetchActiveSlotLocks(serviceSupabase, submission_id)
+    const lockViolations = findLockViolations(
+      locks,
+      (submissionItems || []).map((row) => ({ rank: row.rank, slot: row.slot, loot_item_id: row.loot_item_id })),
+    )
+    if (lockViolations.length > 0) {
+      return NextResponse.json({
+        error: lockViolationMessage(lockViolations[0]),
+        locked_ranks: lockViolations,
+      }, { status: 422 })
     }
 
     // Get guild settings for bracket rules

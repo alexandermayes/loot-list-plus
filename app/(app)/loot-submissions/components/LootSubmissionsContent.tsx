@@ -10,7 +10,7 @@ import { SubmissionsListSkeleton, Skeleton } from '@/components/ui/skeletons'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import { ClassificationBadge } from '@/components/ui/classification-badge'
 import { EmptyState } from '@/components/ui/empty-state'
-import { ScrollIcon, AlertCircleIcon, Delete01Icon, Cancel01Icon, Search01Icon } from '@hugeicons/core-free-icons'
+import { ScrollIcon, AlertCircleIcon, Delete01Icon, Cancel01Icon, Search01Icon, LockIcon } from '@hugeicons/core-free-icons'
 import { HugeiconsIcon } from '@hugeicons/react'
 import {
   Modal,
@@ -37,7 +37,8 @@ import { resolvePhaseGroups, getPhaseGroupLabel, getPhaseGroupShortLabel, getCan
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { Card } from '@/components/ui/card'
 import { getGuildGame } from '@/domain/expansion/game'
-import { detailRowKey, withoutDetailRow, restoreDetailRow, groupDetailRowsByRank } from '@/domain/loot/list-row-updates'
+import { detailRowKey, withoutDetailRow, restoreDetailRow, groupDetailRowsByRank, positionKey } from '@/domain/loot/list-row-updates'
+import { lockedRankTitle, LOCKED_RANK_LABEL, type ListSlotLock } from '@/domain/loot/slot-locks'
 import { diffListItems, type DiffEntry } from '@/domain/loot/list-diff'
 import { bulkDeleteIds, bulkDeleteNotice } from '@/domain/loot/bulk-delete'
 import { createPendingReviewNotification, type ReviewNotificationPayload } from './review-notification'
@@ -143,6 +144,8 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
   const [guildId, setGuildId] = useState<string | null>(null)
     const [viewingSubmission, setViewingSubmission] = useState<string | null>(null)
   const [submissionDetails, setSubmissionDetails] = useState<SubmissionDetailItem[]>([])
+  // Award slot locks of the viewed list, keyed "{rank}-{slot}"
+  const [submissionLocks, setSubmissionLocks] = useState<Record<string, ListSlotLock>>({})
   const [loadingDetails, setLoadingDetails] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'single' | 'pending' | 'all', id?: string, ids?: string[] } | null>(null)
@@ -675,12 +678,13 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
     setViewingSubmission(submissionId)
     setReviewNotes('') // Clear previous review notes
     setSubmissionDetails([]) // Clear previous data immediately
+    setSubmissionLocks({})
     setSubmissionDiff([])
     setLoadingDetails(true)
     setLoadingDiff(true)
 
     // Fetch current items and latest snapshot in parallel
-    const [{ data: itemsData }, { data: snapshotData }] = await Promise.all([
+    const [{ data: itemsData }, { data: snapshotData }, { data: locksData, error: locksError }] = await Promise.all([
       supabase
         .from('loot_submission_items')
         .select(`
@@ -697,11 +701,27 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
         .eq('submission_id', submissionId)
         .order('version', { ascending: false })
         .limit(1)
-        .maybeSingle()
+        .maybeSingle(),
+      // Read through the browser session: the SELECT policy limits this to
+      // active members of the list's guild.
+      supabase
+        .from('loot_list_slot_locks')
+        .select('rank, slot, loot_item_id, locked_at')
+        .eq('submission_id', submissionId)
+        .is('released_at', null)
     ])
 
     // Only update state if this is still the current request (prevents race conditions)
     if (currentDetailRequestRef.current === submissionId) {
+      if (locksError) {
+        console.error('Error fetching slot locks for the review page')
+      } else if (locksData) {
+        const byKey: Record<string, ListSlotLock> = {}
+        for (const lock of locksData as ListSlotLock[]) {
+          byKey[positionKey(Number(lock.rank), Number(lock.slot))] = lock
+        }
+        setSubmissionLocks(byKey)
+      }
       if (itemsData) {
         setSubmissionDetails(itemsData as SubmissionDetailItem[])
 
@@ -775,12 +795,14 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
     lootItemId: string,
     itemName: string,
     position: { rank: number; slot: number },
+    locked?: boolean,
   ) => {
     if (!guildId) return
 
     confirm({
       title: `Remove ${itemName}?`,
-      description: 'This removes the item from the approved list without changing the list\'s approval status.',
+      description: 'This removes the item from the approved list without changing the list\'s approval status.'
+        + (locked ? ' This item was awarded from this rank, so removing it also releases the rank lock.' : ''),
       confirmLabel: 'Remove item',
       variant: 'warning',
       onConfirm: async () => {
@@ -806,6 +828,11 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
 
           showNotification('success', `${itemName} removed from list.`)
           setSubmissionDetails(prev => withoutDetailRow(prev, { lootItemId, ...position }))
+          setSubmissionLocks(prev => {
+            const next = { ...prev }
+            delete next[positionKey(position.rank, position.slot)]
+            return next
+          })
         } catch {
           showNotification('error', 'Couldn\'t remove item. Check your connection.')
         } finally {
@@ -1158,9 +1185,17 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
           return 'bg-blue-800'
         }
 
+        // A row is locked while it still holds the item the lock was made for.
+        const lockFor = (item: SubmissionDetailItem) => {
+          if (item.removed_at) return undefined
+          const lock = submissionLocks[positionKey(item.rank, item.slot)]
+          return lock && lock.loot_item_id === item.loot_item?.id ? lock : undefined
+        }
+
         const renderItemCell = (item: SubmissionDetailItem | undefined) => {
           if (!item) return <span className="text-muted-foreground text-sm">-</span>
           const isRemoved = !!item.removed_at
+          const lock = lockFor(item)
           return (
             <div className={`flex items-center gap-2 group ${isRemoved ? 'opacity-50' : ''}`}>
               <ItemLink
@@ -1170,6 +1205,16 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
               />
               {item.loot_item?.classification && (
                 <ClassificationBadge classification={item.loot_item.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
+              )}
+              {lock && (
+                <span
+                  role="img"
+                  aria-label={LOCKED_RANK_LABEL}
+                  title={lockedRankTitle(lock.locked_at)}
+                  className="text-muted-foreground shrink-0"
+                >
+                  <HugeiconsIcon icon={LockIcon} size={12} />
+                </span>
               )}
               {isRemoved && (
                 <button
@@ -1187,7 +1232,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    handleRemoveItem(viewingSubmission!, item.loot_item.id, item.loot_item.name, { rank: item.rank, slot: item.slot })
+                    handleRemoveItem(viewingSubmission!, item.loot_item.id, item.loot_item.name, { rank: item.rank, slot: item.slot }, !!lock)
                   }}
                   disabled={removingItemId === detailRowKey(item.loot_item.id, item.rank, item.slot)}
                   className="opacity-0 group-hover:opacity-100 ml-auto p-1 text-muted-foreground hover:text-destructive transition-opacity shrink-0"
@@ -1203,6 +1248,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
         const renderMobileItem = (item: SubmissionDetailItem | undefined, slotLabel: string) => {
           if (!item) return null
           const isRemoved = !!item.removed_at
+          const lock = lockFor(item)
           return (
             <div className="px-3 py-2 border-t border-border/50">
               <p className="text-11 text-muted-foreground font-medium mb-1">{slotLabel}</p>
@@ -1214,6 +1260,16 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                 />
                 {item.loot_item?.classification && (
                   <ClassificationBadge classification={item.loot_item.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
+                )}
+                {lock && (
+                  <span
+                    role="img"
+                    aria-label={LOCKED_RANK_LABEL}
+                    title={lockedRankTitle(lock.locked_at)}
+                    className="text-muted-foreground shrink-0"
+                  >
+                    <HugeiconsIcon icon={LockIcon} size={12} />
+                  </span>
                 )}
                 {isRemoved && (
                   <button
@@ -1231,7 +1287,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleRemoveItem(viewingSubmission!, item.loot_item.id, item.loot_item.name, { rank: item.rank, slot: item.slot })
+                      handleRemoveItem(viewingSubmission!, item.loot_item.id, item.loot_item.name, { rank: item.rank, slot: item.slot }, !!lock)
                     }}
                     disabled={removingItemId === detailRowKey(item.loot_item.id, item.rank, item.slot)}
                     className="ml-auto p-1 text-muted-foreground hover:text-destructive shrink-0"
