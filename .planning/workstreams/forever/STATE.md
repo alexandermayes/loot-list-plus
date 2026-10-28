@@ -36,7 +36,7 @@ Research: `.planning/research/SUMMARY.md`
 Phase: 3 — Discovery Schema and Need Pipeline
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-10-27 - Completed fast task 261027-fast: changelog entry for the Equipped column (PR #466)
+Last activity: 2026-10-28 - Completed quick task 261028-0gx: Award slot lock: keep awarded loot list ranks locked for the tier
 
 Progress: [███░░░░░░░] 2/8 phases ([████████████████████] 22/22 plans, 100% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning
 
@@ -148,6 +148,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 | 261026-wpw | v1 armory gear sync (spike verdict NO-GO: the Classic equipment API returns no per-slot item level, 0 of 90 items across 6 characters; tasks 2 and 3 not built; the alternative is an owner decision) | 2026-10-27 | a11e3d86 (spike script, branch feat/armory-item-level) | [261026-wpw-v1-armory-gear-sync-spike-battle-net-cla](./quick/261026-wpw-v1-armory-gear-sync-spike-battle-net-cla/) |
 | 261027-lzm | Base item level cache from Game Data for armory gear sync | 2026-10-27 | ef7715d4, 0e21e509 | [261027-lzm-base-item-level-cache-from-game-data-for](./quick/261027-lzm-base-item-level-cache-from-game-data-for/) |
 | 261027-fast | Changelog entry for the Equipped column (October 27, 2026 entry in lib/updates-data.ts; the changelog, updates page, landing line, sitemap lastmod and Discord updates cron all read it) | 2026-10-27 | 3c5356ac (branch feat/changelog-equipped-item-level, PR #466) | none (gsd-fast, no PLAN or SUMMARY) |
+| 261028-0gx | Award slot lock: keep awarded loot list ranks locked for the tier (opt-in guild setting; migration PR #468, code PR #469) | 2026-10-28 | 3df61a15 (feat/slot-lock-migration), a5a869d4, 8713c671 (feat/award-slot-lock) | [261028-0gx-award-slot-lock-keep-awarded-loot-list-r](./quick/261028-0gx-award-slot-lock-keep-awarded-loot-list-r/) |
 
 
 ## Deferred Items
