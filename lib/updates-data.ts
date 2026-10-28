@@ -14,6 +14,21 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'October 28, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Lock awarded ranks',
+        description: 'A new guild setting, off by default. With it on, when a raider receives an item from their approved loot list, the rank it sat in stays locked to that item for the rest of the tier, so the points it used stay spent. The rest of the list stays editable. Officers release a lock by removing the item, and undoing the award releases it too. Off-spec and roll awards never lock.',
+      },
+      {
+        category: 'improvement',
+        title: 'Sync gear from Manage Characters',
+        description: 'Characters linked to Battle.net now have a Sync gear button in the edit character window, so gear imported before October 27 can pick up item levels without re-importing.',
+      },
+    ],
+  },
+  {
     date: 'October 27, 2026',
     items: [
       {
