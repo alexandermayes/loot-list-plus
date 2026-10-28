@@ -14,6 +14,21 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'October 27, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Equipped item level in the candidate panel',
+        description: 'Officers who open an item on the master sheet now see an Equipped column: each ranked player\'s item level in the slot that item fills, from their last Battle.net gear sync. Rings and trinkets use the lower of the two slots, and tier tokens match the slot in the token name. It is display only, so Loot Score and rankings are unchanged.',
+      },
+      {
+        category: 'improvement',
+        title: 'Gear syncs now record item levels',
+        description: 'Syncing or re-linking a character from Battle.net stores the base item level of every equipped piece. Players who have not synced show Not synced until they do, and Mists of Pandaria upgrades are not reflected yet.',
+      },
+    ],
+  },
+  {
     date: 'October 5, 2026',
     items: [
       {
