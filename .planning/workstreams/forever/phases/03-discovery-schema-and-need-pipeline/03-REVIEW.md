@@ -150,6 +150,8 @@ The migration is already deployed, so WR-04 would need a new migration.
 
 ### WR-01: `PATCH /api/raid-tiers` commits `list_mode` and then can fail on the other fields (partial write)
 
+**Resolved 2026-10-28** in `0e309326`: the mode and the other fields travel in one update statement in both branches, the trailing update runs only when the mode is unchanged, and a failed need seed restores the other fields with the mode. Tests: one-statement cases for Discovery and Known, and the failed-seed restore.
+
 **File:** `app/api/raid-tiers/route.ts:266-318`
 **Issue:** When the request carries `list_mode` plus `is_guild_active` or `master_sheet_visible`, the route does the following in order:
 
@@ -202,6 +204,8 @@ The same exposure exists for item rows today, so this is not a regression. It is
 **Fix:** In a follow-up migration, add a WHEN-gated `BEFORE DELETE` guard on `raid_tiers` for browser sessions. Refuse it when the tier has any `loot_submission_items` or `loot_history` row on a need (the D-03 predicate in `enforce_raid_tier_list_mode_rules`). Keep the cascade exemption for `delete_guild` by checking that the guild row is being deleted. Alternatively, record this as an accepted residual in the D-27 decision and add a PGlite test that pins the behaviour.
 
 ### WR-05: Reserve-run creation reads the tier without checking it belongs to the guild
+
+**Resolved 2026-10-28** in `0e309326`, with one deviation from the fix below: `guild_id` stays optional, because personal runs are designed to use any guild's Known tier of an expansion through the public `/api/reserve-runs/raid-tiers` catalog. A guild run now has to sit on one of that guild's own tiers, checked before `list_mode` and answered with the same fail-closed message as a missing or Discovery tier. Tests: foreign tier refused, own tier matched before the insert, personal run keeps the catalog, expansion read error answers 500.
 
 **File:** `app/api/reserve-runs/route.ts:162-177`
 **Issue:** The new D-14 check loads `raid_tiers` by `raid_tier_id` using the service-role client and inspects `list_mode`. It never compares the tier's expansion to `guild_id`. A member of guild A can create a run on guild B's Known tier. A foreign Discovery tier answers "Soft reserves are not available for this raid" while a foreign Known tier gets 201. That is a small cross-guild oracle for tier ids, and it keeps the original gap. `PATCH /api/raid-tiers` in the same phase fixes this class of bug ("regression for research Pitfall 4"), but this adjacent route, which now reads the same row, does not. `guild_id` is also optional here (`if (guild_id)`), so the membership check can be skipped.
