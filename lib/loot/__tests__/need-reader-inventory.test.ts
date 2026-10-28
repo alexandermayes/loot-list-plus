@@ -490,6 +490,12 @@ export const NEED_READERS: readonly NeedReader[] = [
     note: 'items plus ranked needs; identity-keyed award counts',
   },
   {
+    file: 'lib/loot/slot-locks.ts',
+    dispositions: ['agnostic'],
+    plan: '-',
+    note: 'award slot locks (Oct 28) by loot_history and submission item ids; a need award locks the need rank like an item and the lock message carries the need display name',
+  },
+  {
     file: 'lib/loot/tier-need-rows.ts',
     dispositions: ['branch'],
     plan: '03-10',
@@ -1013,8 +1019,8 @@ export const SQL_FUNCTION_READERS: readonly SqlFunctionReader[] = [
   {
     name: 'save_submission_items',
     dispositions: ['ok'],
-    definedIn: '20260727000001',
-    note: 'body unchanged; its insert hits enforce_need_ranking_hold (D-22), proven by the raider RPC case in 03-15',
+    definedIn: '20261028120000',
+    note: 'redefined Oct 28 to check award slot locks after the delete-then-insert; the insert still hits enforce_need_ranking_hold (D-22), proven by the raider RPC case in 03-15 against the chained Oct 28 definition',
     test: PGLITE,
   },
 ]

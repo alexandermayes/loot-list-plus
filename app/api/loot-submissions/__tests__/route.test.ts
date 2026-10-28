@@ -135,6 +135,6 @@ describe('GET /api/loot-submissions', () => {
     const response = await GET(request(FULL_PARAMS))
     const body = await response.json()
 
-    expect(body).toEqual({ submission: null, rankings: {} })
+    expect(body).toEqual({ submission: null, rankings: {}, locks: [] })
   })
 })
