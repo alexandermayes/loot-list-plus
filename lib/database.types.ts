@@ -888,6 +888,7 @@ export type Database = {
       guild_settings: {
         Row: {
           attendance_type: string
+          award_slot_lock_enabled: boolean
           blp_enabled: boolean | null
           blp_includes_benched: boolean | null
           blp_increment: number | null
@@ -958,6 +959,7 @@ export type Database = {
         }
         Insert: {
           attendance_type?: string
+          award_slot_lock_enabled?: boolean
           blp_enabled?: boolean | null
           blp_includes_benched?: boolean | null
           blp_increment?: number | null
@@ -1028,6 +1030,7 @@ export type Database = {
         }
         Update: {
           attendance_type?: string
+          award_slot_lock_enabled?: boolean
           blp_enabled?: boolean | null
           blp_includes_benched?: boolean | null
           blp_increment?: number | null
@@ -1437,6 +1440,80 @@ export type Database = {
             columns: ["raid_tier_id"]
             isOneToOne: false
             referencedRelation: "raid_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loot_list_slot_locks: {
+        Row: {
+          character_id: string
+          guild_id: string
+          id: string
+          locked_at: string
+          loot_history_id: string
+          loot_item_id: string
+          rank: number
+          release_reason: string | null
+          released_at: string | null
+          released_by: string | null
+          slot: number
+          submission_id: string
+        }
+        Insert: {
+          character_id: string
+          guild_id: string
+          id?: string
+          locked_at?: string
+          loot_history_id: string
+          loot_item_id: string
+          rank: number
+          release_reason?: string | null
+          released_at?: string | null
+          released_by?: string | null
+          slot: number
+          submission_id: string
+        }
+        Update: {
+          character_id?: string
+          guild_id?: string
+          id?: string
+          locked_at?: string
+          loot_history_id?: string
+          loot_item_id?: string
+          rank?: number
+          release_reason?: string | null
+          released_at?: string | null
+          released_by?: string | null
+          slot?: number
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loot_list_slot_locks_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loot_list_slot_locks_loot_history_id_fkey"
+            columns: ["loot_history_id"]
+            isOneToOne: true
+            referencedRelation: "loot_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loot_list_slot_locks_loot_item_id_fkey"
+            columns: ["loot_item_id"]
+            isOneToOne: false
+            referencedRelation: "loot_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loot_list_slot_locks_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "loot_submissions"
             referencedColumns: ["id"]
           },
         ]

@@ -9,6 +9,7 @@ import { buildAddonAwardRow } from '@/lib/loot/loot-history-rows'
 import { addonAwardKeys, insertAddonAward, type AddonAwardInsertResult } from '@/lib/loot/addon-award-insert'
 import { findRaidNightForAward, guildRaidTimeZone, isUtcTimestamp, raidNightDate } from '@/lib/addon/raid-night'
 import { recomputeBlpForItems } from '@/utils/blp/recompute'
+import { lockAwardedSlots } from '@/lib/loot/slot-locks'
 
 interface LootAwardRequest {
   guild_id: string
@@ -217,6 +218,13 @@ export async function POST(request: NextRequest) {
     // so no analytics, funnel check, Discord announcement or BLP recompute.
     if (result.status === 'already_recorded') {
       return NextResponse.json({ data: { ...responseData, already_recorded: true } })
+    }
+
+    // Addon awards carry no reason, so they lock like a score award (owner
+    // veto). Awaited so the lock exists before the addon reads the list; it
+    // never rejects, so the response is the same whether or not it locked.
+    if (result.id) {
+      await lockAwardedSlots(supabase, guild_id, [{ lootHistoryId: result.id, reason: null }])
     }
 
     trackEvent({

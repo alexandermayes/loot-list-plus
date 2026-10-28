@@ -6,11 +6,13 @@ import { POST } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyPermission } from '@/utils/server-roles'
+import { fetchActiveSlotLocks } from '@/lib/loot/slot-locks'
 
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
 vi.mock('@/utils/server-roles', () => ({ verifyPermission: vi.fn() }))
 vi.mock('@/utils/audit/log', () => ({ logStatusChange: vi.fn() }))
+vi.mock('@/lib/loot/slot-locks', () => ({ fetchActiveSlotLocks: vi.fn(async () => []) }))
 vi.mock('@/lib/cache/submission-tag', () => ({ revalidatePendingSubmissions: vi.fn() }))
 
 const GUILD_ID = 'dddddddd-0000-0000-0000-000000000001'
@@ -179,5 +181,43 @@ describe('POST /api/loot-submissions/revert', () => {
     const { res, calls } = await run(fixture)
     expect(res.status).toBe(500)
     expect(writes(calls)).toHaveLength(0)
+  })
+})
+
+describe('POST /api/loot-submissions/revert award slot locks (quick task 261028-0gx)', () => {
+  const lock = {
+    id: 'lock-1',
+    rank: 50,
+    slot: 1,
+    loot_item_id: ITEM_ID,
+    locked_at: '2026-10-24T12:00:00Z',
+    item_name: 'Locked Item',
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([])
+  })
+
+  it('returns 409 with the lock message and never deletes when the snapshot lacks the locked item at its position', async () => {
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([lock])
+    const fixture = baseFixture()
+    fixture.snapshot = { items: [{ rank: 48, slot: 1, loot_item_id: ITEM_ID, item_name: 'Locked Item' }] }
+    const { res, json, calls } = await run(fixture)
+
+    expect(res.status).toBe(409)
+    expect(json.error).toBe('Rank 50 is locked to Locked Item')
+    expect(json.locked_ranks).toEqual([{ rank: 50, slot: 1, item_name: 'Locked Item' }])
+    expect(itemWrites(calls)).toHaveLength(0)
+    expect(submissionUpdates(calls)).toHaveLength(0)
+  })
+
+  it('returns 200 when the snapshot keeps the locked item at its position', async () => {
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([lock])
+    const { res, calls } = await run(baseFixture())
+
+    expect(res.status).toBe(200)
+    expect(itemWrites(calls).map(c => c.op)).toEqual(['delete', 'insert'])
   })
 })
