@@ -24,6 +24,8 @@ import {
   fetchFilteredLootItems,
 } from '@/lib/loot-items-query'
 import { resolvePhaseGroups } from '@/domain/expansion/phase-groups'
+import { fetchActiveSlotLocks } from '@/lib/loot/slot-locks'
+import type { ListSlotLock } from '@/domain/loot/slot-locks'
 
 export const dynamic = 'force-dynamic'
 
@@ -149,6 +151,7 @@ export async function GET(request: NextRequest) {
         submission: null,
         rankings: {},
         removedItems: [],
+        locks: [],
       })
     }
 
@@ -181,6 +184,9 @@ export async function GET(request: NextRequest) {
     // submission_id) compared to the bigger items fetch above.
     const rankings: Record<string, string> = {}
     const removedItems: Array<{ loot_item_id: string; rank: number; slot: number }> = []
+    // Award slot locks: the context seeds its submission cache from this
+    // response without revalidating, so the locks must come with it.
+    let locks: ListSlotLock[] = []
     const submission = submissionRow.data ?? null
     if (submission) {
       const { data: rankingsData } = await supabase
@@ -197,6 +203,15 @@ export async function GET(request: NextRequest) {
           }
         }
       )
+
+      // A failed read degrades to no locks so the page still loads;
+      // save_submission_items enforces them regardless.
+      try {
+        const active = await fetchActiveSlotLocks(supabase, submission.id)
+        locks = active.map(({ rank, slot, loot_item_id, locked_at }) => ({ rank, slot, loot_item_id, locked_at }))
+      } catch {
+        console.error('Error fetching slot locks for GET /api/loot-list/bootstrap')
+      }
     }
 
     return NextResponse.json(
@@ -210,6 +225,7 @@ export async function GET(request: NextRequest) {
         submission,
         rankings,
         removedItems,
+        locks,
       },
       {
         headers: {

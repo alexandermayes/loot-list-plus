@@ -403,6 +403,10 @@ When an officer requests a revision or rejects a list, they can leave notes expl
 ## Do I get notified?
 
 If your guild has Discord notifications enabled, you'll get a message when your list needs attention (for example, a revision request or a reminder to resubmit). You can also check the status any time on your **Loot List** page and **Overview**.
+
+## Locked ranks
+
+If your guild turns on **Lock awarded ranks**, an item you receive from your approved list stays at its rank for the rest of the tier. That rank shows a lock icon, and you can't move, replace or remove the item there. The rest of your list stays editable as usual, and the item keeps counting toward its bracket's allocation points. An officer can release a lock by removing the item from your list.
         `,
       },
       {
@@ -630,6 +634,12 @@ The top of the page shows:
 ## Filtering
 
 Use the search bar to find items by name or boss, and filter by raid tier.
+
+## Lock awarded ranks
+
+Turn on **Lock awarded ranks** in the Loot list rules settings to keep an awarded item at the rank it held for the rest of the tier. A rank locks when a raider receives an item from their approved list, whether you award it on the Master Sheet, import it or record it with the addon. Off-spec and roll awards don't lock. The item keeps its allocation cost in its bracket, so the points it used stay spent.
+
+To release a lock, remove the item from the raider's list on the Loot Submissions page. Deleting the award also releases it, and moving an award to another raider releases the first raider's lock without locking anything for the new raider.
         `,
       },
       {
@@ -1464,6 +1474,12 @@ export const glossaryTerms: GlossaryTerm[] = [
     definition:
       'Progress tracker shown to officers on the Overview page for new guilds. Tracks 5 setup steps and auto-completes as you configure.',
     articleSlug: 'guild-setup',
+  },
+  {
+    term: 'Locked rank',
+    definition:
+      'A rank on your Loot List that holds an item you received from your approved list. When your guild turns on Lock awarded ranks, it stays locked to that item for the rest of the tier.',
+    articleSlug: 'submission-statuses',
   },
 ]
 

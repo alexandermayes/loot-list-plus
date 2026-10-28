@@ -35,8 +35,8 @@ Research: `.planning/research/SUMMARY.md`
 
 Phase: 03 (Discovery Schema and Need Pipeline) — EXECUTING
 Plan: 19 of 19
-Status: Phase complete — ready for verification
-Last activity: 2026-10-20 — Phase 03 execution started
+Status: Phase complete — verified 4/4 (human_needed); origin/main merged 2026-10-28, PRs 2 to 4 pending
+Last activity: 2026-10-28 - Merged origin/main (slot lock, Equipped column, changelogs) into the Phase 3 branch
 
 Progress: [███░░░░░░░] 2/8 phases ([████████████████████] 22/22 plans, [███░░░░░░░] 25% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning
 
@@ -167,6 +167,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 - Oct 21: Forever boss names (Phase 2); addon scope and owner for the separate repo (Phase 5); community asks for in-game loot list viewing through the addon without a web login (addon scope input)
 - Oct 26: spec defaults review and copy sign-off for picker, presets, "Set your 5" (Phase 4); simplicity audit scope and sidebar direction (Phase 8); community input for the Phase 4 presets review: how often raiders may re-rank need rows within a tier; a council-style preset that shows attendance, bad luck protection and a future preparation score side by side
 - Nov 9: beta guild, named paper-fallback officer, void rule (Phase 7); master loot or Gargul export scope (Phase 5)
+- Oct 27: armory gear sync after the NO-GO spike (quick 261026-wpw): base item level from the static-classic item endpoint, the summary's average item level, or drop it; and whether to keep the probe script on feat/armory-item-level
 
 ### Blockers/Concerns
 
@@ -178,6 +179,18 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 - Phase 3: research lists two cost schemes for need rows (an allocation cost of 1/1/0, and a budget at Big 3, Medium 2, Standard 1). Settle which one the seeded rows carry before Phase 4 reads it.
 - Phase 3 to 4 gap: a Discovery tier can have need rows before raiders have a picker.
 - Research flags: Phases 3, 5, 6 and 8 need `/gsd-plan-phase N --research-phase`.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 261026-wpw | v1 armory gear sync (spike verdict NO-GO: the Classic equipment API returns no per-slot item level, 0 of 90 items across 6 characters; tasks 2 and 3 not built; the alternative is an owner decision) | 2026-10-27 | a11e3d86 (spike script, branch feat/armory-item-level) | [261026-wpw-v1-armory-gear-sync-spike-battle-net-cla](./quick/261026-wpw-v1-armory-gear-sync-spike-battle-net-cla/) |
+| 261027-lzm | Base item level cache from Game Data for armory gear sync | 2026-10-27 | ef7715d4, 0e21e509 | [261027-lzm-base-item-level-cache-from-game-data-for](./quick/261027-lzm-base-item-level-cache-from-game-data-for/) |
+| 261027-fast | Changelog entry for the Equipped column (October 27, 2026 entry in lib/updates-data.ts; the changelog, updates page, landing line, sitemap lastmod and Discord updates cron all read it) | 2026-10-27 | 3c5356ac (branch feat/changelog-equipped-item-level, PR #466) | none (gsd-fast, no PLAN or SUMMARY) |
+| 261028-0gx | Award slot lock: keep awarded loot list ranks locked for the tier (opt-in guild setting; migration PR #468, code PR #469) | 2026-10-28 | 3df61a15 (feat/slot-lock-migration), a5a869d4, 8713c671 (feat/award-slot-lock) | [261028-0gx-award-slot-lock-keep-awarded-loot-list-r](./quick/261028-0gx-award-slot-lock-keep-awarded-loot-list-r/) |
+| 261028-fast | Sync gear button in the edit character modal (the only button lived on the unlinked /characters/[id]/edit page; EditCharacterModal now shows the Battle.net gear sync card for linked characters, officer feedback 2026-10-28) | 2026-10-28 | cf0c1d61 (branch fix/sync-gear-in-edit-modal, PR #472) | none (gsd-fast, no PLAN or SUMMARY) |
+| 261028-fast-2 | Changelog entry for October 28, 2026 (Lock awarded ranks and Sync gear from Manage Characters in lib/updates-data.ts; the changelog, updates page, landing line, sitemap lastmod and Discord updates cron all read it) | 2026-10-28 | b4bee9a8 (branch feat/changelog-slot-lock-sync-gear, PR #475) | none (gsd-fast, no PLAN or SUMMARY) |
+
 
 ## Deferred Items
 

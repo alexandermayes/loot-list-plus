@@ -264,7 +264,8 @@ export default function LootSettingsContent({
     enforce_slot_restrictions: false,
     max_allocation_points_per_bracket: 3,
     max_tokens_per_bracket: 1,
-    max_category_per_bracket: 1
+    max_category_per_bracket: 1,
+    award_slot_lock_enabled: false
   })
 
   const [guildRoles, setGuildRoles] = useState<{ name: string; position: number }[]>([
@@ -355,6 +356,7 @@ export default function LootSettingsContent({
           max_allocation_points_per_bracket: settings.max_allocation_points_per_bracket,
           max_tokens_per_bracket: settings.max_tokens_per_bracket,
           max_category_per_bracket: settings.max_category_per_bracket,
+          award_slot_lock_enabled: settings.award_slot_lock_enabled,
         }
 
         const response = await fetch('/api/guild-settings', {

@@ -6,6 +6,7 @@ import { POST } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { isHeldNeedRanking, NEED_RANKING_HOLD_ERROR } from '@/domain/loot/need-ranking-hold'
+import { fetchActiveSlotLocks } from '@/lib/loot/slot-locks'
 
 // The hold is a real predicate by default; a describe can open it (the Phase 4
 // state) and the beforeEach below restores it for every other test.
@@ -17,6 +18,7 @@ vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
 vi.mock('@/utils/audit/log', () => ({ logStatusChange: vi.fn() }))
 vi.mock('@/utils/analytics/server', () => ({ trackEvent: vi.fn(), setUserMilestone: vi.fn() }))
+vi.mock('@/lib/loot/slot-locks', () => ({ fetchActiveSlotLocks: vi.fn(async () => []) }))
 vi.mock('@/lib/cache/submission-tag', () => ({ revalidatePendingSubmissions: vi.fn() }))
 
 const GUILD_ID = 'bbbbbbbb-0000-0000-0000-000000000001'
@@ -437,5 +439,53 @@ describe('POST /api/loot-submissions/submit', () => {
         expect(statusUpdates(calls)).toHaveLength(0)
       })
     })
+  })
+})
+
+describe('POST /api/loot-submissions/submit award slot locks (quick task 261028-0gx)', () => {
+  const LOCKED_ID = 'bbbbbbbb-0000-0000-0000-0000000000c1'
+  const lock = {
+    id: 'lock-1',
+    rank: 50,
+    slot: 1,
+    loot_item_id: LOCKED_ID,
+    locked_at: '2026-10-24T12:00:00Z',
+    item_name: 'Locked Item',
+  }
+  const lockedRow = (rank: number): SubmissionItem => tokenRow(rank, LOCKED_ID, 'Locked Item', 30001)
+  const statusUpdates = (calls: Call[]) => submissionUpdates(calls).filter(c => c.updatePayload && 'status' in c.updatePayload)
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([])
+  })
+
+  it('returns 422 with the lock message when the saved rows moved the locked item', async () => {
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([lock])
+    const { res, body, calls } = await run({ ...baseFixture(), items: [lockedRow(48)] })
+
+    expect(res.status).toBe(422)
+    expect(body.error).toBe('Rank 50 is locked to Locked Item')
+    expect(body.locked_ranks).toEqual([{ rank: 50, slot: 1, item_name: 'Locked Item' }])
+    expect(body).not.toHaveProperty('violations')
+    expect(statusUpdates(calls)).toHaveLength(0)
+    expect(fetchActiveSlotLocks).toHaveBeenCalledWith(expect.anything(), SUBMISSION_ID)
+  })
+
+  it('returns 200 when the saved rows keep the locked item at its rank and slot', async () => {
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([lock])
+    const { res, calls } = await run({ ...baseFixture(), items: [lockedRow(50)] })
+
+    expect(res.status).toBe(200)
+    expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+  })
+
+  it('returns 500 when the lock read fails', async () => {
+    vi.mocked(fetchActiveSlotLocks).mockRejectedValue(new Error('Failed to read loot list slot locks'))
+    const { res, calls } = await run({ ...baseFixture(), items: [lockedRow(50)] })
+
+    expect(res.status).toBe(500)
+    expect(statusUpdates(calls)).toHaveLength(0)
   })
 })

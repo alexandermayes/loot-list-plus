@@ -11,6 +11,7 @@ import { routeRecordsToTeamEvents } from '@/utils/raid-events/team-routing'
 import { resolveGuildLootItemIds, formatInvalidLootItemIdsError } from '@/lib/loot/guild-scoped-lookup'
 import { normalizeRefId, findInvalidRaidEventIds, findInvalidCharacterIds, formatInvalidAwardRefsError } from '@/lib/loot/guild-award-refs'
 import { buildBulkAwardRow } from '@/lib/loot/loot-history-rows'
+import { lockAwardedSlots, releaseSlotLocksForAward, type SlotLockAward } from '@/lib/loot/slot-locks'
 import { assignAwardCopies, isValidAwardCopy, nextAwardCopy } from '@/domain/loot/award-copies'
 import type { AwardReason, AwardOutcomeType, ScoreComponents } from '@/domain/types'
 
@@ -414,6 +415,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Award slot locks: awaited, not after(), so the lock exists when the
+    // officer's response returns. lockAwardedSlots never rejects, so a lock
+    // problem can neither fail nor change this response. Reasons are the
+    // sanitized ones, so only offspec and roll awards are filtered out there.
+    const lockAwards: SlotLockAward[] = []
+    for (const result of results) {
+      if (result.success && result.id) {
+        lockAwards.push({ lootHistoryId: result.id, reason: awardMeta[result.index]?.reason ?? null })
+      }
+    }
+    if (lockAwards.length > 0) {
+      await lockAwardedSlots(serviceSupabase, guild_id, lockAwards)
+    }
+
     // BLP: recompute the affected items from history. Order-independent and
     // idempotent, so it works whether attendance was synced before or after the
     // award — the attendance-write paths trigger the same recompute (GH #98 race).
@@ -710,6 +725,12 @@ export async function PATCH(request: NextRequest) {
       oldData: before,
       newData: sanitized,
     })
+
+    // The raider who lost the award loses its rank lock too. Nothing is
+    // locked for the new raider (owner scope D5).
+    if ('character_id' in sanitized && beforeRow && sanitized.character_id !== beforeRow.character_id) {
+      await releaseSlotLocksForAward(serviceSupabase, id, user.id, 'award_reassigned')
+    }
 
     // BLP is keyed on character_id, so moving a linked award to another raider,
     // or unlinking it to null, changes that raider's history. Unlike the

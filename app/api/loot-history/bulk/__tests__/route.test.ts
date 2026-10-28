@@ -9,11 +9,16 @@ import { verifyPermission } from '@/utils/server-roles'
 import { recomputeBlpForItems } from '@/utils/blp/recompute'
 import { routeRecordsToTeamEvents } from '@/utils/raid-events/team-routing'
 import { logAudit } from '@/utils/audit/log'
+import { lockAwardedSlots, releaseSlotLocksForAward } from '@/lib/loot/slot-locks'
 
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
 vi.mock('@/utils/server-roles', () => ({ verifyPermission: vi.fn() }))
 vi.mock('@/utils/audit/log', () => ({ logAudit: vi.fn() }))
+vi.mock('@/lib/loot/slot-locks', () => ({
+  lockAwardedSlots: vi.fn(async () => 0),
+  releaseSlotLocksForAward: vi.fn(async () => 0),
+}))
 vi.mock('@/utils/analytics/server', () => ({ trackEvent: vi.fn(), setUserMilestone: vi.fn() }))
 vi.mock('@/utils/analytics/funnel', () => ({ evaluateGuildFunnel: vi.fn() }))
 vi.mock('@/lib/discord-loot-announcements', () => ({ notifyLootAward: vi.fn() }))
@@ -1384,5 +1389,110 @@ describe('POST /api/loot-history/bulk award receipt (FIX-04)', () => {
       awarded_character_id: context.awarded_character_id,
       _truncated: true,
     })
+  })
+})
+
+describe('award slot locks (quick task 261028-0gx)', () => {
+  const RECORD_ID = 'aaaaaaaa-0000-0000-0000-000000000010'
+
+  function twoItemFixture(): Fixture {
+    const fixture = singleItemFixture()
+    fixture.items = [
+      { id: ITEM_ID, raid_tier_id: TIER_ID },
+      { id: ITEM_ID_2, raid_tier_id: TIER_ID },
+    ]
+    return fixture
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: USER_ID }, error: null } as never)
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: true } as never)
+    vi.mocked(routeRecordsToTeamEvents).mockImplementation(async (_s, _g, records) => records)
+  })
+
+  it('POST locks once with every successful insert and its sanitized reason, in input order', async () => {
+    const { client } = makeClient(twoItemFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({
+      guild_id: GUILD_ID,
+      items: [
+        { loot_item_id: ITEM_ID, awarded_date: '2026-09-20', character_id: CHARACTER_ID, character_name: 'Test Raider', reason: 'score' },
+        { loot_item_id: ITEM_ID_2, awarded_date: '2026-09-20', character_id: CHARACTER_ID, character_name: 'Test Raider', reason: 'offspec' },
+      ],
+    }))
+
+    expect(res.status).toBe(200)
+    expect(lockAwardedSlots).toHaveBeenCalledTimes(1)
+    expect(lockAwardedSlots).toHaveBeenCalledWith(client, GUILD_ID, [
+      { lootHistoryId: 'hist-1', reason: 'score' },
+      { lootHistoryId: 'hist-2', reason: 'offspec' },
+    ])
+  })
+
+  it('POST does not lock when the only item failed as a duplicate', async () => {
+    const fixture = singleItemFixture()
+    fixture.duplicateLootItemIds = new Set([ITEM_ID])
+    const { client } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({
+      guild_id: GUILD_ID,
+      items: [{ loot_item_id: ITEM_ID, awarded_date: '2026-09-20', character_id: CHARACTER_ID, character_name: 'Test Raider' }],
+    }))
+    const body = await res.json()
+
+    expect(body.failedCount).toBe(1)
+    expect(lockAwardedSlots).not.toHaveBeenCalled()
+  })
+
+  it('POST response is unchanged when no lock was written', async () => {
+    vi.mocked(lockAwardedSlots).mockResolvedValue(0)
+    const { client } = makeClient(singleItemFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({
+      guild_id: GUILD_ID,
+      items: [{ loot_item_id: ITEM_ID, awarded_date: '2026-09-20', character_id: CHARACTER_ID, character_name: 'Test Raider' }],
+    }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.successCount).toBe(1)
+    expect(body.failedCount).toBe(0)
+    expect(lockAwardedSlots).toHaveBeenCalledWith(client, GUILD_ID, [{ lootHistoryId: 'hist-1', reason: null }])
+  })
+
+  it('PATCH releases the lock with award_reassigned when the character changes', async () => {
+    const fixture = singleItemFixture()
+    fixture.memberships = [{ character_id: SECOND_CHARACTER_ID, guild_id: GUILD_ID, is_active: true }]
+    const { client, calls } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await PATCH(patchRequest({
+      guild_id: GUILD_ID,
+      id: RECORD_ID,
+      updates: { character_id: SECOND_CHARACTER_ID, character_name: 'Test Other' },
+    }))
+
+    expect(res.status).toBe(200)
+    expect(lootHistoryUpdates(calls)).toHaveLength(1)
+    expect(releaseSlotLocksForAward).toHaveBeenCalledTimes(1)
+    expect(releaseSlotLocksForAward).toHaveBeenCalledWith(client, RECORD_ID, USER_ID, 'award_reassigned')
+  })
+
+  it('PATCH with a notes-only update does not release a lock', async () => {
+    const { client } = makeClient(singleItemFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await PATCH(patchRequest({
+      guild_id: GUILD_ID,
+      id: RECORD_ID,
+      updates: { notes: 'Updated note' },
+    }))
+
+    expect(res.status).toBe(200)
+    expect(releaseSlotLocksForAward).not.toHaveBeenCalled()
   })
 })

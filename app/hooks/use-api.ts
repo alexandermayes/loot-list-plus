@@ -1,6 +1,7 @@
 'use client'
 
 import useSWR, { SWRConfiguration } from 'swr'
+import type { ListSlotLock } from '@/domain/loot/slot-locks'
 
 // Generic fetcher for API routes
 const fetcher = async (url: string) => {
@@ -368,7 +369,7 @@ export function usePhaseSubmission(
   guildId: string | null,
   options?: SWRConfiguration
 ) {
-  return useSWR<{ submission: LootSubmission | null; rankings: Record<string, string>; removedItems?: Array<{ loot_item_id: string; rank: number; slot: number }> }>(
+  return useSWR<{ submission: LootSubmission | null; rankings: Record<string, string>; removedItems?: Array<{ loot_item_id: string; rank: number; slot: number }>; locks?: ListSlotLock[] }>(
     characterId && expansionId && phase !== null && guildId
       ? `/api/loot-submissions?character_id=${characterId}&expansion_id=${expansionId}&phase=${phase}&guild_id=${guildId}`
       : null,

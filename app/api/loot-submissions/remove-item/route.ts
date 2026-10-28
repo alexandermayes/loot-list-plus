@@ -7,6 +7,8 @@ import { trackEvent, trackApiError } from '@/utils/analytics/server'
 import { toDateString } from '@/utils/date'
 import { resolveGuildLootItemIds, formatInvalidLootItemIdsError, type GuildScopedLootItem } from '@/lib/loot/guild-scoped-lookup'
 import { buildRemoveItemHistoryRow } from '@/lib/loot/loot-history-rows'
+import { fetchActiveSlotLocks, releaseSlotLock } from '@/lib/loot/slot-locks'
+import { lockViolationMessage } from '@/domain/loot/slot-locks'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -252,6 +254,22 @@ export async function POST(request: Request) {
     }
     const target = pick.row
 
+    // Award slot lock on this exact row. Only someone with manage_submissions
+    // may remove a locked item, and removing it releases the lock (the owner
+    // cannot lift their own lock). An owner who also holds manage_submissions
+    // counts as an officer here. A failed lock read reaches the catch (500)
+    // instead of skipping the check.
+    const activeLocks = await fetchActiveSlotLocks(serviceSupabase, submission_id)
+    const lock = activeLocks.find(l =>
+      l.rank === Number(target.rank) && l.slot === Number(target.slot) && l.loot_item_id === target.loot_item_id
+    )
+    if (lock && isOwner) {
+      const { hasPermission } = await verifyPermission(serviceSupabase, user.id, guild_id, 'manage_submissions')
+      if (!hasPermission) {
+        return NextResponse.json({ error: lockViolationMessage(lock) }, { status: 403 })
+      }
+    }
+
     // Fetch item details for audit log and loot_history, scoped to this
     // guild (GH #297 D-07).
     const lootItem = await loadGuildLootItem(serviceSupabase, guild_id, loot_item_id)
@@ -268,6 +286,13 @@ export async function POST(request: Request) {
         },
         { status: 400 }
       )
+    }
+
+    // Release before the soft delete: a failed release stops here with no
+    // row changed, whereas a lock left behind without its live row would
+    // block every later save of this list.
+    if (lock) {
+      await releaseSlotLock(serviceSupabase, lock.id, user.id, 'removed_by_officer')
     }
 
     // Mark the one row as removed (soft delete) instead of deleting. The
@@ -329,6 +354,7 @@ export async function POST(request: Request) {
         reason: reason || null,
         already_obtained: !!already_obtained,
         removed_by_owner: isOwner,
+        lock_released: !!lock,
       },
     })
 

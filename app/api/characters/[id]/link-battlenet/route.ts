@@ -6,8 +6,10 @@ import {
   battlenetFetch,
   getWowProfileNamespaces,
   SLOT_MAPPING,
+  readEquippedItemLevel,
   type GameVersion,
 } from '@/lib/battlenet'
+import { resolveBaseItemLevels } from '@/lib/battlenet-item-levels'
 import { invalidateCache, cacheKeys } from '@/utils/cache'
 import { revalidateUserBundle } from '@/lib/cache/user-bundle'
 
@@ -72,6 +74,10 @@ interface EquipmentResponse {
         id: number
       }
     }>
+    level?: {
+      value: number
+      display_string?: LocalizedString
+    }
   }>
 }
 
@@ -288,6 +294,17 @@ export async function POST(
           const equipment: EquipmentResponse = await equipResponse.json()
 
           if (equipment.equipped_items && equipment.equipped_items.length > 0) {
+            // Classic profile equipment carries no level (261026-wpw), so the
+            // Game Data base level fills it, and the profile level wins if
+            // Blizzard adds one. Resolved before the delete so the window
+            // with no gear rows stays as short as before.
+            const baseLevels = await resolveBaseItemLevels(
+              supabase,
+              account.region,
+              account.access_token,
+              equipment.equipped_items.map((item) => item.item.id)
+            )
+
             // Delete existing gear first
             await supabase
               .from('character_equipped_items')
@@ -309,6 +326,7 @@ export async function POST(
                   item.sockets
                     ?.map((s) => s.item?.id)
                     .filter((id): id is number => !!id) || null,
+                item_level: readEquippedItemLevel(item) ?? baseLevels.get(item.item.id) ?? null,
               }))
 
             if (itemsToInsert.length > 0) {
