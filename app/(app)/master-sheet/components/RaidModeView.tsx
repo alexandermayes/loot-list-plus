@@ -42,10 +42,12 @@ export function RaidModeView({ sortedRaidTiers, onItemClick, decimalPlaces = 2 }
   const filteredItems = useMemo(() => {
     if (!search.trim()) return allItems
     const q = search.toLowerCase()
+    // A need row has no boss and a malformed row must not crash Raid Mode,
+    // so read the nullable text fields through `?? ''` before lowercasing.
     return allItems.filter(ir =>
       ir.item.name.toLowerCase().includes(q) ||
-      ir.item.boss_name.toLowerCase().includes(q) ||
-      ir.item.item_slot.toLowerCase().includes(q)
+      (ir.item.boss_name ?? '').toLowerCase().includes(q) ||
+      (ir.item.item_slot ?? '').toLowerCase().includes(q)
     )
   }, [allItems, search])
 

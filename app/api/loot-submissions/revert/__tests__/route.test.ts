@@ -20,6 +20,21 @@ const SUBMISSION_ID = 'dddddddd-0000-0000-0000-000000000002'
 const CHARACTER_ID = 'dddddddd-0000-0000-0000-000000000003'
 const OFFICER_USER_ID = 'dddddddd-0000-0000-0000-000000000004'
 const ITEM_ID = 'dddddddd-0000-0000-0000-000000000005'
+const NEED_ID = 'dddddddd-0000-0000-0000-000000000007'
+
+// A need row (D-22 holds ranking needs server-side, so no real list holds one
+// in Phase 3; this fixture stands past the hold).
+const NEED_ROW = {
+  id: NEED_ID,
+  name: 'Trinket, Healing',
+  kind: 'need',
+  need_key: 'trinket.healing',
+  wowhead_id: null,
+  boss_name: 'Needs',
+  item_slot: 'Trinket',
+  classification: 'Reserved',
+  allocation_cost: 3,
+}
 
 const NOT_ACTIVE_MEMBER_ERROR = "This raider isn't an active member of this guild. Check the roster, then try again."
 
@@ -134,6 +149,24 @@ describe('POST /api/loot-submissions/revert', () => {
     const updates = submissionUpdates(calls)
     expect(updates).toHaveLength(1)
     expect(updates[0].payload).toEqual(expect.objectContaining({ status: 'approved', review_notes: 'Keeping the approved list' }))
+  })
+
+  it('need row (past the D-22 hold): re-inserts the snapshotted need by its row id with rank and slot', async () => {
+    const fixture = baseFixture()
+    fixture.snapshot = {
+      items: [
+        { rank: 50, slot: 1, loot_item_id: NEED_ROW.id, item_name: NEED_ROW.name },
+        { rank: 49, slot: 2, loot_item_id: ITEM_ID, item_name: 'Sulfuras' },
+      ],
+    }
+    const { res, calls } = await run(fixture)
+    expect(res.status).toBe(200)
+    const inserts = itemWrites(calls).filter(c => c.op === 'insert')
+    expect(inserts).toHaveLength(1)
+    expect(inserts[0].payload).toEqual([
+      { submission_id: SUBMISSION_ID, loot_item_id: NEED_ID, rank: 50, slot: 1 },
+      { submission_id: SUBMISSION_ID, loot_item_id: ITEM_ID, rank: 49, slot: 2 },
+    ])
   })
 
   it('returns 400 with the roster message and writes nothing when restoring the list of a raider who is not an active member', async () => {

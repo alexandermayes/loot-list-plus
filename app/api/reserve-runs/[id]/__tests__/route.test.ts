@@ -321,6 +321,22 @@ describe('GET /api/reserve-runs/[id]', () => {
     expect(json.run.submissions[0].items).toEqual(['item-e'])
   })
 
+  it('lists item rows only, never a need row (D-14)', async () => {
+    setUser(CREATOR_ID)
+    const fixture = baseFixture()
+    fixture.loot_items = [
+      { id: 'item-a', raid_tier_id: TIER_ID, is_available: true, kind: 'item', name: 'Real Sword', boss_name: 'Boss', item_slot: 'weapon', wowhead_id: 1, classification: 'standard' },
+      { id: 'need-a', raid_tier_id: TIER_ID, is_available: true, kind: 'need', name: 'Main hand weapon', boss_name: 'Boss', item_slot: null, wowhead_id: null, classification: 'standard' },
+    ]
+    const calls = setClient(fixture)
+    const res = await GET(request(RUN_RG), { params: Promise.resolve({ id: RUN_RG }) })
+    const json = await res.json()
+    expect(res.status).toBe(200)
+    expect(json.run.items.map((i: Row) => i.id)).toEqual(['item-a'])
+    const itemCall = calls.find((c) => c.table === 'loot_items')
+    expect(itemCall?.filters).toContainEqual(['eq', 'kind', 'item'])
+  })
+
   it('refuses a creator who left the guild, with no sign-up read', async () => {
     setUser(GONE_ID)
     const calls = setClient(baseFixture())

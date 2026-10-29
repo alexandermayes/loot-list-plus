@@ -209,3 +209,39 @@ describe('validateItemCopyLimits', () => {
     ))).toEqual([])
   })
 })
+
+// DISC-06: need rows carry kind 'need' through to maxCopiesForItem and are
+// grouped by their own id, so two different needs never share a group.
+describe('need rows', () => {
+  const RING_NEED: CopyLimitItem = { id: 'need-ring', name: 'Ring', item_slot: 'Finger', wowhead_id: null, kind: 'need' }
+  const OTHER_RING_NEED: CopyLimitItem = { id: 'need-ring-2', name: 'Ring', item_slot: 'Finger', wowhead_id: null, kind: 'need' }
+  const MAIN_HAND_NEED: CopyLimitItem = { id: 'need-mh', name: 'Main hand weapon', item_slot: 'Main Hand', wowhead_id: null, kind: 'need' }
+
+  it('groups a need by its own id', () => {
+    expect(copyGroupKey(RING_NEED)).toBe('id:need-ring')
+    expect(copyGroupKey(RING_NEED)).not.toBe(copyGroupKey(OTHER_RING_NEED))
+  })
+
+  it('allows two copies of a Ring need and reports a third', () => {
+    expect(validateItemCopyLimits(entries([45, RING_NEED], [44, RING_NEED]))).toEqual([])
+    const violations = validateItemCopyLimits(entries([45, RING_NEED], [44, RING_NEED], [43, RING_NEED]))
+    expect(violations).toHaveLength(1)
+    expect(violations[0].rule).toBe('item_copy_limit')
+  })
+
+  it('reports a second copy of any other need', () => {
+    const violations = validateItemCopyLimits(entries([45, MAIN_HAND_NEED], [44, MAIN_HAND_NEED]))
+    expect(violations).toHaveLength(1)
+    expect(violations[0].rule).toBe('item_copy_limit')
+  })
+
+  it('does not pool two different ring needs into one group', () => {
+    expect(validateItemCopyLimits(entries(
+      [45, RING_NEED], [44, RING_NEED], [43, OTHER_RING_NEED], [42, OTHER_RING_NEED],
+    ))).toEqual([])
+  })
+
+  it('copyGroupRule gives a Ring need a limit of 2', () => {
+    expect(copyGroupRule([RING_NEED])).toEqual({ isToken: false, limit: 2 })
+  })
+})

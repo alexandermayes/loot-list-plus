@@ -3,6 +3,8 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { parseWowSimsExport, type ParsedGearItem } from '@/lib/wowsims-parser'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
+import { isNeedRow } from '@/domain/loot/item-identity'
+import { createNeedSkipScope, noteNeedSkipped } from '@/lib/loot/need-skip'
 
 /**
  * GET /api/character-gear
@@ -115,7 +117,8 @@ export async function GET(request: NextRequest) {
         loot_items (
           wowhead_id,
           name,
-          item_slot
+          item_slot,
+          kind
         )
       `)
       .eq('character_id', characterId)
@@ -135,16 +138,25 @@ export async function GET(request: NextRequest) {
     interface AwardedItemRow {
       id: string
       awarded_date: string
-      loot_items: { wowhead_id: number; name: string; item_slot: string } | null
+      loot_items: { wowhead_id: number | null; name: string; item_slot: string; kind?: string | null } | null
     }
 
-    const awardedWowheadIds = ((awardedItems || []) as unknown as AwardedItemRow[]).map((item) => ({
-      wowhead_id: item.loot_items?.wowhead_id,
-      item_name: item.loot_items?.name,
-      slot: item.loot_items?.item_slot,
-      awarded_date: item.awarded_date,
-      source: 'loot_history' as const
-    })).filter((item) => item.wowhead_id)
+    // D-16: a need award names no real item until the Desk writes awarded_item_id
+    // (D-15), so awarded gear lists real items only. Skip it visibly, once per request.
+    const needSkipScope = createNeedSkipScope('character-gear')
+    const awardedRows = (awardedItems || []) as unknown as AwardedItemRow[]
+    const needAwardCount = awardedRows.filter((item) => isNeedRow(item.loot_items)).length
+    noteNeedSkipped(needSkipScope, needAwardCount)
+
+    const awardedWowheadIds = awardedRows
+      .filter((item) => !isNeedRow(item.loot_items))
+      .map((item) => ({
+        wowhead_id: item.loot_items?.wowhead_id,
+        item_name: item.loot_items?.name,
+        slot: item.loot_items?.item_slot,
+        awarded_date: item.awarded_date,
+        source: 'loot_history' as const
+      })).filter((item) => item.wowhead_id)
 
     return NextResponse.json({
       character_id: characterId,

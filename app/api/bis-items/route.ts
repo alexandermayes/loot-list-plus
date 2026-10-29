@@ -216,6 +216,9 @@ export async function GET(request: NextRequest) {
       .select('id, name, item_slot, wowhead_id')
       .in('raid_tier_id', tierIds)
       .eq('is_available', true)
+      // BIS import maps by wowhead_id and a need row has none, so a need row
+      // would land under a 'null' key (D-14).
+      .eq('kind', 'item')
 
     if (itemsError) {
       console.error('Error fetching loot items:', itemsError)

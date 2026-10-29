@@ -365,6 +365,44 @@ describe('POST /api/loot-history/bulk', () => {
     expect(recomputeBlpForItems).toHaveBeenCalledWith(expect.anything(), GUILD_ID, [ITEM_ID])
   })
 
+  // D-15, DISC-07: a Discovery award is keyed on the need row. D-22 holds real
+  // need rankings in Phase 3, so this fixture stands past the hold; 03-15 proves
+  // the BLP SQL, this proves the route hands it the need id.
+  it('need row (past the D-22 hold): the insert is keyed on the need row with no awarded_item_id and BLP recompute gets the need id', async () => {
+    const NEED_ROW_ID = 'aaaaaaaa-0000-0000-0000-000000000020'
+    const needRow = {
+      id: NEED_ROW_ID,
+      name: 'Trinket, Healing',
+      kind: 'need',
+      need_key: 'trinket.healing',
+      wowhead_id: null,
+      boss_name: 'Needs',
+      item_slot: 'Trinket',
+      classification: 'Reserved',
+      allocation_cost: 3,
+      raid_tier_id: TIER_ID,
+    }
+    const fixture = singleItemFixture()
+    fixture.items = [needRow]
+    fixture.blpEnabled = true
+    const { client, calls } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({
+      guild_id: GUILD_ID,
+      items: [{ loot_item_id: NEED_ROW_ID, raid_event_id: RAID_EVENT_ID, character_id: CHARACTER_ID, character_name: 'Thrall' }],
+    }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.successCount).toBe(1)
+    const insert = lootHistoryInserts(calls)[0]
+    expect(insert?.insertPayload?.loot_item_id).toBe(NEED_ROW_ID)
+    expect(insert?.insertPayload?.raid_tier_id).toBe(TIER_ID)
+    expect(insert?.insertPayload).not.toHaveProperty('awarded_item_id')
+    expect(recomputeBlpForItems).toHaveBeenCalledWith(expect.anything(), GUILD_ID, [NEED_ROW_ID])
+  })
+
   it('a raid_event_id rewritten by routeRecordsToTeamEvents reaches the insert payload', async () => {
     const REWRITTEN_EVENT_ID = 'aaaaaaaa-0000-0000-0000-00000000000c'
     vi.mocked(routeRecordsToTeamEvents).mockImplementation(async (_s, _g, records) => {

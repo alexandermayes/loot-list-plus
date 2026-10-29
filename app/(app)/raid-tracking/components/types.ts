@@ -37,7 +37,7 @@ export interface RaidLootEntry {
   character_name: string
   character_class_color: string
   item_name: string
-  item_wowhead_id: number
+  item_wowhead_id: number | null // null for a need award (D-13)
   awarded_date: string
 }
 

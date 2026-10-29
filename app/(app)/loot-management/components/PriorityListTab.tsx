@@ -343,6 +343,8 @@ export default function PriorityListTab() {
             .select('id, name, boss_name, item_slot, wowhead_id, classification, is_available, raid_tier_id')
             .in('raid_tier_id', tierIds)
             .eq('is_available', true)
+            // Officer editors list items only: need rows are fixed (D-12).
+            .eq('kind', 'item')
             .order('id', { ascending: true })
             .range(start, end)
         )
