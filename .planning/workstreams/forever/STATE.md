@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: "WoW Forever Loot: Discovery to Known"
-current_phase: 3
+current_phase: 03
 current_phase_name: Discovery Schema and Need Pipeline
-status: planning
-stopped_at: Phase 3 context gathered
-last_updated: "2026-10-20T03:31:47.484Z"
-last_activity: 2026-10-19
-last_activity_desc: Phase 02 complete, transitioned to Phase 3
-state_head: ec153b43d74ea95827a42ae3aee8ac84da95c772
+status: verifying
+stopped_at: Completed 03-14-PLAN.md
+last_updated: "2026-10-28T12:30:00Z"
+last_activity: 2026-10-20
+last_activity_desc: Phase 03 execution started
+state_head: ad954e14f2274c78d4816188a40254e21e694437
 progress:
   total_phases: 8
   completed_phases: 2
-  total_plans: 22
-  completed_plans: 22
+  total_plans: 41
+  completed_plans: 41
   percent: 25
 ---
 
@@ -33,12 +33,12 @@ Research: `.planning/research/SUMMARY.md`
 
 ## Current Position
 
-Phase: 3 — Discovery Schema and Need Pipeline
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-10-28 - Completed fast task 261028-fast-2: October 28 changelog entry for locked ranks and Sync gear (PR #475)
+Phase: 03 (Discovery Schema and Need Pipeline) — EXECUTING
+Plan: 19 of 19
+Status: Phase complete — verified 4/4 (human_needed); migration PR #459 merged, code PR #477 open (PRs 2 to 4 in one, review WR-01 and WR-05 fixed), copy approved 2026-10-28
+Last activity: 2026-10-28 - Opened code PR #477 (feat/discovery-need-pipeline) carved from the Phase 3 branch; owner approved the 145 need names and the five reason strings
 
-Progress: [███░░░░░░░] 2/8 phases ([████████████████████] 22/22 plans, 100% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning
+Progress: [███░░░░░░░] 2/8 phases ([████████████████████] 22/22 plans, [███░░░░░░░] 25% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning
 
 ## Hard Dates
 
@@ -92,6 +92,25 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 | Phase 02 P05 | 15 min | 2 tasks | 2 files |
 | Phase 02 P06 | 25 min | 2 tasks | 4 files |
 | Phase 02 P09 | 25min | 2 tasks | 3 files |
+| Phase 03 P01 | 17 min | 2 tasks | 6 files |
+| Phase 03 P03 | 6 min | 3 tasks | 5 files |
+| Phase 03 P04 | 8 min | 3 tasks | 10 files |
+| Phase 03 P05 | 6 min | 2 tasks | 6 files |
+| Phase 03 P15 | 29 min | 3 tasks | 2 files |
+| Phase 03 P02 | 1 day (owner checkpoint) | 3 tasks | 1 files |
+| Phase 03 P06 | 6 min | 3 tasks | 10 files |
+| Phase 03 P07 | 25 min | 3 tasks | 10 files |
+| Phase 03 P08 | 10 min | 2 tasks | 8 files |
+| Phase 03 P09 | 3 min | 2 tasks | 4 files |
+| Phase 03 P10 | 9 min | 3 tasks | 10 files |
+| Phase 03 P11 | 8 min | 2 tasks | 6 files |
+| Phase 03 P16 | 12 min | 2 tasks | 6 files |
+| Phase 03 P17 | 15 min | 2 tasks | 5 files |
+| Phase 03 P18 | 12 min | 3 tasks | 5 files |
+| Phase 03 P19 | 10 min | 2 tasks | 4 files |
+| Phase 03 P12 | 12 min | 3 tasks | 2 files |
+| Phase 03 P13 | 11 min | 3 tasks | 9 files |
+| Phase 03 P14 | 14min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -122,6 +141,26 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 - [Phase 02]: EXPANSION_NAME_TO_SLUG keeps no Forever key; tests and new callers read slugs from the registry (getExpansionMeta) because the reserve-run route keys off that map
 - [Phase 02]: 02-10: sync:forever is dry-run by default, --apply writes, unknown flags exit 1; duplicates after apply are reported, never deleted — No unique index on raid_tiers (expansion_id, name) and a migration is out of phase scope; a typo must not silently run as the wrong mode
 - [Phase 02]: 02-11: the Forever raid list renders only in the setup guide (isForeverGuild and raidTierStatus available, after the steps list); tier names are matched, never displayed — D-02 as amended 2026-10-14; copy and placement held for owner sign-off before the PR merges
+- [Phase 03]: 03-01: Discovery migration ships seven guard functions and ten WHEN-gated triggers (D-03, D-12, D-17, D-22, D-24, D-26, D-27); loot_history.awarded_item_id has no FK until Phase 5 — A second FK to loot_items makes PostgREST embeds ambiguous (PGRST201); WHEN gating keeps Known writes from calling any guard; D-22 hold is its own trigger so Phase 4 drops it cleanly
+- [Phase 03]: 03-01: package-lock.json edited by hand to add only @electric-sql/pglite 0.5.8 (local npm stripped libc fields from ~90 unrelated lines) — Keeps the lockfile diff to 8 lines for review
+- [Phase 03]: 03-03: NEED_DEFINITIONS is generated from the slot table in fixed order and gated by a hand-written 145-key fixture; list-mode rules fail closed (integer 0 counts, exact name Forever) — A consistent rename of a shipped key is caught only by the fixture comparison, so the fixture stays hand-written; PR 2 waits for the D-25 owner confirmation of the key list in 03-02-SUMMARY.md
+- [Phase 03]: 03-04: need rows key receive skips on 'need:<row id>' and items on wowhead_id; bracket rules exclude kind need (departs from D-08, Phase 4 budget check DISC-03 governs need costs) — Bracket functions sum allocation_cost against 3 and need costs are 3, 2, 1, so no classification mirror keeps need lists valid (Pitfall 2); item rows unchanged
+- [Phase 03]: 03-05: ItemLink is a hooks-free wrapper that renders NeedLabel for a null wowheadId, with the old body unchanged in WowheadItemLink; noteNeedSkipped warns once per scope with a fixed first argument — One guard covers all 43 call sites and hooks stay unconditional; a fixed log string keeps request data out of format strings (CodeQL); NeedLabel look held for the Phase 4 copy review
+- [Phase 03]: 03-15: Discovery guard proofs run as officer, raider and superuser with a same-role positive control beside every rejection; pin UPDATE is asserted as permission denied (no UPDATE grant), not 0 rows — A rejection from RLS can never pass as a guard rejection; the missing UPDATE grant is stronger than the plan's 0-row wording
+- [Phase 03]: [03-02] database types hand-applied from gen:types hunks; generator output carried unrelated drift
+- [Phase 03]: [03-06] External consumers stay item-only: guild-data and bot /priority filter kind = item in the query, export-string filters in the tier flatten, need rankings and need BLP are skipped with one need-skip warning per request — The companion keys items by String(wowhead_id), so one need row would collide every need on null (D-14); a visible skip (D-16) keeps a need ranking from vanishing silently
+- [Phase 03]: 03-07: includeNeeds is a default-false option on fetchFilteredLootItems; need-row 400 on PATCH and specs follows the guild ownership check — Phase 4 flips one argument per caller with no data change; a need row of another guild still answers 404 and enforce_loot_item_need_rules stays the database backstop
+- [Phase 03]: 03-08: every reserve-run loot_items read filters kind = item at the query (public list, run detail, join list and submit check, awards check); a need id fails the existing membership checks so no new error text — Keeps Known-tier responses identical and the unauthenticated join route from ever listing or accepting a need row (D-14)
+- [Phase 03]: 03-09: submit route refuses any need row with 422 before any write through one predicate (isHeldNeedRanking) and already excludes need rows from bracket rules with need copy caps — Phase 4 deletes one call, one module and one trigger; the hold reads every loaded row so a need in a turned-off tier is still refused
+- [Phase 03]: 03-10: master sheet, Summary and Raid Mode show only needs someone ranked, read by tier with need ids in the POST body and only ranked need ids in a second BLP GET; receive skips and award counts key by itemIdentityKey — A tier with 145 unranked seeded needs adds no row (D-02); Phase 4 stops calling keepRankedNeedRows in loadAllRankings; LootListAggregateItem.wowhead_id widened to number | null
+- [Phase 03]: 03-11: need awards skip awarded gear with one need-skip warning per request, come back from loot history with a null wowhead id, and the dashboard skips received needs by identity key; RaidLootEntry.item_wowhead_id widened to number | null — A need award names no real item until the Desk writes awarded_item_id (D-15); null lets ItemLink render a NeedLabel instead of an item=0 link. Open for Phase 5: editing a raid event deletes and re-imports loot from wowhead lines, which would drop need awards
+- [Phase 03]: 03-16: reserve run creation refuses Discovery and missing tiers (400 RESERVES_UNAVAILABLE_ERROR, 500 on tier read error) and the reserve tier list shows Known only; admin sheet import reads kind item only — The tier read sits after membership and Premium checks so Known responses are unchanged; the kind filter is the service-role guard because the database refuses need-row writes only for browser sessions (D-14). Reserve copy is proposed for the owner's Oct 26 sign-off
+- [Phase 03]: 03-17: all five lifecycle readers (review, revert, remove-item, item-counts, master-sheet visibility) handle need rows by id; no reader fix needed (Reader fixes for 03-12: none) — Fixture tests past the D-22 hold pass against unchanged routes, matching research B6, B7, B9, B10, C6
+- [Phase 03]: 03-18: bootstrap, loot-submissions, prio-list, wowhead lookups and addonAwardKeys all handle need rows; no reader fix needed (Reader fixes for 03-12: none); the D-02 hold is asserted as exactly three fetchFilteredLootItems arguments — Fixture tests past the D-22 hold pass against unchanged source, matching research A1, A8, B10 and D6
+- [Phase 03]: 03-19: bulk award route, history-row builders and both Discord helpers handle need rows; no reader fix needed (Reader fixes for 03-12: none); post-raid summary renders the plain need name, not bold — Fixture tests past the D-22 hold pass against unchanged source, matching research E3 and E5; the summary has never bolded item names
+- [Phase 03]: 03-12: enforce_loot_item_need_rules is listed as a SQL branch reader; findBadVia requires every via file to be an exclude entry; reader and boss_name inventories fail CI on any unlisted file
+- [Phase 03]: 03-13: sync reads matched tiers' need keys before any write; write order is tier insert, flip (Known to Discovery, no need rows), then seed; dry run counts new-tier rows via placeholder ids — The database refuses a need row in a non-Discovery tier (D-17); a failed read must leave the expansion untouched
+- [Phase 03]: 03-14: list_mode PATCH makes every decision before the first write; switch to Discovery is switch, seed, compensate; ownership check runs for every field
 
 ### Pending Owner Inputs
 
@@ -162,6 +201,6 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 
 ## Session Continuity
 
-Last session: 2026-10-20T03:31:47.367Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/workstreams/forever/phases/03-discovery-schema-and-need-pipeline/03-CONTEXT.md
+Last session: 2026-10-21T23:19:34.091Z
+Stopped at: Completed 03-14-PLAN.md
+Resume file: None
