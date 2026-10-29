@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { validateBracketRules, type BracketItem } from '../bracket-validation'
+import { canPlaceInBracket, placeInBracket, createBracketStates, findNextNoBracketSlot } from '../bracket-validation'
 
 // Helper to create a ranked item entry
 function entry(rank: number, slot: number, item: Partial<BracketItem> & { id: string }) {
@@ -197,5 +198,107 @@ describe('validateBracketRules', () => {
     const violations = validateBracketRules(items, false)
     expect(violations.some(v => v.rule === 'allocation_limit')).toBe(true)
     expect(violations.some(v => v.rule === 'reserved_companion')).toBe(true)
+  })
+})
+
+// D-06, D-08, research Pitfall 2: need rows are outside the bracket rules.
+// Their costs are 3, 2 and 1 whatever the classification says, so summing
+// them against the limit of 3 would flag valid need lists. Phase 4's 10-point
+// budget check (DISC-03) governs need costs instead.
+describe('need rows (kind need)', () => {
+  const bigNeed = { id: 'big', kind: 'need', allocation_cost: 3, classification: 'Reserved' }
+  const standardNeed = { id: 'std', kind: 'need', allocation_cost: 1, classification: 'Unlimited' }
+
+  it('reports no violation for a Big need and a Standard need in one bracket', () => {
+    const items = [entry(50, 1, bigNeed), entry(49, 1, standardNeed)]
+    expect(validateBracketRules(items, false)).toEqual([])
+  })
+
+  it('still reports allocation_limit for the same costs on item rows', () => {
+    const items = [
+      entry(50, 1, { id: 'big', allocation_cost: 3, classification: 'Reserved' }),
+      entry(49, 1, { id: 'std', allocation_cost: 1, classification: 'Unlimited' }),
+    ]
+    expect(validateBracketRules(items, false).map(v => v.rule)).toContain('allocation_limit')
+  })
+
+  it('does not count a need toward an item bracket total', () => {
+    const items = [
+      entry(50, 1, { id: 'a', allocation_cost: 3, item_type: 'Weapon' }),
+      entry(49, 1, bigNeed),
+    ]
+    expect(validateBracketRules(items, false)).toEqual([])
+  })
+
+  it('reports no reserved_companion for a Reserved need beside an item', () => {
+    const items = [entry(50, 1, bigNeed), entry(50, 2, { id: 'i', allocation_cost: 1, item_type: 'Weapon' })]
+    expect(validateBracketRules(items, false)).toEqual([])
+  })
+
+  it('canPlaceInBracket allows a need into a bracket at its point limit', () => {
+    const [bracket] = createBracketStates()
+    bracket.currentPoints = bracket.config.maxPoints
+    const need = { id: 'n', kind: 'need', allocation_cost: 3, classification: 'Reserved', item_type: 'Weapon' } as BracketItem
+    expect(canPlaceInBracket(need, bracket, 50, 2, true, new Map([[need.id, need]]))).toBe(true)
+  })
+
+  it('placeInBracket records a need placement and leaves the counters alone', () => {
+    const [bracket] = createBracketStates()
+    const need = { id: 'n', kind: 'need', allocation_cost: 3, item_type: 'Weapon', item_slot: 'Chest' } as BracketItem
+    placeInBracket(need, bracket, 50, 1)
+    expect(bracket.placements.get('50-1')).toBe('n')
+    expect(bracket.currentPoints).toBe(0)
+    expect(bracket.itemTypesUsed.size).toBe(0)
+    expect(bracket.itemSlotsUsed.size).toBe(0)
+  })
+
+  it('a Reserved need at slot 1 never blocks an item at slot 2', () => {
+    const [bracket] = createBracketStates()
+    const need = { id: 'n', kind: 'need', allocation_cost: 3, classification: 'Reserved' } as BracketItem
+    const item = { id: 'i', allocation_cost: 1, item_type: 'Weapon' } as BracketItem
+    const itemsById = new Map([[need.id, need], [item.id, item]])
+    placeInBracket(need, bracket, 50, 1)
+    expect(canPlaceInBracket(item, bracket, 50, 2, false, itemsById)).toBe(true)
+  })
+
+  it('a Reserved item at slot 1 still blocks an item at slot 2', () => {
+    const [bracket] = createBracketStates()
+    const reserved = { id: 'r', allocation_cost: 3, classification: 'Reserved' } as BracketItem
+    const item = { id: 'i', allocation_cost: 1, item_type: 'Weapon' } as BracketItem
+    const itemsById = new Map([[reserved.id, reserved], [item.id, item]])
+    placeInBracket(reserved, bracket, 50, 1)
+    expect(canPlaceInBracket(item, bracket, 50, 2, false, itemsById)).toBe(false)
+  })
+
+  it('findNextNoBracketSlot lets an item take slot 2 beside a Reserved need', () => {
+    const need = { id: 'n', kind: 'need', classification: 'Reserved' } as BracketItem
+    const item = { id: 'i' } as BracketItem
+    const placements = new Map([['38-1', 'n']])
+    expect(findNextNoBracketSlot(item, placements, new Map([[need.id, need]]))).toEqual({ rank: 38, slot: 2 })
+  })
+
+  it('findNextNoBracketSlot still skips slot 2 beside a Reserved item', () => {
+    const reserved = { id: 'r', classification: 'Reserved' } as BracketItem
+    const item = { id: 'i' } as BracketItem
+    const placements = new Map([['38-1', 'r']])
+    expect(findNextNoBracketSlot(item, placements, new Map([[reserved.id, reserved]]))).toEqual({ rank: 37, slot: 1 })
+  })
+})
+
+describe('Reserved item beside a need row', () => {
+  it('canPlaceInBracket lets a Reserved item take slot 1 when slot 2 holds a need', () => {
+    const [bracket] = createBracketStates()
+    const need = { id: 'n', kind: 'need', allocation_cost: 1 } as BracketItem
+    const reserved = { id: 'r', allocation_cost: 3, classification: 'Reserved' } as BracketItem
+    placeInBracket(need, bracket, 50, 2)
+    expect(canPlaceInBracket(reserved, bracket, 50, 1, false, new Map([[need.id, need], [reserved.id, reserved]]))).toBe(true)
+  })
+
+  it('canPlaceInBracket still blocks a Reserved item when slot 2 holds an item', () => {
+    const [bracket] = createBracketStates()
+    const other = { id: 'o', allocation_cost: 1, item_type: 'Weapon' } as BracketItem
+    const reserved = { id: 'r', allocation_cost: 3, classification: 'Reserved' } as BracketItem
+    placeInBracket(other, bracket, 50, 2)
+    expect(canPlaceInBracket(reserved, bracket, 50, 1, false, new Map([[other.id, other], [reserved.id, reserved]]))).toBe(false)
   })
 })

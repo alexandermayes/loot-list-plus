@@ -31,13 +31,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { pickReceivedEntries } from '@/domain/loot/apply-receive-skip'
 import { withFactionVariants } from '@/domain/loot/faction-item-aliases'
+import { isNeedRow } from '@/domain/loot/item-identity'
+import { noteNeedSkipped, type NeedSkipScope } from '@/lib/loot/need-skip'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type QueryClient = SupabaseClient<any, any, any>
 
 const PAGE_SIZE = 1000
 
-type WowheadRef = { wowhead_id: number | null } | null
+type WowheadRef = { wowhead_id: number | null; kind?: string | null } | null
 
 export interface RankedSubmission {
   character_id: string
@@ -72,11 +74,12 @@ const bestFirst = (a: Entry, b: Entry) => b.rank - a.rank || a.seq - b.seq
  * Builds characterId -> ranked items. receivedCounts maps
  * `${character_id}-${wowhead_id}` to the number of awards of that item to
  * that raider (fetchReceivedCounts); null skips nothing. Never mutates its
- * input.
+ * input. needSkip, when given, counts the need rows left out (D-16).
  */
 export function buildMemberRankedItems(
   submissions: readonly RankedSubmission[],
   receivedCounts: ReadonlyMap<string, number> | null,
+  needSkip?: NeedSkipScope,
 ): Record<string, MemberRankedItem[]> {
   // characterId -> `${wowhead_id}:${slot ?? 1}` -> entries kept for that item and slot
   const mergedByCharacter = new Map<string, Map<string, Entry[]>>()
@@ -87,6 +90,12 @@ export function buildMemberRankedItems(
     for (const item of sub.loot_submission_items) {
       if (item.removed_at) continue
       const lootItem = Array.isArray(item.loot_items) ? item.loot_items[0] : item.loot_items
+      // The addon and companion are item-only until the Drop Desk (D-14): a need
+      // ranking is skipped visibly (D-16), never sent under a null wowhead id.
+      if (isNeedRow(lootItem)) {
+        if (needSkip) noteNeedSkipped(needSkip, 1)
+        continue
+      }
       const wowheadId = lootItem?.wowhead_id
       if (!wowheadId) continue
       const slot = item.slot ?? null

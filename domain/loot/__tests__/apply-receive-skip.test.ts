@@ -127,3 +127,42 @@ describe('pickReceivedEntries', () => {
     expect(out[0].rankings.map(x => x.marker)).toEqual(['s2'])
   })
 })
+
+// D-19: a need row is keyed by its own id, so one need award skips exactly
+// the winner's entry for that need and never another need of the same raider.
+describe('applyGlobalReceiveSkip with need rows', () => {
+  const needIr = (id: string, rankings: R[]) => ({ item: { id, wowhead_id: null, kind: 'need' }, rankings })
+  const itemIr = (id: string, wowhead_id: number, rankings: R[]) => ({ item: { id, wowhead_id, kind: 'item' }, rankings })
+
+  it('removes only the winner entry for the awarded need and keeps their other need', () => {
+    const input = [
+      needIr('n1', [r('C', 50, 'n1-entry')]),
+      needIr('n2', [r('C', 49, 'n2-entry')]),
+    ]
+    const out = applyGlobalReceiveSkip(input, new Map([['C-need:n1', 1]]))
+    expect(out[0].rankings).toEqual([])
+    expect(out[1].rankings.map(x => x.marker)).toEqual(['n2-entry'])
+  })
+
+  it('does not skip another raider ranking the same need', () => {
+    const input = [needIr('n1', [r('C', 50, 'c'), r('D', 40, 'd')])]
+    const out = applyGlobalReceiveSkip(input, new Map([['C-need:n1', 1]]))
+    expect(out[0].rankings.map(x => x.marker)).toEqual(['d'])
+  })
+
+  it('never skips a row with no identity, even if the received map has an undefined-looking key', () => {
+    const input = [{ item: { id: 'i9', wowhead_id: null, kind: 'item' }, rankings: [r('C', 50)] }]
+    const out = applyGlobalReceiveSkip(input, new Map([['C-null', 1], ['C-undefined', 1], ['C-0', 1]]))
+    expect(out[0].rankings).toHaveLength(1)
+  })
+
+  it('mixes item and need rows without cross-skipping', () => {
+    const input = [
+      itemIr('i1', 30183, [r('C', 50, 'item')]),
+      needIr('n1', [r('C', 49, 'need')]),
+    ]
+    const out = applyGlobalReceiveSkip(input, new Map([['C-30183', 1]]))
+    expect(out[0].rankings).toEqual([])
+    expect(out[1].rankings.map(x => x.marker)).toEqual(['need'])
+  })
+})

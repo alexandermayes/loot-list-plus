@@ -25,6 +25,22 @@ const CHARACTER_ID = 'cccccccc-0000-0000-0000-000000000003'
 const OFFICER_USER_ID = 'cccccccc-0000-0000-0000-000000000004'
 const ITEM_ID = 'cccccccc-0000-0000-0000-000000000005'
 const SNAPSHOT_ID = 'cccccccc-0000-0000-0000-000000000006'
+const NEED_ID = 'cccccccc-0000-0000-0000-000000000007'
+
+// A need row (D-22 holds ranking needs server-side, so no real list holds one
+// in Phase 3; this fixture stands past the hold). The shape matches the
+// loot_items row the Discovery need seeder writes.
+const NEED_ROW = {
+  id: NEED_ID,
+  name: 'Trinket, Healing',
+  kind: 'need',
+  need_key: 'trinket.healing',
+  wowhead_id: null,
+  boss_name: 'Needs',
+  item_slot: 'Trinket',
+  classification: 'Reserved',
+  allocation_cost: 3,
+}
 
 const NOT_ACTIVE_MEMBER_ERROR = "This raider isn't an active member of this guild. Check the roster, then try again."
 const UNDO_REFUSED_ERROR = "This review can't be undone anymore. Refresh to see the list's current status."
@@ -45,6 +61,8 @@ interface Fixture {
   latestSnapshot?: { id: string; version: number } | null
   latestSnapshotError?: { message: string } | null
   itemsReadError?: { message: string } | null
+  // Overrides the default single-item read for the approve snapshot.
+  itemsRead?: Array<{ rank: number; slot: number; loot_item_id: string; loot_item: { name: string } }>
   snapshotDeleteError?: { message: string } | null
   snapshotInsertError?: { message: string } | null
   // Rows the undo's snapshot delete (filtered by gte snapshot_at) should
@@ -112,6 +130,9 @@ function makeClient(fixture: Fixture) {
           if (table === 'loot_submission_items') {
             if (fixture.itemsReadError) {
               return Promise.resolve({ data: null, error: fixture.itemsReadError }).then(resolve)
+            }
+            if (fixture.itemsRead) {
+              return Promise.resolve({ data: fixture.itemsRead, error: null }).then(resolve)
             }
             return Promise.resolve({ data: [{ rank: 50, slot: 1, loot_item_id: ITEM_ID, loot_item: { name: 'Sulfuras' } }], error: null }).then(resolve)
           }
@@ -217,6 +238,24 @@ describe('POST /api/loot-submissions/review', () => {
       expect(writesForSnapshots.map(c => c.op)).toEqual(['delete', 'insert'])
       expect(writesForSnapshots[0].filters).toEqual(expect.arrayContaining([['submission_id', SUBMISSION_ID], ['id', SNAPSHOT_ID]]))
       expect(writesForSnapshots[1].payload).toEqual(expect.objectContaining({ version: 3 }))
+    })
+
+    it('need row (past the D-22 hold): snapshots the need by its row id and display name next to an item', async () => {
+      const fixture = {
+        ...baseFixture(),
+        latestSnapshot: null,
+        itemsRead: [
+          { rank: 50, slot: 1, loot_item_id: NEED_ROW.id, loot_item: { name: NEED_ROW.name } },
+          { rank: 49, slot: 1, loot_item_id: ITEM_ID, loot_item: { name: 'Sulfuras' } },
+        ],
+      }
+      const { res, calls } = await run(fixture, { status: 'approved' })
+      expect(res.status).toBe(200)
+      const insert = snapshotWrites(calls)[0]
+      expect((insert.payload as { items: unknown[] }).items).toEqual([
+        { rank: 50, slot: 1, loot_item_id: NEED_ID, item_name: 'Trinket, Healing' },
+        { rank: 49, slot: 1, loot_item_id: ITEM_ID, item_name: 'Sulfuras' },
+      ])
     })
 
     it('returns 500 and writes no loot_submissions update when the items read fails', async () => {

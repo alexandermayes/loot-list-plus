@@ -46,7 +46,7 @@ export interface GargulDftRankingEntry {
 }
 
 export interface GargulDftItemRankings {
-  item: { wowhead_id: number }
+  item: { wowhead_id: number | null; kind?: string | null }
   rankings: GargulDftRankingEntry[]
 }
 
@@ -58,6 +58,9 @@ export function formatRankingsForGargul(
   // same wowhead in more than one row appear once per ranking.
   const byWowheadId = new Map<number, GargulDftRankingEntry[]>()
   for (const ir of itemRankings) {
+    // The Gargul import is item-only (D-14). Its caller already loads items
+    // only (03-10), so this named branch is the safety net.
+    if (ir.item.kind === 'need') continue
     const wowheadId = ir.item.wowhead_id
     if (!wowheadId || wowheadId <= 0) continue
     if (ir.rankings.length === 0) continue
