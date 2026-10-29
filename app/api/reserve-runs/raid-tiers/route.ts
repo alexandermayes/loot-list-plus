@@ -41,6 +41,8 @@ export async function GET(request: NextRequest) {
       .from('raid_tiers')
       .select('id, name, phase')
       .eq('expansion_id', expansionId)
+      // D-14: Discovery tiers hold no items to reserve.
+      .eq('list_mode', 'known')
       .order('phase', { ascending: true })
       .order('sort_order', { ascending: true })
 

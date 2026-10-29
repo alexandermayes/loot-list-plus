@@ -3,6 +3,8 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { validateBracketRules, type BracketItem, type BracketLimits } from '@/domain/loot/bracket-validation'
 import { validateItemCopyLimits } from '@/domain/loot/item-copies'
+import { isNeedRow } from '@/domain/loot/item-identity'
+import { isHeldNeedRanking, NEED_RANKING_HOLD_ERROR } from '@/domain/loot/need-ranking-hold'
 import { findLockViolations, lockViolationMessage } from '@/domain/loot/slot-locks'
 import { logStatusChange } from '@/utils/audit/log'
 import { trackEvent, setUserMilestone } from '@/utils/analytics/server'
@@ -91,7 +93,7 @@ export async function POST(request: NextRequest) {
         rank,
         slot,
         loot_item_id,
-        loot_item:loot_items(id, name, classification, item_type, item_slot, wowhead_id, allocation_cost, raid_tier:raid_tiers(is_guild_active))
+        loot_item:loot_items(id, name, classification, item_type, item_slot, wowhead_id, allocation_cost, kind, raid_tier:raid_tiers(is_guild_active))
       `)
       .eq('submission_id', submission_id)
       .is('removed_at', null)
@@ -142,11 +144,20 @@ export async function POST(request: NextRequest) {
         item_type?: string | null
         item_slot?: string | null
         allocation_cost?: number | null
+        kind?: string | null
         // PostgREST can return a to-one embed as an object or a one-element array.
         raid_tier?: { is_guild_active?: boolean | null } | Array<{ is_guild_active?: boolean | null }> | null
       } | null
     }
     const itemRows = (submissionItems || []) as unknown as SubmissionItemRow[]
+
+    // D-22: ranking a need is held until Phase 4. Every loaded row is checked,
+    // before the GH #357 filter below, because a need in a turned-off tier is
+    // still a ranked need. Nothing has been written yet, so the refusal leaves
+    // status, submitted_at and resubmission_count as they were.
+    if (itemRows.some((si) => isHeldNeedRanking(si.loot_item))) {
+      return NextResponse.json({ error: NEED_RANKING_HOLD_ERROR }, { status: 422 })
+    }
 
     // GH #357: the loot list page only receives items from raid tiers with
     // is_guild_active = true (resolveTierIdsForPhases in lib/loot-items-query.ts),
@@ -159,7 +170,11 @@ export async function POST(request: NextRequest) {
       const flag = Array.isArray(tier) ? tier[0]?.is_guild_active : tier?.is_guild_active
       return flag !== false
     })
-    const validationItems = checkedRows.map((si) => ({
+    // Need rows are outside the bracket rules: their cost is the need's size
+    // (3, 2, 1), not a classification, so summing it against the bracket limit
+    // would reject valid need lists. Their 10-point budget is Phase 4's check
+    // (DISC-03). Copy caps below still apply to them.
+    const validationItems = checkedRows.filter((si) => !isNeedRow(si.loot_item)).map((si) => ({
       rank: si.rank,
       slot: si.slot,
       item: {
@@ -185,6 +200,7 @@ export async function POST(request: NextRequest) {
           name: si.loot_item?.name,
           item_slot: si.loot_item?.item_slot,
           wowhead_id: si.loot_item?.wowhead_id,
+          kind: si.loot_item?.kind,
         },
       }))),
     ]

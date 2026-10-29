@@ -1,7 +1,10 @@
+import { itemIdentityKey } from './item-identity'
+
 /**
  * Remove ranking entries for characters who have already been awarded the
- * underlying physical item (matched by `wowhead_id`), applied globally across
- * a flattened list of tier results.
+ * underlying physical item (matched by `itemIdentityKey`: the `wowhead_id` for
+ * an item, the row id for a Discovery need), applied globally across a
+ * flattened list of tier results.
  *
  * Why this is its own helper: the master-sheet Gargul export fetches rankings
  * per-tier via `Promise.all`. Each per-tier fetch used to build its own skip
@@ -21,7 +24,9 @@ export interface ReceiveSkipRanking {
 }
 
 export interface ReceiveSkipItemRankings<R extends ReceiveSkipRanking> {
-  item: { wowhead_id: number }
+  // id is optional so item-only callers that never carried one still compile;
+  // a need row without an id has no identity and is never skipped.
+  item: { id?: string; wowhead_id: number | null; kind?: string | null }
   rankings: R[]
 }
 
@@ -57,8 +62,10 @@ export function pickReceivedEntries<E extends { key: string; rank: number; slot?
 
 /**
  * @param tierResults  Flattened list of `{ item, rankings }` across every tier.
- * @param receivedByCharAndWowhead  Map of `${character_id}-${wowhead_id}` ->
- *   number of times the character has been awarded that wowhead.
+ * @param receivedByCharAndIdentity  Map of `${character_id}-${identity}` ->
+ *   number of times the character has been awarded that identity, where the
+ *   identity is `itemIdentityKey(item)` (the wowhead id for an item, `need:`
+ *   plus the row id for a need).
  * @returns A new array with the same shape; ranking entries for awarded
  *   characters are removed in `rank` descending order, slot 1 before slot 2
  *   on a tie (their top picks go first, mirroring the legacy per-tier skip
@@ -66,17 +73,22 @@ export function pickReceivedEntries<E extends { key: string; rank: number; slot?
  */
 export function applyGlobalReceiveSkip<R extends ReceiveSkipRanking, T extends ReceiveSkipItemRankings<R>>(
   tierResults: readonly T[],
-  receivedByCharAndWowhead: ReadonlyMap<string, number>,
+  receivedByCharAndIdentity: ReadonlyMap<string, number>,
 ): T[] {
-  if (receivedByCharAndWowhead.size === 0) return tierResults.slice()
+  if (receivedByCharAndIdentity.size === 0) return tierResults.slice()
 
-  const entries = tierResults.flatMap(ir => ir.rankings.map(ranking => ({
-    key: `${ranking.character_id}-${ir.item.wowhead_id}`,
-    rank: ranking.rank,
-    slot: ranking.slot,
-    ranking,
-  })))
-  const toRemove = new Set([...pickReceivedEntries(entries, receivedByCharAndWowhead)].map(e => e.ranking))
+  const entries = tierResults.flatMap(ir => {
+    const identity = itemIdentityKey(ir.item)
+    // No identity means never skipped, as a null wowhead_id always was.
+    if (identity == null) return []
+    return ir.rankings.map(ranking => ({
+      key: `${ranking.character_id}-${identity}`,
+      rank: ranking.rank,
+      slot: ranking.slot,
+      ranking,
+    }))
+  })
+  const toRemove = new Set([...pickReceivedEntries(entries, receivedByCharAndIdentity)].map(e => e.ranking))
 
   if (toRemove.size === 0) return tierResults.slice()
   return tierResults.map(ir => ({

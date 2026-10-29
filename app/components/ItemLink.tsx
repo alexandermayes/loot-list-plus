@@ -20,6 +20,7 @@ import { memo, useContext, useState, useEffect } from 'react'
 import { ExpansionDataContext } from '@/app/contexts/ExpansionContext'
 import { QUALITY_COLORS } from '@/lib/design-system/quality-colors'
 import { getWowheadDomain } from '@/domain/expansion/wowhead'
+import { NeedLabel } from './NeedLabel'
 
 // Lazy-load the 190KB item-icons module. Cache the getter once loaded.
 let _getItemIconUrl: ((id: number, size: 'small' | 'medium' | 'large') => string | null) | null = null
@@ -47,7 +48,8 @@ export { getWowheadDomain }
 
 interface ItemLinkProps {
   name: string
-  wowheadId: number
+  /** Null for a need row (D-13): it has no Wowhead item yet, so it renders as a NeedLabel. */
+  wowheadId: number | null
   className?: string
   clickable?: boolean
   showIcon?: boolean
@@ -57,7 +59,9 @@ interface ItemLinkProps {
   onClick?: (e: React.MouseEvent) => void
 }
 
-const ItemLink = memo(function ItemLink({ name, wowheadId, className = '', clickable = true, showIcon = true, domain: domainProp, onClick: onClickProp }: ItemLinkProps) {
+type WowheadItemLinkProps = ItemLinkProps & { wowheadId: number }
+
+const WowheadItemLink = memo(function WowheadItemLink({ name, wowheadId, className = '', clickable = true, showIcon = true, domain: domainProp, onClick: onClickProp }: WowheadItemLinkProps) {
   // Read expansion from guild context (safe - returns undefined outside provider)
   const expansionData = useContext(ExpansionDataContext)
   const expansionDomain = domainProp ?? getWowheadDomain(expansionData?.currentExpansion?.expansion_name)
@@ -130,6 +134,24 @@ const ItemLink = memo(function ItemLink({ name, wowheadId, className = '', click
       <span className="truncate min-w-0">{name}</span>
     </a>
   )
+})
+
+// Hooks cannot sit behind an early return, so the need-row guard lives in this
+// hooks-free wrapper and WowheadItemLink keeps every hook unconditional. One guard
+// here covers every ItemLink call site, so a row with no wowhead_id never renders
+// an `item=null` link or asks Wowhead for a tooltip (D-13, DISC-06).
+const ItemLink = memo(function ItemLink(props: ItemLinkProps) {
+  if (props.wowheadId == null) {
+    return (
+      <NeedLabel
+        name={props.name}
+        className={props.className}
+        onClick={props.onClick}
+        showIcon={props.showIcon}
+      />
+    )
+  }
+  return <WowheadItemLink {...props} wowheadId={props.wowheadId} />
 })
 
 export default ItemLink

@@ -48,6 +48,7 @@ import { resolveRaidDays } from '@/domain/raid-team/settings'
 import { TeamSelector } from '@/app/components/TeamSelector'
 import { paginatedSelect } from '@/utils/supabase/paginate'
 import { findByWowheadId, wowheadIdCandidates } from '@/domain/loot/faction-item-aliases'
+import { wowheadIdForDisplay } from '@/domain/loot/item-identity'
 import { findGuildLootItemsByWowheadIds } from '@/lib/loot/guild-scoped-lookup'
 import type {
   Member,
@@ -662,7 +663,8 @@ export default function RaidTrackingPage() {
           character_id,
           loot_items (
             name,
-            wowhead_id
+            wowhead_id,
+            kind
           )
         `)
         .eq('raid_event_id', raidId)
@@ -692,7 +694,7 @@ export default function RaidTrackingPage() {
           }
         }
 
-        const lootEntries: RaidLootEntry[] = lootRecords.map((r: { id: string; character_id: string | null; character_name: string | null; awarded_date: string; loot_items?: { name?: string | null; wowhead_id?: number | null } | null }) => {
+        const lootEntries: RaidLootEntry[] = lootRecords.map((r: { id: string; character_id: string | null; character_name: string | null; awarded_date: string; loot_items?: { name?: string | null; wowhead_id?: number | null; kind?: string | null } | null }) => {
           const charInfo = r.character_id ? characterMap[r.character_id] : null
           return {
             id: r.id,
@@ -701,7 +703,8 @@ export default function RaidTrackingPage() {
             character_name: charInfo?.name || r.character_name || 'Unknown',
             character_class_color: charInfo?.color_hex || '#888888',
             item_name: r.loot_items?.name || 'Unknown Item',
-            item_wowhead_id: r.loot_items?.wowhead_id || 0,
+            // D-13: null for a need award so ItemLink renders a NeedLabel, never item=0
+            item_wowhead_id: wowheadIdForDisplay(r.loot_items),
             awarded_date: r.awarded_date
           }
         })
@@ -1245,6 +1248,8 @@ export default function RaidTrackingPage() {
       .from('loot_items')
       .select('id, name, wowhead_id, boss_name, raid_tier_id')
       .in('raid_tier_id', tierIds)
+      // D-14: name matching on a pasted loot line must never match a need row
+      .eq('kind', 'item')
       .order('name')
 
     if (items) {

@@ -17,6 +17,7 @@ vi.mock('@/utils/analytics/server', () => ({ trackEvent: vi.fn() }))
 const id = (n: number) => `bbbbbbbb-0000-0000-0000-${String(n).padStart(12, '0')}`
 
 const GUILD_ID = id(1)
+const OTHER_GUILD_ID = id(2)
 const MEMBER_ID = id(10)
 const OUTSIDER_ID = id(11)
 const INACTIVE_ID = id(13)
@@ -30,6 +31,11 @@ interface Fixture {
   reserve_runs: Row[]
   characters: Row[]
   character_guild_memberships: Row[]
+  // Optional so the list-route cases stay as they were; POST reads the tier
+  // (D-14) and fails closed when the table or the row is missing.
+  raid_tiers?: Row[]
+  // Each tier's expansion names its guild; a guild run must match it (WR-05).
+  expansions?: Row[]
   errorOn?: Partial<Record<string, string>>
 }
 
@@ -70,6 +76,8 @@ function makeClient(fixture: Fixture) {
     reserve_runs: fixture.reserve_runs.map((r) => ({ ...r })),
     characters: fixture.characters.map((r) => ({ ...r })),
     character_guild_memberships: fixture.character_guild_memberships.map((r) => ({ ...r })),
+    raid_tiers: (fixture.raid_tiers ?? []).map((r) => ({ ...r })),
+    expansions: (fixture.expansions ?? []).map((r) => ({ ...r })),
   }
 
   function respond(call: Call) {
@@ -98,6 +106,12 @@ function makeClient(fixture: Fixture) {
           const rows = result.data as Row[]
           return Promise.resolve(rows.length > 0 ? { data: rows[0], error: null } : { data: null, error: { message: 'not found' } })
         },
+        maybeSingle: () => {
+          const result = respond(call)
+          if (result.error) return Promise.resolve(result)
+          const rows = result.data as Row[]
+          return Promise.resolve({ data: rows[0] ?? null, error: null })
+        },
         then: (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>
           Promise.resolve(respond(call)).then(resolve, reject),
       }
@@ -121,6 +135,15 @@ function baseFixture(): Fixture {
       { id: 'mem-member', guild_id: GUILD_ID, character_id: 'char-member', is_active: true },
       { id: 'mem-inactive', guild_id: GUILD_ID, character_id: 'char-inactive', is_active: false },
     ],
+    raid_tiers: [
+      { id: 'tier-1', list_mode: 'known', expansion_id: 'exp-1' },
+      { id: 'tier-discovery', list_mode: 'discovery', expansion_id: 'exp-1' },
+      { id: 'tier-foreign', list_mode: 'known', expansion_id: 'exp-2' },
+    ],
+    expansions: [
+      { id: 'exp-1', guild_id: GUILD_ID },
+      { id: 'exp-2', guild_id: OTHER_GUILD_ID },
+    ],
   }
 }
 
@@ -137,6 +160,8 @@ function setClient(fixture: Fixture) {
 }
 
 const runSelectCalls = (calls: Call[]) => calls.filter((c) => c.table === 'reserve_runs' && c.op === 'select')
+const tierSelectCalls = (calls: Call[]) => calls.filter((c) => c.table === 'raid_tiers' && c.op === 'select')
+const expansionSelectCalls = (calls: Call[]) => calls.filter((c) => c.table === 'expansions' && c.op === 'select')
 const runInsertCalls = (calls: Call[]) => calls.filter((c) => c.table === 'reserve_runs' && c.op === 'insert')
 
 function listRequest(guildId?: string) {
@@ -335,6 +360,97 @@ describe('POST /api/reserve-runs', () => {
     expect(membershipCalls).toHaveLength(0)
     const inserts = runInsertCalls(calls)
     expect((inserts[0].payload as Row).guild_id).toBeNull()
+  })
+
+  // D-14: Discovery tiers hold no items to reserve.
+  it('refuses a Discovery tier with 400 and no insert', async () => {
+    setUser(MEMBER_ID)
+    const calls = setClient(baseFixture())
+    const res = await POST(postRequest(validBody({ raid_tier_id: 'tier-discovery' })))
+    const json = await res.json()
+    expect(res.status).toBe(400)
+    expect(json).toEqual({ error: 'Soft reserves are not available for this raid.' })
+    expect(runInsertCalls(calls)).toHaveLength(0)
+  })
+
+  it('reads the tier by id before the insert and creates the run on a Known tier', async () => {
+    setUser(MEMBER_ID)
+    const calls = setClient(baseFixture())
+    const res = await POST(postRequest(validBody()))
+    expect(res.status).toBe(200)
+    const tierCalls = tierSelectCalls(calls)
+    expect(tierCalls).toHaveLength(1)
+    expect(tierCalls[0].filters).toContainEqual(['eq', 'id', 'tier-1'])
+    expect(calls.indexOf(tierCalls[0])).toBeLessThan(calls.indexOf(runInsertCalls(calls)[0]))
+  })
+
+  it('fails closed with 400 and no insert when the raid_tier_id matches no tier', async () => {
+    setUser(MEMBER_ID)
+    const calls = setClient(baseFixture())
+    const res = await POST(postRequest(validBody({ raid_tier_id: 'tier-missing' })))
+    const json = await res.json()
+    expect(res.status).toBe(400)
+    expect(json).toEqual({ error: 'Soft reserves are not available for this raid.' })
+    expect(runInsertCalls(calls)).toHaveLength(0)
+  })
+
+  it('answers 500 with no insert when the tier read errors', async () => {
+    setUser(MEMBER_ID)
+    const fixture = baseFixture()
+    fixture.errorOn = { raid_tiers: 'db down' }
+    const calls = setClient(fixture)
+    const res = await POST(postRequest(validBody()))
+    expect(res.status).toBe(500)
+    expect(runInsertCalls(calls)).toHaveLength(0)
+  })
+
+  it('does not read the tier for a non-member', async () => {
+    setUser(OUTSIDER_ID)
+    const calls = setClient(baseFixture())
+    const res = await POST(postRequest(validBody({ raid_tier_id: 'tier-discovery' })))
+    expect(res.status).toBe(403)
+    expect(tierSelectCalls(calls)).toHaveLength(0)
+  })
+
+  // review WR-05: a guild run must sit on one of that guild's own tiers.
+  it('[WR-05] a guild run on another guild\'s Known tier answers like a missing tier, with no insert', async () => {
+    setUser(MEMBER_ID)
+    const calls = setClient(baseFixture())
+    const res = await POST(postRequest(validBody({ raid_tier_id: 'tier-foreign' })))
+    const json = await res.json()
+    expect(res.status).toBe(400)
+    expect(json).toEqual({ error: 'Soft reserves are not available for this raid.' })
+    expect(runInsertCalls(calls)).toHaveLength(0)
+  })
+
+  it('[WR-05] a guild run reads the tier\'s expansion and matches its guild before the insert', async () => {
+    setUser(MEMBER_ID)
+    const calls = setClient(baseFixture())
+    const res = await POST(postRequest(validBody()))
+    expect(res.status).toBe(200)
+    const expansionCalls = expansionSelectCalls(calls)
+    expect(expansionCalls).toHaveLength(1)
+    expect(expansionCalls[0].filters).toContainEqual(['eq', 'id', 'exp-1'])
+    expect(calls.indexOf(expansionCalls[0])).toBeLessThan(calls.indexOf(runInsertCalls(calls)[0]))
+  })
+
+  it('[WR-05] a personal run keeps the shared catalog: any guild\'s Known tier, no expansion read', async () => {
+    setUser(MEMBER_ID)
+    const calls = setClient(baseFixture())
+    const res = await POST(postRequest(validBody({ guild_id: undefined, raid_tier_id: 'tier-foreign' })))
+    expect(res.status).toBe(200)
+    expect(expansionSelectCalls(calls)).toHaveLength(0)
+    expect(runInsertCalls(calls)).toHaveLength(1)
+  })
+
+  it('[WR-05] answers 500 with no insert when the expansion read errors', async () => {
+    setUser(MEMBER_ID)
+    const fixture = baseFixture()
+    fixture.errorOn = { expansions: 'db down' }
+    const calls = setClient(fixture)
+    const res = await POST(postRequest(validBody()))
+    expect(res.status).toBe(500)
+    expect(runInsertCalls(calls)).toHaveLength(0)
   })
 })
 

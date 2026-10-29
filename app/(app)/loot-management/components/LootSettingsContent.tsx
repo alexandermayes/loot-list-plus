@@ -678,6 +678,8 @@ export default function LootSettingsContent({
           raid_tier:raid_tiers(name)
         `)
         .in('raid_tier_id', tierIds)
+        // Officer editors list items only: need rows are fixed (D-12).
+        .eq('kind', 'item')
         .order('id', { ascending: true })
         .range(start, end)
     )

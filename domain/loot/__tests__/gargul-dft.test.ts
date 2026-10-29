@@ -116,3 +116,32 @@ describe('formatRankingsForGargul does not mirror faction-variant items (GH #290
     }
   })
 })
+
+describe('formatRankingsForGargul need rows (D-14, DISC-06)', () => {
+  it('skips need rows', () => {
+    const itemBlock = item(12345, [r('c1', 'Bob', 50), r('c2', 'Alice', 80)])
+    const needBlock: GargulDftItemRankings = {
+      item: { wowhead_id: null, kind: 'need' },
+      rankings: [r('c1', 'Bob', 90), r('c3', 'Cara', 70)],
+    }
+    const itemOnly = formatRankingsForGargul([itemBlock], 2)
+    expect(itemOnly).not.toBe('')
+    expect(formatRankingsForGargul([itemBlock, needBlock], 2)).toBe(itemOnly)
+    expect(formatRankingsForGargul([needBlock, itemBlock], 2)).toBe(itemOnly)
+    expect(formatRankingsForGargul([needBlock], 2)).toBe('')
+  })
+
+  it('skips a need row even if it were to carry a wowhead id, and keeps an item row with kind item', () => {
+    const need: GargulDftItemRankings = {
+      item: { wowhead_id: 777, kind: 'need' },
+      rankings: [r('c1', 'Bob', 90)],
+    }
+    const kinded: GargulDftItemRankings = {
+      item: { wowhead_id: 12345, kind: 'item' },
+      rankings: [r('c2', 'Alice', 80)],
+    }
+    expect(formatRankingsForGargul([need, kinded], 2)).toBe(
+      formatRankingsForGargul([item(12345, [r('c2', 'Alice', 80)])], 2),
+    )
+  })
+})

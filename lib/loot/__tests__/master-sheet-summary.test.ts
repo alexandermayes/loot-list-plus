@@ -41,6 +41,9 @@ interface RecordedCall {
  */
 function makeClient(tables: Record<string, Row[]>, options?: { fail?: Array<{ table: string; select: string }> }) {
   const calls: RecordedCall[] = []
+  // The real loot_items.kind is NOT NULL DEFAULT 'item'; fixtures written
+  // before Phase 3 omit it, and the loader now filters on it.
+  tables = { ...tables, loot_items: (tables.loot_items ?? []).map(r => ({ kind: 'item', ...r })) }
 
   function applyFilters(rows: Row[], filters: FilterOp[]): Row[] {
     return rows.filter(row =>
@@ -311,5 +314,127 @@ describe('loadMasterSheetSummary', () => {
     ).rejects.toThrow()
 
     expect(calls.some(c => c.table === 'characters')).toBe(false)
+  })
+})
+
+describe('loadMasterSheetSummary need rows (D-02, D-19, DISC-06)', () => {
+  const NEED_RANKED = 'aaaaaaaa-0000-0000-0000-0000000000d1'
+  const NEED_UNRANKED = 'aaaaaaaa-0000-0000-0000-0000000000d2'
+  const NEED_OTHER = 'aaaaaaaa-0000-0000-0000-0000000000d3'
+  const OTHER_TIER_ITEM = 'bbbbbbbb-0000-0000-0000-0000000000d4'
+
+  function needRow(id: string, name: string): Row {
+    return {
+      id,
+      name,
+      boss_name: 'Needs',
+      item_slot: 'Trinket',
+      wowhead_id: null,
+      classification: 'epic',
+      raid_tier_id: TIER,
+      is_available: true,
+      is_loot_council: false,
+      kind: 'need',
+    }
+  }
+
+  // Dotted keys stand in for the inner embed the need ranking read filters on.
+  const NEED_RANKING: Row = {
+    loot_item_id: NEED_RANKED,
+    rank: 3,
+    slot: 1,
+    submission_id: 'sub-active',
+    removed_at: null,
+    'loot_items.kind': 'need',
+    'loot_items.raid_tier_id': TIER,
+  }
+
+  function withNeeds(overrides: Partial<Record<string, Row[]>> = {}) {
+    const base = baseTables()
+    return baseTables({
+      loot_items: [...base.loot_items, needRow(NEED_RANKED, 'Trinket, Healing'), needRow(NEED_UNRANKED, 'Ring, Tank')],
+      loot_submission_items: [...base.loot_submission_items, NEED_RANKING],
+      ...overrides,
+    })
+  }
+
+  it('N1: lists a need only when an approved list ranks it; an unranked need never appears', async () => {
+    const { client } = makeClient(withNeeds())
+    const result = await loadMasterSheetSummary(client as never, { guildId: GUILD, activeTierIds: [TIER], activeTeamId: null })
+
+    expect(result.map(r => r.item_id).sort()).toEqual([ITEM, NEED_RANKED].sort())
+    const need = result.find(r => r.item_id === NEED_RANKED)!
+    expect(need.wowhead_id).toBeNull()
+    expect(need.total_lists).toBe(1)
+    expect(need.players.map(p => p.character_id)).toEqual([ACTIVE])
+  })
+
+  it('N2: reads items with kind item, needs by tier, and never puts a need id in an `in` filter', async () => {
+    const { client, calls } = makeClient(withNeeds())
+    await loadMasterSheetSummary(client as never, { guildId: GUILD, activeTierIds: [TIER], activeTeamId: null })
+
+    const itemRead = calls.find(c => c.table === 'loot_items' && c.filters.some(f => f.type === 'eq' && f.col === 'kind' && f.val === 'item'))
+    expect(itemRead).toBeDefined()
+    const needRead = calls.find(c => c.table === 'loot_items' && c.filters.some(f => f.type === 'eq' && f.col === 'kind' && f.val === 'need'))
+    expect(needRead).toBeDefined()
+    const rankingRead = calls.find(c => c.table === 'loot_submission_items' && c.filters.some(f => f.type === 'eq' && f.col === 'loot_items.kind'))
+    expect(rankingRead).toBeDefined()
+
+    const needIds = [NEED_RANKED, NEED_UNRANKED, NEED_OTHER]
+    for (const call of calls) {
+      for (const f of call.filters) {
+        if (f.type === 'in') {
+          expect(f.val.some(v => needIds.includes(v as string))).toBe(false)
+        }
+      }
+    }
+  })
+
+  it('N3: already_awarded for a need counts awards of that need row only', async () => {
+    const tables = withNeeds({
+      loot_history: [
+        { guild_id: GUILD, loot_item: { id: NEED_RANKED, wowhead_id: null, kind: 'need' } },
+        { guild_id: GUILD, loot_item: { id: NEED_RANKED, wowhead_id: null, kind: 'need' } },
+        { guild_id: GUILD, loot_item: { id: NEED_OTHER, wowhead_id: null, kind: 'need' } },
+      ],
+    })
+    const { client } = makeClient(tables)
+    const result = await loadMasterSheetSummary(client as never, { guildId: GUILD, activeTierIds: [TIER], activeTeamId: null })
+
+    expect(result.find(r => r.item_id === NEED_RANKED)!.already_awarded).toBe(2)
+    expect(result.find(r => r.item_id === ITEM)!.already_awarded).toBe(0)
+  })
+
+  it('N4: an award of the same wowhead item from another tier still counts for the item', async () => {
+    const tables = withNeeds({
+      loot_history: [
+        { guild_id: GUILD, loot_item: { id: OTHER_TIER_ITEM, wowhead_id: 1001, kind: 'item' } },
+        { guild_id: GUILD, loot_item: { id: NEED_RANKED, wowhead_id: null, kind: 'need' } },
+      ],
+    })
+    const { client } = makeClient(tables)
+    const result = await loadMasterSheetSummary(client as never, { guildId: GUILD, activeTierIds: [TIER], activeTeamId: null })
+
+    expect(result.find(r => r.item_id === ITEM)!.already_awarded).toBe(1)
+    expect(result.find(r => r.item_id === NEED_RANKED)!.already_awarded).toBe(1)
+  })
+
+  it('N5: a tier with only need rows and one ranking still produces the need', async () => {
+    const tables = withNeeds({
+      loot_items: [needRow(NEED_RANKED, 'Trinket, Healing')],
+      loot_submission_items: [NEED_RANKING],
+    })
+    const { client } = makeClient(tables)
+    const result = await loadMasterSheetSummary(client as never, { guildId: GUILD, activeTierIds: [TIER], activeTeamId: null })
+
+    expect(result.map(r => r.item_id)).toEqual([NEED_RANKED])
+  })
+
+  it('N6: a tier with unranked needs and no rankings at all returns []', async () => {
+    const tables = withNeeds({ loot_submission_items: [] })
+    const { client } = makeClient(tables)
+    const result = await loadMasterSheetSummary(client as never, { guildId: GUILD, activeTierIds: [TIER], activeTeamId: null })
+
+    expect(result).toEqual([])
   })
 })
