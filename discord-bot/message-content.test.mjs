@@ -9,6 +9,9 @@ const {
   isMessageContentIntentEnabled,
   buildGatewayIntents,
   messageContentStartupNotice,
+  decideReportHandling,
+  fallbackReportTitle,
+  messageDescription,
 } = messageContent
 
 const EM_DASH = String.fromCodePoint(0x2014)
@@ -40,5 +43,54 @@ describe('messageContentStartupNotice', () => {
     expect(notice).toContain('DISCORD_MESSAGE_CONTENT_INTENT')
     expect(notice).toContain('without message text')
     expect(notice).not.toContain(EM_DASH)
+  })
+})
+
+const NO_TEXT = '(message text not available to the bot, see the Discord link below)'
+
+describe('decideReportHandling', () => {
+  it.each(['reaction', 'channel'])('uses the thread name for a forum starter from %s, with or without text', (source) => {
+    expect(decideReportHandling({ text: '', attachmentCount: 0, forumStarter: true, source })).toBe('thread-name')
+    expect(decideReportHandling({ text: 'hello', attachmentCount: 2, forumStarter: true, source })).toBe('thread-name')
+  })
+
+  it('falls back for a blank reaction on a non-forum message', () => {
+    expect(decideReportHandling({ text: '', attachmentCount: 0, forumStarter: false, source: 'reaction' })).toBe('fallback')
+  })
+
+  it('skips a blank channel message and a blank message with no source', () => {
+    expect(decideReportHandling({ text: '', attachmentCount: 0, forumStarter: false, source: 'channel' })).toBe('skip')
+    expect(decideReportHandling({ text: '', attachmentCount: 0, forumStarter: false })).toBe('skip')
+  })
+
+  it.each(['reaction', 'channel'])('generates a title when text is present (%s)', (source) => {
+    expect(decideReportHandling({ text: 'boss loot missing', attachmentCount: 0, forumStarter: false, source })).toBe('generated')
+  })
+
+  it.each(['reaction', 'channel'])('generates a title for attachments only (%s)', (source) => {
+    expect(decideReportHandling({ text: '', attachmentCount: 1, forumStarter: false, source })).toBe('generated')
+  })
+
+  it('treats whitespace-only and undefined text as blank', () => {
+    expect(decideReportHandling({ text: '   \n ', attachmentCount: 0, forumStarter: false, source: 'reaction' })).toBe('fallback')
+    expect(decideReportHandling({ text: undefined, attachmentCount: 0, forumStarter: false, source: 'channel' })).toBe('skip')
+  })
+})
+
+describe('fallbackReportTitle', () => {
+  it('builds the title from the channel label only', () => {
+    expect(fallbackReportTitle('#general')).toBe('Discord report in #general')
+    expect(fallbackReportTitle('#general')).not.toContain(EM_DASH)
+  })
+})
+
+describe('messageDescription', () => {
+  it('trims real text', () => {
+    expect(messageDescription('  boss loot missing \n')).toBe('boss loot missing')
+  })
+
+  it.each([undefined, null, '', '   '])('returns the not-available wording for %j', (value) => {
+    expect(messageDescription(value)).toBe(NO_TEXT)
+    expect(messageDescription(value)).not.toContain(EM_DASH)
   })
 })
