@@ -12,18 +12,18 @@ const { registerCommands } = require('./commands');
 const { handleInteractionCreate } = require('./interactions');
 const { isHelpConfigured } = require('./help');
 const { handleHelpReviewReaction } = require('./help-review');
+const { buildGatewayIntents, messageContentStartupNotice } = require('./message-content');
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent, // privileged — must be enabled in Dev Portal
-    GatewayIntentBits.GuildMessageReactions,
-  ],
+  intents: buildGatewayIntents(GatewayIntentBits, process.env),
   // Partials let us receive reaction events on messages posted before the
   // bot started (i.e. not in the message cache).
   partials: [Partials.Message, Partials.Reaction, Partials.User],
 });
+
+// Logged before login so it shows even if login then fails for another reason.
+const intentNotice = messageContentStartupNotice(process.env);
+if (intentNotice) console.warn(intentNotice);
 
 client.once('clientReady', () => {
   console.log(`✅ Bot is online as ${client.user.tag}`);
