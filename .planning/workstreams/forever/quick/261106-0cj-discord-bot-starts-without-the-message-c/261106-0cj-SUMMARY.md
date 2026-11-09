@@ -63,8 +63,8 @@ The wiring in bot.js and feedback.js has no committed test, because those files 
 
 ## What the owner still has to do
 
-1. Merge the PR for `fix/bot-message-content-intent`.
-2. Confirm the Railway deploy shows the bot online with the intents notice and no disallowed-intents crash.
+1. ~~Merge the PR for `fix/bot-message-content-intent`.~~ Done 2026-11-09: PR #482 merged on the owner's explicit go-ahead, using the admin bypass of the one-review rule. Merging also carried the owner's sign-off on the two new strings (the fallback title and the body placeholder).
+2. Confirm the Railway deploy shows the bot online with the intents notice and no disallowed-intents crash. Railway reported the deploy of the merge commit as successful on 2026-11-09; the runtime logs have not been read yet.
 3. Leave `DISCORD_MESSAGE_CONTENT_INTENT` unset until Discord approves the privileged intent, then set it to `true`.
 4. Run the human check: as an officer, add a bug reaction to another user's recent message in a text channel; expect an issue titled `Discord report in #channel`, a bot reply with the link and ack reaction, and the new body wording with a working Discord link.
 
