@@ -32,10 +32,18 @@ export interface BisPlacementInput {
   bracketLimits?: BracketLimits
 }
 
-export function placeBisItems(input: BisPlacementInput): {
+export interface BisPlacementResult {
   rankings: Record<string, string>
   importedCount: number
-} {
+  /**
+   * Matched, unequipped BiS items left unranked because the officers prio'd
+   * them to other classes (#484). Loot Council items, equipped items, ids
+   * outside the loot table and locked ranks are not counted.
+   */
+  skippedForPrioCount: number
+}
+
+export function placeBisItems(input: BisPlacementInput): BisPlacementResult {
   const {
     orderedBisItemIds,
     lootItems,
@@ -54,6 +62,7 @@ export function placeBisItems(input: BisPlacementInput): {
   const noBracketPlacements = new Map<string, string>() // "rank-slot" -> itemId
   const newRankings: Record<string, string> = {}
   let importedCount = 0
+  let skippedForPrioCount = 0
 
   // Locked ranks survive the import: seed them first so their points and
   // positions are taken before any BiS item is placed, and so the save
@@ -83,9 +92,17 @@ export function placeBisItems(input: BisPlacementInput): {
     // Skip items the user already owns (imported from WowSims)
     if (equippedWowheadIds.has(item.wowhead_id)) continue
 
+    // Loot Council items are never rankable by raiders; they are not a prio skip.
+    if (item.is_loot_council) continue
+
     // Items the officers prio'd to other classes stay unranked: the editor
     // refuses them in Brackets 1-4 and No Bracket, so the import must too (#484).
-    // This also covers Loot Council items, which are never rankable.
+    // Counted so the raider can be told why the list came back shorter.
+    if (!canRankInZone(item, 'noBracket')) {
+      skippedForPrioCount++
+      continue
+    }
+
     const bracketSlot = canRankInZone(item, 'bracket')
       ? findNextValidSlot(item, bracketStates, enforceSlotRestrictions, itemsById, bracketLimits)
       : null
@@ -95,7 +112,7 @@ export function placeBisItems(input: BisPlacementInput): {
       placeInBracket(item, bracketStates[bracketIndex], rank, slot)
       newRankings[`${rank}-${slot}`] = item.id
       importedCount++
-    } else if (canRankInZone(item, 'noBracket')) {
+    } else {
       // Brackets are full, can't fit this item, or it is not primary prio here
       const noBracketSlot = findNextNoBracketSlot(item, noBracketPlacements, itemsById)
 
@@ -109,5 +126,5 @@ export function placeBisItems(input: BisPlacementInput): {
     }
   }
 
-  return { rankings: newRankings, importedCount }
+  return { rankings: newRankings, importedCount, skippedForPrioCount }
 }

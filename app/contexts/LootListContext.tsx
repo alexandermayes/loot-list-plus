@@ -76,6 +76,8 @@ function getRaidTierOrder(tierName: string): number {
 interface BisImportResult {
   success: boolean
   importedCount: number
+  /** Matched BiS items left unranked because officers prio'd them to other classes (#484). */
+  skippedForPrioCount?: number
   error?: string
   code?: string
 }
@@ -656,7 +658,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         return (a.slot as string).localeCompare(b.slot as string)
       })
 
-      const { rankings: newRankings, importedCount } = placeBisItems({
+      const { rankings: newRankings, importedCount, skippedForPrioCount } = placeBisItems({
         orderedBisItemIds: sortedBisItems.map(b => b.loot_item_id),
         lootItems: itemsData?.items || [],
         lockedPositions: lockedPositionsRef.current,
@@ -672,7 +674,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       // Set the new rankings
       setRankings(newRankings)
 
-      return { success: true, importedCount }
+      return { success: true, importedCount, skippedForPrioCount }
     } catch (error) {
       console.error('Error importing BIS items:', error)
       return {
