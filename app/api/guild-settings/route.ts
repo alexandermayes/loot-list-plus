@@ -90,6 +90,7 @@ const ALLOWED_SETTINGS_FIELDS = [
   'max_allocation_points_per_bracket',
   'max_tokens_per_bracket',
   'max_category_per_bracket',
+  'award_slot_lock_enabled',
 
   // Discord Integration
   'raid_summary_channel_id',
@@ -242,6 +243,7 @@ export async function GET(request: Request) {
             max_allocation_points_per_bracket: 3,
             max_tokens_per_bracket: 1,
             max_category_per_bracket: 1,
+            award_slot_lock_enabled: false,
 
             // Warcraft Logs Integration
             wcl_guild_url: null
@@ -321,6 +323,12 @@ export async function PUT(request: Request) {
         return NextResponse.json({ error: checked.error }, { status: 400 })
       }
       sanitizedSettings.single_raider_modifiers = checked.value
+    }
+
+    // A lock rule that is not a boolean would be stored as a string or number
+    // and silently read as on or off, so refuse it before writing.
+    if ('award_slot_lock_enabled' in sanitizedSettings && typeof sanitizedSettings.award_slot_lock_enabled !== 'boolean') {
+      return NextResponse.json({ error: 'award_slot_lock_enabled must be true or false' }, { status: 400 })
     }
 
     let result

@@ -37,7 +37,9 @@ function makeMockSupabase(tables: Record<string, Row[]>) {
         return builder
       },
       eq(column: string, value: unknown) {
-        rows = rows.filter((r) => r[column] === value)
+        // A fixture row without a kind column counts as an item, like the
+        // database default, so every pre-Discovery fixture stays an item.
+        rows = rows.filter((r) => (column === 'kind' ? (r.kind ?? 'item') : r[column]) === value)
         return builder
       },
       order(_column: string, _opts?: unknown) {
@@ -958,6 +960,87 @@ describe.each([
       .sort()
 
     expect(visibleIds).toEqual(expectedIds)
+  })
+})
+
+// ─── D-02: need rows stay out of the raider's picker until Phase 4 ──────
+
+describe('fetchFilteredLootItems need rows (D-02, DISC-06)', () => {
+  const needRow = {
+    ...item('need-trinket', {
+      name: 'Trinket',
+      item_slot: 'Trinket',
+      armor_type: null,
+      allocation_cost: 1,
+    }),
+    kind: 'need',
+    need_key: 'trinket',
+    wowhead_id: null,
+  }
+  const chestNeed = {
+    ...item('need-chest', { name: 'Chest', item_slot: 'Chest', armor_type: 'Plate' }),
+    kind: 'need',
+    need_key: 'chest-plate',
+    wowhead_id: null,
+  }
+  const itemRows = [
+    item('i-1', { name: 'Cloth Robe', item_slot: 'Chest', armor_type: 'Cloth' }),
+    { ...item('i-2', { name: 'Neck Charm', item_slot: 'Neck' }), kind: 'item' },
+  ]
+
+  function supabaseWith(rows: Row[]) {
+    return makeMockSupabase({ loot_items: rows, wow_classes: allClasses, class_specs: allSpecs })
+  }
+
+  it('returns no need row by default', async () => {
+    const result = (await fetchFilteredLootItems(
+      supabaseWith([...itemRows, needRow]),
+      warrior(),
+      ['tier-1'],
+    )) as Array<{ id: string }>
+    expect(result.map((r) => r.id).sort()).toEqual(['i-1', 'i-2'])
+  })
+
+  it('returns no need row with includeNeeds false', async () => {
+    const result = (await fetchFilteredLootItems(
+      supabaseWith([...itemRows, needRow]),
+      warrior(),
+      ['tier-1'],
+      { includeNeeds: false },
+    )) as Array<{ id: string }>
+    expect(result.map((r) => r.id)).not.toContain('need-trinket')
+  })
+
+  it('returns the need row with includeNeeds true', async () => {
+    const result = (await fetchFilteredLootItems(
+      supabaseWith([...itemRows, needRow]),
+      warrior(),
+      ['tier-1'],
+      { includeNeeds: true },
+    )) as Array<{ id: string }>
+    expect(result.map((r) => r.id).sort()).toEqual(['i-1', 'i-2', 'need-trinket'])
+  })
+
+  it('skips the wowhead-keyed checks for a need row: a Mage still gets a plate Chest need', async () => {
+    const result = (await fetchFilteredLootItems(
+      supabaseWith([chestNeed]),
+      mage(),
+      ['tier-1'],
+      { includeNeeds: true },
+    )) as Array<{ id: string }>
+    expect(result.map((r) => r.id)).toEqual(['need-chest'])
+  })
+
+  it('item rows are identical with and without includeNeeds', async () => {
+    const rows = [...itemRows, needRow]
+    const without = (await fetchFilteredLootItems(supabaseWith(rows), mage(), ['tier-1'])) as Array<{
+      id: string
+      kind?: string
+    }>
+    const withNeeds = (await fetchFilteredLootItems(supabaseWith(rows), mage(), ['tier-1'], {
+      includeNeeds: true,
+    })) as Array<{ id: string; kind?: string }>
+    expect(withNeeds.filter((r) => r.kind !== 'need')).toEqual(without)
   })
 })
 

@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
 import { logAudit } from '@/utils/audit/log'
 import { trackApiError } from '@/utils/analytics/server'
+import { NEED_ROW_FIXED_ERROR, isNeedRow } from '@/domain/loot/item-identity'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
     // Verify the item exists and belongs to this guild (loot_items → raid_tiers → expansions → guild)
     const { data: item, error: itemErr } = await serviceSupabase
       .from('loot_items')
-      .select('id, raid_tier_id')
+      .select('id, raid_tier_id, kind')
       .eq('id', item_id)
       .single()
 
@@ -90,6 +91,12 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'Item not found in this guild' }, { status: 404 })
         }
       }
+    }
+
+    // Need rows come only from the frozen taxonomy (D-12) and their class
+    // mirror is fixed (D-08), so no loot_item_classes write may start here.
+    if (isNeedRow(item)) {
+      return NextResponse.json({ error: NEED_ROW_FIXED_ERROR }, { status: 400 })
     }
 
     // remove_all: clear every row of one spec_type for this item

@@ -3,10 +3,16 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { validateBracketRules, type BracketItem, type BracketLimits } from '@/domain/loot/bracket-validation'
 import { validateItemCopyLimits } from '@/domain/loot/item-copies'
+import { isNeedRow } from '@/domain/loot/item-identity'
+import { isHeldNeedRanking, NEED_RANKING_HOLD_ERROR } from '@/domain/loot/need-ranking-hold'
+import { findLockViolations, lockViolationMessage } from '@/domain/loot/slot-locks'
 import { logStatusChange } from '@/utils/audit/log'
 import { trackEvent, setUserMilestone } from '@/utils/analytics/server'
 import { revalidatePendingSubmissions } from '@/lib/cache/submission-tag'
 import { findInvalidCharacterIds } from '@/lib/loot/guild-award-refs'
+import { fetchActiveSlotLocks } from '@/lib/loot/slot-locks'
+import { fetchListPrioItems } from '@/lib/loot/prio-check'
+import { findPrioViolations, prioViolationMessage, PRIO_VIOLATION_CODE } from '@/domain/loot/prio-violations'
 
 // Shown to the raider when the list's character is not an active member of
 // the list's guild (the same text auto-save shows).
@@ -33,8 +39,12 @@ const NOT_ACTIVE_MEMBER_ERROR = 'Your character needs to rejoin this guild.'
  *    loot list applies; see domain/loot/item-copies.ts). Rows whose item is
  *    from a raid tier the guild turned off (raid_tiers.is_guild_active = false)
  *    are skipped, because the loot list page never shows them (GH #357)
- * 6. If valid: snapshot previous items, set status to 'pending'
- * 7. If invalid: return violations, status stays as-is
+ * 6. Check officer class prio (#484): a ranked item outside its zone's prio
+ *    pool is refused with 400 and code PRIO_VIOLATION, naming the items.
+ *    The items and flags are recomputed over the list's phase-group tiers;
+ *    rows held by an active award lock are never re-judged
+ * 7. If valid: snapshot previous items, set status to 'pending'
+ * 8. If invalid: return violations, status stays as-is
  */
 export async function POST(request: NextRequest) {
   try {
@@ -89,13 +99,29 @@ export async function POST(request: NextRequest) {
         rank,
         slot,
         loot_item_id,
-        loot_item:loot_items(id, name, classification, item_type, item_slot, wowhead_id, allocation_cost, raid_tier:raid_tiers(is_guild_active))
+        loot_item:loot_items(id, name, classification, item_type, item_slot, wowhead_id, allocation_cost, kind, raid_tier:raid_tiers(is_guild_active))
       `)
       .eq('submission_id', submission_id)
       .is('removed_at', null)
 
     if (itemsError) {
       return NextResponse.json({ error: 'Failed to read submission items' }, { status: 500 })
+    }
+
+    // Award slot locks: every saved live row counts here, including rows of
+    // tiers hidden from the editor, because the database lock does not skip
+    // them either. A fetch error reaches the catch (500) rather than skipping
+    // the check. The message matches the one save_submission_items raises.
+    const locks = await fetchActiveSlotLocks(serviceSupabase, submission_id)
+    const lockViolations = findLockViolations(
+      locks,
+      (submissionItems || []).map((row) => ({ rank: row.rank, slot: row.slot, loot_item_id: row.loot_item_id })),
+    )
+    if (lockViolations.length > 0) {
+      return NextResponse.json({
+        error: lockViolationMessage(lockViolations[0]),
+        locked_ranks: lockViolations,
+      }, { status: 422 })
     }
 
     // Get guild settings for bracket rules
@@ -124,11 +150,20 @@ export async function POST(request: NextRequest) {
         item_type?: string | null
         item_slot?: string | null
         allocation_cost?: number | null
+        kind?: string | null
         // PostgREST can return a to-one embed as an object or a one-element array.
         raid_tier?: { is_guild_active?: boolean | null } | Array<{ is_guild_active?: boolean | null }> | null
       } | null
     }
     const itemRows = (submissionItems || []) as unknown as SubmissionItemRow[]
+
+    // D-22: ranking a need is held until Phase 4. Every loaded row is checked,
+    // before the GH #357 filter below, because a need in a turned-off tier is
+    // still a ranked need. Nothing has been written yet, so the refusal leaves
+    // status, submitted_at and resubmission_count as they were.
+    if (itemRows.some((si) => isHeldNeedRanking(si.loot_item))) {
+      return NextResponse.json({ error: NEED_RANKING_HOLD_ERROR }, { status: 422 })
+    }
 
     // GH #357: the loot list page only receives items from raid tiers with
     // is_guild_active = true (resolveTierIdsForPhases in lib/loot-items-query.ts),
@@ -141,7 +176,11 @@ export async function POST(request: NextRequest) {
       const flag = Array.isArray(tier) ? tier[0]?.is_guild_active : tier?.is_guild_active
       return flag !== false
     })
-    const validationItems = checkedRows.map((si) => ({
+    // Need rows are outside the bracket rules: their cost is the need's size
+    // (3, 2, 1), not a classification, so summing it against the bracket limit
+    // would reject valid need lists. Their 10-point budget is Phase 4's check
+    // (DISC-03). Copy caps below still apply to them.
+    const validationItems = checkedRows.filter((si) => !isNeedRow(si.loot_item)).map((si) => ({
       rank: si.rank,
       slot: si.slot,
       item: {
@@ -167,6 +206,7 @@ export async function POST(request: NextRequest) {
           name: si.loot_item?.name,
           item_slot: si.loot_item?.item_slot,
           wowhead_id: si.loot_item?.wowhead_id,
+          kind: si.loot_item?.kind,
         },
       }))),
     ]
@@ -176,6 +216,29 @@ export async function POST(request: NextRequest) {
         error: 'List violates bracket rules',
         violations,
       }, { status: 422 })
+    }
+
+    // Lists saved before an officer changed prio keep items the editor would
+    // now refuse, and a direct save never went through the editor (#484).
+    // A read failure throws to the catch (500) rather than skipping the check.
+    const prioItems = await fetchListPrioItems(serviceSupabase, {
+      character_id: submission.character_id,
+      expansion_id: submission.expansion_id,
+      phase: submission.phase,
+    })
+    const prioViolations = findPrioViolations(
+      itemRows.map((row) => ({ loot_item_id: row.loot_item_id, rank: row.rank, slot: Number(row.slot) })),
+      prioItems,
+      locks,
+    )
+    if (prioViolations.length > 0) {
+      const nameById = new Map(itemRows.map((row) => [row.loot_item_id, row.loot_item?.name]))
+      const named = prioViolations.map((v) => ({ ...v, item_name: nameById.get(v.loot_item_id) || 'an item' }))
+      return NextResponse.json({
+        error: prioViolationMessage(named),
+        code: PRIO_VIOLATION_CODE,
+        prio_violations: named,
+      }, { status: 400 })
     }
 
     // Increment resubmission count if this is a resubmission

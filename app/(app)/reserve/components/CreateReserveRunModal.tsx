@@ -101,7 +101,8 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
   const [lockTimeManual, setLockTimeManual] = useState(false)
 
   const isGuildMode = !!activeGuild
-  const isForeverGuild = getGuildGame(activeGuild) === 'forever'
+  const guildGame = getGuildGame(activeGuild)
+  const isForeverGuild = guildGame === 'forever'
   const effectiveExpansion = isForeverGuild ? FOREVER_EXPANSION_NAME : selectedExpansion
 
   // Reset form whenever the modal closes
@@ -269,7 +270,7 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
   const canSubmit = !!selectedTierId && !!title.trim() && !!raidAt && !!lockAt
 
   const selectedTier = raidTiers.find(t => t.id === selectedTierId)
-  const selectedTierIcon = selectedTier ? getRaidIcon(selectedTier.name) : null
+  const selectedTierIcon = selectedTier ? getRaidIcon(selectedTier.name, guildGame) : null
 
   return (
     <Modal open={open} onClose={onClose} size="lg">
@@ -358,7 +359,7 @@ export function CreateReserveRunModal({ open, onClose }: CreateReserveRunModalPr
                   <div className="space-y-1.5">
                     {raidTiers.map(tier => {
                       const isSelected = selectedTierId === tier.id
-                      const iconUrl = getRaidIcon(tier.name)
+                      const iconUrl = getRaidIcon(tier.name, guildGame)
                       return (
                         <button
                           key={tier.id}

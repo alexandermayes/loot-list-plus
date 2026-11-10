@@ -20,6 +20,8 @@ import { aggregateListStats } from '@/domain/loot/ranking-entries'
 import { buildTeamVisibility } from '@/domain/loot/apply-team-filter'
 import { findInvalidCharacterIds } from '@/lib/loot/guild-award-refs'
 import { splitCandidatesByMembership } from '@/domain/loot/master-sheet-candidates'
+import { itemIdentityKey } from '@/domain/loot/item-identity'
+import { fetchTierNeedRows, fetchTierNeedRankings } from '@/lib/loot/tier-need-rows'
 import type { LootListAggregateItem } from '@/app/components/LootListSummaryView'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -39,6 +41,18 @@ interface AggregateCharacterRow {
 type AggregateSubmission = { id: string; character_id: string | null; status: string }
 type SubmissionItemData = { loot_item_id: string; rank: number; slot: number; submission_id: string }
 
+interface SummaryItemRow {
+  id: string
+  name: string
+  boss_name: string
+  item_slot: string
+  wowhead_id: number | null
+  classification: string | null
+  raid_tier_id: string | null
+  is_loot_council: boolean
+  kind: string | null
+}
+
 export interface LoadMasterSheetSummaryInput {
   guildId: string
   activeTierIds: string[]
@@ -55,34 +69,48 @@ export async function loadMasterSheetSummary(
   supabase: QueryClient,
   { guildId, activeTierIds, activeTeamId }: LoadMasterSheetSummaryInput,
 ): Promise<LootListAggregateItem[]> {
-  // Get all loot items for all active tiers in this phase
-  const { data: itemsData } = await supabase
-    .from('loot_items')
-    .select('id, name, boss_name, item_slot, wowhead_id, classification, raid_tier_id, is_loot_council')
-    .in('raid_tier_id', activeTierIds)
-    .eq('is_available', true)
-    .order('boss_name')
-    .order('name')
+  // Get all loot items for all active tiers in this phase. D-19: the item
+  // read is item-only; need rows and their rankings are read by tier below, so
+  // a Discovery tier's seeded needs never enter an `in` filter (Pitfall 7).
+  const [{ data: itemsDataRaw }, needRows, needRankings] = await Promise.all([
+    supabase
+      .from('loot_items')
+      .select('id, name, boss_name, item_slot, wowhead_id, classification, raid_tier_id, is_loot_council, kind')
+      .in('raid_tier_id', activeTierIds)
+      .eq('kind', 'item')
+      .eq('is_available', true)
+      .order('boss_name')
+      .order('name'),
+    fetchTierNeedRows(supabase, activeTierIds),
+    fetchTierNeedRankings(supabase, activeTierIds),
+  ])
+  const itemsData: SummaryItemRow[] = itemsDataRaw || []
 
-  if (!itemsData || itemsData.length === 0) {
+  if (itemsData.length === 0 && needRows.length === 0) {
     return []
   }
 
-  const itemIds = itemsData.map((i: { id: string }) => i.id)
+  const itemIds = itemsData.map(i => i.id)
 
   // Get all submission items for these items (paginated + ordered to defeat Supabase's 1000-row cap)
-  const submissionItemsData = await paginatedSelect<SubmissionItemData>(
-    (start, end) =>
-      supabase
-        .from('loot_submission_items')
-        .select('loot_item_id, rank, slot, submission_id')
-        .in('loot_item_id', itemIds)
-        .is('removed_at', null)
-        .order('id', { ascending: true })
-        .range(start, end)
-  )
+  const itemSubmissionItems = itemIds.length === 0
+    ? []
+    : await paginatedSelect<SubmissionItemData>(
+        (start, end) =>
+          supabase
+            .from('loot_submission_items')
+            .select('loot_item_id, rank, slot, submission_id')
+            .in('loot_item_id', itemIds)
+            .is('removed_at', null)
+            .order('id', { ascending: true })
+            .range(start, end)
+      )
 
-  if (!submissionItemsData || submissionItemsData.length === 0) {
+  // D-02: need rankings join the item rankings; a need nobody ranked has no
+  // row here, and the final filter drops anything with no approved list.
+  const submissionItemsData: SubmissionItemData[] = [...itemSubmissionItems, ...needRankings]
+
+  if (submissionItemsData.length === 0) {
     return []
   }
 
@@ -147,30 +175,37 @@ export async function loadMasterSheetSummary(
   // Get loot history for awarded count (match by wowhead_id so cross-tier
   // awards are counted). Paginated + ordered to defeat Supabase's 1000-row
   // response cap. Every award counts (OD-02), including copies given to
-  // raiders who later left.
-  const wowheadIdSet = new Set(itemsData.map((i: { wowhead_id: number }) => i.wowhead_id))
-  const lootHistoryData = await paginatedSelect<{ loot_item: { wowhead_id: number } | null }>(
+  // raiders who later left. D-19: a need row counts by its own id, so the
+  // embed also reads id and kind and the key comes from itemIdentityKey.
+  type HistoryRow = { loot_item: { id: string; wowhead_id: number | null; kind: string | null } | null }
+  const identitySet = new Set<string>()
+  for (const row of [...itemsData, ...needRows]) {
+    const identity = itemIdentityKey(row)
+    if (identity != null) identitySet.add(identity)
+  }
+  const lootHistoryData = await paginatedSelect<HistoryRow>(
     (start, end) =>
       supabase
         .from('loot_history')
-        .select('loot_item:loot_items(wowhead_id)')
+        .select('loot_item:loot_items(id, wowhead_id, kind)')
         .eq('guild_id', guildId)
         .order('id', { ascending: true })
-        .range(start, end) as unknown as PromiseLike<{ data: { loot_item: { wowhead_id: number } | null }[] | null }>
+        .range(start, end) as unknown as PromiseLike<{ data: HistoryRow[] | null }>
   )
 
-  // Count awards per wowhead_id
-  const awardedCounts: Record<number, number> = {}
-  for (const h of (lootHistoryData || []) as { loot_item: { wowhead_id: number } | null }[]) {
-    const wowheadId = h.loot_item?.wowhead_id
-    if (wowheadId == null || !wowheadIdSet.has(wowheadId)) continue
-    awardedCounts[wowheadId] = (awardedCounts[wowheadId] || 0) + 1
+  // Count awards per identity key (wowhead id for items, 'need:<id>' for needs)
+  const awardedCounts: Record<string, number> = {}
+  for (const h of lootHistoryData || []) {
+    const identity = itemIdentityKey(h.loot_item)
+    if (identity == null || !identitySet.has(identity)) continue
+    awardedCounts[identity] = (awardedCounts[identity] || 0) + 1
   }
 
   // Build aggregate data
   const aggregateMap: Record<string, LootListAggregateItem> = {}
 
-  for (const item of itemsData) {
+  for (const item of [...itemsData, ...needRows]) {
+    const identity = itemIdentityKey(item)
     aggregateMap[item.id] = {
       item_id: item.id,
       item_name: item.name,
@@ -179,7 +214,7 @@ export async function loadMasterSheetSummary(
       wowhead_id: item.wowhead_id,
       classification: item.classification || 'common',
       total_lists: 0,
-      already_awarded: awardedCounts[item.wowhead_id] || 0,
+      already_awarded: identity == null ? 0 : awardedCounts[identity] || 0,
       players: [],
       average_rank: 0,
     }

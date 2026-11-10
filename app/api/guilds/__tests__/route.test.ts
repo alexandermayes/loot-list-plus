@@ -7,6 +7,7 @@ import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { seedExpansionForGuild } from '@/app/services/expansionSeeder'
 import { checkUserManagesDiscordServer } from '@/lib/discord-server-access'
+import { trackEvent } from '@/utils/analytics/server'
 
 vi.mock('@/utils/supabase/server', () => ({
   createClient: vi.fn(),
@@ -190,6 +191,32 @@ describe('POST /api/guilds game-version derivation and enforcement', () => {
 
     expect(res.status).toBe(200)
     expect(insertPayloads.guilds?.[0]).toMatchObject({ game: 'forever' })
+  })
+})
+
+describe('POST /api/guilds analytics', () => {
+  beforeEach(() => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'user-1' }, error: null } as never)
+    vi.mocked(seedExpansionForGuild).mockReset()
+    vi.mocked(seedExpansionForGuild).mockResolvedValue({ expansionId: 'exp-1' } as never)
+    vi.mocked(trackEvent).mockClear()
+  })
+
+  // Hard Constraint 3: PostHog gets ids and counts only, never the guild name.
+  // The mock guild row is named 'Test Guild', so a name leak would show here.
+  it('sends guild_created with the guild id only, no guild name', async () => {
+    const { supabase } = createMockSupabase()
+    vi.mocked(createClient).mockResolvedValue(supabase as never)
+    vi.mocked(createServiceRoleClient).mockReturnValue(supabase as never)
+
+    const res = await POST(request({ ...baseBody, expansion: 'Forever', realm: 'PvP (EU)' }))
+
+    expect(res.status).toBe(200)
+    const created = vi.mocked(trackEvent).mock.calls.filter(([arg]) => arg.event === 'guild_created')
+    expect(created).toHaveLength(1)
+    expect(created[0][0].properties).toEqual({ guild_id: 'g1' })
+    // The guild id still becomes the PostHog group id.
+    expect(created[0][0].guildId).toBe('g1')
   })
 })
 

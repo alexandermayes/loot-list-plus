@@ -94,6 +94,29 @@ export const EXPANSION_PHASES: Record<string, PhaseDefinition[]> = {
     { phase: 1, name: 'Phase 1', raids: ["Nerub'ar Palace"] },
     { phase: 2, name: 'Phase 2', raids: ['Liberation of Undermine'] },
   ],
+  forever: [
+    { phase: 1, name: 'Phase 1', raids: ['Barrow Deeps', 'Hyjal Summit', "Onyxia's Lair"] },
+  ],
+}
+
+/**
+ * Get the phase number for a raid based on the expansion phases mapping.
+ *
+ * Exact `includes`, not a fuzzy match, and null when the slug or the raid name
+ * is missing. A raid that is absent here is seeded to a NULL phase and never
+ * shows up, which is the GH #279 failure; callers that insert rows must treat
+ * null as an error rather than write it.
+ */
+export function getRaidPhase(expansionSlug: string, raidName: string): number | null {
+  const phases = EXPANSION_PHASES[expansionSlug]
+  if (!phases) return null
+
+  for (const phase of phases) {
+    if (phase.raids.includes(raidName)) {
+      return phase.phase
+    }
+  }
+  return null
 }
 
 export function getExpansionPhases(slug: string): PhaseDefinition[] {

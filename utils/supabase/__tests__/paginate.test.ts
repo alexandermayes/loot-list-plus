@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { paginatedSelect } from '../paginate'
+import { paginatedSelect, selectAllPagesOrThrow } from '../paginate'
 
 // ─── paginatedSelect ──────────────────────────────────────
 //
@@ -136,5 +136,82 @@ describe('paginatedSelect', () => {
     await expect(paginatedSelect(fetcher, 100)).rejects.toThrow('rls denied')
     // One call attempted; rejection propagates immediately.
     expect(fetcher).toHaveBeenCalledTimes(1)
+  })
+})
+
+// ─── selectAllPagesOrThrow ────────────────────────────────
+//
+// Same windowing as paginatedSelect, but every page's error is checked and
+// thrown with the label, so a route can answer 500 rather than a partial list.
+
+/** Fetcher returning { data, error: null } pages of `rows`, recording each (start, end) window. */
+function makeCheckedFetcher<T>(rows: T[]) {
+  const calls: { start: number; end: number }[] = []
+  const fetcher = (start: number, end: number) => {
+    calls.push({ start, end })
+    return Promise.resolve({ data: rows.slice(start, end + 1), error: null })
+  }
+  return { fetcher, calls }
+}
+
+describe('selectAllPagesOrThrow', () => {
+  it('requests one more page after a page of exactly pageSize rows and returns those rows', async () => {
+    const rows = [1, 2, 3]
+    const { fetcher, calls } = makeCheckedFetcher(rows)
+    const result = await selectAllPagesOrThrow('things', fetcher, 3)
+    expect(result).toEqual(rows)
+    expect(calls).toEqual([
+      { start: 0, end: 2 },
+      { start: 3, end: 5 },
+    ])
+  })
+
+  it('returns all of pageSize + 1 rows', async () => {
+    const rows = [1, 2, 3, 4]
+    const { fetcher } = makeCheckedFetcher(rows)
+    expect(await selectAllPagesOrThrow('things', fetcher, 3)).toEqual(rows)
+  })
+
+  it('returns [] after one call when the first page is empty', async () => {
+    const { fetcher, calls } = makeCheckedFetcher<number>([])
+    expect(await selectAllPagesOrThrow('things', fetcher, 3)).toEqual([])
+    expect(calls).toEqual([{ start: 0, end: 2 }])
+  })
+
+  it('rejects with the label and message when the second page errors', async () => {
+    let call = 0
+    const fetcher = () => {
+      call++
+      return Promise.resolve(
+        call === 1
+          ? { data: [1, 2, 3], error: null }
+          : { data: null, error: { message: 'boom' } },
+      )
+    }
+    await expect(selectAllPagesOrThrow('things', fetcher, 3)).rejects.toThrow('Failed to read things: boom')
+  })
+
+  it('returns exactly 1000 rows with two calls at the default page size', async () => {
+    const rows = Array.from({ length: 1000 }, (_, i) => i)
+    const { fetcher, calls } = makeCheckedFetcher(rows)
+    const result = await selectAllPagesOrThrow('things', fetcher)
+    expect(result).toHaveLength(1000)
+    expect(calls).toEqual([
+      { start: 0, end: 999 },
+      { start: 1000, end: 1999 },
+    ])
+  })
+
+  it('returns all 1001 rows at the default page size', async () => {
+    const rows = Array.from({ length: 1001 }, (_, i) => i)
+    const { fetcher } = makeCheckedFetcher(rows)
+    const result = await selectAllPagesOrThrow('things', fetcher)
+    expect(result).toHaveLength(1001)
+    expect(result[1000]).toBe(1000)
+  })
+
+  it('treats a null page with no error as empty', async () => {
+    const fetcher = () => Promise.resolve({ data: null, error: null })
+    expect(await selectAllPagesOrThrow<number>('things', fetcher, 3)).toEqual([])
   })
 })

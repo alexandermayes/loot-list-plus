@@ -22,6 +22,12 @@ import type {
 import type { PlayerRanking, LootItem } from './BossSection'
 import { rankingEntryKey, bestEntryPerCharacter } from '@/domain/loot/ranking-entries'
 import { readAwardResult } from '@/domain/loot/award-copies'
+import {
+  equippedSlotsForLootItem,
+  summarizeEquippedItemLevel,
+  daysSinceSync,
+  type EquippedCharacterLevels,
+} from '@/domain/loot/equipped-item-level'
 
 interface ItemPriority {
   role_priorities: Record<string, number | null>
@@ -48,6 +54,87 @@ const AWARD_REASONS: { value: AwardReason; label: string }[] = [
   { value: 'offspec', label: 'Offspec / no contest' },
   { value: 'roll', label: 'Won roll (tied scores)' },
 ]
+
+/**
+ * Equipped column copy (quick task 261026-wpw). Proposed wording; owner
+ * sign-off is pending before the code PR merges. The header title says Base
+ * because the level is the Game Data base item level and MoP upgrades are not
+ * counted (quick task 261027-lzm).
+ */
+const EQUIPPED_COPY = {
+  header: 'Equipped',
+  headerTitle: 'Base item level of what this player has equipped in the slot this item fills, from their last Battle.net gear sync',
+  empty: 'Empty',
+  emptyTitle: 'Nothing equipped in this slot at the last sync.',
+  noItemLevel: 'No ilvl',
+  noItemLevelTitle: 'This gear has no item level yet. A Battle.net gear sync fills it in.',
+  notSynced: 'Not synced',
+  notSyncedTitle: 'No Battle.net gear sync for this character yet.',
+}
+
+function syncedAgo(days: number | null): string {
+  if (days === null) return ''
+  if (days === 0) return ' Synced today.'
+  if (days === 1) return ' Synced 1 day ago.'
+  return ` Synced ${days} days ago.`
+}
+
+const EQUIPPED_ID_CAP = 200
+
+interface EquippedLevelsState {
+  itemId: string
+  status: 'loading' | 'ready' | 'error'
+  characters: Record<string, EquippedCharacterLevels>
+  requestedIds: Set<string>
+  /** When the answer arrived; the sync age in the title counts from here. */
+  fetchedAt: number
+}
+
+function EquippedLevelCell({
+  item,
+  characterId,
+  levels,
+}: {
+  item: LootItem
+  characterId: string
+  levels: EquippedLevelsState
+}) {
+  // A row whose character was beyond the requested ids renders an empty cell.
+  if (!levels.requestedIds.has(characterId)) return <td className="px-4 py-2 text-right" />
+  const summary = summarizeEquippedItemLevel(item.item_slot, item.name, levels.characters[characterId] ?? null)
+  switch (summary.kind) {
+    case 'ok': {
+      const title =
+        summary.perSlot.map(entry => `${entry.slot}: ${entry.level}`).join(', ') +
+        syncedAgo(daysSinceSync(summary.syncedAt, new Date(levels.fetchedAt)))
+      return (
+        <td className="px-4 py-2 text-right tabular-nums" title={title}>
+          {summary.itemLevel}
+        </td>
+      )
+    }
+    case 'empty-slot':
+      return (
+        <td className="px-4 py-2 text-right text-11 text-muted-foreground" title={EQUIPPED_COPY.emptyTitle}>
+          {EQUIPPED_COPY.empty}
+        </td>
+      )
+    case 'no-item-level':
+      return (
+        <td className="px-4 py-2 text-right text-11 text-muted-foreground" title={EQUIPPED_COPY.noItemLevelTitle}>
+          {EQUIPPED_COPY.noItemLevel}
+        </td>
+      )
+    case 'not-synced':
+      return (
+        <td className="px-4 py-2 text-right text-11 text-muted-foreground" title={EQUIPPED_COPY.notSyncedTitle}>
+          {EQUIPPED_COPY.notSynced}
+        </td>
+      )
+    default:
+      return <td className="px-4 py-2 text-right" />
+  }
+}
 
 /** Default empty reason ('' / 'score') resolves to 'score'; everything else passes through. */
 function reasonToOutcome(reason: AwardReason): AwardOutcomeType {
@@ -162,6 +249,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
   const decimalPlaces = guildSettings?.decimal_places ?? 2
   const [recentAwards, setRecentAwards] = useState<LootAward[]>([])
   const [awardsLoading, setAwardsLoading] = useState(false)
+  const [equippedLevels, setEquippedLevels] = useState<EquippedLevelsState | null>(null)
 
   // Award UI state
   const [awardingCandidate, setAwardingCandidate] = useState<PlayerRanking | null>(null)
@@ -195,6 +283,16 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
   // raiders by their best entry so nobody ties with or contests themselves.
   const bestRankings = useMemo(() => bestEntryPerCharacter(sortedRankings), [sortedRankings])
 
+  // Which equipped slots this item is compared against; null means no
+  // Equipped column (mounts, recipes, tokens with no slot word, and so on).
+  const itemId = item?.id
+  const itemSlot = item?.item_slot
+  const itemName = item?.name
+  const equippedSlotRule = useMemo(
+    () => (itemSlot !== undefined && itemName !== undefined ? equippedSlotsForLootItem(itemSlot, itemName) : null),
+    [itemSlot, itemName]
+  )
+
   const { showNotification } = useNotification()
 
   // Fetch recent loot history for this item when modal opens
@@ -223,6 +321,29 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     return () => { cancelled = true }
   }, [open, item?.id, guildId])
 
+  // Equipped item levels for the item's slot, officers only. Loading and
+  // error render no column, so a failed read never reads as Not synced for
+  // every candidate (T-wpw-06).
+  useEffect(() => {
+    if (!open || !itemId || !guildId || !isOfficer || !equippedSlotRule) return
+    const requested = Array.from(new Set(sortedRankings.map(r => r.character_id))).slice(0, EQUIPPED_ID_CAP)
+    if (requested.length === 0) return
+
+    let cancelled = false
+    const requestedIds = new Set(requested)
+    fetch(`/api/guilds/${guildId}/equipped-item-levels?character_ids=${encodeURIComponent(requested.join(','))}`)
+      .then(res => (res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`))))
+      .then(data => {
+        if (cancelled) return
+        setEquippedLevels({ itemId, status: 'ready', characters: data?.characters ?? {}, requestedIds, fetchedAt: Date.now() })
+      })
+      .catch(() => {
+        if (!cancelled) setEquippedLevels({ itemId, status: 'error', characters: {}, requestedIds, fetchedAt: Date.now() })
+      })
+
+    return () => { cancelled = true }
+  }, [open, itemId, guildId, isOfficer, equippedSlotRule, sortedRankings])
+
   // Reset award state when modal closes
   useEffect(() => {
     if (!open) {
@@ -230,6 +351,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
       setAwardReason('')
       setAwardNote('')
       setExtraCopy(null)
+      setEquippedLevels(null)
     }
   }, [open])
 
@@ -449,6 +571,12 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     return has
   }, [sortedRankings])
 
+  // The column renders only for a comparable slot once this item's read is in.
+  const readyEquippedLevels =
+    equippedSlotRule && equippedLevels && equippedLevels.status === 'ready' && equippedLevels.itemId === itemId
+      ? equippedLevels
+      : null
+
   if (!item) return null
 
   return (
@@ -573,6 +701,9 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                 <tr className="bg-background-subtle text-11 font-medium text-muted-foreground uppercase tracking-wider">
                   <th className="px-4 py-2 text-left w-8">#</th>
                   <th className="px-4 py-2 text-left">Candidate</th>
+                  {readyEquippedLevels && (
+                    <th className="px-4 py-2 text-right" title={EQUIPPED_COPY.headerTitle}>{EQUIPPED_COPY.header}</th>
+                  )}
                   <th className="px-4 py-2 text-right">Score</th>
                   <th className="px-4 py-2 text-right" title="Item rank on their list">Rank</th>
                   <th className="px-4 py-2 text-right" title="Attendance score">Attend</th>
@@ -629,6 +760,9 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                           </div>
                         )}
                       </td>
+                      {readyEquippedLevels && (
+                        <EquippedLevelCell item={item} characterId={r.character_id} levels={readyEquippedLevels} />
+                      )}
                       <td className="px-4 py-2 text-right font-semibold tabular-nums">
                         {r.loot_score.toFixed(decimalPlaces)}
                       </td>

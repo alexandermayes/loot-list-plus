@@ -124,6 +124,8 @@ export async function GET(
       .from('loot_items')
       .select('id, name, boss_name, item_slot, wowhead_id, classification')
       .eq('raid_tier_id', run.raid_tier_id)
+      // D-14: soft reserves stay item-only, so a need row is never offered.
+      .eq('kind', 'item')
       .eq('is_available', true)
       .order('boss_name')
 
@@ -133,6 +135,19 @@ export async function GET(
       .select('name')
       .eq('id', run.raid_tier_id)
       .single()
+
+    // The public expansion name, the same value the public join route returns.
+    // The run page needs it to pick the raid icon by game (D-04). A derived
+    // field like raid_tier_name, so it stays out of RUN_VIEWER_FIELDS.
+    let expansionName: string | null = null
+    if (run.expansion_id) {
+      const { data: expansion } = await serviceSupabase
+        .from('expansions')
+        .select('name')
+        .eq('id', run.expansion_id)
+        .single()
+      expansionName = expansion?.name ?? null
+    }
 
     const runPayload: Record<string, unknown> = canManage
       ? { ...run }
@@ -144,6 +159,7 @@ export async function GET(
       run: {
         ...runPayload,
         raid_tier_name: raidTier?.name || null,
+        expansion_name: expansionName,
         submissions: submissionsWithCounts,
         awards: awards || [],
         items: items || [],

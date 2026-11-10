@@ -38,6 +38,7 @@
     "seed:test:multi": "tsx scripts/seed-test-data-multiuser.ts",
     "seed:test:multi:clean": "tsx scripts/seed-test-data-multiuser.ts --clean",
     "sync:feedback": "tsx scripts/sync-feedback-inbox.ts",
+    "sync:forever": "tsx scripts/sync-forever-catalog.ts",
     "seed:help": "tsx scripts/seed-help-articles.ts",
     "gift:code": "tsx scripts/create-gift-code.ts"
   },
@@ -64,16 +65,18 @@
     "dotenv": "^17.2.3",
     "framer-motion": "^12.29.2",
     "html2canvas": "^1.4.1",
-    "next": "^16.3.8",
+    "next": "^16.4.1",
     "next-themes": "^0.4.6",
     "posthog-js": "^1.345.2",
     "posthog-node": "^5.24.14",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "stripe": "^22.5.0",
-    "swr": "^2.3.8"
+    "swr": "^2.3.8",
+    "zod": "4.6.6"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "@next/bundle-analyzer": "^16.2.6",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -84,6 +87,7 @@
     "autoprefixer": "^10.4.23",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "csv-parse": "7.0.2",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "jsdom": "^29.1.1",
@@ -95,7 +99,7 @@
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.22.4",
     "typescript": "^5",
-    "vitest": "^4.1.11",
+    "vitest": "^4.1.12",
     "wow-classic-items": "^2.0.1"
   },
   "overrides": {

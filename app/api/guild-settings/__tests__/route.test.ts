@@ -108,3 +108,33 @@ describe('PUT /api/guild-settings single_raider_modifiers validation', () => {
     expect(service.updates[0].loot_announcements_enabled).toBe(true)
   })
 })
+
+describe('PUT /api/guild-settings award_slot_lock_enabled validation', () => {
+  let service: ReturnType<typeof makeServiceClient>
+
+  beforeEach(() => {
+    service = makeServiceClient()
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'user-1' }, error: null } as never)
+    vi.mocked(createClient).mockResolvedValue({} as never)
+    vi.mocked(createServiceRoleClient).mockReturnValue(service.client as never)
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: true } as never)
+  })
+
+  it('stores a boolean value in the update payload', async () => {
+    const res = await put({ award_slot_lock_enabled: true })
+
+    expect(res.status).toBe(200)
+    expect(service.updates).toHaveLength(1)
+    expect(service.updates[0].award_slot_lock_enabled).toBe(true)
+  })
+
+  it('returns 400 for a non-boolean value and writes nothing', async () => {
+    const res = await put({ award_slot_lock_enabled: 'yes' })
+    const body = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(body.error).toBe('award_slot_lock_enabled must be true or false')
+    expect(service.updates).toHaveLength(0)
+    expect(service.inserts).toHaveLength(0)
+  })
+})

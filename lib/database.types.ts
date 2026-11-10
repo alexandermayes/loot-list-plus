@@ -383,6 +383,7 @@ export type Database = {
           gem_ids: number[] | null
           id: string
           imported_at: string | null
+          item_level: number | null
           item_name: string | null
           slot: string
           wowhead_id: number
@@ -393,6 +394,7 @@ export type Database = {
           gem_ids?: number[] | null
           id?: string
           imported_at?: string | null
+          item_level?: number | null
           item_name?: string | null
           slot: string
           wowhead_id: number
@@ -403,6 +405,7 @@ export type Database = {
           gem_ids?: number[] | null
           id?: string
           imported_at?: string | null
+          item_level?: number | null
           item_name?: string | null
           slot?: string
           wowhead_id?: number
@@ -885,6 +888,7 @@ export type Database = {
       guild_settings: {
         Row: {
           attendance_type: string
+          award_slot_lock_enabled: boolean
           blp_enabled: boolean | null
           blp_includes_benched: boolean | null
           blp_increment: number | null
@@ -955,6 +959,7 @@ export type Database = {
         }
         Insert: {
           attendance_type?: string
+          award_slot_lock_enabled?: boolean
           blp_enabled?: boolean | null
           blp_includes_benched?: boolean | null
           blp_increment?: number | null
@@ -1025,6 +1030,7 @@ export type Database = {
         }
         Update: {
           attendance_type?: string
+          award_slot_lock_enabled?: boolean
           blp_enabled?: boolean | null
           blp_includes_benched?: boolean | null
           blp_increment?: number | null
@@ -1159,6 +1165,24 @@ export type Database = {
           },
         ]
       }
+      item_base_levels: {
+        Row: {
+          fetched_at: string
+          item_level: number
+          wowhead_id: number
+        }
+        Insert: {
+          fetched_at?: string
+          item_level: number
+          wowhead_id: number
+        }
+        Update: {
+          fetched_at?: string
+          item_level?: number
+          wowhead_id?: number
+        }
+        Relationships: []
+      }
       loot_deadlines: {
         Row: {
           allow_late: boolean | null
@@ -1212,6 +1236,7 @@ export type Database = {
           award_copy: number
           awarded_by: string | null
           awarded_date: string
+          awarded_item_id: string | null
           character_id: string | null
           character_name: string | null
           created_at: string | null
@@ -1230,6 +1255,7 @@ export type Database = {
           award_copy?: number
           awarded_by?: string | null
           awarded_date?: string
+          awarded_item_id?: string | null
           character_id?: string | null
           character_name?: string | null
           created_at?: string | null
@@ -1248,6 +1274,7 @@ export type Database = {
           award_copy?: number
           awarded_by?: string | null
           awarded_date?: string
+          awarded_item_id?: string | null
           character_id?: string | null
           character_name?: string | null
           created_at?: string | null
@@ -1346,6 +1373,55 @@ export type Database = {
           },
         ]
       }
+      loot_item_need_pins: {
+        Row: {
+          created_at: string
+          guild_id: string
+          id: string
+          item_id: string
+          need_id: string
+          pinned_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          guild_id: string
+          id?: string
+          item_id: string
+          need_id: string
+          pinned_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          guild_id?: string
+          id?: string
+          item_id?: string
+          need_id?: string
+          pinned_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loot_item_need_pins_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loot_item_need_pins_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "loot_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loot_item_need_pins_need_id_fkey"
+            columns: ["need_id"]
+            isOneToOne: false
+            referencedRelation: "loot_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loot_items: {
         Row: {
           allocation_cost: number | null
@@ -1359,7 +1435,9 @@ export type Database = {
           is_loot_council: boolean
           item_slot: string | null
           item_type: string | null
+          kind: string
           name: string
+          need_key: string | null
           notes: string | null
           officer_notes: string | null
           primary_stat: string | null
@@ -1380,7 +1458,9 @@ export type Database = {
           is_loot_council?: boolean
           item_slot?: string | null
           item_type?: string | null
+          kind?: string
           name: string
+          need_key?: string | null
           notes?: string | null
           officer_notes?: string | null
           primary_stat?: string | null
@@ -1401,7 +1481,9 @@ export type Database = {
           is_loot_council?: boolean
           item_slot?: string | null
           item_type?: string | null
+          kind?: string
           name?: string
+          need_key?: string | null
           notes?: string | null
           officer_notes?: string | null
           primary_stat?: string | null
@@ -1416,6 +1498,80 @@ export type Database = {
             columns: ["raid_tier_id"]
             isOneToOne: false
             referencedRelation: "raid_tiers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loot_list_slot_locks: {
+        Row: {
+          character_id: string
+          guild_id: string
+          id: string
+          locked_at: string
+          loot_history_id: string
+          loot_item_id: string
+          rank: number
+          release_reason: string | null
+          released_at: string | null
+          released_by: string | null
+          slot: number
+          submission_id: string
+        }
+        Insert: {
+          character_id: string
+          guild_id: string
+          id?: string
+          locked_at?: string
+          loot_history_id: string
+          loot_item_id: string
+          rank: number
+          release_reason?: string | null
+          released_at?: string | null
+          released_by?: string | null
+          slot: number
+          submission_id: string
+        }
+        Update: {
+          character_id?: string
+          guild_id?: string
+          id?: string
+          locked_at?: string
+          loot_history_id?: string
+          loot_item_id?: string
+          rank?: number
+          release_reason?: string | null
+          released_at?: string | null
+          released_by?: string | null
+          slot?: number
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loot_list_slot_locks_guild_id_fkey"
+            columns: ["guild_id"]
+            isOneToOne: false
+            referencedRelation: "guilds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loot_list_slot_locks_loot_history_id_fkey"
+            columns: ["loot_history_id"]
+            isOneToOne: true
+            referencedRelation: "loot_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loot_list_slot_locks_loot_item_id_fkey"
+            columns: ["loot_item_id"]
+            isOneToOne: false
+            referencedRelation: "loot_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loot_list_slot_locks_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "loot_submissions"
             referencedColumns: ["id"]
           },
         ]
@@ -1797,6 +1953,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_guild_active: boolean
+          list_mode: string
           master_sheet_visible: boolean | null
           name: string
           phase: number | null
@@ -1808,6 +1965,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_guild_active?: boolean
+          list_mode?: string
           master_sheet_visible?: boolean | null
           name: string
           phase?: number | null
@@ -1819,6 +1977,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_guild_active?: boolean
+          list_mode?: string
           master_sheet_visible?: boolean | null
           name?: string
           phase?: number | null

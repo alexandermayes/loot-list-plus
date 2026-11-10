@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse, after } from 'next/server'
-import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { createTypedServiceRoleClient } from '@/utils/supabase/typed-service-role'
 import { authenticateAddonRequest, authorizeAddonGuild } from '@/lib/addon/sync-tokens'
 import { trackApiError } from '@/utils/analytics/server'
 import { recomputeBlpForEvents, recomputeBlpForItems } from '@/utils/blp/recompute'
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const supabase = createServiceRoleClient()
+    const supabase = createTypedServiceRoleClient()
 
     // Officer check plus sync-token guild scope (GH #300 D-02)
     const access = await authorizeAddonGuild(supabase, auth.principal, guild_id)

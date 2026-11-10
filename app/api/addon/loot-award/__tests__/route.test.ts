@@ -12,6 +12,7 @@ import { trackEvent, trackApiError } from '@/utils/analytics/server'
 import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { notifyLootAward } from '@/lib/discord-loot-announcements'
 import { recomputeBlpForItems } from '@/utils/blp/recompute'
+import { lockAwardedSlots } from '@/lib/loot/slot-locks'
 
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
@@ -19,6 +20,7 @@ vi.mock('@/utils/server-roles', () => ({ verifyOfficerPermissions: vi.fn() }))
 vi.mock('@/utils/analytics/server', () => ({ trackEvent: vi.fn(), trackApiError: vi.fn() }))
 vi.mock('@/utils/analytics/funnel', () => ({ evaluateGuildFunnel: vi.fn() }))
 vi.mock('@/lib/discord-loot-announcements', () => ({ notifyLootAward: vi.fn() }))
+vi.mock('@/lib/loot/slot-locks', () => ({ lockAwardedSlots: vi.fn(async () => 0) }))
 vi.mock('@/utils/blp/recompute', () => ({ recomputeBlpForItems: vi.fn(), recomputeBlpForEvents: vi.fn() }))
 vi.mock('next/server', async (importOriginal) => ({
   ...(await importOriginal<typeof import('next/server')>()),
@@ -615,6 +617,17 @@ describe('POST /api/addon/loot-award', () => {
       expect(recomputeBlpForItems).not.toHaveBeenCalled()
     })
 
+    it('slot locks: a re-send on the same night does not ask for a lock', async () => {
+      const { client } = makeClient(nightFixture({ insertError: { code: '23505', message: 'duplicate key' }, lookupRow: { id: 'hist-old' } }))
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+      const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 19003, character_name: 'Thrall', awarded_date: DATE }))
+      const body = await res.json()
+
+      expect(body.data.already_recorded).toBe(true)
+      expect(lockAwardedSlots).not.toHaveBeenCalled()
+    })
+
     it('an unmatched name already on the night is already_recorded with no insert', async () => {
       const { client, calls } = makeClient(nightFixture({
         characters: [],
@@ -905,5 +918,25 @@ describe('POST /api/addon/loot-award', () => {
       expect(body.data.raid_event_id).toBe('ev-1013')
       expect(payloadOf(calls).awarded_date).toBe('2026-10-13')
     })
+  })
+})
+
+describe('POST /api/addon/loot-award slot locks (quick task 261028-0gx)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'user-1' }, error: null } as never)
+    vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
+  })
+
+  it('an inserted award asks for one lock with no reason', async () => {
+    const { client } = makeClient(singleItemFixture({ id: 'item-19003', name: 'Head of Nefarian', wowhead_id: 19003 }))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD_ID, wowhead_id: 19003, character_name: 'Test Raider' }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(lockAwardedSlots).toHaveBeenCalledTimes(1)
+    expect(lockAwardedSlots).toHaveBeenCalledWith(expect.anything(), GUILD_ID, [{ lootHistoryId: body.data.id, reason: null }])
   })
 })

@@ -321,3 +321,50 @@ describe('FU-1 of #331, #293: award copies and addon award keys on the builders'
     expect(buildBulkAwardRow({ ...base, awardCopy: 2 })).not.toHaveProperty('source_award_key')
   })
 })
+
+// D-15, DISC-07: a Discovery award keeps the need row as loot_item_id and writes
+// no awarded_item_id key (the Drop Desk sets that in Phase 5). These need rows
+// stand past the D-22 hold, which refuses real need rankings in Phase 3.
+describe('need row (past the D-22 hold): history-row builders keep the need id', () => {
+  const NEED = {
+    id: 'need-row-1',
+    name: 'Trinket, Healing',
+    kind: 'need',
+    need_key: 'trinket.healing',
+    wowhead_id: null,
+    boss_name: 'Needs',
+    item_slot: 'Trinket',
+    classification: 'Reserved',
+    allocation_cost: 3,
+    raid_tier_id: 'tier-1',
+    expansion_id: 'exp-1',
+  }
+  const needScope: LootItemScope = NEED
+
+  it('buildBulkAwardRow keeps the need id and carries no awarded_item_id key', () => {
+    const row = buildBulkAwardRow({ guildId: 'guild-1', awardedBy: 'user-1', item: needScope, notes: null, awardCopy: 1 })
+    expect(row.loot_item_id).toBe('need-row-1')
+    expect(row.raid_tier_id).toBe('tier-1')
+    expect(row).not.toHaveProperty('awarded_item_id')
+  })
+
+  it('buildAddonAwardRow keeps the need id and carries no awarded_item_id key', () => {
+    const row = buildAddonAwardRow({
+      guildId: 'guild-1', item: needScope, characterId: 'char-1', characterName: 'Thrall',
+      awardedBy: 'user-1', today: '2026-09-21',
+    })
+    expect(row.loot_item_id).toBe('need-row-1')
+    expect(row.raid_tier_id).toBe('tier-1')
+    expect(row).not.toHaveProperty('awarded_item_id')
+  })
+
+  it('buildRemoveItemHistoryRow keeps the need id and carries no awarded_item_id key', () => {
+    const row = buildRemoveItemHistoryRow({
+      guildId: 'guild-1', item: needScope, characterId: 'char-1', characterName: 'Thrall',
+      awardedBy: 'user-1', today: '2026-09-21',
+    })
+    expect(row.loot_item_id).toBe('need-row-1')
+    expect(row.raid_tier_id).toBe('tier-1')
+    expect(row).not.toHaveProperty('awarded_item_id')
+  })
+})

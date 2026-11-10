@@ -876,7 +876,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         const posthog = await loadPosthog()
         if (cancelled) return
         posthog.group('guild', activeGuild.id, {
-          name: activeGuild.name,
           realm: activeGuild.realm,
           faction: activeGuild.faction,
           subscription_tier: activeGuild.subscription_tier || 'free',
@@ -885,9 +884,11 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
         })
 
         const role = isOfficer ? 'officer' : 'member'
+        // Guild names are not analytics data. PostHog persists super properties
+        // in the browser, so clear the old value for returning users.
+        posthog.unregister('guild_name')
         posthog.register({
           guild_id: activeGuild.id,
-          guild_name: activeGuild.name,
           guild_role: role,
           expansion_id: activeGuild.active_expansion_id,
           guild_count: userGuilds.length,
@@ -899,7 +900,6 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
             guild_count: userGuilds.length,
             character_count: userCharacters.length,
             primary_role: role,
-            current_guild: activeGuild.name,
             current_expansion_id: activeGuild.active_expansion_id,
           })
         }
@@ -908,7 +908,7 @@ export function GuildContextProvider({ children }: { children: ReactNode }) {
       }
     })()
     return () => { cancelled = true }
-  }, [activeGuild?.id, activeGuild?.name, activeGuild?.realm, activeGuild?.faction,
+  }, [activeGuild?.id, activeGuild?.realm, activeGuild?.faction,
       activeGuild?.active_expansion_id, activeGuild?.subscription_tier, activeGuild?.created_at,
       isOfficer, userGuilds.length, userCharacters.length, user])
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { TBC_BIS, type BisTierData, type BisItem } from '@/data/bis/tbc-bis'
+import { resolveListPhases, resolvePhasesSharingGroup } from '@/domain/expansion/phase-groups'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,7 +51,7 @@ function getBisSpecKey(specName: string, className: string): string {
  *
  * Query params:
  * - expansion_id: The expansion ID
- * - phase: The phase number
+ * - phase: The canonical phase of the list's phase group (raids come from every phase in the group)
  * - character_id: The character ID (used to determine spec)
  * - guild_id: The guild ID (used to filter active tiers)
  */
@@ -126,27 +127,70 @@ export async function GET(request: NextRequest) {
     const className = classData.name
     const bisSpecKey = getBisSpecKey(specName, className)
 
-    // Get all tiers for this expansion (needed for error messaging about disabled tiers)
-    const { data: allTiers } = await supabase
-      .from('raid_tiers')
-      .select('id, name, phase, is_guild_active')
-      .eq('expansion_id', expansionId)
+    const requestedPhase = parseInt(phase, 10)
 
-    // Get all raid tiers for this expansion and phase that are active for the guild
-    // Note: is_guild_active can be null (treated as true/enabled by default) or explicitly true/false
-    const { data: tiers, error: tierError } = await supabase
-      .from('raid_tiers')
-      .select('id, name')
-      .eq('expansion_id', expansionId)
-      .eq('phase', parseInt(phase, 10))
-      .eq('is_guild_active', true)
+    // The client sends the canonical phase of a phase group, so the raids come
+    // from every phase in that group, resolved the way the loot-list editor
+    // does (guild-active tiers, linear unlock). The full tier list also feeds
+    // the disabled-tier diagnostics below.
+    const [
+      { data: allTiers, error: tierError },
+      { data: expansion, error: expansionError },
+    ] = await Promise.all([
+      supabase
+        .from('raid_tiers')
+        .select('id, name, phase, is_guild_active')
+        .eq('expansion_id', expansionId)
+        .order('phase')
+        .order('id'),
+      supabase
+        .from('expansions')
+        .select('current_phase, phase_groups')
+        .eq('id', expansionId)
+        .single(),
+    ])
 
     if (tierError) {
       console.error('Error fetching tiers:', tierError)
       return NextResponse.json({ error: 'Failed to fetch raid tiers' }, { status: 500 })
     }
 
-    if (!tiers || tiers.length === 0) {
+    // is_guild_active can be null; only an explicit true counts as enabled,
+    // matching the editor.
+    const guildActiveTiers = (allTiers || []).filter(t => t.is_guild_active === true)
+
+    // Without the expansion row there is no group config to apply, so this
+    // degrades to the single phase the client asked for.
+    let listPhases = [requestedPhase]
+    let diagnosticPhases = [requestedPhase]
+    if (expansion) {
+      const phaseGroups = (expansion.phase_groups as number[][] | null) || null
+      const currentPhase = expansion.current_phase ?? 1
+      listPhases = resolveListPhases(
+        requestedPhase,
+        phaseGroups,
+        guildActiveTiers.map(t => t.phase),
+        currentPhase
+      )
+      diagnosticPhases = [
+        ...new Set([
+          ...listPhases,
+          ...resolvePhasesSharingGroup(
+            requestedPhase,
+            phaseGroups,
+            (allTiers || []).map(t => t.phase),
+            currentPhase
+          ),
+        ]),
+      ]
+    } else {
+      console.error('[BIS API] Expansion lookup failed:', expansionError)
+    }
+
+    const listPhaseSet = new Set(listPhases)
+    const tiers = guildActiveTiers.filter(t => t.phase != null && listPhaseSet.has(t.phase))
+
+    if (tiers.length === 0) {
       return NextResponse.json({ error: 'No active raid tiers found for this phase' }, { status: 404 })
     }
 
@@ -175,8 +219,9 @@ export async function GET(request: NextRequest) {
       const activeTierNames = tiers.map(t => t.name)
       const availableBisTiers = Object.keys(TBC_BIS[bisSpecKey] || {})
 
-      // Check if there are BIS tiers for this phase that are disabled
-      const allTiersForPhase = allTiers?.filter(t => t.phase === parseInt(phase, 10)) || []
+      // Check if there are BIS tiers for this phase group that are disabled
+      const diagnosticPhaseSet = new Set(diagnosticPhases)
+      const allTiersForPhase = allTiers?.filter(t => t.phase != null && diagnosticPhaseSet.has(t.phase)) || []
       const disabledTiers = allTiersForPhase.filter(t => t.is_guild_active === false)
       const disabledTiersWithBisData = disabledTiers.filter(t =>
         availableBisTiers.includes(normalizeTierName(t.name))
@@ -185,6 +230,7 @@ export async function GET(request: NextRequest) {
       console.error('[BIS API] BIS lookup failed:', {
         bisSpecKey,
         phase,
+        listPhases,
         activeTierNames,
         availableBisTiers,
         disabledTiersWithBisData: disabledTiersWithBisData.map(t => t.name),
@@ -216,6 +262,9 @@ export async function GET(request: NextRequest) {
       .select('id, name, item_slot, wowhead_id')
       .in('raid_tier_id', tierIds)
       .eq('is_available', true)
+      // BIS import maps by wowhead_id and a need row has none, so a need row
+      // would land under a 'null' key (D-14).
+      .eq('kind', 'item')
 
     if (itemsError) {
       console.error('Error fetching loot items:', itemsError)

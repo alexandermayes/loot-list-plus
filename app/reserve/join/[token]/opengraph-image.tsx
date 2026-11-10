@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getRaidIconLarge } from '@/utils/raidIcons'
+import { getExpansionGame, type GameVersion } from '@/domain/expansion/game'
 
 export const runtime = 'nodejs'
 export const contentType = 'image/png'
@@ -21,14 +22,17 @@ export default async function Image({ params }: { params: Promise<{ token: strin
   let raidDate = ''
   let statusLabel = 'Open for reserves'
   let maxReserves = 1
-  let iconUrl = getRaidIconLarge('Unknown')
+  // The run's own expansion picks the icon game (D-04); Classic is the fallback
+  // for runs with no expansion and for any read failure below.
+  let game: GameVersion = 'classic'
+  let iconUrl = getRaidIconLarge('Unknown', game)
 
   try {
     const supabase = createServiceRoleClient()
 
     const { data: run } = await supabase
       .from('reserve_runs')
-      .select('id, title, raid_at, status, max_reserves, raid_tier_id, guild_id')
+      .select('id, title, raid_at, status, max_reserves, raid_tier_id, guild_id, expansion_id')
       .eq('share_token', token)
       .single()
 
@@ -36,16 +40,20 @@ export default async function Image({ params }: { params: Promise<{ token: strin
       title = run.title
       maxReserves = run.max_reserves
 
-      const [{ data: raidTier }, { data: guild }] = await Promise.all([
+      const [{ data: raidTier }, { data: guild }, { data: expansion }] = await Promise.all([
         supabase.from('raid_tiers').select('name').eq('id', run.raid_tier_id).single(),
         run.guild_id
           ? supabase.from('guilds').select('name').eq('id', run.guild_id).single()
+          : Promise.resolve({ data: null }),
+        run.expansion_id
+          ? supabase.from('expansions').select('name').eq('id', run.expansion_id).single()
           : Promise.resolve({ data: null }),
       ])
 
       raidName = raidTier?.name || 'Raid'
       guildName = guild?.name || ''
-      iconUrl = getRaidIconLarge(raidName)
+      game = getExpansionGame(expansion?.name) ?? 'classic'
+      iconUrl = getRaidIconLarge(raidName, game)
 
       raidDate = new Date(run.raid_at).toLocaleString('en-US', {
         weekday: 'short',

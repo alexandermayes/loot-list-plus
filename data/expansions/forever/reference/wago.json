@@ -1,0 +1,29 @@
+{
+  "source": "https://wago.tools/db2/{table}/csv?build={build}",
+  "product": "wowf",
+  "buildPrefix": "1.60.",
+  "build": "1.60.1.70888",
+  "fetchedAt": "2026-11-10T19:16:41.682Z",
+  "sha256": "bfd8ee4c7f828698386eedc78e2d95be66fccb4d133a46362d9198ed23710663",
+  "tables": {
+    "DungeonEncounter": [
+      {
+        "ID": 1084,
+        "Name_lang": "Onyxia",
+        "MapID": 249,
+        "OrderIndex": 0,
+        "DifficultyID": 0
+      }
+    ],
+    "Map": [
+      {
+        "ID": 249,
+        "MapName_lang": "Onyxia's Lair",
+        "InstanceType": 2,
+        "ExpansionID": 0,
+        "Directory": "OnyxiaLairInstance"
+      }
+    ],
+    "ItemSparse": []
+  }
+}

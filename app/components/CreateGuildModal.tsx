@@ -382,7 +382,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
       }
 
       // Success!
-      trackClientEvent('guild_creation_completed', { guild_name: guildName.trim(), expansion, faction, realm: realm.trim() })
+      trackClientEvent('guild_creation_completed', { expansion, faction, realm: realm.trim() })
       onClose()
       onSuccess?.()
       window.location.href = '/overview'

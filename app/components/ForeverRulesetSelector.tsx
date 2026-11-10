@@ -32,7 +32,7 @@ const RULESET_OPTIONS: DropdownOption[] = FOREVER_RULESETS.map((ruleset) => ({
 
 /**
  * WoW Forever has no realms: guilds pick a region and a ruleset (Normal, PvP,
- * Roleplaying, Hardcore) instead. Emits the combined "{Ruleset} ({Region})"
+ * Roleplaying, Roleplay PvP, Hardcore) instead. Emits the combined "{Ruleset} ({Region})"
  * string that is stored in the same guilds.realm column a normal realm uses.
  */
 export default function ForeverRulesetSelector({ value, onChange, disabled = false }: ForeverRulesetSelectorProps) {

@@ -9,13 +9,15 @@ import {
   gameMismatchError,
 } from '../expansionSeeder'
 import { EXPANSION_GAMES } from '@/domain/expansion/game'
+import { getRaidPhase, getExpansionSlug } from '@/data/expansion-phases'
+import { NEED_DEFINITIONS, needRowColumns } from '@/domain/loot/needs'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySupabase = any
 
 interface RecordedCall {
   table: string
-  method: 'select' | 'eq' | 'insert' | 'update'
+  method: 'select' | 'eq' | 'in' | 'order' | 'range' | 'insert' | 'update' | 'delete'
   args: unknown[]
 }
 
@@ -28,13 +30,29 @@ interface RecordedCall {
  * fresh expansion row -- the two are distinguished by whether insert() was
  * called on that specific builder instance. The builder is also thenable so
  * plain awaited update().eq() chains settle without a .single() call.
+ *
+ * delete() is recorded too so rollback tests can assert what was removed.
+ *
+ * An awaited raid_tiers chain that never called insert() is the catalog sync's
+ * existing-tiers read: it resolves no rows, or { error } when
+ * raidTiersReadError is set. A raid_tiers insert followed by select resolves
+ * the inserted rows with ids tier-1, tier-2, ... in payload order. loot_items
+ * reads (order/range) resolve no rows and loot_items inserts resolve ok, or
+ * { error } when lootItemsInsertError is set.
  */
-function createMockSupabase(options: { duplicateExists?: boolean } = {}) {
+function createMockSupabase(
+  options: {
+    duplicateExists?: boolean
+    raidTiersReadError?: string
+    lootItemsInsertError?: string
+  } = {}
+) {
   const fromCalls: string[] = []
   const calls: RecordedCall[] = []
 
   function buildBuilder(table: string) {
     let insertCalled = false
+    let insertedPayload: Array<Record<string, unknown>> = []
 
     const builder = {
       select(...args: unknown[]) {
@@ -45,13 +63,30 @@ function createMockSupabase(options: { duplicateExists?: boolean } = {}) {
         calls.push({ table, method: 'eq', args })
         return builder
       },
+      in(...args: unknown[]) {
+        calls.push({ table, method: 'in', args })
+        return builder
+      },
+      order(...args: unknown[]) {
+        calls.push({ table, method: 'order', args })
+        return builder
+      },
+      range(...args: unknown[]) {
+        calls.push({ table, method: 'range', args })
+        return Promise.resolve({ data: [], error: null })
+      },
       insert(...args: unknown[]) {
         calls.push({ table, method: 'insert', args })
         insertCalled = true
+        insertedPayload = Array.isArray(args[0]) ? (args[0] as Array<Record<string, unknown>>) : []
         return builder
       },
       update(...args: unknown[]) {
         calls.push({ table, method: 'update', args })
+        return builder
+      },
+      delete(...args: unknown[]) {
+        calls.push({ table, method: 'delete', args })
         return builder
       },
       single() {
@@ -67,10 +102,23 @@ function createMockSupabase(options: { duplicateExists?: boolean } = {}) {
       },
       // Thenable so `await builder.update(...).eq(...)` settles without single().
       then(
-        onFulfilled?: (value: { data: null; error: null }) => unknown,
+        onFulfilled?: (value: { data: unknown; error: unknown }) => unknown,
         onRejected?: (reason: unknown) => unknown
       ) {
-        return Promise.resolve({ data: null, error: null }).then(onFulfilled, onRejected)
+        let result: { data: unknown; error: unknown } = { data: null, error: null }
+        if (table === 'raid_tiers' && !insertCalled) {
+          result = options.raidTiersReadError
+            ? { data: null, error: { message: options.raidTiersReadError } }
+            : { data: [], error: null }
+        } else if (table === 'raid_tiers' && insertCalled) {
+          result = {
+            data: insertedPayload.map((row, index) => ({ id: `tier-${index + 1}`, name: row.name })),
+            error: null,
+          }
+        } else if (table === 'loot_items' && insertCalled && options.lootItemsInsertError) {
+          result = { data: null, error: { message: options.lootItemsInsertError } }
+        }
+        return Promise.resolve(result).then(onFulfilled, onRejected)
       },
     }
 
@@ -162,7 +210,7 @@ describe('getAvailableExpansions', () => {
 })
 
 describe('seedExpansionForGuild', () => {
-  it('seeds Forever with zero raid tiers and no error', async () => {
+  it('[D-01] seeds Forever with three Discovery raid tiers in one insert, then 145 need rows per tier in one insert', async () => {
     const { supabase, fromCalls, calls } = createMockSupabase()
 
     const result = await seedExpansionForGuild(supabase, 'g1', 'Forever', true, true)
@@ -170,14 +218,153 @@ describe('seedExpansionForGuild', () => {
     expect(result).toEqual({ expansionId: 'exp-1' })
     expect(result.error).toBeUndefined()
 
-    expect(fromCalls).not.toContain('raid_tiers')
-    expect(fromCalls).not.toContain('loot_items')
+    // Bosses stay manifest-only: the only loot_items rows are need rows.
     expect(fromCalls).not.toContain('loot_item_classes')
     expect(fromCalls).not.toContain('wow_classes')
 
     const insertCall = calls.find(c => c.table === 'expansions' && c.method === 'insert')
     expect(insertCall).toBeDefined()
     expect(insertCall?.args[0]).toMatchObject({ name: 'Forever', current_phase: 1 })
+
+    const tierCalls = calls.filter(c => c.table === 'raid_tiers')
+    expect(tierCalls.filter(c => c.method === 'select')).toEqual([
+      { table: 'raid_tiers', method: 'select', args: ['id, name, list_mode'] },
+      { table: 'raid_tiers', method: 'select', args: ['id, name'] },
+    ])
+    expect(tierCalls.filter(c => c.method === 'eq')).toEqual([
+      { table: 'raid_tiers', method: 'eq', args: ['expansion_id', 'exp-1'] },
+    ])
+    expect(tierCalls.filter(c => c.method === 'update')).toEqual([])
+
+    const tierInserts = tierCalls.filter(c => c.method === 'insert')
+    expect(tierInserts).toHaveLength(1)
+    expect(tierInserts[0].args).toEqual([
+      [
+        {
+          expansion_id: 'exp-1',
+          name: 'Barrow Deeps',
+          is_active: true,
+          is_guild_active: true,
+          master_sheet_visible: true,
+          phase: 1,
+          sort_order: 1,
+          list_mode: 'discovery',
+        },
+        {
+          expansion_id: 'exp-1',
+          name: 'Hyjal Summit',
+          is_active: false,
+          is_guild_active: true,
+          master_sheet_visible: true,
+          phase: 1,
+          sort_order: 2,
+          list_mode: 'discovery',
+        },
+        {
+          expansion_id: 'exp-1',
+          name: "Onyxia's Lair",
+          is_active: false,
+          is_guild_active: true,
+          master_sheet_visible: true,
+          phase: 1,
+          sort_order: 3,
+          list_mode: 'discovery',
+        },
+      ],
+    ])
+
+    // D-11, D-17: need rows follow the tier insert, 145 per tier, in tier then definition order.
+    const lootInserts = calls.filter(c => c.table === 'loot_items' && c.method === 'insert')
+    expect(lootInserts).toHaveLength(1)
+    expect(lootInserts[0].args[0]).toEqual(
+      ['tier-1', 'tier-2', 'tier-3'].flatMap(tierId =>
+        NEED_DEFINITIONS.map(definition => ({ raid_tier_id: tierId, ...needRowColumns(definition) }))
+      )
+    )
+    expect((lootInserts[0].args[0] as unknown[]).length).toBe(435)
+    expect(calls.indexOf(tierInserts[0] as never)).toBeLessThan(calls.indexOf(lootInserts[0] as never))
+  })
+
+  it('[DISC-01 empty] a Forever expansion with zero tiers ends with three Discovery tiers and 435 need rows', async () => {
+    const { supabase, calls } = createMockSupabase()
+
+    await seedExpansionForGuild(supabase, 'g1', 'Forever', false, true)
+
+    const lootInserts = calls.filter(c => c.table === 'loot_items' && c.method === 'insert')
+    expect(lootInserts).toHaveLength(1)
+    expect(lootInserts[0].args[0]).toHaveLength(NEED_DEFINITIONS.length * 3)
+  })
+
+  it('rolls the expansion back and returns the generic error when the need-row insert fails', async () => {
+    const { supabase, calls } = createMockSupabase({ lootItemsInsertError: 'nope' })
+
+    const result = await seedExpansionForGuild(supabase, 'g1', 'Forever', true, true)
+
+    expect(result).toEqual({
+      expansionId: '',
+      error: 'Something went wrong while setting up the expansion',
+    })
+    expect(calls.filter(c => c.method === 'delete')).toEqual([
+      { table: 'expansions', method: 'delete', args: [] },
+    ])
+    expect(
+      calls.filter(c => c.table === 'guilds' && c.method === 'update').map(c => c.args[0])
+    ).toEqual([{ active_expansion_id: 'exp-1' }, { active_expansion_id: null }])
+  })
+
+  it('returns the existing generic error and inserts no tiers when the raid_tiers read fails', async () => {
+    const { supabase, calls } = createMockSupabase({ raidTiersReadError: 'boom' })
+
+    const result = await seedExpansionForGuild(supabase, 'g1', 'Forever', true, true)
+
+    expect(result).toEqual({
+      expansionId: '',
+      error: 'Something went wrong while setting up the expansion',
+    })
+    expect(calls.filter(c => c.table === 'raid_tiers' && c.method === 'insert')).toEqual([])
+  })
+
+  // A failed sync must not leave a tier-less expansion behind: POST
+  // /api/guilds/[id]/expansions has no rollback of its own, and the duplicate
+  // check would block every retry.
+  it('removes the new expansion and clears the active pointer when the sync throws, then returns the generic error', async () => {
+    const { supabase, calls } = createMockSupabase({ raidTiersReadError: 'boom' })
+
+    const result = await seedExpansionForGuild(supabase, 'g1', 'Forever', true, true)
+
+    expect(result).toEqual({
+      expansionId: '',
+      error: 'Something went wrong while setting up the expansion',
+    })
+
+    const guildUpdates = calls.filter(c => c.table === 'guilds' && c.method === 'update')
+    expect(guildUpdates.map(c => c.args[0])).toEqual([
+      { active_expansion_id: 'exp-1' },
+      { active_expansion_id: null },
+    ])
+    const guildEqs = calls.filter(c => c.table === 'guilds' && c.method === 'eq')
+    expect(guildEqs.slice(-2)).toEqual([
+      { table: 'guilds', method: 'eq', args: ['id', 'g1'] },
+      { table: 'guilds', method: 'eq', args: ['active_expansion_id', 'exp-1'] },
+    ])
+
+    const deletes = calls.filter(c => c.method === 'delete')
+    expect(deletes).toEqual([{ table: 'expansions', method: 'delete', args: [] }])
+    expect(calls.filter(c => c.table === 'expansions' && c.method === 'eq').slice(-1)).toEqual([
+      { table: 'expansions', method: 'eq', args: ['id', 'exp-1'] },
+    ])
+  })
+
+  it('leaves the active pointer alone on rollback when setAsCurrent is false', async () => {
+    const { supabase, calls } = createMockSupabase({ raidTiersReadError: 'boom' })
+
+    const result = await seedExpansionForGuild(supabase, 'g1', 'Forever', false, true)
+
+    expect(result.expansionId).toBe('')
+    expect(calls.filter(c => c.table === 'guilds' && c.method === 'update')).toEqual([])
+    expect(calls.filter(c => c.method === 'delete')).toEqual([
+      { table: 'expansions', method: 'delete', args: [] },
+    ])
   })
 
   it('rejects an unsupported expansion (Legion) with the registry-derived CP-09 message', async () => {
@@ -214,5 +401,20 @@ describe('seedExpansionForGuild', () => {
     expect(result.error).toBe(
       'Guild already has WoW Forever. Each expansion can only be added once per guild.'
     )
+  })
+})
+
+describe('getRaidPhase', () => {
+  it('resolves Forever raids by exact name and still resolves the legacy Classic names', () => {
+    expect(getRaidPhase('forever', 'Barrow Deeps')).toBe(1)
+    expect(getRaidPhase('forever', 'Hyjal Summit')).toBe(1)
+    expect(getRaidPhase('forever', "Onyxia's Lair")).toBe(1)
+    expect(getRaidPhase('forever', 'Molten Core')).toBeNull()
+    expect(getRaidPhase('classic', "Onyxia's Lair")).toBe(1)
+    expect(getRaidPhase('missing-slug', 'Barrow Deeps')).toBeNull()
+  })
+
+  it('keeps Forever out of the name-to-slug map the public reserve-run route keys off', () => {
+    expect(getExpansionSlug('Forever')).toBeNull()
   })
 })

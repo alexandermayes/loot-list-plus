@@ -1,34 +1,24 @@
 import { SupabaseClient } from '@supabase/supabase-js'
-import { classicRaids, Raid as ClassicRaid } from '@/data/classic-wow-raids'
-import { tbcRaids } from '@/data/tbc-raids'
-import { wrathRaids } from '@/data/wrath-raids'
-import { cataRaids } from '@/data/cata-raids'
-import { mopRaids } from '@/data/mop-raids'
-import { ITEM_CLASSIFICATIONS } from '@/data/classic-wow-item-classifications'
-import { TBC_ITEM_CLASSIFICATIONS } from '@/data/tbc-item-classifications'
-import { WOTLK_ITEM_CLASSIFICATIONS } from '@/data/wrath-item-classifications'
-import { CATA_ITEM_CLASSIFICATIONS } from '@/data/cata-item-classifications'
-import { MOP_ITEM_CLASSIFICATIONS } from '@/data/mop-item-classifications'
-import { CLASSIC_ITEM_ROLES } from '@/data/classic-item-roles'
-import { TBC_ITEM_ROLES } from '@/data/tbc-item-roles'
-import { WOTLK_ITEM_ROLES } from '@/data/wrath-item-roles'
-import { CATA_ITEM_ROLES } from '@/data/cata-item-roles'
-import { MOP_ITEM_ROLES } from '@/data/mop-item-roles'
-import { EXPANSION_PHASES, getExpansionSlug } from '@/data/expansion-phases'
 import { getTokenClasses, isTokenSlot } from '@/data/token-class-mapping'
+import { syncExpansionCatalog } from '@/app/services/expansionCatalogSync'
 import { getExpansionDisplayName } from '@/utils/expansionVisuals'
-import { EXPANSION_GAMES, getExpansionGame } from '@/domain/expansion/game'
+import { getExpansionGame } from '@/domain/expansion/game'
 import type { GameVersion } from '@/domain/expansion/game'
+import { EXPANSION_REGISTRY, getExpansionMeta } from '@/data/expansions/registry'
+import { getExpansionCatalog } from '@/data/expansions/catalogs'
+import type { RaidDefinition, SeedMode } from '@/data/expansions/types'
 
 export { getExpansionGame }
 export type { GameVersion }
+export type { RaidDefinition, BossDefinition, LootItemDefinition, SeedMode } from '@/data/expansions/types'
 
 /**
  * Expansion Seeding Service
  *
  * This service handles the automatic creation of expansions, raid tiers, and loot items
- * when a guild selects an expansion. It transforms the static raid data from /data files
- * into database records.
+ * when a guild selects an expansion. It resolves every expansion through the registry
+ * (data/expansions/registry.ts) and its catalog adapter (data/expansions/catalogs.ts),
+ * and writes the catalog into database records.
  */
 
 export interface ExpansionDefinition {
@@ -36,231 +26,66 @@ export interface ExpansionDefinition {
   displayName: string
   raids: RaidDefinition[]
   game: GameVersion
-}
-
-export interface RaidDefinition {
-  name: string
-  isActive: boolean
-  phase: number | null
-  bosses: BossDefinition[]
-}
-
-export interface BossDefinition {
-  name: string
-  lootItems: LootItemDefinition[]
-}
-
-export interface LootItemDefinition {
-  name: string
-  slot: string
-  wowheadId: string
+  seedMode: SeedMode
+  slug: string
 }
 
 /**
- * Get the phase number for a raid based on expansion phases mapping
+ * Build every definition once, at module load, from the registry. A hasData
+ * entry without a catalog or a game is a programming error, so it throws here
+ * rather than seeding the wrong rows later.
  */
-function getRaidPhase(expansionSlug: string, raidName: string): number | null {
-  const phases = EXPANSION_PHASES[expansionSlug]
-  if (!phases) return null
-
-  for (const phase of phases) {
-    if (phase.raids.includes(raidName)) {
-      return phase.phase
+function buildExpansionDefinitions(): Record<string, ExpansionDefinition> {
+  const definitions: Record<string, ExpansionDefinition> = {}
+  for (const meta of Object.values(EXPANSION_REGISTRY)) {
+    if (!meta.hasData) continue
+    const catalog = getExpansionCatalog(meta.storedName)
+    if (!catalog) {
+      throw new Error(`Expansion registry entry "${meta.storedName}" has data but no catalog`)
+    }
+    if (!meta.game || !meta.seedMode) {
+      throw new Error(`Expansion registry entry "${meta.storedName}" has data but no game or seed mode`)
+    }
+    definitions[meta.storedName] = {
+      name: meta.storedName,
+      displayName: meta.storedName,
+      raids: catalog.raids,
+      game: meta.game,
+      seedMode: meta.seedMode,
+      slug: meta.slug,
     }
   }
-  return null
+  return definitions
 }
+
+// Expansions without data yet (the retail "coming soon" rows) have no entry here.
+const EXPANSION_DEFINITIONS = buildExpansionDefinitions()
 
 /**
- * Transform Classic WoW raid data into the format expected by the seeder
- */
-function transformClassicRaids(): RaidDefinition[] {
-  return classicRaids.map((raid, index) => ({
-    name: raid.name,
-    // Mark the first raid (Molten Core) as active by default
-    isActive: index === 0,
-    phase: getRaidPhase('classic', raid.name),
-    bosses: raid.bosses.map(boss => ({
-      name: boss.name,
-      lootItems: boss.items.map(item => ({
-        name: item.name,
-        slot: item.slot,
-        wowheadId: item.wowhead_id.toString()
-      }))
-    }))
-  }))
-}
-
-/**
- * Transform TBC raid data into the format expected by the seeder
- */
-function transformTBCRaids(): RaidDefinition[] {
-  return tbcRaids.map((raid, index) => ({
-    name: raid.name,
-    // Mark the first raid (Karazhan) as active by default
-    isActive: index === 0,
-    phase: getRaidPhase('tbc', raid.name),
-    bosses: raid.bosses.map(boss => ({
-      name: boss.name,
-      lootItems: boss.items.map(item => ({
-        name: item.name,
-        slot: item.slot,
-        wowheadId: item.wowhead_id.toString()
-      }))
-    }))
-  }))
-}
-
-/**
- * Transform WotLK raid data into the format expected by the seeder
- */
-function transformWrathRaids(): RaidDefinition[] {
-  return wrathRaids.map((raid, index) => ({
-    name: raid.name,
-    // Mark the first raid (Naxxramas) as active by default
-    isActive: index === 0,
-    phase: getRaidPhase('wrath', raid.name),
-    bosses: raid.bosses.map(boss => ({
-      name: boss.name,
-      lootItems: boss.items.map(item => ({
-        name: item.name,
-        slot: item.slot,
-        wowheadId: item.wowhead_id.toString()
-      }))
-    }))
-  }))
-}
-
-/**
- * Transform Cataclysm raid data into the format expected by the seeder
- */
-function transformCataRaids(): RaidDefinition[] {
-  return cataRaids.map((raid, index) => ({
-    name: raid.name,
-    isActive: index === 0,
-    phase: getRaidPhase('cata', raid.name),
-    bosses: raid.bosses.map(boss => ({
-      name: boss.name,
-      lootItems: boss.items.map(item => ({
-        name: item.name,
-        slot: item.slot,
-        wowheadId: item.wowhead_id.toString()
-      }))
-    }))
-  }))
-}
-
-/**
- * Transform MoP raid data into the format expected by the seeder
- */
-function transformMoPRaids(): RaidDefinition[] {
-  return mopRaids.map((raid, index) => ({
-    name: raid.name,
-    isActive: index === 0,
-    phase: getRaidPhase('mop', raid.name),
-    bosses: raid.bosses.map(boss => ({
-      name: boss.name,
-      lootItems: boss.items.map(item => ({
-        name: item.name,
-        slot: item.slot,
-        wowheadId: item.wowhead_id.toString()
-      }))
-    }))
-  }))
-}
-
-// Classic WoW expansion data
-const CLASSIC_WOW_DATA: ExpansionDefinition = {
-  name: 'Classic',
-  displayName: 'Classic',
-  raids: transformClassicRaids(),
-  game: EXPANSION_GAMES.Classic
-}
-
-// TBC expansion data
-const TBC_DATA: ExpansionDefinition = {
-  name: 'The Burning Crusade',
-  displayName: 'The Burning Crusade',
-  raids: transformTBCRaids(),
-  game: EXPANSION_GAMES['The Burning Crusade']
-}
-
-// WotLK expansion data
-const WOTLK_DATA: ExpansionDefinition = {
-  name: 'Wrath of the Lich King',
-  displayName: 'Wrath of the Lich King',
-  raids: transformWrathRaids(),
-  game: EXPANSION_GAMES['Wrath of the Lich King']
-}
-
-// Cataclysm expansion data
-const CATA_DATA: ExpansionDefinition = {
-  name: 'Cataclysm',
-  displayName: 'Cataclysm',
-  raids: transformCataRaids(),
-  game: EXPANSION_GAMES.Cataclysm
-}
-
-// Mists of Pandaria expansion data
-const MOP_DATA: ExpansionDefinition = {
-  name: 'Mists of Pandaria',
-  displayName: 'Mists of Pandaria',
-  raids: transformMoPRaids(),
-  game: EXPANSION_GAMES['Mists of Pandaria']
-}
-
-// WoW Forever expansion data
-// Raid tiers arrive later once Forever raid data exists; seeding creates the
-// expansion row only, with zero raid tiers.
-const FOREVER_DATA: ExpansionDefinition = {
-  name: 'Forever',
-  displayName: 'Forever',
-  raids: [],
-  game: EXPANSION_GAMES.Forever
-}
-
-// Map of all available expansions
-// Expansions with null have no loot data yet (shown as "coming soon" in UI)
-const EXPANSION_DATA: Record<string, ExpansionDefinition | null> = {
-  'Classic': CLASSIC_WOW_DATA,
-  'The Burning Crusade': TBC_DATA,
-  'Wrath of the Lich King': WOTLK_DATA,
-  'Cataclysm': CATA_DATA,
-  'Mists of Pandaria': MOP_DATA,
-  'Forever': FOREVER_DATA,
-  'Warlords of Draenor': null,
-  'Legion': null,
-  'Battle for Azeroth': null,
-  'Shadowlands': null,
-  'Dragonflight': null,
-  'The War Within': null,
-}
-
-/**
- * Look up an expansion definition by name, guarding against
- * prototype-pollution lookups ('constructor', '__proto__', 'toString', ...)
- * by requiring the name to be an own, non-null property of EXPANSION_DATA.
+ * Look up an expansion definition by name. Resolves through the registry's
+ * own-property guard, so prototype-pollution lookups ('constructor',
+ * '__proto__', 'toString', ...) and non-string input return null, as do
+ * expansions that have no data yet.
  */
 export function getExpansionDefinition(name: unknown): ExpansionDefinition | null {
-  if (typeof name !== 'string' || !Object.prototype.hasOwnProperty.call(EXPANSION_DATA, name)) {
-    return null
-  }
-  return EXPANSION_DATA[name]
+  const meta = getExpansionMeta(name)
+  if (!meta || !meta.hasData) return null
+  return EXPANSION_DEFINITIONS[meta.storedName] ?? null
 }
 
 /**
  * All expansion names the seeder can create data for, in registry order.
  * The API routes validate incoming expansion names against this list (via
- * isSupportedExpansion), so this registry is the single source of truth --
+ * isSupportedExpansion), so the registry is the single source of truth --
  * no route should hand-list its own expansion array.
  */
-export const SUPPORTED_EXPANSIONS: readonly string[] = Object.keys(EXPANSION_DATA).filter(
-  (name) => EXPANSION_DATA[name] !== null
-)
+export const SUPPORTED_EXPANSIONS: readonly string[] = Object.values(EXPANSION_REGISTRY)
+  .filter((meta) => meta.hasData)
+  .map((meta) => meta.storedName)
 
 /**
- * Type guard: true only for names that resolve to a non-null EXPANSION_DATA
- * entry. Safe against prototype-pollution names and non-string input.
+ * Type guard: true only for names that resolve to a registry entry with data.
+ * Safe against prototype-pollution names and non-string input.
  */
 export function isSupportedExpansion(name: unknown): name is string {
   return getExpansionDefinition(name) !== null
@@ -325,6 +150,41 @@ export async function getGuildExpansions(
   }
 
   return data.map(exp => exp.name)
+}
+
+/**
+ * Best-effort removal of an expansion row whose Forever sync failed, plus the
+ * active-expansion pointer if this call set it. Never throws: the caller is
+ * about to rethrow the sync error and that is the one worth reporting.
+ */
+async function rollbackSyncedExpansion(
+  supabase: SupabaseClient,
+  guildId: string,
+  expansionId: string,
+  clearPointer: boolean
+): Promise<void> {
+  try {
+    if (clearPointer) {
+      const { error: pointerError } = await supabase
+        .from('guilds')
+        .update({ active_expansion_id: null })
+        .eq('id', guildId)
+        .eq('active_expansion_id', expansionId)
+      if (pointerError) {
+        console.error('[SEEDER] Error clearing active expansion during rollback:', pointerError)
+      }
+    }
+
+    const { error: deleteError } = await supabase
+      .from('expansions')
+      .delete()
+      .eq('id', expansionId)
+    if (deleteError) {
+      console.error('[SEEDER] Error removing expansion during rollback:', deleteError)
+    }
+  } catch (rollbackError) {
+    console.error('[SEEDER] Rollback after failed catalog sync threw:', rollbackError)
+  }
 }
 
 /**
@@ -414,7 +274,32 @@ export async function seedExpansionForGuild(
       }
     }
 
-    // 3. Create raid tiers with their loot items
+    // 3a. Manifest-driven expansions seed their tiers through the sync service.
+    // A throw lands in the catch below, which keeps the existing generic message.
+    if (expansionData.seedMode === 'sync') {
+      try {
+        await syncExpansionCatalog(supabase, {
+          expansionId: expansion.id,
+          expansionName: expansionData.displayName
+        })
+      } catch (syncError) {
+        // The seeder owns this cleanup so no caller has to: POST
+        // /api/guilds/[id]/expansions does not roll back, and a tier-less
+        // expansion row would block every retry with the "already has" error.
+        // Clear the pointer first so the delete is not held up by the guilds FK.
+        await rollbackSyncedExpansion(supabase, guildId, expansion.id, setAsCurrent)
+        throw syncError
+      }
+      return { expansionId: expansion.id }
+    }
+
+    // 3. Create raid tiers with their loot items. Only a legacy catalog reaches
+    // this loop; anything else throws into the catch below.
+    const catalog = getExpansionCatalog(expansionData.displayName)
+    if (!catalog || catalog.kind !== 'legacy') {
+      throw new Error(`Expansion "${expansionData.displayName}" has no legacy catalog to insert`)
+    }
+
     // Lazy-loaded class name -> id mapping for token class seeding
     const classNameToId: Record<string, string> = {}
 
@@ -447,38 +332,12 @@ export async function seedExpansionForGuild(
       // 4. Prepare all loot items for this raid tier
       const lootItems = raid.bosses.flatMap(boss =>
         boss.lootItems.map(item => {
-          // Look up classification from the appropriate mapping based on expansion
-          let classificationMap: Record<string, 'Reserved' | 'Limited' | 'Unlimited'>
-          if (expansionData.displayName === 'Mists of Pandaria') {
-            classificationMap = MOP_ITEM_CLASSIFICATIONS
-          } else if (expansionData.displayName === 'Cataclysm') {
-            classificationMap = CATA_ITEM_CLASSIFICATIONS
-          } else if (expansionData.displayName === 'Wrath of the Lich King') {
-            classificationMap = WOTLK_ITEM_CLASSIFICATIONS
-          } else if (expansionData.displayName === 'The Burning Crusade') {
-            classificationMap = TBC_ITEM_CLASSIFICATIONS
-          } else {
-            classificationMap = ITEM_CLASSIFICATIONS
-          }
-          const classification = classificationMap[item.name] || 'Unlimited'
+          const classification = catalog.classify(item.name)
           // Reserved and Limited items cost 1 allocation point, Unlimited costs 0
           const allocation_cost = (classification === 'Reserved' || classification === 'Limited') ? 1 : 0
 
-          // Look up roles from the appropriate mapping based on expansion
-          // Items without explicit mapping default to empty array (available to all specs)
-          let roleMap: Record<string, ('tank' | 'healer' | 'physical' | 'caster')[]>
-          if (expansionData.displayName === 'Mists of Pandaria') {
-            roleMap = MOP_ITEM_ROLES
-          } else if (expansionData.displayName === 'Cataclysm') {
-            roleMap = CATA_ITEM_ROLES
-          } else if (expansionData.displayName === 'Wrath of the Lich King') {
-            roleMap = WOTLK_ITEM_ROLES
-          } else if (expansionData.displayName === 'The Burning Crusade') {
-            roleMap = TBC_ITEM_ROLES
-          } else {
-            roleMap = CLASSIC_ITEM_ROLES
-          }
-          const roles = roleMap[item.name] || []
+          // Items without an explicit role mapping default to an empty array (available to all specs)
+          const roles = catalog.rolesFor(item.name)
 
           return {
             raid_tier_id: tier.id,
@@ -576,8 +435,8 @@ export function getAvailableExpansions(): Array<{
   name: string
   hasData: boolean
 }> {
-  return Object.entries(EXPANSION_DATA).map(([name, data]) => ({
-    name,
-    hasData: data !== null
+  return Object.values(EXPANSION_REGISTRY).map((meta) => ({
+    name: meta.storedName,
+    hasData: meta.hasData
   }))
 }

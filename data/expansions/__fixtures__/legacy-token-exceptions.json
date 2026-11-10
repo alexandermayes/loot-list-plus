@@ -1,0 +1,233 @@
+[
+  {
+    "slug": "cata",
+    "raid": "Dragon Soul",
+    "boss": "Hagara the Stormbinder",
+    "wowheadId": "77952",
+    "name": "Elementium Gem Cluster"
+  },
+  {
+    "slug": "cata",
+    "raid": "Dragon Soul",
+    "boss": "Morchok",
+    "wowheadId": "77952",
+    "name": "Elementium Gem Cluster"
+  },
+  {
+    "slug": "cata",
+    "raid": "Dragon Soul",
+    "boss": "Warlord Zon'ozz",
+    "wowheadId": "77952",
+    "name": "Elementium Gem Cluster"
+  },
+  {
+    "slug": "cata",
+    "raid": "Dragon Soul",
+    "boss": "Warmaster Blackhorn",
+    "wowheadId": "77952",
+    "name": "Elementium Gem Cluster"
+  },
+  {
+    "slug": "cata",
+    "raid": "Dragon Soul",
+    "boss": "Yor'sahj the Unsleeping",
+    "wowheadId": "77952",
+    "name": "Elementium Gem Cluster"
+  },
+  {
+    "slug": "cata",
+    "raid": "Firelands",
+    "boss": "Alysrazor",
+    "wowheadId": "69815",
+    "name": "Seething Cinder"
+  },
+  {
+    "slug": "cata",
+    "raid": "Firelands",
+    "boss": "Alysrazor",
+    "wowheadId": "71141",
+    "name": "Eternal Ember"
+  },
+  {
+    "slug": "cata",
+    "raid": "Firelands",
+    "boss": "Baleroc",
+    "wowheadId": "69815",
+    "name": "Seething Cinder"
+  },
+  {
+    "slug": "cata",
+    "raid": "Firelands",
+    "boss": "Baleroc",
+    "wowheadId": "71141",
+    "name": "Eternal Ember"
+  },
+  {
+    "slug": "cata",
+    "raid": "Firelands",
+    "boss": "Beth'tilac",
+    "wowheadId": "69815",
+    "name": "Seething Cinder"
+  },
+  {
+    "slug": "cata",
+    "raid": "Firelands",
+    "boss": "Beth'tilac",
+    "wowheadId": "71141",
+    "name": "Eternal Ember"
+  },
+  {
+    "slug": "cata",
+    "raid": "Firelands",
+    "boss": "Lord Rhyolith",
+    "wowheadId": "69815",
+    "name": "Seething Cinder"
+  },
+  {
+    "slug": "cata",
+    "raid": "Firelands",
+    "boss": "Lord Rhyolith",
+    "wowheadId": "71141",
+    "name": "Eternal Ember"
+  },
+  {
+    "slug": "cata",
+    "raid": "Firelands",
+    "boss": "Majordomo Staghelm",
+    "wowheadId": "69815",
+    "name": "Seething Cinder"
+  },
+  {
+    "slug": "cata",
+    "raid": "Firelands",
+    "boss": "Majordomo Staghelm",
+    "wowheadId": "71141",
+    "name": "Eternal Ember"
+  },
+  {
+    "slug": "cata",
+    "raid": "Firelands",
+    "boss": "Ragnaros",
+    "wowheadId": "69815",
+    "name": "Seething Cinder"
+  },
+  {
+    "slug": "cata",
+    "raid": "Firelands",
+    "boss": "Ragnaros",
+    "wowheadId": "71141",
+    "name": "Eternal Ember"
+  },
+  {
+    "slug": "cata",
+    "raid": "Firelands",
+    "boss": "Shannox",
+    "wowheadId": "69815",
+    "name": "Seething Cinder"
+  },
+  {
+    "slug": "cata",
+    "raid": "Firelands",
+    "boss": "Shannox",
+    "wowheadId": "71141",
+    "name": "Eternal Ember"
+  },
+  {
+    "slug": "wrath",
+    "raid": "Ulduar",
+    "boss": "Algalon the Observer",
+    "wowheadId": "45038",
+    "name": "Fragment of Val'anyr"
+  },
+  {
+    "slug": "wrath",
+    "raid": "Ulduar",
+    "boss": "Assembly of Iron",
+    "wowheadId": "45038",
+    "name": "Fragment of Val'anyr"
+  },
+  {
+    "slug": "wrath",
+    "raid": "Ulduar",
+    "boss": "Auriaya",
+    "wowheadId": "45038",
+    "name": "Fragment of Val'anyr"
+  },
+  {
+    "slug": "wrath",
+    "raid": "Ulduar",
+    "boss": "Flame Leviathan",
+    "wowheadId": "45038",
+    "name": "Fragment of Val'anyr"
+  },
+  {
+    "slug": "wrath",
+    "raid": "Ulduar",
+    "boss": "Freya",
+    "wowheadId": "45038",
+    "name": "Fragment of Val'anyr"
+  },
+  {
+    "slug": "wrath",
+    "raid": "Ulduar",
+    "boss": "General Vezax",
+    "wowheadId": "45038",
+    "name": "Fragment of Val'anyr"
+  },
+  {
+    "slug": "wrath",
+    "raid": "Ulduar",
+    "boss": "Hodir",
+    "wowheadId": "45038",
+    "name": "Fragment of Val'anyr"
+  },
+  {
+    "slug": "wrath",
+    "raid": "Ulduar",
+    "boss": "Ignis the Furnace Master",
+    "wowheadId": "45038",
+    "name": "Fragment of Val'anyr"
+  },
+  {
+    "slug": "wrath",
+    "raid": "Ulduar",
+    "boss": "Kologarn",
+    "wowheadId": "45038",
+    "name": "Fragment of Val'anyr"
+  },
+  {
+    "slug": "wrath",
+    "raid": "Ulduar",
+    "boss": "Mimiron",
+    "wowheadId": "45038",
+    "name": "Fragment of Val'anyr"
+  },
+  {
+    "slug": "wrath",
+    "raid": "Ulduar",
+    "boss": "Razorscale",
+    "wowheadId": "45038",
+    "name": "Fragment of Val'anyr"
+  },
+  {
+    "slug": "wrath",
+    "raid": "Ulduar",
+    "boss": "Thorim",
+    "wowheadId": "45038",
+    "name": "Fragment of Val'anyr"
+  },
+  {
+    "slug": "wrath",
+    "raid": "Ulduar",
+    "boss": "XT-002 Deconstructor",
+    "wowheadId": "45038",
+    "name": "Fragment of Val'anyr"
+  },
+  {
+    "slug": "wrath",
+    "raid": "Ulduar",
+    "boss": "Yogg-Saron",
+    "wowheadId": "45038",
+    "name": "Fragment of Val'anyr"
+  }
+]

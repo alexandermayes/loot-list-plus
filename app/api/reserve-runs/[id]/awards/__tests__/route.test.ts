@@ -9,6 +9,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyReserveRunAccess } from '@/utils/reserve-access'
 import { logReserveAudit } from '@/utils/reserve-audit'
 import { requireReserveRunPremium } from '@/utils/feature-gate'
+import { trackEvent } from '@/utils/analytics/server'
 
 // Quick task 261003-t28 amendment A1: the route now checks, before writing,
 // that a given submission_id belongs to this run and that loot_item_id is
@@ -28,6 +29,7 @@ const TIER_ID = 'aaaaaaaa-0000-0000-0000-000000000002'
 const OTHER_TIER_ID = 'aaaaaaaa-0000-0000-0000-000000000003'
 const ITEM_ID = 'aaaaaaaa-0000-0000-0000-000000000004'
 const OTHER_TIER_ITEM_ID = 'aaaaaaaa-0000-0000-0000-000000000005'
+const NEED_ROW_ID = 'aaaaaaaa-0000-0000-0000-00000000000a'
 const SUBMISSION_ID = 'aaaaaaaa-0000-0000-0000-000000000006'
 const FOREIGN_SUBMISSION_ID = 'aaaaaaaa-0000-0000-0000-000000000007'
 const USER_ID = 'aaaaaaaa-0000-0000-0000-000000000008'
@@ -38,6 +40,8 @@ const MISMATCH_MESSAGE = "This award doesn't match this reserve run. Refresh the
 interface Fixture {
   /** loot_items rows that exist in this run's raid tier (TIER_ID). */
   tierItemIds?: Set<string>
+  /** loot_items need rows in this run's raid tier: only a read that does not filter kind = 'item' can see them. */
+  tierNeedIds?: Set<string>
   /** reserve_submissions ids that belong to this run. */
   runSubmissionIds?: Set<string>
   submissionLookupError?: boolean
@@ -48,6 +52,8 @@ interface Fixture {
  * membership checks (via maybeSingle), and a reserve_awards insert. */
 function makeClient(fixture: Fixture) {
   const calls: Array<{ table: string; filters: Array<[string, unknown]> }> = []
+  // Payload of every insert, per table, so a test can check what is stored.
+  const inserts: Array<{ table: string; payload: unknown }> = []
   const client = {
     from(table: string) {
       const call = { table, filters: [] as Array<[string, unknown]> }
@@ -55,7 +61,10 @@ function makeClient(fixture: Fixture) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const builder: any = {
         select: () => builder,
-        insert: () => builder,
+        insert: (payload: unknown) => {
+          inserts.push({ table, payload })
+          return builder
+        },
         delete: () => builder,
         eq: (col: string, val: unknown) => {
           call.filters.push([col, val])
@@ -71,7 +80,8 @@ function makeClient(fixture: Fixture) {
           if (table === 'loot_items') {
             if (fixture.itemLookupError) return Promise.resolve({ data: null, error: { message: 'boom' } })
             const id = call.filters.find(([col]) => col === 'id')?.[1] as string
-            const found = fixture.tierItemIds?.has(id)
+            const itemOnly = call.filters.some(([col, val]) => col === 'kind' && val === 'item')
+            const found = fixture.tierItemIds?.has(id) || (!itemOnly && fixture.tierNeedIds?.has(id))
             return Promise.resolve({ data: found ? { id } : null, error: null })
           }
           return Promise.resolve({ data: null, error: null })
@@ -89,7 +99,7 @@ function makeClient(fixture: Fixture) {
       return builder
     },
   }
-  return { client, calls }
+  return { client, calls, inserts }
 }
 
 function makeRequest(body: Record<string, unknown>) {
@@ -146,6 +156,24 @@ describe('POST /api/reserve-runs/[id]/awards (quick task 261003-t28 amendment A1
     expect(calls.some(c => c.table === 'reserve_awards')).toBe(true)
   })
 
+  // Hard Constraint 3: PostHog gets ids only. The award row itself still stores
+  // the character name; only the analytics properties change.
+  it('sends reserve_item_awarded with ids only and still stores character_name on the award row', async () => {
+    const { client, inserts } = makeClient({ runSubmissionIds: new Set([SUBMISSION_ID]), tierItemIds: new Set([ITEM_ID]) })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(makeRequest({ loot_item_id: ITEM_ID, character_name: 'Raiderone', submission_id: SUBMISSION_ID }), {
+      params: Promise.resolve({ id: RUN_ID }),
+    })
+
+    expect(res.status).toBe(200)
+    const awarded = vi.mocked(trackEvent).mock.calls.filter(([arg]) => arg.event === 'reserve_item_awarded')
+    expect(awarded).toHaveLength(1)
+    expect(awarded[0][0].properties).toEqual({ run_id: RUN_ID, loot_item_id: ITEM_ID })
+    const awardInsert = inserts.find(i => i.table === 'reserve_awards')
+    expect(awardInsert?.payload).toMatchObject({ reserve_run_id: RUN_ID, loot_item_id: ITEM_ID, character_name: 'Raiderone' })
+  })
+
   it('allows a NULL submission_id (a pug award) without checking reserve_submissions', async () => {
     const { client, calls } = makeClient({ tierItemIds: new Set([ITEM_ID]) })
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
@@ -170,6 +198,27 @@ describe('POST /api/reserve-runs/[id]/awards (quick task 261003-t28 amendment A1
     expect(res.status).toBe(400)
     expect(json.error).toBe(MISMATCH_MESSAGE)
     expect(calls.some(c => c.table === 'reserve_awards')).toBe(false)
+  })
+
+  it('rejects a need row id with the same 400 and writes nothing (D-14)', async () => {
+    const { client, calls, inserts } = makeClient({
+      runSubmissionIds: new Set([SUBMISSION_ID]),
+      tierItemIds: new Set([ITEM_ID]),
+      tierNeedIds: new Set([NEED_ROW_ID]),
+    })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(makeRequest({ loot_item_id: NEED_ROW_ID, character_name: 'Raiderone', submission_id: SUBMISSION_ID }), {
+      params: Promise.resolve({ id: RUN_ID }),
+    })
+    const json = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(json.error).toBe(MISMATCH_MESSAGE)
+    expect(calls.some(c => c.table === 'reserve_awards')).toBe(false)
+    expect(inserts).toHaveLength(0)
+    const itemCall = calls.find(c => c.table === 'loot_items')
+    expect(itemCall?.filters).toContainEqual(['kind', 'item'])
   })
 
   it('accepts a loot_item_id of the run raid tier', async () => {

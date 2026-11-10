@@ -146,11 +146,14 @@ export async function POST(request: Request) {
       const tierIds = tiers.map(t => t.id)
       const tierNameMap = new Map(tiers.map(t => [t.id, t.name]))
 
-      // Load all loot items for these tiers
+      // Load all loot items for these tiers. Item rows only: need rows are
+      // fixed (D-12) and come only from the taxonomy, and the update below
+      // goes by matched id, so a need row must never be matchable (D-14).
       const { data: dbItemsRaw } = await serviceSupabase
         .from('loot_items')
         .select('id, name, item_slot, raid_tier_id, classification, is_available')
         .in('raid_tier_id', tierIds)
+        .eq('kind', 'item')
 
       if (!dbItemsRaw || dbItemsRaw.length === 0) {
         return NextResponse.json({ error: 'No loot items found. Make sure the expansion is seeded.' }, { status: 400 })

@@ -31,7 +31,7 @@ interface BisImportModalProps {
   hasGearImported: boolean
   gearItemCount: number
   rankedCount?: number
-  onImportBis: () => Promise<{ success: boolean; importedCount: number; error?: string }>
+  onImportBis: () => Promise<{ success: boolean; importedCount: number; skippedForPrioCount?: number; error?: string }>
   onGearImported: () => void
   isImportingBis: boolean
 }
@@ -53,7 +53,7 @@ export function BisImportModal({
   const [gearLoading, setGearLoading] = useState(false)
   const [gearError, setGearError] = useState('')
   const [gearSuccess, setGearSuccess] = useState(false)
-  const [bisResult, setBisResult] = useState<{ success: boolean; count: number; error?: string } | null>(null)
+  const [bisResult, setBisResult] = useState<{ success: boolean; count: number; skippedForPrio: number; error?: string } | null>(null)
 
   // Auto-expand gear section if no gear imported
   useEffect(() => {
@@ -126,18 +126,27 @@ export function BisImportModal({
   const handleImportBis = async () => {
     setBisResult(null)
     const result = await onImportBis()
+    const skippedForPrio = result.skippedForPrioCount ?? 0
     setBisResult({
       success: result.success,
       count: result.importedCount,
+      skippedForPrio,
       error: result.error
     })
 
     if (result.success) {
-      trackClientEvent('bis_import_completed', { imported_count: result.importedCount, character_id: characterId })
-      // Auto-close after showing success
-      setTimeout(() => {
-        handleClose()
-      }, 1500)
+      trackClientEvent('bis_import_completed', {
+        imported_count: result.importedCount,
+        skipped_for_prio_count: skippedForPrio,
+        character_id: characterId,
+      })
+      // Auto-close after showing success, unless there is a prio notice the
+      // raider should get to read (#484); the Close button stays available.
+      if (skippedForPrio === 0) {
+        setTimeout(() => {
+          handleClose()
+        }, 1500)
+      }
     }
   }
 
@@ -172,6 +181,12 @@ export function BisImportModal({
                   <Text size="xs" color="muted">
                     Items you already own were automatically excluded
                   </Text>
+                  {bisResult.skippedForPrio > 0 && (
+                    // DRAFT copy, held for owner sign-off (GH #484 follow-up 2)
+                    <Text size="xs" color="muted">
+                      Skipped {bisResult.skippedForPrio} BIS {bisResult.skippedForPrio === 1 ? 'item' : 'items'} prio&apos;d to other classes
+                    </Text>
+                  )}
                 </>
               ) : (
                 <Text size="sm" className="text-destructive">

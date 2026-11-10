@@ -86,6 +86,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Discovery tiers have no items to reserve (D-14). Proposed copy, held for
+// the owner's Oct 26 sign-off.
+const RESERVES_UNAVAILABLE_ERROR = 'Soft reserves are not available for this raid.'
+
 /**
  * POST /api/reserve-runs
  *
@@ -154,6 +158,46 @@ export async function POST(request: NextRequest) {
     // Premium feature (guilds with pre-cutoff runs are grandfathered)
     const access = await requireReserveAccess(serviceSupabase, user.id, guild_id)
     if (!access.allowed) return access.error
+
+    // D-14: only Known tiers can hold a reserve run. A tier that is missing
+    // fails closed the same way as a Discovery tier.
+    const { data: tier, error: tierError } = await serviceSupabase
+      .from('raid_tiers')
+      .select('id, list_mode, expansion_id')
+      .eq('id', raid_tier_id)
+      .maybeSingle()
+
+    if (tierError) {
+      console.error('Error reading raid tier for reserve run:', tierError)
+      return NextResponse.json({ error: 'Failed to create run' }, { status: 500 })
+    }
+
+    // review WR-05: a guild run sits on one of that guild's own tiers, checked
+    // before list_mode so a foreign tier gives away nothing about its mode and
+    // answers exactly like a missing one. A personal run (no guild_id) keeps the
+    // shared catalog that /api/reserve-runs/raid-tiers offers, which is any
+    // guild's Known tier of the chosen expansion, so no guild check applies.
+    let tierBelongsToGuild = true
+    if (guild_id && tier) {
+      if (!tier.expansion_id) {
+        tierBelongsToGuild = false
+      } else {
+        const { data: expansion, error: expansionError } = await serviceSupabase
+          .from('expansions')
+          .select('id, guild_id')
+          .eq('id', tier.expansion_id)
+          .maybeSingle()
+        if (expansionError) {
+          console.error('Error reading expansion for reserve run:', expansionError)
+          return NextResponse.json({ error: 'Failed to create run' }, { status: 500 })
+        }
+        tierBelongsToGuild = !!expansion && expansion.guild_id === guild_id
+      }
+    }
+
+    if (!tier || !tierBelongsToGuild || tier.list_mode !== 'known') {
+      return NextResponse.json({ error: RESERVES_UNAVAILABLE_ERROR }, { status: 400 })
+    }
 
     // Build rule snapshot
     const rule_snapshot = {

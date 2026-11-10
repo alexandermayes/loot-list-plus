@@ -14,6 +14,36 @@ export interface UpdateEntry {
 
 export const updates: UpdateEntry[] = [
   {
+    date: 'October 28, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Lock awarded ranks',
+        description: 'A new guild setting, off by default. With it on, when a raider receives an item from their approved loot list, the rank it sat in stays locked to that item for the rest of the tier, so the points it used stay spent. The rest of the list stays editable. Officers release a lock by removing the item, and undoing the award releases it too. Off-spec and roll awards never lock.',
+      },
+      {
+        category: 'improvement',
+        title: 'Sync gear from Manage Characters',
+        description: 'Characters linked to Battle.net now have a Sync gear button in the edit character window, so gear imported before October 27 can pick up item levels without re-importing.',
+      },
+    ],
+  },
+  {
+    date: 'October 27, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Equipped item level in the candidate panel',
+        description: 'Officers who open an item on the master sheet now see an Equipped column: each ranked player\'s item level in the slot that item fills, from their last Battle.net gear sync. Rings and trinkets use the lower of the two slots, and tier tokens match the slot in the token name. It is display only, so Loot Score and rankings are unchanged.',
+      },
+      {
+        category: 'improvement',
+        title: 'Gear syncs now record item levels',
+        description: 'Syncing or re-linking a character from Battle.net stores the base item level of every equipped piece. Players who have not synced show Not synced until they do, and Mists of Pandaria upgrades are not reflected yet.',
+      },
+    ],
+  },
+  {
     date: 'October 5, 2026',
     items: [
       {

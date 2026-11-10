@@ -73,14 +73,13 @@ function PostHogIdentify() {
     const identifyFromSession = async (sessionUser: { id: string; email?: string; created_at?: string }) => {
       const { data: prefs } = await supabase
         .from('user_preferences')
-        .select('preferred_display_name, discord_id')
+        .select('discord_id')
         .eq('user_id', sessionUser.id)
         .single()
 
+      // Person properties carry no email, display name or other personal text.
       posthog.identify(sessionUser.id, {
-        email: sessionUser.email,
         discord_id: prefs?.discord_id,
-        display_name: prefs?.preferred_display_name,
         created_at: sessionUser.created_at,
       })
     }

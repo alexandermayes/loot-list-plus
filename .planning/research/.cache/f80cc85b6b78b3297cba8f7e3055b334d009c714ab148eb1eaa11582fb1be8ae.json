@@ -1,0 +1,1 @@
+{"content":"Supabase docs recommend Broadcast over Postgres Changes for scale and security; Postgres Changes checks RLS per subscriber per change; private broadcast channels need realtime.messages RLS policies.","source":"web","provider":"websearch","confidence":"LOW","fetched_at":"2026-10-13T00:45:07.676Z","ttl":86400000,"kind":"docs"}

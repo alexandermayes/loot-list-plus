@@ -135,10 +135,10 @@
   - Environment: Serverless Functions
   - Cron jobs: 3 scheduled tasks via `vercel.json`
 
-- Railway or Cloud Run - Discord bot
-  - Deployment: Via `nixpacks.toml`
-  - Runtime: Node.js 20
-  - Startup: `cd discord-bot && npm start`
+- Railway - Discord bot
+  - Deployment: Railway auto-deploys `main`; settings live in the Railway dashboard (Railpack builder, root directory `/discord-bot`, build `npm install`, restart on failure up to 10 times)
+  - Runtime: Node.js 20 or later (`engines` in `discord-bot/package.json`)
+  - Startup: `npm start`
 
 - Electron Builder - Companion app
   - Platforms: macOS (dmg, zip), Windows (NSIS, portable), Linux (AppImage)

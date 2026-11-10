@@ -264,7 +264,7 @@ function reviewEmbed(question, draft) {
     : draft.content;
   return {
     color: EMBED_COLOR_BLUE,
-    title: '🆕 New help article — pending review',
+    title: '🆕 New help article (pending review)',
     description: `**${draft.title}**\n${draft.description || ''}\n\n${preview}`,
     fields: [{ name: 'Asked in Discord', value: question.slice(0, 1024) }],
     footer: { text: `React ${REVIEW_APPROVE_EMOJI} to publish · ${REVIEW_REJECT_EMOJI} to discard` },
@@ -380,6 +380,7 @@ module.exports = {
   isHelpConfigured,
   parseStructured,
   searchArticles,
+  reviewEmbed,
   REVIEW_APPROVE_EMOJI,
   REVIEW_REJECT_EMOJI,
 };

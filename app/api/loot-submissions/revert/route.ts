@@ -5,6 +5,8 @@ import { verifyPermission } from '@/utils/server-roles'
 import { logStatusChange } from '@/utils/audit/log'
 import { revalidatePendingSubmissions } from '@/lib/cache/submission-tag'
 import { findInvalidCharacterIds } from '@/lib/loot/guild-award-refs'
+import { fetchActiveSlotLocks } from '@/lib/loot/slot-locks'
+import { findLockViolations, lockViolationMessage } from '@/domain/loot/slot-locks'
 
 // Shown to the officer when restoring a list whose character is not an
 // active member of the list's guild.
@@ -119,6 +121,21 @@ export async function POST(request: NextRequest) {
       loot_item_id: string
       item_name: string
     }>
+
+    // Award slot locks: restoring the snapshot must not move or drop an item
+    // an award has locked in place. Checked before the delete, so a refused
+    // revert changes nothing. A failed lock read reaches the catch (500).
+    const locks = await fetchActiveSlotLocks(serviceSupabase, submission_id)
+    const lockViolations = findLockViolations(
+      locks,
+      snapshotItems.map(item => ({ rank: item.rank, slot: item.slot || 1, loot_item_id: item.loot_item_id })),
+    )
+    if (lockViolations.length > 0) {
+      return NextResponse.json({
+        error: lockViolationMessage(lockViolations[0]),
+        locked_ranks: lockViolations,
+      }, { status: 409 })
+    }
 
     // Delete all current submission items
     const { error: deleteError } = await serviceSupabase

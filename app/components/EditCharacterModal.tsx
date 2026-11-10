@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useGuildContext, Character } from '@/app/contexts/GuildContext'
 import { createClient } from '@/utils/supabase/client'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Delete01Icon, Link01Icon, Logout01Icon } from '@hugeicons/core-free-icons'
+import { Delete01Icon, Download04Icon, Link01Icon, Logout01Icon } from '@hugeicons/core-free-icons'
 import {
   Modal,
   ModalHeader,
@@ -77,6 +77,7 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
   const [error, setError] = useState('')
   const [hasBattlenet, setHasBattlenet] = useState(false)
   const [showLinkPicker, setShowLinkPicker] = useState(false)
+  const [syncingGear, setSyncingGear] = useState(false)
   const [removeGuildId, setRemoveGuildId] = useState<string | null>(null)
   const [removingGuildId, setRemovingGuildId] = useState<string | null>(null)
 
@@ -175,6 +176,38 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
   const handleClassChange = (newClassId: string) => {
     setClassId(newClassId)
     setSpecId('')
+  }
+
+  // Same request as the character edit page. That page is not linked from
+  // anywhere, so this modal is the only place most players can reach the sync.
+  const handleSyncGear = async () => {
+    if (!character?.battle_net_id) return
+
+    setSyncingGear(true)
+
+    try {
+      const response = await fetch('/api/battlenet/characters/sync-gear', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          characterId: character.id,
+          version: character.game_version || 'cata-classic',
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        showNotification('error', data.error || 'Couldn\'t sync gear from Battle.net')
+        return
+      }
+
+      showNotification('success', `Gear synced. ${data.gear_synced} items updated.`)
+    } catch {
+      showNotification('error', 'Couldn\'t sync gear. Check your connection.')
+    } finally {
+      setSyncingGear(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -448,6 +481,33 @@ export function EditCharacterModal({ isOpen, onClose, character, onSuccess }: Ed
                   )
                 })}
               </div>
+            </Card>
+          )}
+
+          {/* Battle.net gear sync */}
+          {!!character.battle_net_id && (
+            <Card className="flex items-center justify-between gap-3 p-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-9 h-9 bg-brand-battlenet/10 border border-brand-battlenet/30 rounded-lg flex items-center justify-center shrink-0">
+                  <Image src="/icons/battlenet.svg" alt="Battle.net" width={20} height={20} className="w-5 h-5" style={{ filter: 'brightness(0) saturate(100%) invert(30%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(97%) contrast(101%)' }} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-13 font-medium text-foreground">Battle.net gear sync</p>
+                  <p className="text-12 text-muted-foreground">Replace equipped gear with the latest data from Battle.net</p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleSyncGear}
+                loading={syncingGear}
+                loadingText="Syncing..."
+                className="shrink-0"
+              >
+                <HugeiconsIcon icon={Download04Icon} size={14} />
+                Sync gear
+              </Button>
             </Card>
           )}
 

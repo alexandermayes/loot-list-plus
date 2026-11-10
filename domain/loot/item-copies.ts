@@ -18,6 +18,8 @@ export interface CopyLimitItem {
   name?: string | null
   item_slot?: string | null
   wowhead_id?: number | null
+  // Reaches maxCopiesForItem through copyGroupRule, which caps a need by slot.
+  kind?: string | null
 }
 
 export type SpecGroup = 'main' | 'off'

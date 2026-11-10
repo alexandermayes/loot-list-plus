@@ -774,6 +774,22 @@ export function SettingsModal({
                             </div>
                           </Card>
                         )}
+
+                        <div>
+                          <div className="w-full sm:w-1/3">
+                            <Label className="block mb-2">Lock awarded ranks</Label>
+                            <Select
+                              variant="pill"
+                              value={settings.award_slot_lock_enabled ? 'yes' : 'no'}
+                              onChange={(e) => setSettings({ ...settings, award_slot_lock_enabled: e.target.value === 'yes' })}
+                              className="bg-background-elevated"
+                            >
+                              <option value="no">No</option>
+                              <option value="yes">Yes</option>
+                            </Select>
+                          </div>
+                          <p className="text-muted-foreground text-12 mt-1">Once a raider receives an item from their approved list, the rank it sat in stays locked to that item for the rest of the tier. Officers can release a lock by removing the item.</p>
+                        </div>
                       </CardContent>
                     </Card>
 

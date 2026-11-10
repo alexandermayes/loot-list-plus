@@ -24,19 +24,16 @@ import {
 } from '@/app/hooks/use-api'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { buildSlotCoverageMap, computeUpgradeTier } from '@/domain/loot/slot-normalization'
-import { removeRankingAt } from '@/domain/loot/list-row-updates'
+import { removeRankingAt, positionKey } from '@/domain/loot/list-row-updates'
+import type { ListSlotLock } from '@/domain/loot/slot-locks'
 // preloadItemIcons is lazy-loaded (190KB module) - only imported when items are ready
 import {
-  createBracketStates,
-  findNextValidSlot,
-  findNextNoBracketSlot,
-  placeInBracket,
-  type BracketItem,
   type BracketLimits,
   DEFAULT_MAX_ALLOCATION_POINTS,
   DEFAULT_MAX_TOKENS,
   DEFAULT_MAX_CATEGORY,
 } from '@/domain/loot/bracket-validation'
+import { placeBisItems } from '@/domain/loot/bis-import-placement'
 import { resolvePhaseGroups, type PhaseGroup } from '@/domain/expansion/phase-groups'
 
 // Define raid tier progression order (Classic + TBC + WotLK)
@@ -79,6 +76,8 @@ function getRaidTierOrder(tierName: string): number {
 interface BisImportResult {
   success: boolean
   importedCount: number
+  /** Matched BiS items left unranked because officers prio'd them to other classes (#484). */
+  skippedForPrioCount?: number
   error?: string
   code?: string
 }
@@ -116,6 +115,8 @@ interface LootListDataContextType {
   initialRankings: Record<string, string>
   originalStatus: string | null
   removedItems: Array<{ loot_item_id: string; rank: number; slot: number }>
+  /** Award slot locks of the open list, keyed "{rank}-{slot}" (quick task 261028-0gx). */
+  lockedPositions: Record<string, ListSlotLock>
 }
 
 // Separate interface for actions (stable functions, rarely trigger re-renders)
@@ -260,6 +261,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         submission: LootSubmission | null
         rankings: Record<string, string>
         removedItems: Array<{ loot_item_id: string; rank: number; slot: number }>
+        locks?: ListSlotLock[]
       }) => {
         // Seed the SWR cache for each of the three hooks with the shapes
         // they expect. `revalidate: false` prevents SWR from immediately
@@ -290,6 +292,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
               submission: data.submission,
               rankings: data.rankings,
               removedItems: data.removedItems,
+              locks: data.locks ?? [],
             },
             { revalidate: false }
           )
@@ -407,6 +410,21 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     submissionDataRef.current = submissionData || null
   }, [submissionData])
+
+  // Award slot locks by position. save_submission_items refuses a save that
+  // breaks one, so the guards below keep the editor from building a list the
+  // save would bounce. The ref keeps the action callbacks stable.
+  const lockedPositions = useMemo(() => {
+    const byKey: Record<string, ListSlotLock> = {}
+    for (const lock of submissionData?.locks ?? []) {
+      byKey[positionKey(Number(lock.rank), Number(lock.slot))] = lock
+    }
+    return byKey
+  }, [submissionData?.locks])
+  const lockedPositionsRef = useRef(lockedPositions)
+  useEffect(() => {
+    lockedPositionsRef.current = lockedPositions
+  }, [lockedPositions])
 
   // Set initial phase from URL or first available (uses canonical phases from groups)
   useEffect(() => {
@@ -539,10 +557,12 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
   // Handle item selection
   const handleItemSelect = useCallback((rank: number, slot: number, itemId: string) => {
+    const key = `${rank}-${slot}`
+    if (lockedPositionsRef.current[key]) return
+
     // Mark that user made local changes - prevents sync effect from overwriting
     localChangesRef.current = true
 
-    const key = `${rank}-${slot}`
     if (itemId === '') {
       setRankings(prev => {
         const newRankings = { ...prev }
@@ -557,6 +577,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   // Move or swap a ranked item between slots. Drop on empty = move; drop on filled = swap.
   const moveRanking = useCallback((sourceKey: string, targetKey: string) => {
     if (sourceKey === targetKey) return
+    if (lockedPositionsRef.current[sourceKey] || lockedPositionsRef.current[targetKey]) return
     localChangesRef.current = true
     setRankings(prev => {
       const src = prev[sourceKey]
@@ -577,7 +598,14 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   // Clear all rankings
   const clearAllRankings = useCallback(() => {
     localChangesRef.current = true
-    setRankings({})
+    setRankings(prev => {
+      // A locked rank keeps its awarded item; everything else is cleared.
+      const kept: Record<string, string> = {}
+      for (const [key, lock] of Object.entries(lockedPositionsRef.current)) {
+        if (prev[key] === lock.loot_item_id) kept[key] = prev[key]
+      }
+      return kept
+    })
   }, [])
 
   // Import BIS items into rankings using smart bracket-aware placement
@@ -613,22 +641,6 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Build item lookup map with all fields needed for bracket validation
-      const itemsById = new Map<string, BracketItem>()
-      const validWowheadIds = new Map<string, number>() // id -> wowhead_id
-      const lcItemIds = new Set<string>() // Loot Council items (not rankable)
-      for (const item of (itemsData?.items || [])) {
-        itemsById.set(item.id, {
-          id: item.id,
-          classification: item.classification,
-          item_type: item.item_type,
-          item_slot: item.item_slot,
-          allocation_cost: item.allocation_cost,
-        })
-        validWowheadIds.set(item.id, item.wowhead_id)
-        if (item.is_loot_council) lcItemIds.add(item.id)
-      }
-
       // Build slot coverage from equipped gear for upgrade-tier sorting
       const slotCoverage = buildSlotCoverageMap(gearData?.items || [])
 
@@ -646,50 +658,15 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         return (a.slot as string).localeCompare(b.slot as string)
       })
 
-      // Initialize bracket states for smart placement
-      const bracketStates = createBracketStates(bracketLimits)
-      const noBracketPlacements = new Map<string, string>() // "rank-slot" -> itemId
-      const newRankings: Record<string, string> = {}
-      let importedCount = 0
-
-      for (const bisItem of sortedBisItems) {
-        // Skip if item not available in this tier's loot table
-        const wowheadId = validWowheadIds.get(bisItem.loot_item_id)
-        if (wowheadId === undefined) continue
-
-        // Skip items the user already owns (imported from WowSims)
-        if (equippedWowheadIds.has(wowheadId)) {
-          continue
-        }
-
-        const item = itemsById.get(bisItem.loot_item_id)
-        if (!item) continue
-
-        // Skip Loot Council items (not rankable by raiders)
-        if (lcItemIds.has(bisItem.loot_item_id)) continue
-
-        // Try to find a valid slot in brackets first
-        const bracketSlot = findNextValidSlot(item, bracketStates, enforceSlotRestrictions, itemsById, bracketLimits)
-
-        if (bracketSlot) {
-          // Place in bracket
-          const { bracketIndex, rank, slot } = bracketSlot
-          placeInBracket(item, bracketStates[bracketIndex], rank, slot)
-          newRankings[`${rank}-${slot}`] = item.id
-          importedCount++
-        } else {
-          // Brackets are full or can't fit this item - try No Bracket zone
-          const noBracketSlot = findNextNoBracketSlot(item, noBracketPlacements, itemsById)
-
-          if (noBracketSlot) {
-            const { rank, slot } = noBracketSlot
-            noBracketPlacements.set(`${rank}-${slot}`, item.id)
-            newRankings[`${rank}-${slot}`] = item.id
-            importedCount++
-          }
-          // If no slot found anywhere, skip this item
-        }
-      }
+      const { rankings: newRankings, importedCount, skippedForPrioCount } = placeBisItems({
+        orderedBisItemIds: sortedBisItems.map(b => b.loot_item_id),
+        lootItems: itemsData?.items || [],
+        lockedPositions: lockedPositionsRef.current,
+        currentRankings: rankingsRef.current,
+        equippedWowheadIds,
+        enforceSlotRestrictions,
+        bracketLimits,
+      })
 
       // Mark that user made local changes
       localChangesRef.current = true
@@ -697,7 +674,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       // Set the new rankings
       setRankings(newRankings)
 
-      return { success: true, importedCount }
+      return { success: true, importedCount, skippedForPrioCount }
     } catch (error) {
       console.error('Error importing BIS items:', error)
       return {
@@ -995,7 +972,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
       // Optimistically update the SWR submission data so the status banner updates immediately
       mutateSubmission(
-        { submission: { ...submissionData?.submission, ...upsertedSub, status: finalStatus } as LootSubmission, rankings },
+        { ...submissionData, submission: { ...submissionData?.submission, ...upsertedSub, status: finalStatus } as LootSubmission, rankings },
         false // don't revalidate — we already have the correct data
       )
 
@@ -1189,7 +1166,8 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     hasChanges,
     initialRankings,
     originalStatus,
-    removedItems: submissionData?.removedItems || []
+    removedItems: submissionData?.removedItems || [],
+    lockedPositions
   }), [
     filteredLootItems,
     submissionData?.submission,
@@ -1213,7 +1191,8 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     hasChanges,
     initialRankings,
     originalStatus,
-    submissionData?.removedItems
+    submissionData?.removedItems,
+    lockedPositions
   ])
 
   // Memoize actions value - these are stable functions that rarely change

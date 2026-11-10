@@ -24,7 +24,10 @@ interface LootItem {
   name: string
   boss_name: string
   item_slot: string
-  wowhead_id: number
+  /** Null for a need row (D-13): ItemLink renders it as a NeedLabel, not a Wowhead link. */
+  wowhead_id: number | null
+  /** 'need' for a Discovery need row; absent or 'item' for a catalog item. */
+  kind?: string | null
   raid_tier_id?: string
   is_loot_council?: boolean
   classification?: string

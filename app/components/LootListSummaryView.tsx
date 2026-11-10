@@ -25,7 +25,8 @@ export interface LootListAggregateItem {
   item_name: string
   boss_name: string
   item_slot: string
-  wowhead_id: number
+  /** Null for a need row (D-13): ItemLink renders it as a NeedLabel. */
+  wowhead_id: number | null
   classification: string
   total_lists: number
   already_awarded: number

@@ -11,6 +11,7 @@ import { trackApiError } from '@/utils/analytics/server'
 import { notifyLootAward } from '@/lib/discord-loot-announcements'
 import { recomputeBlpForItems } from '@/utils/blp/recompute'
 import { addonAwardKey } from '@/lib/loot/addon-award-insert'
+import { lockAwardedSlots } from '@/lib/loot/slot-locks'
 import { importAttendanceByTeam, findAwardRaidEvent } from '@/utils/raid-events/team-routing'
 import { linkUnlinkedAddonAwards } from '@/utils/raid-events/link-unlinked-awards'
 
@@ -24,6 +25,7 @@ vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
 vi.mock('@/utils/server-roles', () => ({ verifyOfficerPermissions: vi.fn() }))
 vi.mock('@/utils/analytics/server', () => ({ trackEvent: vi.fn(), trackApiError: vi.fn() }))
 vi.mock('@/lib/discord-loot-announcements', () => ({ notifyLootAward: vi.fn() }))
+vi.mock('@/lib/loot/slot-locks', () => ({ lockAwardedSlots: vi.fn(async () => 0) }))
 vi.mock('@/utils/blp/recompute', () => ({ recomputeBlpForEvents: vi.fn(), recomputeBlpForItems: vi.fn() }))
 // toRaidNightDate stays real: lib/addon/award-session.ts uses it.
 vi.mock('@/utils/raid-events/team-routing', async (importOriginal) => ({
@@ -761,6 +763,41 @@ describe('POST /api/addon/import-string', () => {
         expect(fixture.history).toHaveLength(2)
         expect(notifyLootAward).not.toHaveBeenCalled()
         expect(recomputeBlpForItems).not.toHaveBeenCalled()
+      })
+
+      it('slot locks: two inserted awards produce one call with both ids in input order and no reason', async () => {
+        const { client } = makeClient(bindingsFixture())
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+        const res = await POST(request({ importString: importString(payloadWith([first, second], [])) }))
+
+        expect(res.status).toBe(200)
+        expect(lockAwardedSlots).toHaveBeenCalledTimes(1)
+        expect(lockAwardedSlots).toHaveBeenCalledWith(expect.anything(), GUILD_ID, [
+          { lootHistoryId: 'hist-1', reason: null },
+          { lootHistoryId: 'hist-2', reason: null },
+        ])
+      })
+
+      it('slot locks: an already recorded award is not in the call', async () => {
+        const { client } = makeClient(bindingsFixture([stored('hist-a', 1, KEY_1)]))
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+        const res = await POST(request({ importString: importString(payloadWith([first, second], [])) }))
+        const body = await res.json()
+
+        expect(body.data.awards).toEqual({ processed: 2, errors: 0, already_recorded: 1 })
+        expect(lockAwardedSlots).toHaveBeenCalledTimes(1)
+        expect(lockAwardedSlots).toHaveBeenCalledWith(expect.anything(), GUILD_ID, [{ lootHistoryId: 'hist-2', reason: null }])
+      })
+
+      it('slot locks: a re-import of recorded awards makes no call', async () => {
+        const { client } = makeClient(bindingsFixture([stored('hist-a', 1, KEY_1), stored('hist-b', 2, KEY_2)]))
+        vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+        await POST(request({ importString: importString(payloadWith([first, second], [])) }))
+
+        expect(lockAwardedSlots).not.toHaveBeenCalled()
       })
 
       it('I3 an export holding only the second award, after the first was imported, records copy 2', async () => {

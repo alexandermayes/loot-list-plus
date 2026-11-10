@@ -6,15 +6,20 @@ import { POST } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyPermission } from '@/utils/server-roles'
-import { trackApiError } from '@/utils/analytics/server'
+import { trackApiError, trackEvent } from '@/utils/analytics/server'
 import { toDateString } from '@/utils/date'
 import { buildRemoveItemHistoryRow } from '@/lib/loot/loot-history-rows'
 import { logAudit } from '@/utils/audit/log'
+import { fetchActiveSlotLocks, releaseSlotLock } from '@/lib/loot/slot-locks'
 
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
 vi.mock('@/utils/server-roles', () => ({ verifyPermission: vi.fn() }))
 vi.mock('@/utils/audit/log', () => ({ logAudit: vi.fn() }))
+vi.mock('@/lib/loot/slot-locks', () => ({
+  fetchActiveSlotLocks: vi.fn(async () => []),
+  releaseSlotLock: vi.fn(async () => undefined),
+}))
 vi.mock('@/utils/analytics/server', () => ({ trackEvent: vi.fn(), trackApiError: vi.fn() }))
 
 const GUILD_ID = 'aaaaaaaa-0000-0000-0000-000000000001'
@@ -29,11 +34,27 @@ const EXP_ID = 'aaaaaaaa-0000-0000-0000-000000000009'
 const TIER_ID_2 = 'aaaaaaaa-0000-0000-0000-00000000000a'
 const EXP_ID_2 = 'aaaaaaaa-0000-0000-0000-00000000000b'
 const FOREIGN_ITEM_ID = 'aaaaaaaa-0000-0000-0000-00000000000c'
+const NEED_ID = 'aaaaaaaa-0000-0000-0000-00000000000d'
+
+// A need row (D-22 holds ranking needs server-side, so no real list holds one
+// in Phase 3; this fixture stands past the hold).
+const NEED_ROW = {
+  id: NEED_ID,
+  name: 'Trinket, Healing',
+  kind: 'need',
+  need_key: 'trinket.healing',
+  wowhead_id: null,
+  boss_name: 'Needs',
+  item_slot: 'Trinket',
+  classification: 'Reserved',
+  allocation_cost: 3,
+  raid_tier_id: TIER_ID,
+}
 
 type ExpansionRow = { id: string; guild_id: string }
 type TierRow = { id: string; expansion_id: string }
 type ItemRow = { id: string; raid_tier_id: string }
-type ItemDetail = { id: string; raid_tier_id: string; name: string; wowhead_id: number }
+type ItemDetail = { id: string; raid_tier_id: string; name: string; wowhead_id: number | null }
 type SubmissionItemRow = { id: string; rank: number; slot: string; loot_item_id: string; removed_at: string | null }
 type Call = { table: string; filters: Array<[string, unknown]>; insertPayload?: Record<string, unknown>; updatePayload?: Record<string, unknown> }
 
@@ -189,6 +210,39 @@ describe('POST /api/loot-submissions/remove-item', () => {
     expect(insert?.insertPayload?.expansion_id).toBe(EXP_ID)
   })
 
+  it('need row (past the D-22 hold): already_obtained writes a history row keyed by the need row id with no awarded_item_id (D-15)', async () => {
+    const fixture = baseFixture()
+    fixture.itemRows = [{ id: 'row-need', rank: 1, slot: 'main-hand', loot_item_id: NEED_ROW.id, removed_at: null }]
+    fixture.items = [{ id: NEED_ROW.id, raid_tier_id: NEED_ROW.raid_tier_id }]
+    fixture.itemDetails = [{ id: NEED_ROW.id, raid_tier_id: NEED_ROW.raid_tier_id, name: NEED_ROW.name, wowhead_id: NEED_ROW.wowhead_id }]
+    const { client, calls } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({
+      guild_id: GUILD_ID,
+      submission_id: SUBMISSION_ID,
+      loot_item_id: NEED_ROW.id,
+      already_obtained: true,
+    }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.history_recorded).toBe(true)
+    expect(submissionItemUpdates(calls)).toHaveLength(1)
+
+    const insert = lootHistoryInserts(calls)[0]
+    expect(insert?.insertPayload).toEqual(expect.objectContaining({
+      guild_id: GUILD_ID,
+      character_id: CHARACTER_ID,
+      loot_item_id: NEED_ROW.id,
+      raid_tier_id: NEED_ROW.raid_tier_id,
+      expansion_id: EXP_ID,
+    }))
+    // A need award carries no concrete item: the copy is named at award time
+    // (D-15), so the removal path must not invent one.
+    expect(insert?.insertPayload).not.toHaveProperty('awarded_item_id')
+  })
+
   it("GH #297: the item's tier under a second guild expansion sets expansion_id from the item's own tier, not the submission's", async () => {
     const fixture = baseFixture()
     fixture.tiers = [{ id: TIER_ID, expansion_id: EXP_ID }, { id: TIER_ID_2, expansion_id: EXP_ID_2 }]
@@ -248,6 +302,21 @@ describe('POST /api/loot-submissions/remove-item', () => {
     expect('history_recorded' in body).toBe(false)
     expect(submissionItemUpdates(calls)).toHaveLength(1)
     expect(lootHistoryInserts(calls)).toHaveLength(0)
+
+    // Hard Constraint 3: PostHog gets ids and the item name, never the raider's
+    // name. The fixture character is 'Thrall', so a leak would show here.
+    const removed = vi.mocked(trackEvent).mock.calls.filter(([arg]) => arg.event === 'loot_item_removed_from_list')
+    expect(removed).toHaveLength(1)
+    expect(removed[0][0].properties).toEqual({
+      guild_id: GUILD_ID,
+      submission_id: SUBMISSION_ID,
+      loot_item_id: ITEM_ID,
+      item_name: 'Sulfuras',
+      already_obtained: false,
+      removed_by: 'owner',
+    })
+    // The audit record is not analytics and keeps the character name.
+    expect(vi.mocked(logAudit).mock.calls[0][0].oldData).toMatchObject({ character_name: 'Thrall' })
   })
 
   it('restore works as today, and every loot_items query carries a raid_tier_id filter (no unscoped lookup)', async () => {
@@ -491,5 +560,111 @@ describe('POST /api/loot-submissions/remove-item', () => {
       expect(body.error).toBe('Couldn\'t restore item. Try again.')
       expect(logAudit).not.toHaveBeenCalled()
     })
+  })
+})
+
+describe('POST /api/loot-submissions/remove-item award slot locks (quick task 261028-0gx)', () => {
+  const LOCK = {
+    id: 'lock-1',
+    rank: 1,
+    slot: 1,
+    loot_item_id: ITEM_ID,
+    locked_at: '2026-10-24T12:00:00Z',
+    item_name: 'Sulfuras',
+  }
+  const lockFixture = (): Fixture => ({
+    ...baseFixture(),
+    itemRows: [{ id: 'row-1', rank: 1, slot: '1', loot_item_id: ITEM_ID, removed_at: null }],
+  })
+  const lockBody = { guild_id: GUILD_ID, submission_id: SUBMISSION_ID, loot_item_id: ITEM_ID, rank: 1, slot: 1 }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: OWNER_USER_ID }, error: null } as never)
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: true } as never)
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([LOCK])
+    vi.mocked(releaseSlotLock).mockResolvedValue(undefined)
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+
+  it('refuses an owner without manage_submissions with 403 and the lock message, changing nothing', async () => {
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: false } as never)
+    const { client, calls } = makeClient(lockFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request(lockBody))
+    const body = await res.json()
+
+    expect(res.status).toBe(403)
+    expect(body.error).toBe('Rank 1 is locked to Sulfuras')
+    expect(submissionItemUpdates(calls)).toHaveLength(0)
+    expect(releaseSlotLock).not.toHaveBeenCalled()
+  })
+
+  it('lets an officer remove a locked row, releasing the lock before the soft delete and auditing it', async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: OFFICER_USER_ID }, error: null } as never)
+    const { client, calls } = makeClient(lockFixture())
+    let callsWhenReleased = -1
+    vi.mocked(releaseSlotLock).mockImplementation(async () => {
+      callsWhenReleased = calls.length
+    })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request(lockBody))
+
+    expect(res.status).toBe(200)
+    expect(releaseSlotLock).toHaveBeenCalledWith(client, 'lock-1', OFFICER_USER_ID, 'removed_by_officer')
+    // The soft delete is a later call than the one recorded at release time.
+    const updateIndex = calls.findIndex(c => c.table === 'loot_submission_items' && c.updatePayload)
+    expect(callsWhenReleased).toBeGreaterThan(-1)
+    expect(callsWhenReleased).toBeLessThanOrEqual(updateIndex)
+    expect(vi.mocked(logAudit).mock.calls[0][0].oldData).toMatchObject({ lock_released: true })
+  })
+
+  it('treats an owner who holds manage_submissions as an officer', async () => {
+    const { client, calls } = makeClient(lockFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request(lockBody))
+
+    expect(res.status).toBe(200)
+    expect(verifyPermission).toHaveBeenCalledWith(client, OWNER_USER_ID, GUILD_ID, 'manage_submissions')
+    expect(releaseSlotLock).toHaveBeenCalledWith(client, 'lock-1', OWNER_USER_ID, 'removed_by_officer')
+    expect(submissionItemUpdates(calls)).toHaveLength(1)
+  })
+
+  it('never releases for an unlocked row and audits lock_released false', async () => {
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([])
+    const { client } = makeClient(lockFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request(lockBody))
+
+    expect(res.status).toBe(200)
+    expect(releaseSlotLock).not.toHaveBeenCalled()
+    expect(vi.mocked(logAudit).mock.calls[0][0].oldData).toMatchObject({ lock_released: false })
+  })
+
+  it('ignores a lock held at another position of the same item', async () => {
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([{ ...LOCK, rank: 9 }])
+    const { client } = makeClient(lockFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request(lockBody))
+
+    expect(res.status).toBe(200)
+    expect(releaseSlotLock).not.toHaveBeenCalled()
+  })
+
+  it('returns 500 with no row update when the release fails', async () => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: OFFICER_USER_ID }, error: null } as never)
+    vi.mocked(releaseSlotLock).mockRejectedValue(new Error('Failed to release loot list slot lock'))
+    const { client, calls } = makeClient(lockFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request(lockBody))
+
+    expect(res.status).toBe(500)
+    expect(submissionItemUpdates(calls)).toHaveLength(0)
   })
 })

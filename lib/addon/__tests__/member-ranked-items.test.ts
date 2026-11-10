@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, afterEach } from 'vitest'
+import { createNeedSkipScope } from '@/lib/loot/need-skip'
 import { buildMemberRankedItems, fetchReceivedCounts, inExportExpansion, type RankedSubmission } from '../member-ranked-items'
 
 type Item = NonNullable<RankedSubmission['loot_submission_items']>[number]
@@ -15,6 +16,54 @@ const item = (wowheadId: number | null, rank: number, extra: Partial<Item> = {})
 const sub = (characterId: string, items: Item[] | null): RankedSubmission => ({
   character_id: characterId,
   loot_submission_items: items,
+})
+
+describe('buildMemberRankedItems need rows (D-14, D-16)', () => {
+  const needEntry = (rank: number): Item => ({
+    rank,
+    slot: 1,
+    removed_at: null,
+    loot_items: { wowhead_id: null, kind: 'need' },
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('skips a need entry through the kind branch and counts it on the scope', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const scope = createNeedSkipScope('addon-guild-data')
+    const result = buildMemberRankedItems([sub('c1', [item(20928, 50), needEntry(40), needEntry(10)])], null, scope)
+    expect(result).toEqual({ c1: [{ wowhead_id: 20928, rank: 50 }] })
+    expect(scope.skipped).toBe(2)
+    expect(warn).toHaveBeenCalledTimes(1)
+  })
+
+  it('skips a need entry without a scope and does not throw', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(buildMemberRankedItems([sub('c1', [needEntry(40), item(20928, 50)])], null)).toEqual({
+      c1: [{ wowhead_id: 20928, rank: 50 }],
+    })
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it('reads the kind from an embedded array too, and an item with kind item is kept', () => {
+    const scope = createNeedSkipScope('addon-export-string')
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const arrayNeed: Item = { rank: 9, slot: 1, removed_at: null, loot_items: [{ wowhead_id: null, kind: 'need' }] }
+    const kindedItem: Item = { rank: 8, slot: 1, removed_at: null, loot_items: { wowhead_id: 16921, kind: 'item' } }
+    expect(buildMemberRankedItems([sub('c1', [arrayNeed, kindedItem])], null, scope)).toEqual({
+      c1: [{ wowhead_id: 16921, rank: 8 }],
+    })
+    expect(scope.skipped).toBe(1)
+  })
+
+  it('a removed need entry is not counted as a skipped need', () => {
+    const scope = createNeedSkipScope('addon-guild-data')
+    const removed = { ...needEntry(40), removed_at: '2026-09-21T10:00:00Z' }
+    buildMemberRankedItems([sub('c1', [removed, item(20928, 50)])], null, scope)
+    expect(scope.skipped).toBe(0)
+  })
 })
 
 describe('buildMemberRankedItems', () => {

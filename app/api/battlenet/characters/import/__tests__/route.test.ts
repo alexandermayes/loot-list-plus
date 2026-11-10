@@ -6,22 +6,31 @@ import { POST } from '../route'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getBattlenetAccount, battlenetFetch, getWowProfileNamespaces } from '@/lib/battlenet'
+import { resolveBaseItemLevels } from '@/lib/battlenet-item-levels'
 import { getDefaultRoleName } from '@/domain/guild/default-role'
 import { resolveGuildJoinAccess, consumeGuildJoinGrant, type GuildJoinAccess } from '@/domain/guild/join-grants'
 import type { SiblingMembership } from '@/domain/guild/join-membership'
 import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
+import { trackEvent } from '@/utils/analytics/server'
 
 vi.mock('@/utils/supabase/server', () => ({
   createClient: vi.fn(),
   getAuthenticatedUser: vi.fn(),
 }))
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
-vi.mock('@/lib/battlenet', () => ({
-  getBattlenetAccount: vi.fn(),
-  battlenetFetch: vi.fn(),
-  getWowProfileNamespaces: vi.fn(),
-  SLOT_MAPPING: {},
-}))
+vi.mock('@/lib/battlenet', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/battlenet')>()
+  return {
+    getBattlenetAccount: vi.fn(),
+    battlenetFetch: vi.fn(),
+    getWowProfileNamespaces: vi.fn(),
+    // Real slot map and item level reader, so the gear case proves what the
+    // route stores rather than a stub of the reader.
+    SLOT_MAPPING: actual.SLOT_MAPPING,
+    readEquippedItemLevel: actual.readEquippedItemLevel,
+  }
+})
+vi.mock('@/lib/battlenet-item-levels', () => ({ resolveBaseItemLevels: vi.fn() }))
 vi.mock('@/lib/cache/user-bundle', () => ({ revalidateUserBundle: vi.fn() }))
 vi.mock('@/utils/cache', () => ({
   invalidateCache: vi.fn(),
@@ -136,7 +145,8 @@ describe('POST /api/battlenet/characters/import applies the guild rule before cr
     events = []
     vi.clearAllMocks()
     vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: USER }, error: null } as never)
-    vi.mocked(getBattlenetAccount).mockResolvedValue({ region: 'us' } as never)
+    vi.mocked(getBattlenetAccount).mockResolvedValue({ region: 'us', access_token: 'test-token' } as never)
+    vi.mocked(resolveBaseItemLevels).mockResolvedValue(new Map())
     vi.mocked(getWowProfileNamespaces).mockReturnValue(['profile-classic1x-us'])
     vi.mocked(battlenetFetch).mockImplementation(async () => new Response(JSON.stringify(PROFILE), { status: 200 }))
     vi.mocked(getDefaultRoleName).mockResolvedValue('Member')
@@ -188,6 +198,24 @@ describe('POST /api/battlenet/characters/import applies the guild rule before cr
     expect(consumeGuildJoinGrant).toHaveBeenCalledWith(service.client, { userId: USER, guildId: GUILD })
     expect(events).toEqual(['characters:insert', 'character_guild_memberships:upsert', 'consume'])
     expect(evaluateGuildFunnel).toHaveBeenCalledWith(service.client, GUILD)
+  })
+
+  // Hard Constraint 3: PostHog gets ids and counts only. The imported
+  // character is named 'Thrall' (PROFILE), so a name leak would show here.
+  it('sends character_imported with ids and counts only, no character name', async () => {
+    setup()
+
+    const res = await POST(request({ guildId: GUILD }))
+
+    expect(res.status).toBe(201)
+    const imported = vi.mocked(trackEvent).mock.calls.filter(([arg]) => arg.event === 'character_imported')
+    expect(imported).toHaveLength(1)
+    expect(imported[0][0].properties).toEqual({
+      character_id: CHARACTER,
+      source: 'battlenet',
+      gear_count: 0,
+      version: 'classic-era',
+    })
   })
 
   it('still returns 201 and consumes nothing when the membership upsert fails', async () => {
@@ -266,6 +294,51 @@ describe('POST /api/battlenet/characters/import applies the guild rule before cr
       trial_started_at: '2026-09-01T00:00:00.000Z',
     })
     expect(service.calls.some(c => c.table === 'guild_settings')).toBe(false)
+  })
+
+  it('stores the Game Data base level for items the profile gives no level, and null when neither resolves', async () => {
+    const equipment = {
+      equipped_items: [
+        { slot: { type: 'HEAD', name: 'Head' }, item: { id: 101, name: 'Helm' } },
+        { slot: { type: 'CHEST', name: 'Chest' }, item: { id: 102, name: 'Chestpiece' } },
+      ],
+    }
+    vi.mocked(battlenetFetch).mockImplementation(async (_account, path) =>
+      new Response(JSON.stringify(path.endsWith('/equipment') ? equipment : PROFILE), { status: 200 }))
+    vi.mocked(resolveBaseItemLevels).mockResolvedValue(new Map([[101, 489]]))
+    const { service } = setup()
+
+    const res = await POST(request({ guildId: GUILD, importGear: true }))
+
+    expect(res.status).toBe(201)
+    const insert = service.writes().find(c => c.table === 'character_equipped_items')
+    expect(insert?.op).toBe('insert')
+    expect(insert?.payload).toEqual([
+      expect.objectContaining({ character_id: CHARACTER, slot: 'Head', wowhead_id: 101, item_level: 489 }),
+      expect.objectContaining({ character_id: CHARACTER, slot: 'Chest', wowhead_id: 102, item_level: null }),
+    ])
+    expect(resolveBaseItemLevels).toHaveBeenCalledTimes(1)
+    expect(resolveBaseItemLevels).toHaveBeenCalledWith(service.client, 'us', 'test-token', [101, 102])
+  })
+
+  it('stores the profile level over the base level when the response carries one', async () => {
+    const equipment = {
+      equipped_items: [
+        { slot: { type: 'HEAD', name: 'Head' }, item: { id: 101, name: 'Helm' }, level: { value: 496, display_string: 'Item Level 496' } },
+      ],
+    }
+    vi.mocked(battlenetFetch).mockImplementation(async (_account, path) =>
+      new Response(JSON.stringify(path.endsWith('/equipment') ? equipment : PROFILE), { status: 200 }))
+    vi.mocked(resolveBaseItemLevels).mockResolvedValue(new Map([[101, 489]]))
+    const { service } = setup()
+
+    const res = await POST(request({ guildId: GUILD, importGear: true }))
+
+    expect(res.status).toBe(201)
+    const insert = service.writes().find(c => c.table === 'character_equipped_items')
+    expect(insert?.payload).toEqual([
+      expect.objectContaining({ slot: 'Head', wowhead_id: 101, item_level: 496 }),
+    ])
   })
 
   it.each([

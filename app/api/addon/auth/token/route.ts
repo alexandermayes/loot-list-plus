@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServiceRoleClient } from '@/utils/supabase/service-role'
+import { createTypedServiceRoleClient } from '@/utils/supabase/typed-service-role'
 import { verifyOfficerPermissions } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
 import { consumeAuthCode, isValidCodeVerifier } from '@/lib/addon/companion-auth'
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'invalid_request' }, { status: 400 })
     }
 
-    const service = createServiceRoleClient()
+    const service = createTypedServiceRoleClient()
 
     const consumed = await consumeAuthCode(service, {
       code,

@@ -6,6 +6,7 @@ import { BossSection, type ItemRankings, type PlayerRanking, type LootItem } fro
 import { RaidTierHeader } from './RaidTierHeader'
 import { normalizeBossName } from '@/utils/bossOrder'
 import { getBossOrder } from '@/utils/bossOrder'
+import type { GameVersion } from '@/domain/expansion/game'
 
 interface RaidTier {
   id: string
@@ -38,6 +39,7 @@ interface VirtualizedMasterSheetProps {
   onCompare?: (itemName: string, userRanking: PlayerRanking, winnerRanking: PlayerRanking) => void
   onItemClick?: (item: LootItem, rankings: PlayerRanking[]) => void
   maxRankingsCount?: number
+  game: GameVersion
 }
 
 /**
@@ -56,6 +58,7 @@ export function VirtualizedMasterSheet({
   onCompare,
   onItemClick,
   maxRankingsCount,
+  game,
 }: VirtualizedMasterSheetProps) {
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -147,6 +150,7 @@ export function VirtualizedMasterSheet({
               itemCount={item.itemCount}
               isCollapsed={collapsedRaidTiers.has(item.tier.id)}
               onToggle={onToggleRaidTierCollapse}
+              game={game}
             />
           ) : (
             <BossSection
@@ -205,6 +209,7 @@ export function VirtualizedMasterSheet({
                   itemCount={item.itemCount}
                   isCollapsed={collapsedRaidTiers.has(item.tier.id)}
                   onToggle={onToggleRaidTierCollapse}
+                  game={game}
                 />
               ) : (
                 <BossSection

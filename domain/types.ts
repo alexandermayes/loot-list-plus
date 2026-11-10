@@ -64,6 +64,13 @@ export interface ScoringConfig {
   donation_rolling_weeks: number | null
   /** Anchor date for hard-reset mode (YYYY-MM-DD). Null = no reset yet, include all. */
   donation_reset_at: string | null
+  /**
+   * Loot list rule, not a scoring input: when true, an item awarded from a
+   * raider's approved list locks the rank it held for the rest of the tier.
+   * Lives here because ScoringConfig mirrors the guild_settings row; the
+   * scoring engine never reads it.
+   */
+  award_slot_lock_enabled?: boolean
 }
 
 /** Backward-compatible alias */

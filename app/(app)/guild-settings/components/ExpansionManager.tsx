@@ -775,7 +775,7 @@ export default function ExpansionManager() {
                                   style={{ backgroundColor: `${visuals.borderColor}40` }}
                                 >
                                   <img
-                                    src={getRaidIcon(raid.name)}
+                                    src={getRaidIcon(raid.name, getGuildGame(activeGuild))}
                                     alt={raid.name}
                                     className="w-4 h-4 rounded"
                                   />

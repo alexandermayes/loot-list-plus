@@ -19,6 +19,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { discordFetch } from '@/lib/discord'
+import { wowheadItemUrl } from '@/domain/expansion/wowhead'
 
 export interface LootAward {
   itemId: string // loot_items.id
@@ -29,9 +30,13 @@ export interface LootAward {
 const EMBED_COLOR_ORANGE = 0xff8000
 const EMBED_DESCRIPTION_LIMIT = 4096
 
-function wowheadLink(itemName: string, wowheadId: number | null): string {
+function wowheadLink(
+  itemName: string,
+  wowheadId: number | null,
+  expansionName: string | null
+): string {
   if (!wowheadId) return `**${itemName}**`
-  return `[**${itemName}**](https://www.wowhead.com/item=${wowheadId})`
+  return `[**${itemName}**](${wowheadItemUrl(expansionName, wowheadId)})`
 }
 
 function clampDescription(s: string): string {
@@ -55,7 +60,11 @@ export async function notifyLootAward(
 
   try {
     const [{ data: guild }, { data: settings }] = await Promise.all([
-      supabase.from('guilds').select('name, discord_server_id').eq('id', guildId).single(),
+      supabase
+        .from('guilds')
+        .select('name, discord_server_id, active_expansion_id')
+        .eq('id', guildId)
+        .single(),
       supabase
         .from('guild_settings')
         .select('raid_summary_channel_id, loot_announcements_enabled')
@@ -66,6 +75,26 @@ export async function notifyLootAward(
     if (!guild?.discord_server_id) return false
     if (!settings?.raid_summary_channel_id) return false
     if (settings.loot_announcements_enabled === false) return false
+
+    // Resolved in its own try/catch: a failed lookup must never abort the post.
+    // Null falls back to the existing (non-Forever) link.
+    let expansionName: string | null = null
+    if (guild.active_expansion_id) {
+      try {
+        const { data: expansion, error: expansionError } = await supabase
+          .from('expansions')
+          .select('name')
+          .eq('id', guild.active_expansion_id)
+          .maybeSingle()
+        if (expansionError) {
+          console.error('[loot-announce] expansion lookup failed', expansionError)
+        } else {
+          expansionName = (expansion?.name as string | undefined) ?? null
+        }
+      } catch (err) {
+        console.error('[loot-announce] expansion lookup failed', err)
+      }
+    }
 
     const itemIds = [...new Set(awards.map((a) => a.itemId))]
     const { data: items } = await supabase
@@ -78,7 +107,7 @@ export async function notifyLootAward(
 
     const lines = awards.map((a) => {
       const item = itemById.get(a.itemId)
-      const itemText = item ? wowheadLink(item.name, item.wowheadId) : '*Unknown item*'
+      const itemText = item ? wowheadLink(item.name, item.wowheadId, expansionName) : '*Unknown item*'
       return `🏆 ${itemText} → **${a.characterName}**`
     })
 

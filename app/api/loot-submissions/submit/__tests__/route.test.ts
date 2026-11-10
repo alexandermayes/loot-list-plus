@@ -1,16 +1,27 @@
 // @vitest-environment node
 // jsdom (the global vitest.config.ts environment) does not provide the web
 // Response/Request globals that next/server relies on.
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { POST } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
+import { isHeldNeedRanking, NEED_RANKING_HOLD_ERROR } from '@/domain/loot/need-ranking-hold'
+import { fetchActiveSlotLocks } from '@/lib/loot/slot-locks'
+import { fetchListPrioItems } from '@/lib/loot/prio-check'
 
+// The hold is a real predicate by default; a describe can open it (the Phase 4
+// state) and the beforeEach below restores it for every other test.
+vi.mock('@/domain/loot/need-ranking-hold', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/domain/loot/need-ranking-hold')>()
+  return { ...actual, isHeldNeedRanking: vi.fn(actual.isHeldNeedRanking) }
+})
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
 vi.mock('@/utils/audit/log', () => ({ logStatusChange: vi.fn() }))
 vi.mock('@/utils/analytics/server', () => ({ trackEvent: vi.fn(), setUserMilestone: vi.fn() }))
+vi.mock('@/lib/loot/slot-locks', () => ({ fetchActiveSlotLocks: vi.fn(async () => []) }))
 vi.mock('@/lib/cache/submission-tag', () => ({ revalidatePendingSubmissions: vi.fn() }))
+vi.mock('@/lib/loot/prio-check', () => ({ fetchListPrioItems: vi.fn(async () => []) }))
 
 const GUILD_ID = 'bbbbbbbb-0000-0000-0000-000000000001'
 const SUBMISSION_ID = 'bbbbbbbb-0000-0000-0000-000000000002'
@@ -45,6 +56,7 @@ interface SubmissionItem {
     item_slot: string | null
     wowhead_id: number | null
     allocation_cost: number | null
+    kind?: string | null
     // PostgREST can return a to-one embed as an object or a one-element array.
     raid_tier?: RaidTierEmbed | RaidTierEmbed[] | null
   }
@@ -316,5 +328,263 @@ describe('POST /api/loot-submissions/submit', () => {
       expect(itemCalls).toHaveLength(1)
       expect(itemCalls[0].selectArg).toContain('raid_tier:raid_tiers(is_guild_active)')
     })
+  })
+
+  // regression for D-22: a need row cannot be ranked before Phase 4
+  describe('ranking needs is held (D-22)', () => {
+    const NEED_IDS = ['bbbbbbbb-0000-0000-0000-0000000000e1', 'bbbbbbbb-0000-0000-0000-0000000000e2']
+
+    function needRow(rank: number, idx: number, over: Partial<SubmissionItem['loot_item']> = {}): SubmissionItem {
+      return {
+        rank,
+        slot: 1,
+        loot_item_id: NEED_IDS[idx],
+        loot_item: {
+          id: NEED_IDS[idx],
+          name: 'Trinket',
+          classification: 'Reserved',
+          item_type: null,
+          item_slot: 'Trinket',
+          wowhead_id: null,
+          allocation_cost: 3,
+          kind: 'need',
+          ...over,
+        },
+      }
+    }
+
+    it('returns 422 with the hold error and writes nothing when a live row is a need', async () => {
+      const fixture = { ...baseFixture(), items: [bindings(50, 0), needRow(40, 0)] }
+      const { res, body, calls } = await run(fixture)
+      expect(res.status).toBe(422)
+      expect(body).toEqual({ error: NEED_RANKING_HOLD_ERROR })
+      expect(submissionUpdates(calls)).toHaveLength(0)
+    })
+
+    it('holds a need in a tier the guild turned off, because the hold reads every loaded row', async () => {
+      const row = withTier(needRow(40, 0), { is_guild_active: false })
+      const { res, body, calls } = await run({ ...baseFixture(), items: [row] })
+      expect(res.status).toBe(422)
+      expect(body).toEqual({ error: NEED_RANKING_HOLD_ERROR })
+      expect(submissionUpdates(calls)).toHaveLength(0)
+    })
+
+    it('submits a list of item rows exactly as before', async () => {
+      const { res, calls } = await run({ ...baseFixture(), items: [bindings(50, 0), bindings(30, 1)] })
+      expect(res.status).toBe(200)
+      expect(submissionUpdates(calls).map(u => u.updatePayload)).toEqual([
+        { resubmission_count: 2 },
+        expect.objectContaining({ status: 'pending' }),
+      ])
+    })
+
+    it('reads kind through the existing loot_submission_items select', async () => {
+      const { calls } = await run({ ...baseFixture(), items: [bindings(50, 0)] })
+      const itemCalls = calls.filter(c => c.table === 'loot_submission_items')
+      expect(itemCalls[0].selectArg).toMatch(/loot_item:loot_items\([^)]*\bkind\b/)
+    })
+
+    describe('with the hold lifted (Phase 4 state)', () => {
+      beforeEach(() => {
+        vi.mocked(isHeldNeedRanking).mockReturnValue(false)
+      })
+
+      // Put the real predicate back so the hold is on for every other test.
+      afterEach(async () => {
+        const actual = await vi.importActual<typeof import('@/domain/loot/need-ranking-hold')>('@/domain/loot/need-ranking-hold')
+        vi.mocked(isHeldNeedRanking).mockImplementation(actual.isHeldNeedRanking)
+      })
+
+      const statusUpdates = (calls: Call[]) =>
+        submissionUpdates(calls).filter(u => u.updatePayload && 'status' in u.updatePayload)
+
+      // A Big need (cost 3, Reserved) and a Standard need (cost 1) in one
+      // bracket; as item rows the same costs break the allocation limit.
+      it('submits a Big need and a Standard need in one bracket with no bracket violation', async () => {
+        const items = [
+          needRow(50, 0, { item_slot: 'Trinket', classification: 'Reserved', allocation_cost: 3 }),
+          needRow(49, 1, { item_slot: 'Chest', classification: 'Unlimited', allocation_cost: 1 }),
+        ]
+        const { res, calls } = await run({ ...baseFixture(), items })
+        expect(res.status).toBe(200)
+        expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+      })
+
+      it('still answers allocation_limit for the same costs on item rows', async () => {
+        const items = [
+          needRow(50, 0, { kind: undefined, wowhead_id: 1001, item_slot: 'Trinket', classification: 'Reserved', allocation_cost: 3 }),
+          needRow(49, 1, { kind: undefined, wowhead_id: 1002, item_slot: 'Chest', classification: 'Unlimited', allocation_cost: 1 }),
+        ]
+        const { res, body, calls } = await run({ ...baseFixture(), items })
+        expect(res.status).toBe(422)
+        expect(body.violations.map((v: { rule: string }) => v.rule)).toContain('allocation_limit')
+        expect(statusUpdates(calls)).toHaveLength(0)
+      })
+
+      it('answers item_copy_limit for a third copy of a Ring need and accepts two', async () => {
+        const ring = (rank: number) => needRow(rank, 0, { name: 'Ring', item_slot: 'Finger', classification: 'Unlimited', allocation_cost: 1 })
+        const over = await run({ ...baseFixture(), items: [ring(50), ring(40), ring(30)] })
+        expect(over.res.status).toBe(422)
+        expect(over.body.violations.map((v: { rule: string }) => v.rule)).toContain('item_copy_limit')
+        expect(statusUpdates(over.calls)).toHaveLength(0)
+
+        const ok = await run({ ...baseFixture(), items: [ring(50), ring(40)] })
+        expect(ok.res.status).toBe(200)
+        expect(statusUpdates(ok.calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+      })
+
+      it('answers item_copy_limit for a second copy of a Main hand weapon need', async () => {
+        const mh = (rank: number) => needRow(rank, 1, { name: 'Main hand weapon', item_slot: 'Main Hand', classification: 'Reserved', allocation_cost: 3 })
+        const { res, body, calls } = await run({ ...baseFixture(), items: [mh(50), mh(40)] })
+        expect(res.status).toBe(422)
+        expect(body.violations.map((v: { rule: string }) => v.rule)).toContain('item_copy_limit')
+        expect(statusUpdates(calls)).toHaveLength(0)
+      })
+    })
+  })
+})
+
+describe('POST /api/loot-submissions/submit award slot locks (quick task 261028-0gx)', () => {
+  const LOCKED_ID = 'bbbbbbbb-0000-0000-0000-0000000000c1'
+  const lock = {
+    id: 'lock-1',
+    rank: 50,
+    slot: 1,
+    loot_item_id: LOCKED_ID,
+    locked_at: '2026-10-24T12:00:00Z',
+    item_name: 'Locked Item',
+  }
+  const lockedRow = (rank: number): SubmissionItem => tokenRow(rank, LOCKED_ID, 'Locked Item', 30001)
+  const statusUpdates = (calls: Call[]) => submissionUpdates(calls).filter(c => c.updatePayload && 'status' in c.updatePayload)
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([])
+  })
+
+  it('returns 422 with the lock message when the saved rows moved the locked item', async () => {
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([lock])
+    const { res, body, calls } = await run({ ...baseFixture(), items: [lockedRow(48)] })
+
+    expect(res.status).toBe(422)
+    expect(body.error).toBe('Rank 50 is locked to Locked Item')
+    expect(body.locked_ranks).toEqual([{ rank: 50, slot: 1, item_name: 'Locked Item' }])
+    expect(body).not.toHaveProperty('violations')
+    expect(statusUpdates(calls)).toHaveLength(0)
+    expect(fetchActiveSlotLocks).toHaveBeenCalledWith(expect.anything(), SUBMISSION_ID)
+  })
+
+  it('returns 200 when the saved rows keep the locked item at its rank and slot', async () => {
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([lock])
+    const { res, calls } = await run({ ...baseFixture(), items: [lockedRow(50)] })
+
+    expect(res.status).toBe(200)
+    expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+  })
+
+  it('returns 500 when the lock read fails', async () => {
+    vi.mocked(fetchActiveSlotLocks).mockRejectedValue(new Error('Failed to read loot list slot locks'))
+    const { res, calls } = await run({ ...baseFixture(), items: [lockedRow(50)] })
+
+    expect(res.status).toBe(500)
+    expect(statusUpdates(calls)).toHaveLength(0)
+  })
+})
+
+describe('POST /api/loot-submissions/submit officer prio (#484)', () => {
+  const OTHER_ID = 'bbbbbbbb-0000-0000-0000-0000000000e1'
+  const OPEN_ID = 'bbbbbbbb-0000-0000-0000-0000000000e2'
+  const LC_ID = 'bbbbbbbb-0000-0000-0000-0000000000e3'
+  // The character's item set with the flags lib/loot-items-query.ts computes.
+  const prioItems = [
+    { id: OTHER_ID, is_allocated: true, character_spec_type: null, has_primary_only: false },
+    { id: OPEN_ID, is_allocated: false, character_spec_type: null },
+    { id: LC_ID, is_loot_council: true, is_allocated: true, character_spec_type: null },
+  ]
+  // A distinct wowhead_id per row keeps the copy limit (counted per real
+  // item) out of these cases, so only prio decides the outcome.
+  const row = (rank: number, slot: number, id: string, name: string): SubmissionItem => ({
+    rank,
+    slot,
+    loot_item_id: id,
+    loot_item: { id, name, classification: 'Unlimited', item_type: null, item_slot: 'Neck', wowhead_id: 40000 + rank * 10 + slot, allocation_cost: 0 },
+  })
+  const statusUpdates = (calls: Call[]) => submissionUpdates(calls).filter(c => c.updatePayload && 'status' in c.updatePayload)
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([])
+    vi.mocked(fetchListPrioItems).mockResolvedValue(prioItems)
+  })
+
+  // regression for #484: a list ranked before an officer moved prio to other
+  // classes used to submit with the item still in Brackets 1-4.
+  it('returns 400 with PRIO_VIOLATION naming each out-of-prio item and rank, and leaves the status alone', async () => {
+    const { res, body, calls } = await run({
+      ...baseFixture(),
+      items: [row(48, 1, OTHER_ID, 'Test Pendant'), row(30, 2, OTHER_ID, 'Test Pendant'), row(10, 1, OTHER_ID, 'Test Pendant')],
+    })
+
+    expect(res.status).toBe(400)
+    expect(body.code).toBe('PRIO_VIOLATION')
+    expect(body.error).toBe(
+      'Officers set prio for these items to other classes: Test Pendant (rank 48), Test Pendant (rank 30). Move them to Off-spec or remove them, then submit again.',
+    )
+    expect(body.prio_violations).toEqual([
+      { loot_item_id: OTHER_ID, rank: 48, slot: 1, zone: 'bracket', item_name: 'Test Pendant' },
+      { loot_item_id: OTHER_ID, rank: 30, slot: 2, zone: 'noBracket', item_name: 'Test Pendant' },
+    ])
+    // The client formats `violations` as bracket rules; prio must not use that key.
+    expect(body).not.toHaveProperty('violations')
+    expect(statusUpdates(calls)).toHaveLength(0)
+  })
+
+  it('checks the items of the list character, expansion and phase', async () => {
+    await run({ ...baseFixture(), items: [row(10, 1, OTHER_ID, 'Test Pendant')] })
+    expect(fetchListPrioItems).toHaveBeenCalledWith(expect.anything(), {
+      character_id: CHARACTER_ID,
+      expansion_id: 'bbbbbbbb-0000-0000-0000-000000000006',
+      phase: 1,
+    })
+  })
+
+  it('submits when the out-of-prio item sits in Off-spec', async () => {
+    const { res, calls } = await run({ ...baseFixture(), items: [row(10, 1, OTHER_ID, 'Test Pendant'), row(50, 1, OPEN_ID, 'Open Ring')] })
+    expect(res.status).toBe(200)
+    expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+  })
+
+  it('never flags a Loot Council item or an item outside the character item set', async () => {
+    const UNKNOWN_ID = 'bbbbbbbb-0000-0000-0000-0000000000e4'
+    const { res } = await run({ ...baseFixture(), items: [row(50, 1, LC_ID, 'Council Blade'), row(49, 1, UNKNOWN_ID, 'Unknown Item')] })
+    expect(res.status).toBe(200)
+  })
+
+  // regression for #484: award slot locks are never re-judged by prio.
+  it('submits when the out-of-prio item is held by an active award lock at that rank', async () => {
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([
+      { id: 'lock-1', rank: 48, slot: 1, loot_item_id: OTHER_ID, locked_at: '2026-10-24T12:00:00Z', item_name: 'Test Pendant' },
+    ])
+    const { res, calls } = await run({ ...baseFixture(), items: [row(48, 1, OTHER_ID, 'Test Pendant')] })
+    expect(res.status).toBe(200)
+    expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+  })
+
+  it('reports bracket rule violations first, before prio', async () => {
+    const { res, body } = await run({
+      ...baseFixture(),
+      items: [bindings(50, 0), bindings(40, 1), bindings(30, 0), row(45, 1, OTHER_ID, 'Test Pendant')],
+    })
+    expect(res.status).toBe(422)
+    expect(body.violations.map((v: { rule: string }) => v.rule)).toContain('item_copy_limit')
+  })
+
+  it('returns 500 and writes nothing when the prio items cannot be read', async () => {
+    vi.mocked(fetchListPrioItems).mockRejectedValue(new Error('Failed to read the list raid tiers'))
+    const { res, calls } = await run({ ...baseFixture(), items: [row(48, 1, OTHER_ID, 'Test Pendant')] })
+    expect(res.status).toBe(500)
+    expect(statusUpdates(calls)).toHaveLength(0)
   })
 })
