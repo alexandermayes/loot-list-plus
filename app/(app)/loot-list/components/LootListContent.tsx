@@ -40,6 +40,7 @@ import { useLootList, type LootItem } from '@/app/contexts/LootListContext'
 import { getPhaseGroupShortLabel } from '@/domain/expansion/phase-groups'
 import { copyLimitState } from '@/domain/loot/item-copies'
 import { positionKey } from '@/domain/loot/list-row-updates'
+import { canRankInZone } from '@/domain/loot/prio-zones'
 import { lockedRankTitle, type ListSlotLock } from '@/domain/loot/slot-locks'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent, usePagePerf } from '@/utils/analytics/client'
@@ -1036,48 +1037,23 @@ export default function LootListContent({
     return [...copyLimits.overLimit]
   }, [copyLimits, lootItems])
 
-  // Filter items by spec type for different bracket sections
-  // Items CASCADE down: Brackets 1-4 ⊆ No Bracket ⊆ Off-spec
-  //
-  // Bracket filtering rules:
-  // - Brackets 1-4: PRIMARY + UNALLOCATED
-  // - No Bracket: PRIMARY + SECONDARY + UNALLOCATED + PRIMARY-ONLY (no secondary = open)
-  // - Off-spec: all equippable items (anything that passed proficiency filtering)
+  // The pools cascade: Brackets 1-4 within No Bracket within Off-spec. Loot
+  // Council items are listed in every pool (as non-selectable) but never
+  // rankable. The prio rule lives in domain/loot/prio-zones.ts because Import
+  // BIS must apply the same prio (#484).
   const { bracket14Items, noBracketItems, offSpecItems } = useMemo(() => {
-    // LC items are included in every pool so they appear in dropdowns (as non-selectable),
-    // but excluded from rankable filtering logic
     const lcItems = lootItems.filter(item => item.is_loot_council)
 
-    // Brackets 1-4: PRIMARY + UNALLOCATED
     const bracket14Items = [
-      ...lootItems.filter(item =>
-        !item.is_loot_council && (
-          item.character_spec_type === 'primary' ||
-          !item.is_allocated  // false or undefined = unallocated
-        )
-      ),
+      ...lootItems.filter(item => canRankInZone(item, 'bracket')),
       ...lcItems,
     ]
-
-    // No Bracket: PRIMARY + SECONDARY + UNALLOCATED + PRIMARY-ONLY
-    // If an item has primary assignments but no secondary filled in,
-    // it's open here for all characters who can equip it.
     const noBracketItems = [
-      ...lootItems.filter(item =>
-        !item.is_loot_council && (
-          item.character_spec_type === 'primary' ||
-          item.character_spec_type === 'secondary' ||
-          !item.is_allocated ||
-          item.has_primary_only === true  // no secondary filled = open
-        )
-      ),
+      ...lootItems.filter(item => canRankInZone(item, 'noBracket')),
       ...lcItems,
     ]
-
-    // Off-spec: all equippable items. The API already filters by armor/weapon
-    // proficiency, so everything in lootItems can be equipped by this character.
     const offSpecItems = [
-      ...lootItems.filter(item => !item.is_loot_council),
+      ...lootItems.filter(item => canRankInZone(item, 'offSpec')),
       ...lcItems,
     ]
 
