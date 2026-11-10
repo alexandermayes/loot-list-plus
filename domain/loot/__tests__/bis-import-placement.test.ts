@@ -188,3 +188,77 @@ describe('placeBisItems officer class prio', () => {
     expect(rankings).toEqual({ '50-1': 'locked' })
   })
 })
+
+describe('placeBisItems skipped-for-prio count', () => {
+  const primary = (id: string) =>
+    item(id, { is_allocated: true, character_spec_type: 'primary', has_primary_only: false })
+  const otherClasses = (id: string) =>
+    item(id, { is_allocated: true, character_spec_type: null, has_primary_only: false })
+  const secondary = (id: string) =>
+    item(id, { is_allocated: true, character_spec_type: 'secondary', has_primary_only: false })
+
+  // regression for #484
+  it('counts each matched item left out because it is prio\'d to other classes', () => {
+    const { rankings, importedCount, skippedForPrioCount } = place([
+      otherClasses('tank-neck'),
+      primary('main'),
+      otherClasses('tank-ring'),
+    ])
+
+    expect(rankings).toEqual({ '50-1': 'main' })
+    expect(importedCount).toBe(1)
+    expect(skippedForPrioCount).toBe(2)
+  })
+
+  // regression for #484
+  it('reports zero when every item is placed', () => {
+    const { skippedForPrioCount } = place([primary('main'), secondary('sec'), item('open')])
+
+    expect(skippedForPrioCount).toBe(0)
+  })
+
+  // regression for #484
+  it('does not count Loot Council items, equipped items or ids outside the loot table', () => {
+    const lc = item('lc', { is_loot_council: true, is_allocated: true, character_spec_type: null })
+    const owned = otherClasses('owned')
+    const { rankings, skippedForPrioCount } = placeBisItems({
+      orderedBisItemIds: ['lc', 'missing', 'owned'],
+      lootItems: [lc, owned],
+      lockedPositions: {},
+      currentRankings: {},
+      equippedWowheadIds: new Set([owned.wowhead_id]),
+      enforceSlotRestrictions: false,
+    })
+
+    expect(rankings).toEqual({})
+    expect(skippedForPrioCount).toBe(0)
+  })
+
+  // regression for #484
+  it('does not count a locked item that is out of prio', () => {
+    const locked = otherClasses('locked')
+    const { rankings, skippedForPrioCount } = placeBisItems({
+      orderedBisItemIds: ['locked'],
+      lootItems: [locked],
+      lockedPositions: { '50-1': { rank: 50, slot: 1, loot_item_id: 'locked' } },
+      currentRankings: { '50-1': 'locked' },
+      equippedWowheadIds: new Set(),
+      enforceSlotRestrictions: false,
+    })
+
+    expect(rankings).toEqual({ '50-1': 'locked' })
+    expect(skippedForPrioCount).toBe(0)
+  })
+
+  // regression for #484
+  it('does not count an in-prio item that only ran out of room', () => {
+    // 28 No Bracket cells (ranks 38-25, two slots each) plus one more secondary item.
+    const items = Array.from({ length: 29 }, (_, i) => secondary(`sec-${i}`))
+    const { importedCount, skippedForPrioCount } = place(items, {
+      bracketLimits: { maxAllocationPoints: 0 },
+    })
+
+    expect(importedCount).toBe(28)
+    expect(skippedForPrioCount).toBe(0)
+  })
+})
