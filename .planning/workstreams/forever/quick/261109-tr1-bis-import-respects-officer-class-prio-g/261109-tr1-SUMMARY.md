@@ -41,7 +41,7 @@ actuals:
 
 Import BIS now skips items the officers prio'd only to other classes, and puts secondary and primary-only-open items in No Bracket only, through one pure `canRankInZone` rule that the editor's three bracket pools also use; the TBC BiS neck data is corrected so every neck drops in its raid and fits the spec's role (GH #484).
 
-Code is on `fix/bis-import-respects-prio` (4 commits, based on origin/main, not pushed, no upstream, no PR). This SUMMARY, PLAN and STATE are uncommitted on the gsd/quick branch for the orchestrator's docs commit.
+Code is on `fix/bis-import-respects-prio` (4 commits), shipped as PR #485 and merged 2026-11-10 (merge commit 4eaa04ed) on the owner's go-ahead, using the admin bypass of the one-review rule. The merge closed GH #484. This SUMMARY, PLAN and STATE went to main through the docs PR #486.
 
 ## Commits (fix/bis-import-respects-prio)
 
