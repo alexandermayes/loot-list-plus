@@ -152,6 +152,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 | 261028-fast | Sync gear button in the edit character modal (the only button lived on the unlinked /characters/[id]/edit page; EditCharacterModal now shows the Battle.net gear sync card for linked characters, officer feedback 2026-10-28) | 2026-10-28 | cf0c1d61 (branch fix/sync-gear-in-edit-modal, PR #472) | none (gsd-fast, no PLAN or SUMMARY) |
 | 261028-fast-2 | Changelog entry for October 28, 2026 (Lock awarded ranks and Sync gear from Manage Characters in lib/updates-data.ts; the changelog, updates page, landing line, sitemap lastmod and Discord updates cron all read it) | 2026-10-28 | b4bee9a8 (branch feat/changelog-slot-lock-sync-gear, PR #475) | none (gsd-fast, no PLAN or SUMMARY) |
 | 261106-0cj | Discord bot starts without the Message Content intent (PR #482) | 2026-11-06 | 60cfa2c2 | [261106-0cj-discord-bot-starts-without-the-message-c](./quick/261106-0cj-discord-bot-starts-without-the-message-c/) |
+| 261110-fast | Retire Railway Config as Code before the 2026-12-01 cutoff (deleted the repo-root railway.json and the unused nixpacks.toml; the bot service now builds from its dashboard settings, which matched the file except the builder: Railpack instead of Nixpacks) | 2026-11-10 | aef59908 (branch fix/retire-railway-config-as-code, PR #487) | none (gsd-fast, no PLAN or SUMMARY) |
 
 
 ## Deferred Items
