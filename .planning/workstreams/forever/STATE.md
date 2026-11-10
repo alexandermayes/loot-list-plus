@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: "WoW Forever Loot: Discovery to Known"
-current_phase: 03
-current_phase_name: Discovery Schema and Need Pipeline
-status: verifying
-stopped_at: Completed 03-14-PLAN.md
-last_updated: "2026-10-28T12:30:00Z"
-last_activity: 2026-10-20
-last_activity_desc: Phase 03 execution started
+current_phase: 4
+current_phase_name: Discovery Lists and Score Split
+status: planning
+stopped_at: Phase 03 complete, ready to plan Phase 4
+last_updated: "2026-11-10T23:17:47Z"
+last_activity: 2026-11-10
+last_activity_desc: Phase 03 complete (PRs #477 and #478 merged), transitioned to Phase 4
 state_head: ad954e14f2274c78d4816188a40254e21e694437
 progress:
   total_phases: 8
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 41
   completed_plans: 41
-  percent: 25
+  percent: 37
 ---
 
 # Project State
@@ -29,16 +29,16 @@ Roadmap: `.planning/workstreams/forever/ROADMAP.md` (8 phases)
 Research: `.planning/research/SUMMARY.md`
 
 **Core value:** A Forever guild can run loot from day one without knowing a single item: raiders rank generic needs, officers settle every drop in seconds from a Drop Desk, and the whole product feels like a consumer app that just works.
-**Current focus:** Phase 03 — Discovery Schema and Need Pipeline
+**Current focus:** Phase 4 — Discovery Lists and Score Split
 
 ## Current Position
 
-Phase: 03 (Discovery Schema and Need Pipeline) — EXECUTING
-Plan: 19 of 19
-Status: Phase complete — verified 4/4 (human_needed); migration PR #459 merged, code PR #477 open (PRs 2 to 4 in one, review WR-01 and WR-05 fixed), copy approved 2026-10-28
+Phase: 4 — Discovery Lists and Score Split
+Plan: Not started
+Status: Ready to plan (Phase 03 closed 2026-11-10: migration PR #459 live since Oct 21, code PR #477 merged as 19b0b201, docs PR #478 merged as 4b684c1c; the Oct 31 Discovery-lists gate has passed, Phase 4 is the critical path to the Nov 30 Drop Desk gate)
 Last activity: 2026-11-10 - Quick task 261110-g5c (PRs #492 to #496) and three tracked-bug fixes (PRs #442, #499, #500) merged; Phase 3 code PR #477 and docs PR #478 merged
 
-Progress: [███░░░░░░░] 2/8 phases ([████████████████████] 22/22 plans, [███░░░░░░░] 25% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning
+Progress: [████░░░░░░] 3/8 phases ([████████████████████] 41/41 plans, 100% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning; Phase 03: 19/19 plans, UAT 4/4 passed (human_needed), code in PR #477
 
 ## Hard Dates
 
@@ -210,6 +210,6 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 
 ## Session Continuity
 
-Last session: 2026-10-21T23:19:34.091Z
-Stopped at: Completed 03-14-PLAN.md
+Last session: 2026-11-10T23:17:47Z
+Stopped at: Phase 03 complete, ready to plan Phase 4
 Resume file: None
