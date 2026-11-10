@@ -72,11 +72,11 @@ The PLAN was written at 11:38 in a terminal `claude` session, which then execute
 
 | Task | Branch | Commits (base 27be305d) | PR | Copy |
 |------|--------|-------------------------|----|------|
-| 1 | fix/bis-import-phase-groups | 434966b8, 6f67f8e5 | #493 | none |
+| 1 | fix/bis-import-phase-groups | 434966b8, 6f67f8e5 | #493, merged 2026-11-10 as f9bcfdba | none |
 | 2 | feat/bis-import-skipped-count | 2a9340b3 | #492 | DRAFT, held |
 | 3 | feat/prio-enforced-at-submit | 947b1c86, 4063a5ee, 8c27df2b, 446d45d6 | #494 | DRAFT, held |
 | 4 | fix/tbc-bis-data-audit | a4041e44, 5be3f6e7 | #496 | none |
-| 5 | fix/dependabot-2026-11 | f97a01ac, 8b39ff06, b08674d9, 26ffb094 | #495 | none |
+| 5 | fix/dependabot-2026-11 | f97a01ac, 8b39ff06, b08674d9, 26ffb094 | #495, merged 2026-11-10 as 792a54c1 | none |
 
 ## Task 1: Import BIS covers the whole phase group (FU1)
 
@@ -185,6 +185,7 @@ Note for the next dependency pass: `npm install` with the local npm strips the `
 2. Run `scripts/count-prio-violations.ts --confirm` against production once the owner says so, and record the aggregate counts here.
 3. minimatch 11.0.1 needs eslint-config-next / typescript-eslint and electron-builder to move; revisit when those majors land.
 4. `eslint.config.mjs` should ignore `companion/out/**` so a stale companion build cannot fail lint.
+6. The "Run Load Tests" job failed on every PR of this task because the k6 apt key no longer verified; fixed outside the task by PR #498 (setup-k6-action), merged 2026-11-10 as 975ed436.
 5. Delete the `feat/bis-import-skipped-count-a5c` branch and its worktree (`git worktree remove --force .claude/worktrees/agent-a5cad6ffc1828d059 && git branch -D feat/bis-import-skipped-count-a5c`), plus the stale `worktree-agent-*` bookkeeping branches.
 
 ## Known Stubs
