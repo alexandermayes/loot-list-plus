@@ -10,6 +10,12 @@ export default defineConfig({
     // becomes a concern later, split via vitest workspaces.
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
+    // CI runners share cores with the build and lint jobs, and today's
+    // default (5 s) was hit by tests that take well under a second alone:
+    // the brand token parity scan and the modal close transition. A larger
+    // ceiling costs nothing on a passing run and stops load from failing a
+    // green branch.
+    testTimeout: 15000,
   },
   resolve: {
     alias: {

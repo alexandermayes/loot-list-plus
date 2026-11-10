@@ -1,5 +1,5 @@
 import { afterEach } from 'vitest'
-import { cleanup } from '@testing-library/react'
+import { cleanup, configure } from '@testing-library/react'
 
 // Side-effect import: registers @testing-library/jest-dom matchers on
 // Vitest's `expect`, AND augments the global Assertion type so .toBeInTheDocument()
@@ -12,3 +12,9 @@ import '@testing-library/jest-dom/vitest'
 afterEach(() => {
   cleanup()
 })
+
+// waitFor and findBy* default to 1 s. The shared Modal unmounts 150 ms after
+// close, which fits easily alone but not on a loaded CI runner, where the
+// ForeverAnnouncementModal close test crossed 1 s twice on 2026-11-10.
+// A longer ceiling changes nothing for a passing assertion.
+configure({ asyncUtilTimeout: 4000 })
