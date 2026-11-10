@@ -23,7 +23,7 @@ import {
   fetchLootItemsCharacter,
   fetchFilteredLootItems,
 } from '@/lib/loot-items-query'
-import { resolvePhaseGroups } from '@/domain/expansion/phase-groups'
+import { resolveUnlockedPhaseGroups } from '@/domain/expansion/phase-groups'
 import { fetchActiveSlotLocks } from '@/lib/loot/slot-locks'
 import type { ListSlotLock } from '@/domain/loot/slot-locks'
 
@@ -114,16 +114,12 @@ export async function GET(request: NextRequest) {
       (t: RaidTierRow) => t.phase != null && t.phase <= currentPhase
     )
 
-    // Unique, sorted phase numbers for group resolution.
-    const uniquePhases = [
-      ...new Set<number>(
-        visibleTiers
-          .map((t) => t.phase)
-          .filter((p): p is number => p !== null && p !== undefined)
-      ),
-    ].sort((a, b) => a - b)
-
-    const resolvedGroups = resolvePhaseGroups(rawPhaseGroups, uniquePhases)
+    // Shared with /api/bis-items so Import BIS sees the same phase groups.
+    const resolvedGroups = resolveUnlockedPhaseGroups(
+      rawPhaseGroups,
+      visibleTiers.map((t) => t.phase),
+      currentPhase
+    )
     const canonicalPhases = resolvedGroups.map((g) => g.canonicalPhase)
 
     // Pick the selected canonical phase: URL hint → first available → null.
