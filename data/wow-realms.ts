@@ -175,9 +175,12 @@ const CODE_TO_REGION = Object.fromEntries(
     .map(([region, code]) => [code, region as RealmRegion])
 ) as Record<string, RealmRegion>
 
-// WoW Forever is realmless (Blizzard, Sep 2026): players pick one of four
-// rulesets per region instead of a realm. See PLAN.md Addendum: Task 4.
-export const FOREVER_RULESETS = ['Normal', 'PvP', 'Roleplaying', 'Hardcore'] as const
+// WoW Forever is realmless (Blizzard, Sep 2026): players pick a ruleset per
+// region instead of a realm. See PLAN.md Addendum: Task 4. Roleplay PvP
+// launched with Forever on Nov 4 (Blizzard's ruleset article, updated 10/22);
+// Hardcore arrives after launch. Each label is also the stored value, so
+// renaming one later needs a data migration for guilds that already saved it.
+export const FOREVER_RULESETS = ['Normal', 'PvP', 'Roleplaying', 'Roleplay PvP', 'Hardcore'] as const
 
 export type ForeverRuleset = typeof FOREVER_RULESETS[number]
 
