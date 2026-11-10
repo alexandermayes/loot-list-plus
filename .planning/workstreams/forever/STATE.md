@@ -5,17 +5,17 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 4
 current_phase_name: Discovery Lists and Score Split
 status: planning
-stopped_at: Phase 03 complete, ready to plan Phase 4
-last_updated: "2026-11-10T23:17:47Z"
+stopped_at: Phase 4 context gathered
+last_updated: "2026-11-10T23:46:02.420Z"
 last_activity: 2026-11-10
-last_activity_desc: Phase 03 complete (PRs #477 and #478 merged), transitioned to Phase 4
-state_head: ad954e14f2274c78d4816188a40254e21e694437
+last_activity_desc: "Phase 03 complete (PRs #477 and #478 merged), transitioned to Phase 4"
+state_head: 45bc29805396ce5c155b0d36c12e90b7ae99d479
 progress:
   total_phases: 8
-  completed_phases: 3
+  completed_phases: 2
   total_plans: 41
   completed_plans: 41
-  percent: 37
+  percent: 25
 ---
 
 # Project State
@@ -200,7 +200,6 @@ Progress: [████░░░░░░] 3/8 phases ([████████
 | 261110-fast-2 | Unblock the weekly Refresh wago snapshot (failed Oct 19 to Nov 9 on the branch PR #455 left behind; the job now rebuilds over a tip that is the head of a merged PR) and point the Forever manifest at the live wago product wowf; snapshot regenerated to build 1.60.1.70888, rows unchanged, no promotable bosses. Live client has no map named Barrow Deeps or Hyjal Summit, so boss promotion needs pinned mapIds. Four hand-edited files, one over the gsd-fast limit. Merged 2026-11-10 on the owner's go-ahead (admin bypass of the review rule) | 2026-11-10 | 6b66e4d1 (branch fix/wago-snapshot-refresh, PR #489) | none (gsd-fast, no PLAN or SUMMARY) |
 | 261110-fast-3 | Offer the Roleplay PvP ruleset at WoW Forever guild setup (Blizzard's ruleset article, updated 10/22: it launched Nov 4; additive only, Hardcore stays, stored values still parse). The owner signed off the label Roleplay PvP (Blizzard's name; Roleplaying PvP was the alternative) by asking for PR #490 to be merged on 2026-11-10 (admin bypass of the review rule) | 2026-11-10 | 8468fb46 (branch fix/forever-roleplay-pvp-ruleset, PR #490) | none (gsd-fast, no PLAN or SUMMARY) |
 
-
 ## Deferred Items
 
 | Category | Item | Status | Deferred At | Milestone |
@@ -210,6 +209,6 @@ Progress: [████░░░░░░] 3/8 phases ([████████
 
 ## Session Continuity
 
-Last session: 2026-11-10T23:17:47Z
-Stopped at: Phase 03 complete, ready to plan Phase 4
-Resume file: None
+Last session: 2026-11-10T23:46:02.124Z
+Stopped at: Phase 4 context gathered
+Resume file: .planning/workstreams/forever/phases/04-discovery-lists-and-score-split/04-CONTEXT.md
