@@ -323,7 +323,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Forever Defect and Privacy Fixes | 9/9 | Complete    | 2026-10-13 |
 | 2. Expansion Onboarding Manifest | 13/13 | Complete    | 2026-10-19 |
-| 3. Discovery Schema and Need Pipeline | 19/19 | In Progress|  |
+| 3. Discovery Schema and Need Pipeline | 19/19 | Complete    | 2026-11-10 |
 | 4. Discovery Lists and Score Split | 0/TBD | Not started | - |
 | 5. Drop Desk Core | 0/TBD | Not started | - |
 | 6. Live Raid Night | 0/TBD | Not started | - |
