@@ -130,3 +130,56 @@ export function getPhaseGroupShortLabel(group: PhaseGroup): string {
 export function isMergedGroup(group: PhaseGroup): boolean {
   return group.phases.length > 1
 }
+
+/**
+ * Phase groups as the loot-list editor offers them. Callers pass the phases of
+ * the guild-active tiers; phases past the expansion's current phase stay hidden
+ * (linear unlock), so a configured group only covers the phases unlocked so far.
+ */
+export function resolveUnlockedPhaseGroups(
+  config: number[][] | null,
+  tierPhases: Array<number | null | undefined>,
+  currentPhase: number
+): PhaseGroup[] {
+  // resolvePhaseGroups emits one group per entry when unconfigured, so the
+  // phases must be unique or a phase with two raids would appear twice.
+  const unlocked = [
+    ...new Set(
+      tierPhases.filter((p): p is number => p != null && p <= currentPhase)
+    ),
+  ]
+  return resolvePhaseGroups(config, unlocked)
+}
+
+/**
+ * Every raw phase whose raids belong on the list keyed by `canonicalPhase`.
+ * The client keys a list by its group's canonical phase, so a lookup by that
+ * phase alone misses the later phases of a merged group (#484). Falls back to
+ * [canonicalPhase] when no unlocked group has that key, which is what a single
+ * phase lookup did before.
+ */
+export function resolveListPhases(
+  canonicalPhase: number,
+  config: number[][] | null,
+  tierPhases: Array<number | null | undefined>,
+  currentPhase: number
+): number[] {
+  const groups = resolveUnlockedPhaseGroups(config, tierPhases, currentPhase)
+  return getPhasesForCanonical(canonicalPhase, groups)
+}
+
+/**
+ * Phases of the unlocked group that contains `phase`, or [phase] when none
+ * does. Pass every tier's phase, enabled or not, to learn which phases a list
+ * would span if the guild switched its disabled raids back on; that is what
+ * names a disabled raid from a later phase when an import comes back empty.
+ */
+export function resolvePhasesSharingGroup(
+  phase: number,
+  config: number[][] | null,
+  tierPhases: Array<number | null | undefined>,
+  currentPhase: number
+): number[] {
+  const groups = resolveUnlockedPhaseGroups(config, tierPhases, currentPhase)
+  return groups.find(g => g.phases.includes(phase))?.phases ?? [phase]
+}
