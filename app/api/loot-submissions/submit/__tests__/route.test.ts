@@ -6,6 +6,7 @@ import { POST } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { fetchActiveSlotLocks } from '@/lib/loot/slot-locks'
+import { fetchListPrioItems } from '@/lib/loot/prio-check'
 
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
@@ -13,6 +14,7 @@ vi.mock('@/utils/audit/log', () => ({ logStatusChange: vi.fn() }))
 vi.mock('@/utils/analytics/server', () => ({ trackEvent: vi.fn(), setUserMilestone: vi.fn() }))
 vi.mock('@/lib/loot/slot-locks', () => ({ fetchActiveSlotLocks: vi.fn(async () => []) }))
 vi.mock('@/lib/cache/submission-tag', () => ({ revalidatePendingSubmissions: vi.fn() }))
+vi.mock('@/lib/loot/prio-check', () => ({ fetchListPrioItems: vi.fn(async () => []) }))
 
 const GUILD_ID = 'bbbbbbbb-0000-0000-0000-000000000001'
 const SUBMISSION_ID = 'bbbbbbbb-0000-0000-0000-000000000002'
@@ -364,6 +366,103 @@ describe('POST /api/loot-submissions/submit award slot locks (quick task 261028-
     vi.mocked(fetchActiveSlotLocks).mockRejectedValue(new Error('Failed to read loot list slot locks'))
     const { res, calls } = await run({ ...baseFixture(), items: [lockedRow(50)] })
 
+    expect(res.status).toBe(500)
+    expect(statusUpdates(calls)).toHaveLength(0)
+  })
+})
+
+describe('POST /api/loot-submissions/submit officer prio (#484)', () => {
+  const OTHER_ID = 'bbbbbbbb-0000-0000-0000-0000000000e1'
+  const OPEN_ID = 'bbbbbbbb-0000-0000-0000-0000000000e2'
+  const LC_ID = 'bbbbbbbb-0000-0000-0000-0000000000e3'
+  // The character's item set with the flags lib/loot-items-query.ts computes.
+  const prioItems = [
+    { id: OTHER_ID, is_allocated: true, character_spec_type: null, has_primary_only: false },
+    { id: OPEN_ID, is_allocated: false, character_spec_type: null },
+    { id: LC_ID, is_loot_council: true, is_allocated: true, character_spec_type: null },
+  ]
+  // A distinct wowhead_id per row keeps the copy limit (counted per real
+  // item) out of these cases, so only prio decides the outcome.
+  const row = (rank: number, slot: number, id: string, name: string): SubmissionItem => ({
+    rank,
+    slot,
+    loot_item_id: id,
+    loot_item: { id, name, classification: 'Unlimited', item_type: null, item_slot: 'Neck', wowhead_id: 40000 + rank * 10 + slot, allocation_cost: 0 },
+  })
+  const statusUpdates = (calls: Call[]) => submissionUpdates(calls).filter(c => c.updatePayload && 'status' in c.updatePayload)
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([])
+    vi.mocked(fetchListPrioItems).mockResolvedValue(prioItems)
+  })
+
+  // regression for #484: a list ranked before an officer moved prio to other
+  // classes used to submit with the item still in Brackets 1-4.
+  it('returns 400 with PRIO_VIOLATION naming each out-of-prio item and rank, and leaves the status alone', async () => {
+    const { res, body, calls } = await run({
+      ...baseFixture(),
+      items: [row(48, 1, OTHER_ID, 'Test Pendant'), row(30, 2, OTHER_ID, 'Test Pendant'), row(10, 1, OTHER_ID, 'Test Pendant')],
+    })
+
+    expect(res.status).toBe(400)
+    expect(body.code).toBe('PRIO_VIOLATION')
+    expect(body.error).toBe(
+      'Officers set prio for these items to other classes: Test Pendant (rank 48), Test Pendant (rank 30). Move them to Off-spec or remove them, then submit again.',
+    )
+    expect(body.prio_violations).toEqual([
+      { loot_item_id: OTHER_ID, rank: 48, slot: 1, zone: 'bracket', item_name: 'Test Pendant' },
+      { loot_item_id: OTHER_ID, rank: 30, slot: 2, zone: 'noBracket', item_name: 'Test Pendant' },
+    ])
+    // The client formats `violations` as bracket rules; prio must not use that key.
+    expect(body).not.toHaveProperty('violations')
+    expect(statusUpdates(calls)).toHaveLength(0)
+  })
+
+  it('checks the items of the list character, expansion and phase', async () => {
+    await run({ ...baseFixture(), items: [row(10, 1, OTHER_ID, 'Test Pendant')] })
+    expect(fetchListPrioItems).toHaveBeenCalledWith(expect.anything(), {
+      character_id: CHARACTER_ID,
+      expansion_id: 'bbbbbbbb-0000-0000-0000-000000000006',
+      phase: 1,
+    })
+  })
+
+  it('submits when the out-of-prio item sits in Off-spec', async () => {
+    const { res, calls } = await run({ ...baseFixture(), items: [row(10, 1, OTHER_ID, 'Test Pendant'), row(50, 1, OPEN_ID, 'Open Ring')] })
+    expect(res.status).toBe(200)
+    expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+  })
+
+  it('never flags a Loot Council item or an item outside the character item set', async () => {
+    const UNKNOWN_ID = 'bbbbbbbb-0000-0000-0000-0000000000e4'
+    const { res } = await run({ ...baseFixture(), items: [row(50, 1, LC_ID, 'Council Blade'), row(49, 1, UNKNOWN_ID, 'Unknown Item')] })
+    expect(res.status).toBe(200)
+  })
+
+  // regression for #484: award slot locks are never re-judged by prio.
+  it('submits when the out-of-prio item is held by an active award lock at that rank', async () => {
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([
+      { id: 'lock-1', rank: 48, slot: 1, loot_item_id: OTHER_ID, locked_at: '2026-10-24T12:00:00Z', item_name: 'Test Pendant' },
+    ])
+    const { res, calls } = await run({ ...baseFixture(), items: [row(48, 1, OTHER_ID, 'Test Pendant')] })
+    expect(res.status).toBe(200)
+    expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+  })
+
+  it('reports bracket rule violations first, before prio', async () => {
+    const { res, body } = await run({
+      ...baseFixture(),
+      items: [bindings(50, 0), bindings(40, 1), bindings(30, 0), row(45, 1, OTHER_ID, 'Test Pendant')],
+    })
+    expect(res.status).toBe(422)
+    expect(body.violations.map((v: { rule: string }) => v.rule)).toContain('item_copy_limit')
+  })
+
+  it('returns 500 and writes nothing when the prio items cannot be read', async () => {
+    vi.mocked(fetchListPrioItems).mockRejectedValue(new Error('Failed to read the list raid tiers'))
+    const { res, calls } = await run({ ...baseFixture(), items: [row(48, 1, OTHER_ID, 'Test Pendant')] })
     expect(res.status).toBe(500)
     expect(statusUpdates(calls)).toHaveLength(0)
   })

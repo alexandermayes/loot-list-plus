@@ -9,6 +9,8 @@ import { trackEvent, setUserMilestone } from '@/utils/analytics/server'
 import { revalidatePendingSubmissions } from '@/lib/cache/submission-tag'
 import { findInvalidCharacterIds } from '@/lib/loot/guild-award-refs'
 import { fetchActiveSlotLocks } from '@/lib/loot/slot-locks'
+import { fetchListPrioItems } from '@/lib/loot/prio-check'
+import { findPrioViolations, prioViolationMessage, PRIO_VIOLATION_CODE } from '@/domain/loot/prio-violations'
 
 // Shown to the raider when the list's character is not an active member of
 // the list's guild (the same text auto-save shows).
@@ -35,8 +37,12 @@ const NOT_ACTIVE_MEMBER_ERROR = 'Your character needs to rejoin this guild.'
  *    loot list applies; see domain/loot/item-copies.ts). Rows whose item is
  *    from a raid tier the guild turned off (raid_tiers.is_guild_active = false)
  *    are skipped, because the loot list page never shows them (GH #357)
- * 6. If valid: snapshot previous items, set status to 'pending'
- * 7. If invalid: return violations, status stays as-is
+ * 6. Check officer class prio (#484): a ranked item outside its zone's prio
+ *    pool is refused with 400 and code PRIO_VIOLATION, naming the items.
+ *    The items and flags are recomputed over the list's phase-group tiers;
+ *    rows held by an active award lock are never re-judged
+ * 7. If valid: snapshot previous items, set status to 'pending'
+ * 8. If invalid: return violations, status stays as-is
  */
 export async function POST(request: NextRequest) {
   try {
@@ -194,6 +200,29 @@ export async function POST(request: NextRequest) {
         error: 'List violates bracket rules',
         violations,
       }, { status: 422 })
+    }
+
+    // Lists saved before an officer changed prio keep items the editor would
+    // now refuse, and a direct save never went through the editor (#484).
+    // A read failure throws to the catch (500) rather than skipping the check.
+    const prioItems = await fetchListPrioItems(serviceSupabase, {
+      character_id: submission.character_id,
+      expansion_id: submission.expansion_id,
+      phase: submission.phase,
+    })
+    const prioViolations = findPrioViolations(
+      itemRows.map((row) => ({ loot_item_id: row.loot_item_id, rank: row.rank, slot: Number(row.slot) })),
+      prioItems,
+      locks,
+    )
+    if (prioViolations.length > 0) {
+      const nameById = new Map(itemRows.map((row) => [row.loot_item_id, row.loot_item?.name]))
+      const named = prioViolations.map((v) => ({ ...v, item_name: nameById.get(v.loot_item_id) || 'an item' }))
+      return NextResponse.json({
+        error: prioViolationMessage(named),
+        code: PRIO_VIOLATION_CODE,
+        prio_violations: named,
+      }, { status: 400 })
     }
 
     // Increment resubmission count if this is a resubmission

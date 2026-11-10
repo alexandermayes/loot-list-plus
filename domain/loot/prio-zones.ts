@@ -35,3 +35,14 @@ export function canRankInZone(item: PrioZoneItem, zone: ListZone): boolean {
       return item.character_spec_type === 'primary' || !item.is_allocated
   }
 }
+
+/**
+ * The zone a list rank sits in. Total over every number, with the same
+ * boundaries as the editor's pool lookup, so the submit check and the editor
+ * can never disagree about which pool a rank belongs to.
+ */
+export function zoneForRank(rank: number): ListZone {
+  if (rank >= 39) return 'bracket'
+  if (rank >= 25) return 'noBracket'
+  return 'offSpec'
+}
