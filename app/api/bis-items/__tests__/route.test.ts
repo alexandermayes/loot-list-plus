@@ -88,8 +88,9 @@ function bisRequest(phase: number) {
 }
 
 const LOOT_ITEMS: Row[] = [
-  { id: 'li-ssc', name: 'Vestments of the Sea-Witch', item_slot: 'Chest', wowhead_id: SEA_WITCH_VESTMENTS, raid_tier_id: 't-ssc', is_available: true },
-  { id: 'li-hyjal', name: 'Tempest of Chaos', item_slot: 'Two-Hand', wowhead_id: TEMPEST_OF_CHAOS, raid_tier_id: 't-hyjal', is_available: true },
+  // kind is the Phase 3 item-or-need column; the route reads item rows only (D-14).
+  { id: 'li-ssc', name: 'Vestments of the Sea-Witch', item_slot: 'Chest', wowhead_id: SEA_WITCH_VESTMENTS, raid_tier_id: 't-ssc', is_available: true, kind: 'item' },
+  { id: 'li-hyjal', name: 'Tempest of Chaos', item_slot: 'Two-Hand', wowhead_id: TEMPEST_OF_CHAOS, raid_tier_id: 't-hyjal', is_available: true, kind: 'item' },
 ]
 
 function run(fixture: Fixture, phase = 2) {

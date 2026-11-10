@@ -41,6 +41,8 @@ function makeClient(lootItems: Row[]) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const builder: any = {
         select: () => builder,
+        // The route orders its raid_tiers read since the phase-group fix (#493).
+        order: () => builder,
         eq: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         in: (col: string, val: unknown) => { call.filters.push([col, val]); return builder },
         single: () =>

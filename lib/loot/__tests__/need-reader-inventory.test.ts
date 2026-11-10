@@ -646,6 +646,13 @@ export const NEED_READERS: readonly NeedReader[] = [
     note: SCRIPT_NOTES.catalog,
   },
   {
+    file: 'scripts/count-prio-violations.ts',
+    dispositions: ['script'],
+    plan: '-',
+    note:
+      'Read-only aggregate count of lists with out-of-prio ranks (GH #484); checks rows against fetchFilteredLootItems with includeNeeds off, so a ranked need is never flagged. Prints counts only.',
+  },
+  {
     file: 'scripts/debug-fang.ts',
     dispositions: ['script'],
     plan: '-',

@@ -39,6 +39,8 @@ function item(id: string, tierId: string, classes: Row[]): Row {
     boss_name: 'Boss',
     item_slot: 'Neck',
     wowhead_id: 1,
+    // Phase 3 item-or-need column; fetchFilteredLootItems reads item rows only unless asked for needs.
+    kind: 'item',
     classification: 'Unlimited',
     item_type: null,
     allocation_cost: 0,
