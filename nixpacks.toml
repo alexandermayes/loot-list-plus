@@ -1,8 +1,0 @@
-[phases.setup]
-nixPkgs = ["nodejs_20"]
-
-[phases.install]
-cmds = ["cd discord-bot && npm install"]
-
-[start]
-cmd = "cd discord-bot && npm start"

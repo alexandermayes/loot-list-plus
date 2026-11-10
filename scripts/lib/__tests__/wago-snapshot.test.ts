@@ -295,7 +295,7 @@ describe('refreshSnapshot', () => {
     expect(ReferenceSnapshotSchema.safeParse(written).success).toBe(true)
     expect(written.build).toBe(BUILD)
     expect(written.fetchedAt).toBe('2026-10-16T22:00:00.000Z')
-    expect(written.product).toBe('wow_classic_beta')
+    expect(written.product).toBe(FOREVER_MANIFEST.reference.product)
     expect(written.buildPrefix).toBe('1.60.')
     expect(written.sha256).toBe(
       createHash('sha256')

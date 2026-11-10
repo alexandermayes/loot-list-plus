@@ -31,7 +31,9 @@ export const FOREVER_MANIFEST: ExpansionManifest = {
   slug: 'forever',
   storedName: FOREVER_EXPANSION_NAME,
   gameVersion: 'forever',
-  reference: { product: 'wow_classic_beta', buildPrefix: '1.60.' },
+  // The live client's wago product since the Nov 4 launch; wow_classic_beta
+  // stopped taking builds on 2026-10-22.
+  reference: { product: 'wowf', buildPrefix: '1.60.' },
   raids: [
     {
       name: 'Barrow Deeps',

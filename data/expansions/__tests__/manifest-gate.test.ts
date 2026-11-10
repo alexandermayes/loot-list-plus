@@ -124,7 +124,7 @@ describe('FOREVER_MANIFEST content', () => {
     expect(FOREVER_MANIFEST.storedName).toBe(FOREVER_EXPANSION_NAME)
     expect(FOREVER_MANIFEST.gameVersion).toBe(EXPANSION_GAMES.Forever)
     expect(FOREVER_MANIFEST.slug).toBe('forever')
-    expect(FOREVER_MANIFEST.reference).toEqual({ product: 'wow_classic_beta', buildPrefix: '1.60.' })
+    expect(FOREVER_MANIFEST.reference).toEqual({ product: 'wowf', buildPrefix: '1.60.' })
   })
 
   it('has no items or token classes until a later phase widens the schema', () => {

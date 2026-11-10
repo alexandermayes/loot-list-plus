@@ -110,8 +110,7 @@
 - `vitest.setup.ts` - Test cleanup registration
 - `.vercel/` - Vercel deployment configuration
 - `vercel.json` - Cron job schedule (3 jobs)
-- `railway.json` - Railway deployment config for Discord bot
-- `nixpacks.toml` - Deployment for Discord bot: Node 20, npm install, start script
+- Discord bot deploy settings live in the Railway dashboard, not the repo (`railway.json` and `nixpacks.toml` were removed in PR #487, ahead of Railway's 2026-12-01 Config as Code cutoff)
 - `components.json` - shadcn/ui component registry (minimal setup)
 - `package.json` overrides - Force specific versions of postcss, sharp
 

@@ -1,5 +1,6 @@
 const { PermissionFlagsBits } = require('discord.js');
 const { createClient } = require('@supabase/supabase-js');
+const { decideReportHandling, fallbackReportTitle, messageDescription } = require('./message-content');
 
 const TRIGGER_EMOJI = '🐛';
 const FEATURE_TRIGGER_EMOJI = '💡';
@@ -261,7 +262,7 @@ function buildIssueBody({ message, source, triggeredBy }) {
 
   const lines = [
     '## Description',
-    message.content?.trim() || '(no message text)',
+    messageDescription(message.content),
     '',
     '## Details',
     `- **Source:** ${source === 'channel' ? `Auto-captured from ${label}` : `Reaction (${TRIGGER_EMOJI}) by ${triggeredBy?.tag || 'unknown'} in ${label}`}`,
@@ -293,16 +294,24 @@ async function fileFeedback({ message, source, triggeredBy, labels = BUG_LABELS 
 
   const text = message.content?.trim();
   const forumStarter = isForumStarter(message);
-  if (!text && message.attachments.size === 0 && !forumStarter) {
+  const handling = decideReportHandling({
+    text,
+    attachmentCount: message.attachments.size,
+    forumStarter,
+    source,
+  });
+  if (handling === 'skip') {
     console.log(`[feedback] message ${message.id} has no content and no attachments, skipping`);
     return null;
   }
 
   // For forum posts, the user already wrote a title (the thread name). Use it
-  // directly — no need to ask Claude to summarize the body into a title.
-  const title = forumStarter
-    ? message.channel.name
-    : await generateTitle(text || '(image only)');
+  // directly, no need to ask Claude to summarize the body into a title.
+  // A reaction on a message the bot cannot read gets a generic title.
+  let title;
+  if (handling === 'thread-name') title = message.channel.name;
+  else if (handling === 'fallback') title = fallbackReportTitle(channelLabel(message));
+  else title = await generateTitle(text || '(image only)');
   const body = buildIssueBody({ message, source, triggeredBy });
 
   // Soft duplicate check before filing — we still file the new issue (so
