@@ -52,6 +52,10 @@ scope-boundary rule (not fixed, not part of this phase's task files).
    client-side upsert, matching the pattern already used by
    `/api/loot-submissions/submit` and `/api/loot-submissions/review`.
 
+   Resolved 2026-11-10: PR #500 adds `POST /api/loot-submissions/reopen`, an
+   audited, owner-checked, conditional demotion that both client save paths
+   call first (merge commit 03c3d762).
+
 4. **Post-sprint candidate: redefine the research-report population on
    first-ever approval timestamps (monotonic) instead of
    `COALESCE(reviewed_at, submitted_at)` (current, non-monotonic).** The
