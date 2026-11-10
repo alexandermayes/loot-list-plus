@@ -138,3 +138,53 @@ describe('placeBisItems behaviour', () => {
     expect(rankings).toEqual({ '38-1': 'locked', '38-2': 'next' })
   })
 })
+
+describe('placeBisItems officer class prio', () => {
+  const primary = (id: string) =>
+    item(id, { is_allocated: true, character_spec_type: 'primary', has_primary_only: false })
+  const otherClasses = (id: string) =>
+    item(id, { is_allocated: true, character_spec_type: null, has_primary_only: false })
+  const secondary = (id: string) =>
+    item(id, { is_allocated: true, character_spec_type: 'secondary', has_primary_only: false })
+  const primaryOnlyOpen = (id: string) =>
+    item(id, { is_allocated: true, character_spec_type: null, has_primary_only: true })
+
+  // regression for #484
+  it('does not place an item prio\'d only to other classes anywhere in ranks 50-25', () => {
+    const { rankings, importedCount } = place([otherClasses('tank-neck'), item('free')])
+
+    expect(Object.values(rankings)).not.toContain('tank-neck')
+    expect(rankings).toEqual({ '50-1': 'free' })
+    expect(importedCount).toBe(1)
+  })
+
+  // regression for #484
+  it('puts secondary and primary-only-open items in No Bracket even with Bracket 1 empty', () => {
+    const { rankings, importedCount } = place([secondary('sec'), primaryOnlyOpen('open')])
+
+    expect(rankings).toEqual({ '38-1': 'sec', '38-2': 'open' })
+    expect(importedCount).toBe(2)
+  })
+
+  // regression for #484
+  it('still places a primary item in Bracket 1', () => {
+    const { rankings } = place([primary('main')])
+
+    expect(rankings).toEqual({ '50-1': 'main' })
+  })
+
+  // regression for #484
+  it('does not re-judge a locked item that is out of prio', () => {
+    const locked = otherClasses('locked')
+    const { rankings } = placeBisItems({
+      orderedBisItemIds: ['locked'],
+      lootItems: [locked],
+      lockedPositions: { '50-1': { rank: 50, slot: 1, loot_item_id: 'locked' } },
+      currentRankings: { '50-1': 'locked' },
+      equippedWowheadIds: new Set(),
+      enforceSlotRestrictions: false,
+    })
+
+    expect(rankings).toEqual({ '50-1': 'locked' })
+  })
+})

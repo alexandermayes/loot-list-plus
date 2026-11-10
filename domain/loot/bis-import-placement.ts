@@ -14,11 +14,11 @@ import {
   type BracketItem,
   type BracketLimits,
 } from '@/domain/loot/bracket-validation'
+import { canRankInZone, type PrioZoneItem } from '@/domain/loot/prio-zones'
 import type { ListSlotLock } from '@/domain/loot/slot-locks'
 
-export interface BisPlacementItem extends BracketItem {
+export interface BisPlacementItem extends BracketItem, PrioZoneItem {
   wowhead_id: number
-  is_loot_council?: boolean
 }
 
 export interface BisPlacementInput {
@@ -83,20 +83,20 @@ export function placeBisItems(input: BisPlacementInput): {
     // Skip items the user already owns (imported from WowSims)
     if (equippedWowheadIds.has(item.wowhead_id)) continue
 
-    // Skip Loot Council items (not rankable by raiders)
-    if (item.is_loot_council) continue
-
-    // Try to find a valid slot in brackets first
-    const bracketSlot = findNextValidSlot(item, bracketStates, enforceSlotRestrictions, itemsById, bracketLimits)
+    // Items the officers prio'd to other classes stay unranked: the editor
+    // refuses them in Brackets 1-4 and No Bracket, so the import must too (#484).
+    // This also covers Loot Council items, which are never rankable.
+    const bracketSlot = canRankInZone(item, 'bracket')
+      ? findNextValidSlot(item, bracketStates, enforceSlotRestrictions, itemsById, bracketLimits)
+      : null
 
     if (bracketSlot) {
-      // Place in bracket
       const { bracketIndex, rank, slot } = bracketSlot
       placeInBracket(item, bracketStates[bracketIndex], rank, slot)
       newRankings[`${rank}-${slot}`] = item.id
       importedCount++
-    } else {
-      // Brackets are full or can't fit this item - try No Bracket zone
+    } else if (canRankInZone(item, 'noBracket')) {
+      // Brackets are full, can't fit this item, or it is not primary prio here
       const noBracketSlot = findNextNoBracketSlot(item, noBracketPlacements, itemsById)
 
       if (noBracketSlot) {
