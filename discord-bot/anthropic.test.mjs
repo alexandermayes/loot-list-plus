@@ -13,6 +13,10 @@ function loadBot(file, env = {}, fetch = vi.fn()) {
       if (name === 'discord.js') return { PermissionFlagsBits: {} }
       if (name === '@supabase/supabase-js') return { createClient: vi.fn() }
       if (name === './feedback') return { getSupabase: () => null }
+      // Real module (no dependencies of its own): feedback.js reads it since the
+      // Message Content intent change (#482), and stubbing it would hide a real
+      // title or description path.
+      if (name === './message-content') return loadBot('./message-content.js', env).context.module.exports
       throw new Error(`Unexpected dependency: ${name}`)
     },
   })
