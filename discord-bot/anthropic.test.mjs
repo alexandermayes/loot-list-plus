@@ -25,7 +25,9 @@ const env = { ANTHROPIC_API_KEY: 'test-only', GITHUB_TOKEN: 'test-only', GITHUB_
 const reply = (text) => ({ ok: true, json: async () => ({ content: [{ type: 'text', text }] }) })
 
 function expectRequest(fetch, tokens, expectedModel = model) {
-  const [url, options] = fetch.mock.calls.find(([url]) => url.includes('api.anthropic.com'))
+  // Exact match, not a substring: CodeQL (js/incomplete-url-substring-sanitization)
+  // flags includes() on a host even in a test helper, and the exact URL is the contract anyway.
+  const [url, options] = fetch.mock.calls.find(([url]) => url === 'https://api.anthropic.com/v1/messages')
   expect(url).toBe('https://api.anthropic.com/v1/messages')
   expect(options.method).toBe('POST')
   expect(options.headers['anthropic-version']).toBe('2023-06-01')
