@@ -41,6 +41,7 @@ import { getPhaseGroupShortLabel } from '@/domain/expansion/phase-groups'
 import { copyLimitState } from '@/domain/loot/item-copies'
 import { positionKey } from '@/domain/loot/list-row-updates'
 import { canRankInZone } from '@/domain/loot/prio-zones'
+import { findPrioViolations, PRIO_MARKER_LABEL, PRIO_MARKER_TEXT } from '@/domain/loot/prio-violations'
 import { lockedRankTitle, type ListSlotLock } from '@/domain/loot/slot-locks'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent, usePagePerf } from '@/utils/analytics/client'
@@ -110,6 +111,22 @@ function UnrankedDraggable({ itemId, children }: { itemId: string; children: Rea
     >
       {children}
     </div>
+  )
+}
+
+// Marks a ranked item that submit will refuse because officers set its prio
+// to other classes (#484). The visible text is short; the full reason is the
+// hover title and is read out by screen readers.
+function OutOfPrioBadge() {
+  return (
+    <span
+      title={PRIO_MARKER_LABEL}
+      className="inline-flex items-center gap-1 text-11 font-medium px-1.5 py-0.5 rounded bg-warning/20 text-warning shrink-0"
+    >
+      <AlertFilledIcon size={12} />
+      {PRIO_MARKER_TEXT}
+      <span className="sr-only">. {PRIO_MARKER_LABEL}</span>
+    </span>
   )
 }
 
@@ -187,7 +204,11 @@ interface RankRowProps {
   allLootItems?: LootItem[]
   /** Award slot locks of this list, keyed "{rank}-{slot}": a locked cell cannot be moved, replaced or removed */
   lockedPositions?: Record<string, ListSlotLock>
+  /** "{rank}-{slot}" keys of ranked items outside their zone's officer prio (#484) */
+  outOfPrioPositions?: ReadonlySet<string>
 }
+
+const NO_POSITIONS: ReadonlySet<string> = new Set()
 
 const RankRow = memo(function RankRow({
   rank,
@@ -208,6 +229,7 @@ const RankRow = memo(function RankRow({
   enforceReservedAlone = true,
   allLootItems,
   lockedPositions = {},
+  outOfPrioPositions = NO_POSITIONS,
 }: RankRowProps) {
   // Lookup uses the bracket-filtered pool first, then falls back to the broad
   // pool so an item placed via a path the bracket filter doesn't allow still
@@ -228,6 +250,8 @@ const RankRow = memo(function RankRow({
   const lock2 = lockedPositions[`${rank}-2`]
   const isLocked1 = !!lock1 && selectedItemId1 === lock1.loot_item_id
   const isLocked2 = !!lock2 && selectedItemId2 === lock2.loot_item_id
+  const isOutOfPrio1 = outOfPrioPositions.has(`${rank}-1`)
+  const isOutOfPrio2 = outOfPrioPositions.has(`${rank}-2`)
 
   // Disable sibling slot if a Reserved item is selected — only in zones that
   // enforce bracket rules.
@@ -316,11 +340,12 @@ const RankRow = memo(function RankRow({
       </td>
       <td className="px-3 py-2.5">
         {selectedItem1 ? (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <p className="text-foreground-muted text-12">{normalizeBossName(selectedItem1.boss_name)}</p>
             {selectedItem1.classification && (
               <ClassificationBadge classification={selectedItem1.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
             )}
+            {isOutOfPrio1 && <OutOfPrioBadge />}
           </div>
         ) : removedItem1 ? (
           <span className="text-muted-foreground text-12">{normalizeBossName(removedItem1.boss_name)}</span>
@@ -396,11 +421,12 @@ const RankRow = memo(function RankRow({
       </td>
       <td className="px-3 py-2.5">
         {selectedItem2 ? (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <p className="text-foreground-muted text-12">{normalizeBossName(selectedItem2.boss_name)}</p>
             {selectedItem2.classification && (
               <ClassificationBadge classification={selectedItem2.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
             )}
+            {isOutOfPrio2 && <OutOfPrioBadge />}
           </div>
         ) : removedItem2 ? (
           <span className="text-muted-foreground text-12">{normalizeBossName(removedItem2.boss_name)}</span>
@@ -432,6 +458,7 @@ const MobileRankCard = memo(function MobileRankCard({
   enforceReservedAlone = true,
   allLootItems,
   lockedPositions = {},
+  outOfPrioPositions = NO_POSITIONS,
 }: RankRowProps) {
   // Same fallback resolver as RankRow — see GH #79.
   const resolveItem = (id: string) =>
@@ -509,11 +536,12 @@ const MobileRankCard = memo(function MobileRankCard({
           />
           {/* Boss + classification inline below the select */}
           {selectedItem ? (
-            <div className="flex items-center gap-2 pl-1">
+            <div className="flex flex-wrap items-center gap-2 pl-1">
               <p className="text-foreground-muted text-11">{normalizeBossName(selectedItem.boss_name)}</p>
               {selectedItem.classification && (
                 <ClassificationBadge classification={selectedItem.classification as 'Reserved' | 'Limited' | 'Unlimited'} />
               )}
+              {outOfPrioPositions.has(`${rank}-${slotNum}`) && <OutOfPrioBadge />}
             </div>
           ) : isSlotDisabledByReserved ? (
             <p className="text-muted-foreground text-11 italic pl-1">{otherSlotReservedLabel}</p>
@@ -572,6 +600,8 @@ interface BracketSectionProps {
   onRestoreItem: (lootItemId: string, itemName: string, position: { rank: number; slot: number }) => void
   /** Award slot locks of this list, keyed "{rank}-{slot}" (passed through to the rows) */
   lockedPositions: Record<string, ListSlotLock>
+  /** Ranked positions outside officer prio (passed through to the rows, #484) */
+  outOfPrioPositions: ReadonlySet<string>
   validation?: { allocationPoints: number; maxPoints: number; violations: string[] }
   maxAllocationPoints?: number
   expandedErrors: Set<string>
@@ -604,6 +634,7 @@ function BracketSection({
   removedRankings,
   onRestoreItem,
   lockedPositions,
+  outOfPrioPositions,
   validation,
   maxAllocationPoints,
   expandedErrors,
@@ -734,6 +765,7 @@ function BracketSection({
                   onRestoreItem={onRestoreItem}
                   enforceReservedAlone={enforceReservedAlone}
                   lockedPositions={lockedPositions}
+                  outOfPrioPositions={outOfPrioPositions}
                 />
               ))}
             </tbody>
@@ -763,6 +795,7 @@ function BracketSection({
               removedRankings={removedRankings}
               onRestoreItem={onRestoreItem}
               lockedPositions={lockedPositions}
+              outOfPrioPositions={outOfPrioPositions}
             />
           ))}
         </div>
@@ -1059,6 +1092,18 @@ export default function LootListContent({
 
     return { bracket14Items, noBracketItems, offSpecItems }
   }, [lootItems])
+
+  // Ranked items the submit route will refuse for officer prio (#484), most
+  // often placed before an officer changed prio. Same rule as the server, so
+  // the marker and the refusal always agree. Locked ranks are never marked.
+  const outOfPrioPositions = useMemo(() => {
+    const entries = Object.entries(rankings).map(([key, loot_item_id]) => {
+      const [rankStr, slotStr] = key.split('-')
+      return { loot_item_id, rank: parseInt(rankStr, 10), slot: parseInt(slotStr, 10) }
+    })
+    const violations = findPrioViolations(entries, lootItems, Object.values(lockedPositions))
+    return new Set(violations.map(v => positionKey(v.rank, v.slot)))
+  }, [rankings, lootItems, lockedPositions])
 
   // Compute unranked items (all spec items not yet on the list, excluding LC items)
   // unrankedItemsAll is the full unfiltered set, used to derive stable filter options.
@@ -2053,6 +2098,7 @@ export default function LootListContent({
             removedRankings={removedRankings}
             onRestoreItem={handleRestoreItem}
             lockedPositions={lockedPositions}
+            outOfPrioPositions={outOfPrioPositions}
             validation={getBracketValidation(bracket.name)}
             maxAllocationPoints={bracketLimits.maxAllocationPoints}
             expandedErrors={expandedErrors}
