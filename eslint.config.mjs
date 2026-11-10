@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The companion's electron-vite build lands in companion/out, which the
+    // root "out/**" ignore does not cover; a stale local build (or one from
+    // a CI job that overlaps lint) otherwise fails lint on bundled output.
+    "companion/out/**",
     // Local agent tooling directories. These are gitignored (.gitignore line
     // 78 covers .claude/*, and .codex, .gsd, and .agents follow the same
     // pattern) so CI never sees them. They hold CommonJS .cjs scripts that
