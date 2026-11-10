@@ -10,8 +10,8 @@ import {
 } from '../wow-realms'
 
 // Addendum: Task 4 (WoW Forever picks a ruleset instead of a realm). Blizzard
-// ships four rulesets (Normal, PvP, Roleplaying, Hardcore) across four
-// regions (US, EU, KR, TW), stored in the existing guilds.realm text column
+// ships five rulesets (Normal, PvP, Roleplaying, Roleplay PvP, Hardcore) across
+// four regions (US, EU, KR, TW), stored in the existing guilds.realm text column
 // as "{Ruleset} ({Region})", e.g. "PvP (US)".
 describe('formatForeverRuleset / parseForeverRuleset round-trip', () => {
   it.each(FOREVER_RULESETS.flatMap((ruleset) =>
@@ -24,6 +24,11 @@ describe('formatForeverRuleset / parseForeverRuleset round-trip', () => {
 
   it('trims surrounding whitespace before parsing', () => {
     expect(parseForeverRuleset('  PvP (US)  ')).toEqual({ ruleset: 'PvP', region: 'US' })
+  })
+
+  it('offers Roleplay PvP, which launched with Forever, and parses its two-word name', () => {
+    expect(FOREVER_RULESETS).toContain('Roleplay PvP')
+    expect(parseForeverRuleset('Roleplay PvP (EU)')).toEqual({ ruleset: 'Roleplay PvP', region: 'EU' })
   })
 })
 
@@ -55,6 +60,7 @@ describe('getRegionForRealm on Forever values', () => {
     ['Normal (US)', 'Americas & Oceania'],
     ['PvP (EU)', 'Europe'],
     ['Roleplaying (KR)', 'Korea'],
+    ['Roleplay PvP (US)', 'Americas & Oceania'],
     ['Hardcore (TW)', 'Taiwan'],
   ])('%s resolves to %s', (value, expectedRegion) => {
     expect(getRegionForRealm(value)).toBe(expectedRegion)
