@@ -36,7 +36,7 @@ Research: `.planning/research/SUMMARY.md`
 Phase: 3 — Discovery Schema and Need Pipeline
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-11-06 - Completed quick task 261106-0cj: Discord bot starts without the Message Content intent (PR #482)
+Last activity: 2026-11-09 - Completed quick task 261109-tr1: BiS import respects officer class prio, TBC BiS necks fixed (GH #484, PR #485)
 
 Progress: [███░░░░░░░] 2/8 phases ([████████████████████] 22/22 plans, 100% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning
 
@@ -152,6 +152,7 @@ Progress: [███░░░░░░░] 2/8 phases ([████████
 | 261028-fast | Sync gear button in the edit character modal (the only button lived on the unlinked /characters/[id]/edit page; EditCharacterModal now shows the Battle.net gear sync card for linked characters, officer feedback 2026-10-28) | 2026-10-28 | cf0c1d61 (branch fix/sync-gear-in-edit-modal, PR #472) | none (gsd-fast, no PLAN or SUMMARY) |
 | 261028-fast-2 | Changelog entry for October 28, 2026 (Lock awarded ranks and Sync gear from Manage Characters in lib/updates-data.ts; the changelog, updates page, landing line, sitemap lastmod and Discord updates cron all read it) | 2026-10-28 | b4bee9a8 (branch feat/changelog-slot-lock-sync-gear, PR #475) | none (gsd-fast, no PLAN or SUMMARY) |
 | 261106-0cj | Discord bot starts without the Message Content intent (PR #482) | 2026-11-06 | 60cfa2c2 | [261106-0cj-discord-bot-starts-without-the-message-c](./quick/261106-0cj-discord-bot-starts-without-the-message-c/) |
+| 261109-tr1 | BiS import respects officer class prio (GH #484): one prio zone rule (domain/loot/prio-zones.ts) for the editor pools and Import BIS; TBC BiS neck data fixed on owner request (30 replaced, 15 removed, test-pinned) | 2026-11-09 | 94b989bf, 06773684 (branch fix/bis-import-respects-prio, PR #485, merged 2026-11-10 as 4eaa04ed) | [261109-tr1-bis-import-respects-officer-class-prio-g](./quick/261109-tr1-bis-import-respects-officer-class-prio-g/) |
 
 
 ## Deferred Items
