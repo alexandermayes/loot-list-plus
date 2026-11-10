@@ -30,6 +30,7 @@ import {
 import { getItemTypeInfo, inferArmorType, inferWeaponType } from '@/data/item-types'
 import { isTokenSlot, canClassUseToken } from '@/data/token-class-mapping'
 import { canClassUseItem } from '@/domain/loot/class-restrictions'
+import { isNeedRow } from '@/domain/loot/item-identity'
 import { paginatedSelect } from '@/utils/supabase/paginate'
 
 export interface LootItemClassRestriction {
@@ -99,6 +100,15 @@ export async function resolveTierIdsForPhases(
   return phaseTiers.map((t: { id: string }) => t.id)
 }
 
+export interface FetchFilteredLootItemsOptions {
+  /**
+   * Phase 4 passes true for tiers whose list_mode is 'discovery' so the picker
+   * can offer need rows. Defaults to false: D-02 holds need rows out of the
+   * raider's picker until then.
+   */
+  includeNeeds?: boolean
+}
+
 /**
  * Fetch and filter loot items for a set of raid tier IDs, applying
  * class/weapon/armor proficiency rules and enriching the class
@@ -109,7 +119,8 @@ export async function resolveTierIdsForPhases(
 export async function fetchFilteredLootItems(
   supabase: SupabaseClient,
   character: LootItemCharacter,
-  tierIds: string[]
+  tierIds: string[],
+  options: FetchFilteredLootItemsOptions = {}
 ): Promise<unknown[]> {
   if (tierIds.length === 0) return []
 
@@ -124,7 +135,9 @@ export async function fetchFilteredLootItems(
     name: string
     boss_name: string
     item_slot: string
-    wowhead_id: number
+    wowhead_id: number | null
+    kind?: string | null
+    need_key?: string | null
     classification: string | null
     item_type: string | null
     allocation_cost: number
@@ -138,12 +151,13 @@ export async function fetchFilteredLootItems(
     loot_item_classes: LootItemClassRestriction[] | null
     raid_tiers: { name: string } | { name: string }[] | null
   }
+  const includeNeeds = options.includeNeeds === true
   const items = await paginatedSelect<LootItemRow>(
-    (start, end) =>
-      supabase
+    (start, end) => {
+      let query = supabase
         .from('loot_items')
         .select(`
-          id, name, boss_name, item_slot, wowhead_id,
+          id, name, boss_name, item_slot, wowhead_id, kind, need_key,
           classification, item_type, allocation_cost, is_available, is_loot_council, roles,
           armor_type, weapon_type, primary_stat, raid_tier_id,
           loot_item_classes(class_id, spec_id, spec_type),
@@ -151,8 +165,11 @@ export async function fetchFilteredLootItems(
         `)
         .in('raid_tier_id', tierIds)
         .eq('is_available', true)
-        .order('id', { ascending: true })
-        .range(start, end),
+      // D-02 holds need rows out of the raider's picker until Phase 4 passes
+      // includeNeeds for Discovery tiers.
+      if (!includeNeeds) query = query.eq('kind', 'item')
+      return query.order('id', { ascending: true }).range(start, end)
+    },
   )
 
   if (items.length === 0) return []
@@ -177,6 +194,11 @@ export async function fetchFilteredLootItems(
   // cloth, regardless of officer assignments. Officer assignments only
   // control bracket visibility, not physical equippability.
   const filtered = items.filter((item: LootItemRow) => {
+    // The token, class-lock and proficiency checks below key on wowhead_id,
+    // which a need row does not have. Phase 4 decides need eligibility in the
+    // picker, so a need row passes through here untouched.
+    if (isNeedRow(item)) return true
+
     // Tokens have their own class eligibility rules.
     if (isTokenSlot(item.item_slot)) {
       if (className && !canClassUseToken(item.name, className)) return false
@@ -197,7 +219,7 @@ export async function fetchFilteredLootItems(
       let weaponType = item.weapon_type as WeaponType | null
 
       if (!armorType && !weaponType) {
-        const typeInfo = getItemTypeInfo(item.wowhead_id)
+        const typeInfo = item.wowhead_id == null ? undefined : getItemTypeInfo(item.wowhead_id)
         if (typeInfo) {
           armorType = typeInfo.armor_type || null
           weaponType = typeInfo.weapon_type || null

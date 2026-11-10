@@ -12,7 +12,7 @@ interface FakeOptions {
   activeExpansionId?: string | null
   expansionName?: string | null
   expansionError?: boolean
-  items?: Array<{ id: string; name: string; wowhead_id: number | null }>
+  items?: Array<{ id: string; name: string; wowhead_id: number | null; kind?: string }>
 }
 
 /**
@@ -142,5 +142,24 @@ describe('notifyLootAward item links', () => {
     const description = postedDescription()
     expect(description).toContain('**Mystery Blade**')
     expect(description).not.toContain('wowhead.com')
+  })
+
+  // D-15, DISC-06: a Discovery award names a need row, which has no Wowhead id
+  // to link. D-22 holds real need rankings in Phase 3, so this fixture stands
+  // past the hold; research open question 6 accepts plain bold text.
+  it('need row (past the D-22 hold): renders as plain bold text with no wowhead link', async () => {
+    const { client } = makeFakeSupabase({
+      expansionName: 'Forever',
+      items: [{ id: 'need-1', name: 'Trinket, Healing', kind: 'need', wowhead_id: null }],
+    })
+
+    const ok = await notifyLootAward(client, 'guild-1', [{ itemId: 'need-1', characterName: 'Thrall' }])
+
+    expect(ok).toBe(true)
+    const description = postedDescription()
+    expect(description).toContain('**Trinket, Healing**')
+    expect(description).toContain('**Thrall**')
+    expect(description).not.toContain('wowhead.com')
+    expect(description).not.toContain('](')
   })
 })

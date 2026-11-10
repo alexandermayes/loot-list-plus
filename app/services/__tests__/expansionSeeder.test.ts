@@ -10,13 +10,14 @@ import {
 } from '../expansionSeeder'
 import { EXPANSION_GAMES } from '@/domain/expansion/game'
 import { getRaidPhase, getExpansionSlug } from '@/data/expansion-phases'
+import { NEED_DEFINITIONS, needRowColumns } from '@/domain/loot/needs'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySupabase = any
 
 interface RecordedCall {
   table: string
-  method: 'select' | 'eq' | 'insert' | 'update' | 'delete'
+  method: 'select' | 'eq' | 'in' | 'order' | 'range' | 'insert' | 'update' | 'delete'
   args: unknown[]
 }
 
@@ -34,16 +35,24 @@ interface RecordedCall {
  *
  * An awaited raid_tiers chain that never called insert() is the catalog sync's
  * existing-tiers read: it resolves no rows, or { error } when
- * raidTiersReadError is set.
+ * raidTiersReadError is set. A raid_tiers insert followed by select resolves
+ * the inserted rows with ids tier-1, tier-2, ... in payload order. loot_items
+ * reads (order/range) resolve no rows and loot_items inserts resolve ok, or
+ * { error } when lootItemsInsertError is set.
  */
 function createMockSupabase(
-  options: { duplicateExists?: boolean; raidTiersReadError?: string } = {}
+  options: {
+    duplicateExists?: boolean
+    raidTiersReadError?: string
+    lootItemsInsertError?: string
+  } = {}
 ) {
   const fromCalls: string[] = []
   const calls: RecordedCall[] = []
 
   function buildBuilder(table: string) {
     let insertCalled = false
+    let insertedPayload: Array<Record<string, unknown>> = []
 
     const builder = {
       select(...args: unknown[]) {
@@ -54,9 +63,22 @@ function createMockSupabase(
         calls.push({ table, method: 'eq', args })
         return builder
       },
+      in(...args: unknown[]) {
+        calls.push({ table, method: 'in', args })
+        return builder
+      },
+      order(...args: unknown[]) {
+        calls.push({ table, method: 'order', args })
+        return builder
+      },
+      range(...args: unknown[]) {
+        calls.push({ table, method: 'range', args })
+        return Promise.resolve({ data: [], error: null })
+      },
       insert(...args: unknown[]) {
         calls.push({ table, method: 'insert', args })
         insertCalled = true
+        insertedPayload = Array.isArray(args[0]) ? (args[0] as Array<Record<string, unknown>>) : []
         return builder
       },
       update(...args: unknown[]) {
@@ -88,6 +110,13 @@ function createMockSupabase(
           result = options.raidTiersReadError
             ? { data: null, error: { message: options.raidTiersReadError } }
             : { data: [], error: null }
+        } else if (table === 'raid_tiers' && insertCalled) {
+          result = {
+            data: insertedPayload.map((row, index) => ({ id: `tier-${index + 1}`, name: row.name })),
+            error: null,
+          }
+        } else if (table === 'loot_items' && insertCalled && options.lootItemsInsertError) {
+          result = { data: null, error: { message: options.lootItemsInsertError } }
         }
         return Promise.resolve(result).then(onFulfilled, onRejected)
       },
@@ -181,7 +210,7 @@ describe('getAvailableExpansions', () => {
 })
 
 describe('seedExpansionForGuild', () => {
-  it('seeds Forever with its three manifest raid tiers in one insert and no loot rows', async () => {
+  it('[D-01] seeds Forever with three Discovery raid tiers in one insert, then 145 need rows per tier in one insert', async () => {
     const { supabase, fromCalls, calls } = createMockSupabase()
 
     const result = await seedExpansionForGuild(supabase, 'g1', 'Forever', true, true)
@@ -189,8 +218,7 @@ describe('seedExpansionForGuild', () => {
     expect(result).toEqual({ expansionId: 'exp-1' })
     expect(result.error).toBeUndefined()
 
-    // D-01: bosses stay manifest-only, so no catalog tables are touched.
-    expect(fromCalls).not.toContain('loot_items')
+    // Bosses stay manifest-only: the only loot_items rows are need rows.
     expect(fromCalls).not.toContain('loot_item_classes')
     expect(fromCalls).not.toContain('wow_classes')
 
@@ -200,6 +228,7 @@ describe('seedExpansionForGuild', () => {
 
     const tierCalls = calls.filter(c => c.table === 'raid_tiers')
     expect(tierCalls.filter(c => c.method === 'select')).toEqual([
+      { table: 'raid_tiers', method: 'select', args: ['id, name, list_mode'] },
       { table: 'raid_tiers', method: 'select', args: ['id, name'] },
     ])
     expect(tierCalls.filter(c => c.method === 'eq')).toEqual([
@@ -219,6 +248,7 @@ describe('seedExpansionForGuild', () => {
           master_sheet_visible: true,
           phase: 1,
           sort_order: 1,
+          list_mode: 'discovery',
         },
         {
           expansion_id: 'exp-1',
@@ -228,6 +258,7 @@ describe('seedExpansionForGuild', () => {
           master_sheet_visible: true,
           phase: 1,
           sort_order: 2,
+          list_mode: 'discovery',
         },
         {
           expansion_id: 'exp-1',
@@ -237,9 +268,48 @@ describe('seedExpansionForGuild', () => {
           master_sheet_visible: true,
           phase: 1,
           sort_order: 3,
+          list_mode: 'discovery',
         },
       ],
     ])
+
+    // D-11, D-17: need rows follow the tier insert, 145 per tier, in tier then definition order.
+    const lootInserts = calls.filter(c => c.table === 'loot_items' && c.method === 'insert')
+    expect(lootInserts).toHaveLength(1)
+    expect(lootInserts[0].args[0]).toEqual(
+      ['tier-1', 'tier-2', 'tier-3'].flatMap(tierId =>
+        NEED_DEFINITIONS.map(definition => ({ raid_tier_id: tierId, ...needRowColumns(definition) }))
+      )
+    )
+    expect((lootInserts[0].args[0] as unknown[]).length).toBe(435)
+    expect(calls.indexOf(tierInserts[0] as never)).toBeLessThan(calls.indexOf(lootInserts[0] as never))
+  })
+
+  it('[DISC-01 empty] a Forever expansion with zero tiers ends with three Discovery tiers and 435 need rows', async () => {
+    const { supabase, calls } = createMockSupabase()
+
+    await seedExpansionForGuild(supabase, 'g1', 'Forever', false, true)
+
+    const lootInserts = calls.filter(c => c.table === 'loot_items' && c.method === 'insert')
+    expect(lootInserts).toHaveLength(1)
+    expect(lootInserts[0].args[0]).toHaveLength(NEED_DEFINITIONS.length * 3)
+  })
+
+  it('rolls the expansion back and returns the generic error when the need-row insert fails', async () => {
+    const { supabase, calls } = createMockSupabase({ lootItemsInsertError: 'nope' })
+
+    const result = await seedExpansionForGuild(supabase, 'g1', 'Forever', true, true)
+
+    expect(result).toEqual({
+      expansionId: '',
+      error: 'Something went wrong while setting up the expansion',
+    })
+    expect(calls.filter(c => c.method === 'delete')).toEqual([
+      { table: 'expansions', method: 'delete', args: [] },
+    ])
+    expect(
+      calls.filter(c => c.table === 'guilds' && c.method === 'update').map(c => c.args[0])
+    ).toEqual([{ active_expansion_id: 'exp-1' }, { active_expansion_id: null }])
   })
 
   it('returns the existing generic error and inserts no tiers when the raid_tiers read fails', async () => {

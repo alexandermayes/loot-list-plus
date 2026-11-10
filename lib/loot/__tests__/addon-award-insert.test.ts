@@ -516,3 +516,31 @@ describe('insertAddonAward alternate keys (FU-C of 261001-tv5, D-02)', () => {
     ])
   })
 })
+
+describe("need rows (kind: 'need')", () => {
+  // A need row has no wowhead id (D-14), so an addon award can never be keyed
+  // to one: the key needs a positive integer wowhead id.
+  const NEED_ROW = { kind: 'need', need_key: 'trinket.healing', wowhead_id: null }
+
+  it('addonAwardKeys with a need row wowhead id yields no key and no alternates', () => {
+    expect(NEED_ROW.kind).toBe('need')
+    expect(
+      addonAwardKeys({
+        awardedAt: '2026-10-21T20:15:00Z',
+        wowheadId: NEED_ROW.wowhead_id,
+        characterName: 'Raider',
+      }),
+    ).toEqual({ key: null, alternateKeys: [] })
+  })
+
+  it('stays keyless with an awardId too', () => {
+    expect(
+      addonAwardKeys({
+        awardedAt: '2026-10-21T20:15:00Z',
+        wowheadId: NEED_ROW.wowhead_id,
+        characterName: 'Raider',
+        awardId: 'abc123',
+      }),
+    ).toEqual({ key: null, alternateKeys: [] })
+  })
+})

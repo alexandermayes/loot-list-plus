@@ -19,6 +19,8 @@ export async function GET(request: NextRequest) {
       .from('loot_items')
       .select('id, name, boss_name, item_slot, wowhead_id, classification')
       .eq('raid_tier_id', raidTierId)
+      // D-14: soft reserves stay item-only, so a need row is never offered.
+      .eq('kind', 'item')
       .eq('is_available', true)
       .order('boss_name')
 

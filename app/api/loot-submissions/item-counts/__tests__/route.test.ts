@@ -42,10 +42,24 @@ const LC1 = l(5)
 const LD1 = l(6)
 const LX = l(99)
 
+// A need row (D-22 holds ranking needs server-side, so no real list holds one
+// in Phase 3; this fixture stands past the hold).
+const NEED_ROW = {
+  id: `00000006-0000-0000-0000-${String(1).padStart(12, '0')}`,
+  name: 'Trinket, Healing',
+  kind: 'need',
+  need_key: 'trinket.healing',
+  wowhead_id: null,
+  boss_name: 'Needs',
+  item_slot: 'Trinket',
+  classification: 'Reserved',
+  allocation_cost: 3,
+}
+
 interface CharacterRow { id: string; user_id: string }
 interface MembershipRow { character_id: string; guild_id: string; is_active: boolean }
 interface ListRow { id: string; guild_id: string }
-interface ItemRow { id: string; submission_id: string; removed_at: string | null }
+interface ItemRow { id: string; submission_id: string; removed_at: string | null; loot_item_id?: string }
 
 interface Fixture {
   characters: CharacterRow[]
@@ -249,6 +263,26 @@ describe('GET and POST /api/loot-submissions/item-counts', () => {
       const itemsCall = callsFor(calls, 'loot_submission_items')[0]
       expect(filterValue(itemsCall, 'in', 'submission_id')).toEqual([LA1, LA2, LA3])
       expect(itemsCall.filters).toContainEqual(['is', 'removed_at', null])
+    })
+  })
+
+  describe('need row (past the D-22 hold)', () => {
+    it('counts a need row like an item row, by the list id, and counts a removed need row out', async () => {
+      const fixture = defaultFixture()
+      fixture.items.push(
+        { id: `00000005-0000-0000-0000-${String(901).padStart(12, '0')}`, submission_id: LA3, removed_at: null, loot_item_id: NEED_ROW.id },
+        { id: `00000005-0000-0000-0000-${String(902).padStart(12, '0')}`, submission_id: LA3, removed_at: null, loot_item_id: `00000007-0000-0000-0000-${String(1).padStart(12, '0')}` },
+        { id: `00000005-0000-0000-0000-${String(903).padStart(12, '0')}`, submission_id: LA3, removed_at: '2026-09-01T00:00:00.000Z', loot_item_id: NEED_ROW.id },
+      )
+      const { calls } = setup(fixture)
+      const res = await POST(postRequest({ ids: [LA3] }))
+      expect(res.status).toBe(200)
+      expect(await res.json()).toEqual({ [LA3]: 2 })
+
+      // The count reads list rows only, never loot_items, so a need row needs
+      // no branch: it is one live row like any other.
+      expect(callsFor(calls, 'loot_items')).toHaveLength(0)
+      expect(callsFor(calls, 'loot_submission_items')[0].selectCols).toBe('submission_id')
     })
   })
 

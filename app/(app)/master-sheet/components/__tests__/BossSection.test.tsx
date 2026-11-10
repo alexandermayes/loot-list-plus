@@ -7,9 +7,18 @@ import { RAIDER_BONUS_GENERIC_DETAIL } from '@/domain/scoring/explain'
 // GH #357: the score hover shows each active raider bonus reason and end
 // date instead of only the total.
 
-vi.mock('@/app/components/ItemLink', () => ({
-  default: ({ name }: { name: string }) => <span>{name}</span>,
-}))
+// The need-row cases (D-13) need the real ItemLink to prove the NeedLabel
+// fallback renders no Wowhead anchor; every other case keeps the light mock.
+const itemLinkMode = vi.hoisted(() => ({ real: false }))
+vi.mock('@/app/components/ItemLink', async () => {
+  const actual = await vi.importActual<typeof import('@/app/components/ItemLink')>('@/app/components/ItemLink')
+  const Real = actual.default
+  return {
+    default: (props: { name: string; wowheadId: number | null; onClick?: (e: React.MouseEvent) => void }) =>
+      itemLinkMode.real ? <Real {...props} /> : <span>{props.name}</span>,
+  }
+})
+vi.mock('@/data/item-icons', () => ({ getItemIconUrl: () => null }))
 vi.mock('@/data/boss-quotes', () => ({ getBossQuote: () => null }))
 
 const ITEM: LootItem = {
@@ -85,5 +94,80 @@ describe('BossSection score hover raider bonus reasons (GH #357)', () => {
     hoverThrall('char-other')
     expect(await screen.findByText('Raider bonus')).toBeInTheDocument()
     expect(screen.queryByText(RAIDER_BONUS_GENERIC_DETAIL)).toBeNull()
+  })
+})
+
+describe('BossSection need rows (D-13, DISC-06)', () => {
+  const NEED: LootItem = {
+    id: 'need-trinket-healing',
+    name: 'Trinket, Healing',
+    boss_name: 'Needs',
+    item_slot: 'Trinket',
+    wowhead_id: null,
+    kind: 'need',
+  }
+
+  beforeEach(() => {
+    itemLinkMode.real = true
+  })
+
+  afterEach(() => {
+    itemLinkMode.real = false
+    cleanup()
+  })
+
+  it('N1: renders the need name and its ranking with no Wowhead anchor', () => {
+    const { container } = render(
+      <BossSection
+        boss="Needs"
+        items={[{ item: NEED, rankings: [ranking()] }]}
+        isCollapsed={false}
+        onToggleCollapse={() => {}}
+      />,
+    )
+    const table = container.querySelector('table')!
+
+    expect(within(table).getByText('Trinket, Healing')).toBeInTheDocument()
+    expect(within(table).getByText('Thrall')).toBeInTheDocument()
+    expect(container.querySelector('a')).toBeNull()
+    expect(container.querySelector('[data-wowhead]')).toBeNull()
+    expect(container.innerHTML).not.toContain('item=null')
+  })
+
+  it('N2: an officer clicking the need name opens the candidate modal once', () => {
+    const onItemClick = vi.fn()
+    const rankings = [ranking()]
+    const { container } = render(
+      <BossSection
+        boss="Needs"
+        items={[{ item: NEED, rankings }]}
+        isCollapsed={false}
+        onToggleCollapse={() => {}}
+        isOfficer
+        onItemClick={onItemClick}
+      />,
+    )
+    const table = container.querySelector('table')!
+
+    fireEvent.click(within(table).getByRole('button', { name: 'Trinket, Healing' }))
+
+    expect(onItemClick).toHaveBeenCalledTimes(1)
+    expect(onItemClick).toHaveBeenCalledWith(NEED, rankings)
+  })
+
+  it('N3: a raider (not an officer) sees no click target on the need name', () => {
+    const { container } = render(
+      <BossSection
+        boss="Needs"
+        items={[{ item: NEED, rankings: [ranking()] }]}
+        isCollapsed={false}
+        onToggleCollapse={() => {}}
+        onItemClick={() => {}}
+      />,
+    )
+    const table = container.querySelector('table')!
+
+    expect(within(table).queryByRole('button', { name: 'Trinket, Healing' })).toBeNull()
+    expect(within(table).getByText('Trinket, Healing')).toBeInTheDocument()
   })
 })

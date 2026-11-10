@@ -1,7 +1,7 @@
 // @vitest-environment node
 // jsdom (the global vitest.config.ts environment) does not provide the web
 // Response/Request globals that next/server relies on.
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { NextRequest } from 'next/server'
 import { GET, POST } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
@@ -78,7 +78,7 @@ interface EquippedItemRow {
   gem_ids: number[] | null
   imported_at: string
 }
-interface LootItemsEmbed { wowhead_id: number; name: string; item_slot: string }
+interface LootItemsEmbed { wowhead_id: number | null; name: string; item_slot: string; kind?: 'item' | 'need' }
 interface LootHistoryRow {
   id: string
   character_id: string
@@ -387,6 +387,68 @@ describe('GET /api/character-gear', () => {
       expect(filterValue(lootHistoryCall, 'eq', 'character_id')).toBe(CH_T)
       expect(hasFilter(lootHistoryCall, 'in', 'guild_id')).toBe(false)
       expect(callsFor(calls, 'character_guild_memberships')).toHaveLength(0)
+    })
+  })
+
+  // regression for DISC-06 (D-16): a need award names no real item, so gear skips it
+  // with one visible warning per request instead of dropping it silently.
+  describe('need awards', () => {
+    let warnSpy: ReturnType<typeof vi.spyOn>
+
+    beforeEach(() => {
+      warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    })
+
+    afterEach(() => {
+      warnSpy.mockRestore()
+    })
+
+    it('leaves a need award out of awarded_items, counts only the item award and warns once', async () => {
+      const fixture = defaultFixture()
+      fixture.lootHistory = [
+        { id: a(1), character_id: CH_T, guild_id: GUILD_A, awarded_date: '2026-01-02', loot_items: { wowhead_id: 1001, name: 'Item A', item_slot: 'Head', kind: 'item' } },
+        { id: a(6), character_id: CH_T, guild_id: GUILD_A, awarded_date: '2026-01-07', loot_items: { wowhead_id: null, name: 'Trinket, Healing', item_slot: 'Trinket', kind: 'need' } },
+      ]
+      setup(fixture, OWNER)
+      const res = await GET(getRequest(`character_id=${CH_T}`))
+      expect(res.status).toBe(200)
+      const body = await res.json()
+      expect((body.awarded_items as { wowhead_id: number }[]).map(i => i.wowhead_id)).toEqual([1001])
+      expect(body.count).toBe(3)
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+      expect(warnSpy.mock.calls[0][1]).toEqual({ reader: 'character-gear', skipped: 1 })
+    })
+
+    it('warns once per request even when several need awards are skipped', async () => {
+      const fixture = defaultFixture()
+      fixture.lootHistory = [
+        { id: a(6), character_id: CH_T, guild_id: GUILD_A, awarded_date: '2026-01-07', loot_items: { wowhead_id: null, name: 'Trinket, Healing', item_slot: 'Trinket', kind: 'need' } },
+        { id: a(7), character_id: CH_T, guild_id: GUILD_A, awarded_date: '2026-01-08', loot_items: { wowhead_id: null, name: 'Ring, Caster', item_slot: 'Finger', kind: 'need' } },
+      ]
+      setup(fixture, OWNER)
+      const res = await GET(getRequest(`character_id=${CH_T}`))
+      const body = await res.json()
+      expect(body.awarded_items).toEqual([])
+      expect(warnSpy).toHaveBeenCalledTimes(1)
+      expect(warnSpy.mock.calls[0][1]).toEqual({ reader: 'character-gear', skipped: 2 })
+    })
+
+    it('returns item awards exactly as before and never warns when there is no need award', async () => {
+      setup(defaultFixture(), OWNER)
+      const res = await GET(getRequest(`character_id=${CH_T}`))
+      const body = await res.json()
+      expect(body.awarded_items).toEqual([
+        { wowhead_id: 1001, item_name: 'Item A', slot: 'Head', awarded_date: '2026-01-02', source: 'loot_history' },
+        { wowhead_id: 1003, item_name: 'Item C', slot: 'Chest', awarded_date: '2026-01-03', source: 'loot_history' },
+        { wowhead_id: 1004, item_name: 'Item D', slot: 'Legs', awarded_date: '2026-01-04', source: 'loot_history' },
+      ])
+      expect(warnSpy).not.toHaveBeenCalled()
+    })
+
+    it('selects kind on the embedded loot_items read', async () => {
+      const { calls } = setup(defaultFixture(), OWNER)
+      await GET(getRequest(`character_id=${CH_T}`))
+      expect(callsFor(calls, 'loot_history')[0].selectCols).toMatch(/\bkind\b/)
     })
   })
 

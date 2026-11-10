@@ -87,11 +87,16 @@ export async function GET(request: Request) {
     // Fuzzy item match: case-insensitive substring, only within tiers the bot may
     // search. Pick the shortest match so "Sulfuras" doesn't accidentally grab
     // "Sulfuras, Hand of Ragnaros, Heroic Variant".
+    //
+    // D-14: the bot stays item-only until the Drop Desk (Phase 5), so every
+    // loot_items read here filters kind = 'item'. Without it a query like
+    // 'chest' would answer with a need named 'Chest, Plate, Strength'.
     let visibleMatches: LootItemRow[] = []
     if (rankedTierIds.length > 0) {
       const { data, error } = await supabase
         .from('loot_items')
         .select('id, name, wowhead_id')
+        .eq('kind', 'item')
         .in('raid_tier_id', rankedTierIds)
         .ilike('name', `%${itemQuery}%`)
         .order('name', { ascending: true })
@@ -109,6 +114,7 @@ export async function GET(request: Request) {
       const { data, error } = await supabase
         .from('loot_items')
         .select('id, name, wowhead_id')
+        .eq('kind', 'item')
         .in('raid_tier_id', hiddenTierIds)
         .ilike('name', `%${itemQuery}%`)
         .order('name', { ascending: true })
@@ -151,6 +157,7 @@ export async function GET(request: Request) {
       const { data, error } = await supabase
         .from('loot_items')
         .select('id')
+        .eq('kind', 'item')
         .in('raid_tier_id', rankedTierIds)
         .eq('wowhead_id', item.wowhead_id)
       if (error) {

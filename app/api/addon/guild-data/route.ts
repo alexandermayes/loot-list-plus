@@ -7,6 +7,8 @@ import { getAttendanceWindowEnd, resolveOwnedEvents, resolveActiveRaiderModifier
 import { toDateString } from '@/utils/date'
 import { withFactionVariants } from '@/domain/loot/faction-item-aliases'
 import { buildMemberRankedItems, fetchReceivedCounts, inExportExpansion } from '@/lib/addon/member-ranked-items'
+import { isNeedRow } from '@/domain/loot/item-identity'
+import { createNeedSkipScope, noteNeedSkipped } from '@/lib/loot/need-skip'
 
 /**
  * GET /api/addon/guild-data
@@ -55,6 +57,10 @@ export async function GET(request: NextRequest) {
     if (!guildId) {
       return NextResponse.json({ error: 'guild_id is required' }, { status: 400 })
     }
+
+    // One scope per request: a need ranking or need BLP row that reaches this
+    // route is skipped and warned about once (D-16).
+    const needSkip = createNeedSkipScope('addon-guild-data')
 
     const supabase = createTypedServiceRoleClient()
 
@@ -131,6 +137,9 @@ export async function GET(request: NextRequest) {
         : selectAllPagesOrThrow('loot_items', (start, end) =>
             supabase.from('loot_items').select('id, name, wowhead_id, boss_name, item_slot, item_type, classification, raid_tier_id')
               .in('raid_tier_id', raidTierIds)
+              // D-14: the companion keys items by String(wowhead_id), so a need
+              // row (null wowhead_id) would collide every need on 'null'.
+              .eq('kind', 'item')
               .order('name', { ascending: true }).order('id', { ascending: true })
               .range(start, end)),
       // Oldest first, then id, so pages neither skip nor repeat a row and
@@ -140,13 +149,13 @@ export async function GET(request: NextRequest) {
       selectAllPagesOrThrow('loot_submissions', (start, end) =>
         supabase.from('loot_submissions').select(`
           id, character_id, expansion_id, phase, status,
-          loot_submission_items (loot_item_id, rank, slot, removed_at, loot_items (wowhead_id))
+          loot_submission_items (loot_item_id, rank, slot, removed_at, loot_items (wowhead_id, kind))
         `).eq('guild_id', guildId).eq('status', 'approved')
           .order('created_at', { ascending: true }).order('id', { ascending: true })
           .range(start, end)),
       // FIX-02: the table is blp_tracking (guild_id, character_id, loot_item_id, times_passed).
       selectAllPagesOrThrow('blp_tracking', (start, end) =>
-        supabase.from('blp_tracking').select('character_id, loot_item_id, times_passed')
+        supabase.from('blp_tracking').select('character_id, loot_item_id, times_passed, loot_items (kind)')
           .eq('guild_id', guildId)
           .order('id', { ascending: true })
           .range(start, end)),
@@ -225,6 +234,7 @@ export async function GET(request: NextRequest) {
         guild.active_expansion_id,
       ),
       receivedCounts,
+      needSkip,
     )
 
     // Build members
@@ -261,11 +271,18 @@ export async function GET(request: NextRequest) {
     }
 
     // Build BLP
+    // A need row's BLP never goes out (D-14), whatever expansion it belongs to.
     const blp: Record<string, Record<string, number>> = {}
+    let needBlpSkipped = 0
     for (const b of blpRows) {
+      if (isNeedRow(b.loot_items)) {
+        needBlpSkipped += 1
+        continue
+      }
       if (!blp[b.character_id]) blp[b.character_id] = {}
       blp[b.character_id][b.loot_item_id] = b.times_passed
     }
+    noteNeedSkipped(needSkip, needBlpSkipped)
 
     // Build attendance: per-character totalRaids resolved via the same
     // team-aware dedup as the web engine, so the addon's in-game score

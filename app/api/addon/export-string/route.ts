@@ -10,6 +10,8 @@ import { deflateRawSync } from 'zlib'
 import { withFactionVariants } from '@/domain/loot/faction-item-aliases'
 import { buildMemberRankedItems, fetchReceivedCounts, inExportExpansion, type MemberRankedItem } from '@/lib/addon/member-ranked-items'
 import type { Json } from '@/lib/database.types'
+import { isNeedRow } from '@/domain/loot/item-identity'
+import { createNeedSkipScope, noteNeedSkipped } from '@/lib/loot/need-skip'
 
 /**
  * GET /api/addon/export-string
@@ -57,6 +59,10 @@ export async function GET(request: NextRequest) {
     if (!guildId) {
       return NextResponse.json({ error: 'guild_id is required' }, { status: 400 })
     }
+
+    // One scope per request: a need ranking or need BLP row that reaches this
+    // route is skipped and warned about once (D-16).
+    const needSkip = createNeedSkipScope('addon-export-string')
 
     const supabase = createTypedServiceRoleClient()
 
@@ -127,7 +133,7 @@ export async function GET(request: NextRequest) {
           'raid_tiers',
           await supabase
             .from('raid_tiers')
-            .select('id, name, phase, loot_items(id, name, wowhead_id, boss_name, item_slot, item_type, classification, raid_tier_id)')
+            .select('id, name, phase, loot_items(id, name, wowhead_id, boss_name, item_slot, item_type, classification, raid_tier_id, kind)')
             .eq('expansion_id', expansionId)
             .order('phase', { ascending: true }),
         )
@@ -140,6 +146,10 @@ export async function GET(request: NextRequest) {
     const lootItems: BuildPayloadArgs['lootItems'] = []
     for (const tier of tierRows) {
       for (const item of tier.loot_items || []) {
+        // D-14: the import string is item-only. The tiers must stay in the
+        // result, so the filter is applied here rather than on the embed
+        // (research D2).
+        if (isNeedRow(item)) continue
         lootItems.push(item)
       }
     }
@@ -189,7 +199,7 @@ export async function GET(request: NextRequest) {
           id, character_id, expansion_id, phase, status,
           loot_submission_items (
             loot_item_id, rank, slot, removed_at,
-            loot_items (wowhead_id)
+            loot_items (wowhead_id, kind)
           )
         `)
         .eq('guild_id', guildId)
@@ -225,12 +235,15 @@ export async function GET(request: NextRequest) {
             .range(start, end))
 
     // BLP (FIX-02: the table is blp_tracking), paged the same way.
-    const blpData = await selectAllPagesOrThrow('blp_tracking', (start, end) =>
+    const blpRows = await selectAllPagesOrThrow('blp_tracking', (start, end) =>
       supabase.from('blp_tracking')
-        .select('character_id, loot_item_id, times_passed')
+        .select('character_id, loot_item_id, times_passed, loot_items (kind)')
         .eq('guild_id', guildId)
         .order('id', { ascending: true })
         .range(start, end))
+    // A need row's BLP never goes out (D-14), whatever expansion it belongs to.
+    const blpData = blpRows.filter(row => !isNeedRow(row.loot_items))
+    noteNeedSkipped(needSkip, blpRows.length - blpData.length)
 
     // Fetch attendance records. Drop events from the in-progress reset week
     // so the addon's score preview matches the web (see computeAttendance).
@@ -337,6 +350,7 @@ export async function GET(request: NextRequest) {
       memberItems: buildMemberRankedItems(
         (submissions || []).filter((sub): sub is typeof sub & { character_id: string } => sub.character_id !== null),
         receivedCounts,
+        needSkip,
       ),
       priorities,
       blpData,

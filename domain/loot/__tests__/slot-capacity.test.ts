@@ -4,6 +4,7 @@ import {
   maxCopiesForItem,
   isUniqueEquipped,
   MAX_COPIES_PER_SLOT,
+  maxCopiesForNeed,
 } from '../slot-capacity'
 
 // Real ids from data/item-unique.ts. The three rings are the ones reported in
@@ -138,5 +139,35 @@ describe('maxCopiesForItem', () => {
     expect(maxCopiesForItem({ item_slot: 'Token', wowhead_id: 22349 })).toBe(1) // Desecrated Breastplate
     expect(maxCopiesForItem({ item_slot: 'Token', wowhead_id: UNKNOWN_ID })).toBe(1)
     expect(maxCopiesForItem({ item_slot: 'Token', wowhead_id: null })).toBe(1)
+  })
+})
+
+// DISC-06: a raider can want two ring or trinket drops for one need; every
+// other need is one slot. Needs have no wowhead_id, so the unique flag never
+// applies.
+describe('maxCopiesForNeed', () => {
+  it('allows two copies for Finger and Trinket', () => {
+    expect(maxCopiesForNeed('Finger')).toBe(2)
+    expect(maxCopiesForNeed('Trinket')).toBe(2)
+  })
+
+  it('allows one copy for every other slot, null or undefined', () => {
+    for (const slot of ['Main Hand', 'Two-Hand', 'Chest', 'One-Hand', null, undefined]) {
+      expect(maxCopiesForNeed(slot)).toBe(1)
+    }
+  })
+})
+
+describe('maxCopiesForItem for need rows', () => {
+  it('uses the per-need cap', () => {
+    expect(maxCopiesForItem({ kind: 'need', item_slot: 'Trinket', wowhead_id: null })).toBe(2)
+    expect(maxCopiesForItem({ kind: 'need', item_slot: 'Finger' })).toBe(2)
+    expect(maxCopiesForItem({ kind: 'need', item_slot: 'Head' })).toBe(1)
+  })
+
+  it('leaves item rows exactly as they were', () => {
+    expect(maxCopiesForItem({ kind: 'item', item_slot: 'Trinket', wowhead_id: SKULL_OF_GULDAN })).toBe(1)
+    expect(maxCopiesForItem({ kind: 'item', item_slot: 'Trinket', wowhead_id: MARLIS_EYE })).toBe(2)
+    expect(maxCopiesForItem({ kind: null, item_slot: 'Finger', wowhead_id: SPECTRAL_BAND_OF_INNERVATION })).toBe(1)
   })
 })

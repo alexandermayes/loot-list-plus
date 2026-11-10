@@ -38,6 +38,20 @@ const ONE_HAND_WEAPONS = new Set(ONE_HAND_WEAPON_IDS)
 export const PAIRED_SLOTS = Object.keys(MAX_COPIES_PER_SLOT)
 
 /**
+ * Need slots a raider may rank twice: two rings or two trinkets can both be
+ * wanted for one need. Every other need is one slot, so one copy.
+ */
+export const NEED_PAIRED_SLOTS = ['Finger', 'Trinket']
+
+/**
+ * Max copies of a Discovery need on one loot list. A need has no wowhead_id,
+ * so the unique and token rules never apply; only the slot decides.
+ */
+export function maxCopiesForNeed(itemSlot: string | null | undefined): number {
+  return itemSlot && NEED_PAIRED_SLOTS.includes(itemSlot) ? 2 : DEFAULT_MAX_COPIES
+}
+
+/**
  * Whether an item can only be worn once regardless of slot.
  *
  * Returns undefined for ids absent from the generated map — unknown, NOT
@@ -88,7 +102,12 @@ const MAX_COPIES_WHEN_UNIQUE_UNKNOWN: Record<string, number> = {
 export function maxCopiesForItem(item: {
   item_slot?: string | null
   wowhead_id?: number | null
+  kind?: string | null
 }): number {
+  // First, before the token and unique checks: both key on wowhead_id, which
+  // a need row does not have.
+  if (item.kind === 'need') return maxCopiesForNeed(item.item_slot)
+
   if (item.item_slot && isTokenSlot(item.item_slot)) {
     if (item.wowhead_id == null) return DEFAULT_MAX_COPIES
     return TOKEN_MAX_COPIES[item.wowhead_id] ?? DEFAULT_MAX_COPIES

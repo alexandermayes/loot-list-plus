@@ -17,6 +17,7 @@ const id = (n: number) => `eeeeeeee-0000-0000-0000-${String(n).padStart(12, '0')
 const GUILD_ID = id(1)
 const TIER_ID = id(2)
 const ITEM_ID = id(3)
+const NEED_ID = id(4)
 const CREATOR_ID = id(10)
 const GONE_ID = id(11)
 const SOLO_ID = id(12)
@@ -174,7 +175,7 @@ function baseFixture(): Fixture {
     ],
     raid_tiers: [{ id: TIER_ID, name: 'Tier 1' }],
     guilds: [{ id: GUILD_ID, name: 'Guild', subscription_tier: 'pro' }],
-    loot_items: [{ id: ITEM_ID, name: 'Sword', armor_type: null, boss_name: 'Boss', item_slot: 'weapon', wowhead_id: 1, classification: 'epic', raid_tier_id: TIER_ID, is_available: true }],
+    loot_items: [{ id: ITEM_ID, name: 'Sword', armor_type: null, boss_name: 'Boss', item_slot: 'weapon', wowhead_id: 1, classification: 'epic', raid_tier_id: TIER_ID, is_available: true, kind: 'item' }],
     characters: [
       { id: 'char-creator', user_id: CREATOR_ID, name: 'Creator', is_main: true, class: { name: 'Warrior', color_hex: '#fff' }, spec: { name: 'Fury' } },
       { id: 'char-gone', user_id: GONE_ID, name: 'Gone', is_main: true, class: { name: 'Mage', color_hex: '#fff' }, spec: { name: 'Fire' } },
@@ -236,6 +237,19 @@ describe('GET /api/reserve-runs/join/[token]', () => {
     expect(json.items).toHaveLength(1)
     expect(json.submissions).toEqual([])
     expect(submissionCalls(calls)).toHaveLength(0)
+  })
+
+  it('lists item rows only, never a need row (D-14)', async () => {
+    setUser(null)
+    const fixture = baseFixture()
+    fixture.loot_items.push({ id: NEED_ID, name: 'Main hand weapon', armor_type: null, boss_name: 'Boss', item_slot: null, wowhead_id: null, classification: 'standard', raid_tier_id: TIER_ID, is_available: true, kind: 'need' })
+    const calls = setClient(fixture)
+    const res = await GET(getRequest(SHARE_OPEN), { params: Promise.resolve({ token: SHARE_OPEN }) })
+    const json = await res.json()
+    expect(res.status).toBe(200)
+    expect(json.items.map((i: Row) => i.id)).toEqual([ITEM_ID])
+    const lootCall = calls.find((c) => c.table === 'loot_items')
+    expect(lootCall?.filters).toContainEqual(['eq', 'kind', 'item'])
   })
 
   it('gives a guest the sign-ups but still no run id on a locked run', async () => {
@@ -329,6 +343,17 @@ describe('POST /api/reserve-runs/join/[token]', () => {
     expect(json.submission).not.toHaveProperty('user_id')
     const insertCall = calls.find((c) => c.table === 'reserve_submissions' && c.op === 'insert')
     expect(insertCall?.selectCols).toBe('id, character_name, character_class, character_spec, items, status, created_at, updated_at')
+  })
+
+  it('refuses a need row id with the invalid-items 400 and writes no reserve row (D-14)', async () => {
+    const fixture = baseFixture()
+    fixture.loot_items.push({ id: NEED_ID, name: 'Main hand weapon', armor_type: null, boss_name: 'Boss', item_slot: null, wowhead_id: null, classification: 'standard', raid_tier_id: TIER_ID, is_available: true, kind: 'need' })
+    const calls = setClient(fixture)
+    const res = await POST(postRequest(SHARE_OPEN, body({ items: [ITEM_ID, NEED_ID] })), { params: Promise.resolve({ token: SHARE_OPEN }) })
+    const json = await res.json()
+    expect(res.status).toBe(400)
+    expect(json.error).toBe('One or more items are not valid for this raid')
+    expect(calls.some((c) => c.table === 'reserve_submissions' && (c.op === 'insert' || c.op === 'update'))).toBe(false)
   })
 
   it('updates an existing submission under the same name with the same column list', async () => {

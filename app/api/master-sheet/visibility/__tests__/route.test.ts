@@ -622,3 +622,130 @@ describe("GH #326: the phase gate counts only the caller's active characters", (
     expect(approvedListCall).toBeUndefined()
   })
 })
+
+describe('need row (past the D-22 hold)', () => {
+  const NEED_ID = 'aaaaaaaa-0000-0000-0000-000000000020'
+  const TIER_ID_2 = 'aaaaaaaa-0000-0000-0000-000000000021'
+  const SUB_NEED = 'aaaaaaaa-0000-0000-0000-000000000022'
+
+  // D-22 holds ranking needs server-side, so no real list holds one in
+  // Phase 3; this fixture stands past the hold. The need sits in a raid tier
+  // of the fixture guild like any item, which is what the earned-phase
+  // filter reads.
+  const NEED_ROW = {
+    id: NEED_ID,
+    name: 'Trinket, Healing',
+    kind: 'need',
+    need_key: 'trinket.healing',
+    wowhead_id: null,
+    boss_name: 'Needs',
+    item_slot: 'Trinket',
+    classification: 'Reserved',
+    allocation_cost: 3,
+    raid_tier_id: TIER_ID,
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: USER_ID }, error: null } as never)
+  })
+
+  const needRanking = { id: 'rn1', rank: 7, slot: 1, submission_id: SUB_NEED, loot_item_id: NEED_ID, removed_at: null }
+
+  function needTables(overrides: Partial<Record<string, Row[]>> = {}): Record<string, Row[]> {
+    return baseTables({
+      loot_items: [NEED_ROW],
+      loot_submission_items: [needRanking],
+      loot_submissions: [
+        { id: SUB_NEED, status: 'approved', character_id: ACTIVE_CHAR, guild_id: GUILD, phase: 1, expansion_id: EXP_ID },
+      ],
+      ...overrides,
+    })
+  }
+
+  // The raider path: not the guild creator, no bypass role.
+  function raiderTables(callerListPhase: number | null, tierVisible = true): Record<string, Row[]> {
+    return needTables({
+      guilds: [{ id: GUILD, created_by: OTHER_USER }],
+      character_guild_memberships: [
+        { character_id: CALLER_CHAR, guild_id: GUILD, role: 'Member', membership_status: 'active', is_active: true },
+        { character_id: ACTIVE_CHAR, guild_id: GUILD, role: 'Member', membership_status: 'active', is_active: true },
+      ],
+      guild_roles: [{ guild_id: GUILD, name: 'Member', position: 0, permissions: [] }],
+      raid_tiers: [
+        { id: TIER_ID, phase: 1, master_sheet_visible: tierVisible, expansion_id: EXP_ID },
+        { id: TIER_ID_2, phase: 2, master_sheet_visible: true, expansion_id: EXP_ID },
+      ],
+      expansions: [{ id: EXP_ID, phase_groups: null }],
+      loot_submissions: [
+        { id: SUB_NEED, status: 'approved', character_id: ACTIVE_CHAR, guild_id: GUILD, phase: 1, expansion_id: EXP_ID },
+        ...(callerListPhase === null
+          ? []
+          : [{ id: 'sub-caller', status: 'approved', character_id: CALLER_CHAR, guild_id: GUILD, phase: callerListPhase, expansion_id: EXP_ID }]),
+      ],
+    })
+  }
+
+  it('an officer (bypass) posting the need id gets the need rankings back', async () => {
+    const { client } = makeClient(needTables())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: [NEED_ID] }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.rankings).toEqual([{ rank: 7, slot: 1, submission_id: SUB_NEED, loot_item_id: NEED_ID, id: 'rn1', removed_at: null }])
+    expect(body.submissions.map((s: { id: string }) => s.id)).toEqual([SUB_NEED])
+  })
+
+  it('a raider with an approved list in the need\'s phase gets its rankings (the earned-phase filter reads the need row\'s raid_tier_id)', async () => {
+    const { client, calls } = makeClient(raiderTables(1))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: [NEED_ID] }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.rankings.map((r: { loot_item_id: string }) => r.loot_item_id)).toEqual([NEED_ID])
+
+    // The filter resolved the need through loot_items by id, like an item.
+    const tierLookup = calls.find(c => c.table === 'loot_items' && c.select === 'id, raid_tier_id')
+    expect(tierLookup).toBeDefined()
+    expect(tierLookup!.filters).toContainEqual({ type: 'in', col: 'id', val: [NEED_ID] })
+  })
+
+  it('T-03-17-01: a raider with no approved list in the need\'s phase gets nothing back for the need id', async () => {
+    const { client, calls } = makeClient(raiderTables(2))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: [NEED_ID] }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body).toEqual({ rankings: [], submissions: [], characters: [], memberships: [] })
+    // Denied at the filter: the rankings table is never read for the need.
+    expect(calls.find(c => c.table === 'loot_submission_items')).toBeUndefined()
+  })
+
+  it('T-03-17-01: a raider with no approved list at all gets nothing back for the need id', async () => {
+    const { client } = makeClient(raiderTables(null))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: [NEED_ID] }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body).toEqual({ rankings: [], submissions: [], characters: [], memberships: [] })
+  })
+
+  it('T-03-17-01: a need in a tier the guild has not made master_sheet_visible stays hidden from a raider with an approved list', async () => {
+    const { client } = makeClient(raiderTables(1, false))
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: [NEED_ID] }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body).toEqual({ rankings: [], submissions: [], characters: [], memberships: [] })
+  })
+})

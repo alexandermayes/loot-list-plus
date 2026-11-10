@@ -41,12 +41,14 @@ interface MembershipRow {
 interface LootItemRow {
   id: string
   name: string
-  wowhead_id: number
+  wowhead_id: number | null
   boss_name: string
   item_slot: string
   item_type: string | null
   classification: string
   raid_tier_id: string
+  /** Defaults to 'item' when absent, like the column default. */
+  kind?: 'item' | 'need'
 }
 
 interface LootSubmissionRow {
@@ -61,7 +63,7 @@ interface LootSubmissionRow {
     rank: number
     slot?: number
     removed_at?: string | null
-    loot_items: { wowhead_id: number }
+    loot_items: { wowhead_id: number | null; kind?: 'item' | 'need' }
   }>
 }
 
@@ -142,12 +144,22 @@ function resolveRows(table: string, filters: Filter[], fixture: Fixture): unknow
       return rows.filter((r: { guild_id: string }) => r.guild_id === find('guild_id'))
     case 'loot_items': {
       const tierIds = (find('raid_tier_id') as string[]) ?? []
-      return rows.filter((r: { raid_tier_id: string }) => tierIds.includes(r.raid_tier_id))
+      const kind = find('kind')
+      return rows.filter(
+        (r: { raid_tier_id: string; kind?: string }) =>
+          tierIds.includes(r.raid_tier_id) && (kind === undefined || (r.kind ?? 'item') === kind),
+      )
     }
     case 'loot_submissions':
       return rows.filter((r: { guild_id: string }) => r.guild_id === find('guild_id'))
     case 'blp_tracking':
-      return rows.filter((r: { guild_id: string }) => r.guild_id === find('guild_id'))
+      // The route embeds loot_items (kind); resolve it from the loot_items fixture.
+      return rows
+        .filter((r: { guild_id: string }) => r.guild_id === find('guild_id'))
+        .map((r: { loot_item_id: string }) => ({
+          ...r,
+          loot_items: { kind: fixture.loot_items.find(i => i.id === r.loot_item_id)?.kind ?? 'item' },
+        }))
     case 'raid_events':
       return rows.filter((r: { guild_id: string }) => r.guild_id === find('guild_id'))
     case 'guild_item_priorities': {
@@ -518,6 +530,123 @@ describe('FU-3 of #331, #293 and FU-C of 261001-tv5: member items', () => {
     addListsAcrossExpansions(fixture)
     const { items } = await memberItems(fixture)
     expect(items).toContainEqual({ wowhead_id: 99999, rank: 60 })
+  })
+})
+
+describe('D-14 and DISC-06: need rows never reach the companion payload', () => {
+  const NEED_WARNING = 'Need rows skipped by a reader that does not handle them yet'
+
+  beforeEach(() => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'u1' }, error: null } as never)
+    vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
+    vi.mocked(trackApiError).mockClear()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  /** baseFixture plus a need row in the BWL tier. */
+  function needFixture(): Fixture {
+    const fixture = baseFixture()
+    fixture.loot_items.push({
+      id: 'li-need', name: 'Chest, Plate, Strength', wowhead_id: null, boss_name: 'Generic',
+      item_slot: 'Chest', item_type: null, classification: 'standard', raid_tier_id: 'tier-bwl', kind: 'need',
+    })
+    return fixture
+  }
+
+  it('N1 loot_items is read with kind = item, and a need row never appears in items', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { client, calls } = makeClient(needFixture())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(calls.find(c => c.table === 'loot_items')!.filters).toContainEqual(['kind', 'item'])
+    // Same five entries the need-free fixture produces; no row has a null wowhead_id.
+    expect(body.items).toHaveLength(5)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(body.items.every((i: any) => typeof i.wowhead_id === 'number')).toBe(true)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(body.items.some((i: any) => i.name === 'Chest, Plate, Strength')).toBe(false)
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it('N2 a ranked need is left out of members[].items and the request warns once with the reader name', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const fixture = needFixture()
+    // A fake-client fixture stands past the D-22 hold, which refuses a ranked need in real data.
+    fixture.loot_submissions[0].loot_submission_items.push(
+      { loot_item_id: 'li-need', rank: 20, loot_items: { wowhead_id: null, kind: 'need' } },
+    )
+    fixture.loot_submissions.push({
+      id: 's-need', guild_id: GUILD_ID, character_id: 'c1', phase: 3, status: 'approved', expansion_id: 'exp-1',
+      loot_submission_items: [{ loot_item_id: 'li-need', rank: 5, loot_items: { wowhead_id: null, kind: 'need' } }],
+    })
+    const { client } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.members[0].items).toEqual([
+      { wowhead_id: 16921, rank: 3 },
+      { wowhead_id: 18423, rank: 7 },
+      { wowhead_id: 18422, rank: 7 },
+      { wowhead_id: 19003, rank: 12 },
+      { wowhead_id: 19002, rank: 12 },
+    ])
+    // The one warning fires on the first skipped row; the count after that is not logged again.
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalledWith(NEED_WARNING, { reader: 'addon-guild-data', skipped: 1 })
+  })
+
+  it('N3 blp keeps the item entry and drops the need entry, whatever expansion the need belongs to', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const fixture = needFixture()
+    fixture.blp_tracking = [
+      { guild_id: GUILD_ID, character_id: 'c1', loot_item_id: 'li-nef', times_passed: 3 },
+      { guild_id: GUILD_ID, character_id: 'c1', loot_item_id: 'li-need', times_passed: 4 },
+      { guild_id: GUILD_ID, character_id: 'c2', loot_item_id: 'li-need', times_passed: 1 },
+    ]
+    const { client, calls } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.blp).toEqual({ c1: { 'li-nef': 3 } })
+    expect(calls.find(c => c.table === 'blp_tracking')!.cols).toMatch(/loot_items \(kind\)/)
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalledWith(NEED_WARNING, { reader: 'addon-guild-data', skipped: 2 })
+  })
+
+  it('N4 DISC-06 empty: a guild with no need rows answers the same body as the item-only fixture, with no warning', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const plain = baseFixture()
+    plain.blp_tracking = [{ guild_id: GUILD_ID, character_id: 'c1', loot_item_id: 'li-nef', times_passed: 3 }]
+    const withNeed = needFixture()
+    withNeed.blp_tracking = [...plain.blp_tracking]
+    const bodyOf = async (fixture: Fixture) => {
+      const { client } = makeClient(fixture)
+      vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+      return (await GET(request())).json()
+    }
+    const without = await bodyOf(plain)
+    const withUnranked = await bodyOf(withNeed)
+    expect(withUnranked).toEqual(without)
+    expect(Object.keys(without).sort()).toEqual(
+      ['attendance', 'blp', 'expansionId', 'guildId', 'guildName', 'items', 'members', 'phase', 'priorities', 'settings'],
+    )
+    expect(warn).not.toHaveBeenCalled()
+  })
+
+  it('N5 a failed loot_items read still answers 500', async () => {
+    const { client } = makeClient(needFixture(), { fail: ['loot_items'] })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    const res = await GET(request())
+    expect(res.status).toBe(500)
+    expect(trackApiError).toHaveBeenCalledTimes(1)
   })
 })
 
