@@ -695,6 +695,28 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     return currentKeys.some(key => rankings[key] !== initialRankings[key])
   }, [rankings, initialRankings])
 
+  // Editing a reviewed list drops it back to draft through the audited
+  // server route, never from the browser: the direct upsert this replaced was
+  // the one status change audit_logs could not see
+  // (.planning/debug/research-report-one-row-drift.md). Resolves the message
+  // to show when the list could not be reopened, or null when it is a draft
+  // now. The fallback string is DRAFT copy, held for owner sign-off.
+  const reopenForEdit = useCallback(async (submissionId: string): Promise<string | null> => {
+    const fallback = 'Couldn\'t reopen this list for editing. Refresh and try again.'
+    try {
+      const response = await fetch('/api/loot-submissions/reopen', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ submission_id: submissionId }),
+      })
+      if (response.ok) return null
+      const data = await response.json().catch(() => ({}))
+      return data.error || fallback
+    } catch {
+      return fallback
+    }
+  }, [])
+
   // Auto-save function - uses refs to avoid dependency cycles
   const doAutoSave = useCallback(async () => {
     if (!activeCharacter || selectedPhase === null || !targetExpansionId || !activeGuild?.id) return
@@ -724,10 +746,10 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     // Get current submission data from ref
     const currentSubmissionData = submissionDataRef.current
 
-    // Determine target status. Editing an approved or pending list silently drops
-    // it back to a draft. When that happens, also clear the stale officer review
-    // fields below so the row stops advertising an approval/rejection that no
-    // longer applies (the raider will need to resubmit).
+    // Determine target status. Editing an approved or pending list drops it
+    // back to a draft (the raider will need to resubmit); the drop itself is
+    // made by the reopen route below, which also clears the stale review fields
+    // and writes the audit row.
     const priorStatus = currentSubmissionData?.submission?.status || 'draft'
     let targetStatus = priorStatus
     const revertedFromReview = ['approved', 'pending'].includes(priorStatus)
@@ -751,6 +773,16 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
       let submissionId = currentSubmissionData?.submission?.id
 
+      // A reviewed list is reopened server-side before anything is written, so
+      // the demotion is audited and a decision that landed meanwhile stays.
+      if (revertedFromReview && submissionId) {
+        const reopenError = await reopenForEdit(submissionId)
+        if (reopenError) {
+          showNotification('error', reopenError)
+          return
+        }
+      }
+
       // Use upsert to handle race conditions and unique constraint
       const { data: upsertedSub, error: subError } = await supabase
         .from('loot_submissions')
@@ -761,8 +793,6 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
           expansion_id: targetExpansionId,
           phase: selectedPhase,
           status: targetStatus,
-          // Drop the stale review trail when an edit reverts a reviewed list to draft.
-          ...(revertedFromReview ? { review_notes: null, reviewed_at: null, reviewed_by: null, change_rejected_at: null } : {}),
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'character_id,guild_id,expansion_id,phase'
@@ -809,7 +839,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     } finally {
       savingInProgressRef.current = false
     }
-  }, [activeCharacter, selectedPhase, targetExpansionId, activeGuild?.id, supabase, showNotification])
+  }, [activeCharacter, selectedPhase, targetExpansionId, activeGuild?.id, supabase, showNotification, reopenForEdit])
 
   // Keep autoSave ref up to date
   const autoSaveRef = useRef(doAutoSave)
@@ -878,6 +908,14 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       }
 
       let submissionId = submissionData?.submission?.id
+
+      // Saving over a reviewed list reopens it through the audited route first;
+      // throwing lets the catch below show the message.
+      const priorStatus = submissionData?.submission?.status || 'draft'
+      if (['approved', 'pending'].includes(priorStatus) && submissionId) {
+        const reopenError = await reopenForEdit(submissionId)
+        if (reopenError) throw new Error(reopenError)
+      }
 
       // Always save items as draft first (validation happens server-side on submit)
       const { data: upsertedSub, error: subError } = await supabase
@@ -990,7 +1028,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     }
 
     setIsSaving(false)
-  }, [activeCharacter, selectedPhase, targetExpansionId, activeGuild, rankings, submissionData, supabase, showNotification, mutateSubmission])
+  }, [activeCharacter, selectedPhase, targetExpansionId, activeGuild, rankings, submissionData, supabase, showNotification, mutateSubmission, reopenForEdit])
 
   // Refresh data - clears local changes to allow fresh data to load
   const refreshData = useCallback(() => {
