@@ -62,7 +62,7 @@ actuals:
 
 # Quick 261110-g5c Plan 01: GH #484 follow-ups Summary
 
-Import BIS now draws on every raid of the selected phase group and tells the raider how many BiS items officer prio kept out; submit refuses a list with a ranked item outside its zone's prio pool and the editor marks such items; the rest of the TBC BiS data is audited and pinned; and the open Dependabot alerts are patched without crossing a major. Five branches from origin/main (27be305d), five PRs (#492, #493, #494, #495, #496). The two copy-bearing branches (tasks 2 and 3) are held for owner sign-off before merge.
+Import BIS now draws on every raid of the selected phase group and tells the raider how many BiS items officer prio kept out; submit refuses a list with a ranked item outside its zone's prio pool and the editor marks such items; the rest of the TBC BiS data is audited and pinned; and the open Dependabot alerts are patched without crossing a major. Five branches from origin/main (27be305d), five PRs (#492, #493, #494, #495, #496). The owner signed off the copy of tasks 2 and 3 and the task 4 picks on 2026-11-10 ("Yes, merge those"), and all five PRs are merged.
 
 ## How it ran
 
@@ -73,9 +73,9 @@ The PLAN was written at 11:38 in a terminal `claude` session, which then execute
 | Task | Branch | Commits (base 27be305d) | PR | Copy |
 |------|--------|-------------------------|----|------|
 | 1 | fix/bis-import-phase-groups | 434966b8, 6f67f8e5 | #493, merged 2026-11-10 as f9bcfdba | none |
-| 2 | feat/bis-import-skipped-count | 2a9340b3 | #492 | DRAFT, held |
-| 3 | feat/prio-enforced-at-submit | 947b1c86, 4063a5ee, 8c27df2b, 446d45d6 | #494 | DRAFT, held |
-| 4 | fix/tbc-bis-data-audit | a4041e44, 5be3f6e7 | #496 | none |
+| 2 | feat/bis-import-skipped-count | 2a9340b3 | #492, merged 2026-11-10 as 6466408a | DRAFT, signed off 2026-11-10 |
+| 3 | feat/prio-enforced-at-submit | 947b1c86, 4063a5ee, 8c27df2b, 446d45d6 | #494, merged 2026-11-10 as 7e17b8fe | DRAFT, signed off 2026-11-10 |
+| 4 | fix/tbc-bis-data-audit | a4041e44, 5be3f6e7 | #496, merged 2026-11-10 as 89bae71e | none |
 | 5 | fix/dependabot-2026-11 | f97a01ac, 8b39ff06, b08674d9, 26ffb094 | #495, merged 2026-11-10 as 792a54c1 | none |
 
 ## Task 1: Import BIS covers the whole phase group (FU1)
@@ -181,7 +181,7 @@ Note for the next dependency pass: `npm install` with the local npm strips the `
 
 ## Follow-ups and non-goals (not done)
 
-1. Owner sign-off on the DRAFT copy in PRs #492 and #494, then merge.
+1. (done 2026-11-10) Owner sign-off on the DRAFT copy in PRs #492 and #494; both merged. The strings keep their DRAFT comments in code until a copy pass renames them.
 2. Run `scripts/count-prio-violations.ts --confirm` against production once the owner says so, and record the aggregate counts here.
 3. minimatch 11.0.1 needs eslint-config-next / typescript-eslint and electron-builder to move; revisit when those majors land.
 4. `eslint.config.mjs` should ignore `companion/out/**` so a stale companion build cannot fail lint.
