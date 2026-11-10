@@ -29,18 +29,18 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Discovery lists
 
-- [ ] **DISC-01**: Officer can set a raid tier's list mode to Discovery; existing tiers stay Known with unchanged scores (golden fixtures)
+- [x] **DISC-01**: Officer can set a raid tier's list mode to Discovery; existing tiers stay Known with unchanged scores (golden fixtures)
 - [ ] **DISC-02**: Raider in a Discovery guild fills one five-row, one-column need picker (slot, armour class where it matters, stat family) in under 60 seconds on a phone
 - [ ] **DISC-03**: Raider sees a points budget as one sentence and cannot exceed it (weapons and trinkets Reserved, jewellery and tier Limited, others Unlimited)
 - [ ] **DISC-04**: Raider gets a spec-based default list and can accept it with one tap ("Looks right")
 - [ ] **DISC-05**: Raider's one picker fans out to every Discovery raid tier in the expansion (per-raid need rows, no synthetic tier)
-- [ ] **DISC-06**: Need rows flow through submissions, approval, snapshots, master sheet, exports and BLP as `loot_items` rows with `kind = 'need'`; every reader has a tested mode branch
-- [ ] **DISC-07**: Raider ranked on a need accrues BLP for that need before any item exists
+- [x] **DISC-06**: Need rows flow through submissions, approval, snapshots, master sheet, exports and BLP as `loot_items` rows with `kind = 'need'`; every reader has a tested mode branch
+- [x] **DISC-07**: Raider ranked on a need accrues BLP for that need before any item exists
 - [ ] **DISC-08**: Score shows standing and interest separately, each with a one-sentence explanation; totals unchanged for Known guilds
 - [ ] **DISC-09**: Raider sees a "What would it take" line on every score
 - [ ] **DISC-10**: Officer picks one of three loot style presets at setup, with Fine-tune behind disclosure
 - [ ] **DISC-11**: Raider can open the picker from a Discord "Set your 5" link
-- [ ] **DISC-12**: Discovery schema ships expand-only, before the code that reads it, with an RLS matrix per new table and a PGlite migration test
+- [x] **DISC-12**: Discovery schema ships expand-only, before the code that reads it, with an RLS matrix per new table and a PGlite migration test
 
 ### Drop Desk
 
@@ -137,18 +137,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXPN-04 | Phase 2 | Complete |
 | EXPN-05 | Phase 2 | Complete |
 | EXPN-06 | Phase 2 | Complete |
-| DISC-01 | Phase 3 | Pending |
+| DISC-01 | Phase 3 | Complete |
 | DISC-02 | Phase 4 | Pending |
 | DISC-03 | Phase 4 | Pending |
 | DISC-04 | Phase 4 | Pending |
 | DISC-05 | Phase 4 | Pending |
-| DISC-06 | Phase 3 | Pending |
-| DISC-07 | Phase 3 | Pending |
+| DISC-06 | Phase 3 | Complete |
+| DISC-07 | Phase 3 | Complete |
 | DISC-08 | Phase 4 | Pending |
 | DISC-09 | Phase 6 | Pending |
 | DISC-10 | Phase 4 | Pending |
 | DISC-11 | Phase 4 | Pending |
-| DISC-12 | Phase 3 | Pending |
+| DISC-12 | Phase 3 | Complete |
 | DESK-01 | Phase 5 | Pending |
 | DESK-02 | Phase 5 | Pending |
 | DESK-03 | Phase 5 | Pending |

@@ -18,7 +18,7 @@ Out of this phase: the need picker and score split (Phase 4), the Drop Desk and 
 ### Carried forward (already decided, not re-asked)
 - **D-00a:** Need rows live per raid tier; one picker fans a raider's ranking out to all three Forever raids (owner Decision 1).
 - **D-00b:** Column `raid_tiers.list_mode`, values `known` and `discovery`, default `known`.
-- **D-00c:** Stat families keep Healing and Spell damage separate (Decision 2); "Tier piece" is off the default picker (Decision 3); separate lists per raid size off (Decision 4); loot-cost columns ship at zero; pins live in `loot_item_need_pins`.
+- **D-00c:** Stat families keep Healing and Spell damage separate (Decision 2); "Tier piece" is off the default picker (Decision 3); separate lists per raid size off (Decision 4); pins live in `loot_item_need_pins`. The loot-cost columns no longer ship in this phase (see D-18).
 - **D-00d:** The migration is expand-only, ships in its own migration-only PR (`--admin` merge, non-raid day) and is live before any code that reads it; RLS matrix (raider, officer, non-member, ex-member) per new table; PGlite migration test (DISC-12).
 
 ### Officer switch and timing
@@ -44,6 +44,28 @@ Out of this phase: the need picker and score split (Phase 4), the Drop Desk and 
 - **D-14:** These surfaces exclude Discovery tiers or need rows outright rather than branching: reserves and soft-reserve runs; BIS import; addon and companion exports (filter `kind = 'item'`, so the addon never sees a row without a `wowhead_id`); bot `/priority` stays item-only until the Drop Desk (Phase 5).
 - **D-15:** An award against a need records `loot_history.loot_item_id` = the need row and a new `loot_history.awarded_item_id` = the real item (null until the Desk exists). The BLP recompute SQL stays unchanged because it already keys on `loot_item_id`; only reports that show item names read `awarded_item_id`. — **Reversibility:** one-way — new column on `loot_history`, and the keying defines how BLP accrues for every Discovery award.
 - **D-16:** A reader that meets a need row it was not written for skips it and logs a warning once per request: never crash, never drop silently. Every reader still gets an explicit, tested mode branch (DISC-06); the fallback is a safety net, not the plan.
+
+### Plan-phase review of research (owner answers, 2026-10-19)
+- **D-17:** In Phase 3 the list-mode PATCH accepts `discovery` only for tiers of the Forever expansion. The guard lives in one place so Phase 4 or the owner can lift it. Legacy tiers can never be switched to Discovery in this phase.
+- **D-18:** The loot-cost `guild_settings` columns are deferred to the phase that reads them (Phase 4 or 5). They do not ship in the Discovery migration, so the `guild-data` addon payload is unchanged.
+- **D-19:** A need award consumes the winner's list entry for that need, the same way receiving an item skips one entry today. Build the pure identity-key logic now (tested, unused by Known guilds) and wire it into the receive-skip sites.
+- **D-20:** `@electric-sql/pglite` is added as an exact-pinned devDependency at `0.5.8` with no execution checkpoint, so the DISC-12 migration test is committed and runs in CI.
+- **D-21:** ROADMAP success criterion 2 ("every tier that existed before stays Known") is read as every non-Forever tier. Forever tiers are Discovery after the D-05 backfill, and tests assert exactly that. [informational]
+
+### Plan-check review (owner answers, 2026-10-19)
+- **D-22:** The D-02 hold on ranking needs is enforced server-side, not only in the UI. Until Phase 4 lifts it, the submit route and the `save_submission_items` RPC reject `kind = 'need'` rows, so no raider can rank a need (and start accruing BLP) by calling the API directly. The approval, snapshot, master sheet, export and BLP flow for need rows is proven with fixture tests. Phase 4 removes the guard, including the small SQL part.
+- **D-23:** Shield, Off-hand item and Relic need rows cost Medium (2 points, `Limited`), as the research proposed. Wands fold into the Ranged weapon need rows. These costs ship in the seeded rows; the Oct 26 review covers display names only.
+
+### Second plan-check review (owner answers, 2026-10-20)
+- **D-24:** Close the expansion-rename route around D-17. Browser sessions (anon, authenticated) cannot rename an expansion to or from 'Forever', and cannot insert one, unless the planner finds a browser path that legitimately needs to insert it (then explain and keep inserts open). One narrow, WHEN-gated trigger on `expansions`; no accepted residual for this.
+- **D-25:** The owner reviews the frozen need key list (`need_key` values and stat families from `domain/loot/needs.ts`) at the existing PR 1 merge stop (03-02). PR 2, which freezes the keys, does not merge until the owner confirms the list there. Display names are still reviewed Oct 26.
+
+### Third plan-check review (owner answer, 2026-10-20)
+- **D-26:** Close the tier-move route around D-17. Browser sessions (anon, authenticated) cannot change `raid_tiers.expansion_id`; one WHEN-gated trigger, since no app path moves a tier between expansions. Plans that may fix a reader in-task (03-17, 03-18) list those candidate source files as conditional edits. Plans at the file or size limit (03-06, 03-10, 03-13) stay unsplit; the risk is recorded in their summaries. [informational for the size note]
+
+### Final plan-check review (owner answers, 2026-10-20)
+- **D-27:** Browser sessions (anon, authenticated) cannot delete need rows from `loot_items`; one WHEN-gated `BEFORE DELETE` trigger (`OLD.kind = 'need'`), so a direct delete can never silently drop need rankings or BLP credit. Item deletes are unchanged. The service role keeps delete rights.
+- **D-28:** Plan 03-17 splits in two so each half stays at or under 10 files. Plans at the 10-file mark (03-04, 03-07, 03-18) carry the same size note as 03-06, 03-10 and 03-13. Planning finishes on the deterministic gates (frontmatter, plan structure, decision coverage, wave and file overlap) with no further checker round. [informational]
 
 ### Claude's Discretion
 - The exact stat family list per slot and which slots carry an armour class, within D-09 and Decision 2 (planner proposes from research; owner reviews with the picker copy).
@@ -110,6 +132,7 @@ Out of this phase: the need picker and score split (Phase 4), the Drop Desk and 
 - Bot `/priority` for need rows: arrives with the Drop Desk (Phase 5).
 - Known-mode transition (mapping needs to revealed items, closing generic entries): deferred milestone, after Dec 9 plus three resets.
 - Pinning revealed items onto needs through the Desk UI: Phases 5 and 6 (the table ships here).
+- Loot-cost `guild_settings` columns: the phase that reads them, Phase 4 or 5 (D-18).
 
 </deferred>
 
