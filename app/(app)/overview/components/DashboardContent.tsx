@@ -52,6 +52,7 @@ import { paginatedSelect } from '@/utils/supabase/paginate'
 import { findInvalidCharacterIds } from '@/lib/loot/guild-award-refs'
 import { isActiveCompetitor, buildItemCompetition } from '@/domain/loot/item-competition'
 import { itemIdentityKey, wowheadIdForDisplay } from '@/domain/loot/item-identity'
+import { bestScoringRow, buildTierContext, toNeedLines } from '@/lib/loot/need-lines'
 
 // Get next N raid dates from configured raid days
 function getNextRaidDates(raidDays: number[], timezone: string, count = 2): Date[] {
@@ -342,6 +343,11 @@ interface LootPriorityItem {
   boss_name: string
   raid_tier_id: string
   is_loot_council?: boolean
+  // Carried so a Discovery list's fan-out rows can be shown once per need (D-28).
+  kind?: string | null
+  need_key?: string | null
+  /** 'all 3 raids' or the tier names; set only on a need line. */
+  need_suffix?: string
 }
 
 interface ReceivedItem {
@@ -1180,7 +1186,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
       // Fetch item details
       const { data: items } = await supabase
         .from('loot_items')
-        .select('id, name, wowhead_id, kind, boss_name, classification, raid_tier_id, is_loot_council')
+        .select('id, name, wowhead_id, kind, need_key, boss_name, classification, raid_tier_id, is_loot_council')
         .in('id', itemIds)
 
       if (!items) {
@@ -1190,6 +1196,9 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
 
       // Filter items to tiers that are visible OR whose phase deadline has passed
       let filteredItems = items
+      // The tiers and names a Discovery list is shown against (D-28). Filled
+      // from the tier read below, from the tiers the raider's need rows sit in.
+      let needTierContext = buildTierContext([])
       const raidTierIds = [...new Set(items.map((i: { raid_tier_id: string }) => i.raid_tier_id).filter(Boolean))]
       if (raidTierIds.length > 0) {
         // Fetch tier details and phase deadlines in parallel
@@ -1197,7 +1206,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
         const [tierDetailsResult, phaseDeadlinesResult] = await Promise.all([
           supabase
             .from('raid_tiers')
-            .select('id, phase, master_sheet_visible')
+            .select('id, name, sort_order, phase, master_sheet_visible')
             .in('id', raidTierIds),
           expansionId
             ? supabase
@@ -1210,6 +1219,16 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
 
         const { data: tierDetails } = tierDetailsResult
         if (tierDetails) {
+          // Read before the visibility filter: "all 3 raids" speaks for the
+          // tiers the list covers, not only the ones whose sheet is open.
+          const needTierIds = new Set(
+            items
+              .filter((i: { kind?: string | null }) => i.kind === 'need')
+              .map((i: { raid_tier_id: string }) => i.raid_tier_id),
+          )
+          needTierContext = buildTierContext(
+            tierDetails.filter((t: { id: string }) => needTierIds.has(t.id)),
+          )
           let phaseDeadlines: Record<string, string | null> = {}
           if (phaseDeadlinesResult.data?.phase_deadlines) {
             phaseDeadlines = phaseDeadlinesResult.data.phase_deadlines as Record<string, string | null>
@@ -1406,7 +1425,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
       }
 
       // Collect all item/rank pairs we need to check for ties (BATCHED - avoids N+1)
-      type LootItemData = { id: string; name: string; wowhead_id: number | null; kind?: string | null; boss_name: string; classification: string | null; raid_tier_id: string }
+      type LootItemData = { id: string; name: string; wowhead_id: number | null; kind?: string | null; need_key?: string | null; boss_name: string; classification: string | null; raid_tier_id: string }
       const itemRankPairs = filteredItems
         .map((item: LootItemData) => {
           const rank = bestRankByItemId.get(item.id)
@@ -1592,13 +1611,27 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
             classification: item.classification || 'Unlimited',
             boss_name: item.boss_name,
             raid_tier_id: item.raid_tier_id,
-            is_loot_council: item.is_loot_council
+            is_loot_council: item.is_loot_council,
+            kind: item.kind,
+            need_key: item.need_key,
           })
         }
       }
 
+      // D-28: a Discovery list fans each need out over every tier, so group
+      // the rows first. The top-five cut below then runs over lines, and five
+      // different needs fill five lines instead of one need taking three. A
+      // need line scores as its best tier row; item rows pass through in
+      // their original order, so a Known raider's list is unchanged.
+      const priorityLines = toNeedLines(priorityItems, needTierContext.listTierIds, needTierContext.tierNameById)
+        .map((line): LootPriorityItem => {
+          if (line.type === 'item') return line.row
+          const best = bestScoringRow(line.rows, (row) => row.loot_score) ?? line.rows[0]
+          return { ...best, need_suffix: line.suffix }
+        })
+
       // Sort by loot score (HIGHEST score = highest priority) and take top 5
-      const topPriority = priorityItems
+      const topPriority = priorityLines
         .sort((a, b) => b.loot_score - a.loot_score)
         .slice(0, 5)
 
@@ -2295,6 +2328,9 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                               <ItemLink name={item.item_name} wowheadId={item.wowhead_id} clickable={true} showIcon={true} />
                             </div>
                             <div className="flex items-center gap-1.5 flex-wrap">
+                              {item.need_suffix && (
+                                <span className="text-xs text-muted-foreground flex-shrink-0 whitespace-nowrap">{item.need_suffix}</span>
+                              )}
                               {item.is_loot_council && (
                                 <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-accent/20 text-accent flex-shrink-0">Loot Council</span>
                               )}
