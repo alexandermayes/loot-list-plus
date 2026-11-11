@@ -579,6 +579,105 @@ describe('POST /api/loot-submissions/submit need refusals (D-07, D-10)', () => {
   })
 })
 
+// D-29, D-03 and D-05 on need rows: the copy caps count a need once, officer
+// prio never reads needs, and an award lock holds a need's (rank, slot).
+describe('POST /api/loot-submissions/submit need rows beside caps, prio and locks', () => {
+  const CHEST_NAME = findNeedDefinition('chest.cloth.spell-damage')!.name
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([])
+    vi.mocked(fetchListPrioItems).mockResolvedValue([])
+  })
+
+  // regression for D-29: each tier's row is its own copy group, so a need key
+  // ranked twice used to answer one line per tier.
+  it('answers one copy-limit line for a need key ranked twice across three tiers', async () => {
+    const items = [...needRows('chest.cloth.spell-damage', 47), ...needRows('chest.cloth.spell-damage', 46)]
+    const { res, body, calls } = await run({ ...baseFixture(), items })
+    expect(res.status).toBe(422)
+    expect(body.violations).toEqual([
+      { bracket: 'Whole list', rule: 'item_copy_limit', detail: `"${CHEST_NAME}" is listed 2 times (max 1)` },
+    ])
+    expect(statusUpdates(calls)).toHaveLength(0)
+  })
+
+  it('keeps one line per different need key that breaks its cap', async () => {
+    const items = [
+      ...needRows('chest.cloth.spell-damage', 47),
+      ...needRows('chest.cloth.spell-damage', 46),
+      ...needRows('head.cloth.spell-damage', 45),
+      ...needRows('head.cloth.spell-damage', 44),
+    ]
+    const { body } = await run({ ...baseFixture(), items })
+    expect(body.violations).toHaveLength(2)
+  })
+
+  it('returns exactly the item-list violations it returned before the need split', async () => {
+    const { res, body } = await run({ ...baseFixture(), items: [desecrated(50, 0), desecrated(49, 0)] })
+    expect(res.status).toBe(422)
+    expect(body.violations).toEqual([
+      { bracket: 'Main spec', rule: 'item_copy_limit', detail: '"Desecrated Breastplate" is listed 2 times (max 1)' },
+    ])
+  })
+
+  it('lists item violations before need violations', async () => {
+    const items = [
+      desecrated(50, 0),
+      desecrated(49, 0),
+      ...needRows('chest.cloth.spell-damage', 47),
+      ...needRows('chest.cloth.spell-damage', 46),
+    ]
+    const { body } = await run({ ...baseFixture(), items })
+    expect(body.violations.map((v: { detail: string }) => v.detail)).toEqual([
+      '"Desecrated Breastplate" is listed 2 times (max 1)',
+      `"${CHEST_NAME}" is listed 2 times (max 1)`,
+    ])
+  })
+
+  // D-03: need rows are never flagged by the officer prio check.
+  it('passes the prio step with no prio_violations when the prio set holds only item rows', async () => {
+    vi.mocked(fetchListPrioItems).mockResolvedValue([
+      { id: 'an-item-row', is_allocated: true, character_spec_type: null, has_primary_only: false },
+    ])
+    const { res, body, calls } = await run({ ...baseFixture(), items: needList(TEN_POINT_KEYS) })
+    expect(res.status).toBe(200)
+    expect(body).not.toHaveProperty('prio_violations')
+    expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+  })
+
+  // D-05: a need row's (rank, slot) is locked like an item's.
+  describe('award slot locks on need rows', () => {
+    const LOCKED_NEED_ID = 'need-row:main-hand-weapon.spell-damage:1'
+    const lock = {
+      id: 'lock-need-1',
+      rank: 50,
+      slot: 2,
+      loot_item_id: LOCKED_NEED_ID,
+      locked_at: '2026-10-24T12:00:00Z',
+      item_name: 'Main hand weapon',
+    }
+
+    it('keeps the list valid when the locked need stays in its rank and slot', async () => {
+      vi.mocked(fetchActiveSlotLocks).mockResolvedValue([lock])
+      const { res, calls } = await run({ ...baseFixture(), items: needList(TEN_POINT_KEYS) })
+      expect(res.status).toBe(200)
+      expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+    })
+
+    it('answers 422 with locked_ranks when the slot holds a different need', async () => {
+      vi.mocked(fetchActiveSlotLocks).mockResolvedValue([lock])
+      const moved = needList(TEN_POINT_KEYS).filter(row => !(row.rank === 50 && row.slot === 2))
+      const items = [...moved, ...needRows('ring.spell-damage', 50, [1])]
+      const { res, body, calls } = await run({ ...baseFixture(), items })
+      expect(res.status).toBe(422)
+      expect(body.locked_ranks).toEqual([{ rank: 50, slot: 2, item_name: 'Main hand weapon' }])
+      expect(statusUpdates(calls)).toHaveLength(0)
+    })
+  })
+})
+
 describe('POST /api/loot-submissions/submit award slot locks (quick task 261028-0gx)', () => {
   const LOCKED_ID = 'bbbbbbbb-0000-0000-0000-0000000000c1'
   const lock = {

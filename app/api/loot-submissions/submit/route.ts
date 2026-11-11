@@ -196,6 +196,28 @@ export async function POST(request: NextRequest) {
       } as BracketItem,
     }))
 
+    const toCopyEntry = (si: SubmissionItemRow) => ({
+      rank: si.rank,
+      item: {
+        id: si.loot_item_id,
+        name: si.loot_item?.name,
+        item_slot: si.loot_item?.item_slot,
+        wowhead_id: si.loot_item?.wowhead_id,
+        kind: si.loot_item?.kind,
+      },
+    })
+
+    // A need pick is fanned out over every Discovery tier, and each tier's row
+    // is its own copy group, so a need ranked twice breaks its cap once per
+    // tier with the same words. Collapsing identical lines gives the raider one
+    // message per need (D-29). Item rows are counted exactly as before.
+    const needCopyViolations = [
+      ...new Map(
+        validateItemCopyLimits(checkedRows.filter((si) => isNeedRow(si.loot_item)).map(toCopyEntry))
+          .map((v) => [`${v.bracket}|${v.rule}|${v.detail}`, v] as const),
+      ).values(),
+    ]
+
     // Validate bracket rules, then copies per item (GH #293, #331)
     const violations = [
       ...validateBracketRules(
@@ -203,16 +225,8 @@ export async function POST(request: NextRequest) {
         enforceSlotRestrictions,
         bracketLimits
       ),
-      ...validateItemCopyLimits(checkedRows.map((si) => ({
-        rank: si.rank,
-        item: {
-          id: si.loot_item_id,
-          name: si.loot_item?.name,
-          item_slot: si.loot_item?.item_slot,
-          wowhead_id: si.loot_item?.wowhead_id,
-          kind: si.loot_item?.kind,
-        },
-      }))),
+      ...validateItemCopyLimits(checkedRows.filter((si) => !isNeedRow(si.loot_item)).map(toCopyEntry)),
+      ...needCopyViolations,
     ]
 
     if (violations.length > 0) {
