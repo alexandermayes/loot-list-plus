@@ -50,6 +50,7 @@ import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { Card } from '@/components/ui/card'
 import { NoRaidsEmptyState } from '@/app/components/NoRaidsEmptyState'
 import { NeedPicker } from '@/app/(app)/loot-list/components/NeedPicker'
+import { SetYourFiveLinkEntry } from '@/app/(app)/loot-list/components/SetYourFiveLinkEntry'
 import { getExpansionDisplayName } from '@/utils/expansionVisuals'
 // BisImportModal is lazy-loaded — its ~326-line chunk only downloads when
 // the user actually clicks "Import BiS" rather than on every page load.
@@ -861,6 +862,10 @@ export default function LootListContent({
   // a group, so Known and mixed groups keep this page exactly as it was.
   const pickerMode = Boolean(needTierSlots)
 
+  // The Discord link's create-character step takes over the page, so another
+  // guild's list never shows under it (D-24).
+  const [linkBlocking, setLinkBlocking] = useState(false)
+
   // Build a set of removed item IDs keyed by rank-slot for display
   const removedRankings = useMemo(() => {
     const map: Record<string, string> = {}
@@ -1634,7 +1639,9 @@ export default function LootListContent({
           </div>
         </div>
 
-        {hasNoRaidTiers ? (
+        <SetYourFiveLinkEntry onBlockingChange={setLinkBlocking} />
+
+        {linkBlocking ? null : hasNoRaidTiers ? (
           <div className="px-4 sm:px-6 lg:px-8 pt-2">
             <NoRaidsEmptyState size="lg" game={guildGame} />
           </div>

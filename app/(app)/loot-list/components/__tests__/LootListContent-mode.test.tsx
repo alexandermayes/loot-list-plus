@@ -1,3 +1,4 @@
+import React from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 
@@ -8,6 +9,7 @@ import { DEFAULT_MAX_ALLOCATION_POINTS, DEFAULT_MAX_TOKENS, DEFAULT_MAX_CATEGORY
 // its own work is replaced, so this file proves the switch and nothing else.
 const hoisted = vi.hoisted(() => ({
   lootList: { current: {} as Record<string, unknown> },
+  linkBlocking: { current: false },
 }))
 
 vi.mock('@/app/contexts/LootListContext', () => ({
@@ -30,6 +32,16 @@ vi.mock('@/app/components/ExpansionGuard', () => ({
 }))
 vi.mock('@/app/(app)/loot-list/components/NeedPicker', () => ({
   NeedPicker: () => <div data-testid="need-picker" />,
+}))
+// The link entry has its own tests; here it only reports whether it owns the page.
+vi.mock('@/app/(app)/loot-list/components/SetYourFiveLinkEntry', () => ({
+  SetYourFiveLinkEntry: ({ onBlockingChange }: { onBlockingChange?: (blocking: boolean) => void }) => {
+    const blocking = hoisted.linkBlocking.current
+    React.useEffect(() => {
+      onBlockingChange?.(blocking)
+    }, [blocking, onBlockingChange])
+    return blocking ? <div data-testid="link-create-character" /> : null
+  },
 }))
 vi.mock('@/utils/analytics/client', () => ({
   trackClientEvent: vi.fn(),
@@ -80,6 +92,7 @@ function setLootList(needTierSlots: Record<string, number> | null) {
 
 describe('LootListContent picker switch (D-12)', () => {
   beforeEach(() => {
+    hoisted.linkBlocking.current = false
     window.matchMedia =
       window.matchMedia ??
       ((query: string) =>
@@ -99,6 +112,16 @@ describe('LootListContent picker switch (D-12)', () => {
     render(<LootListContent />)
 
     expect(screen.getByTestId('need-picker')).toBeInTheDocument()
+    expect(screen.queryByText('Bracket 1 (50-48)')).toBeNull()
+  })
+
+  it('shows only the link entry step, not the picker or editor, while the link blocks the page (D-24)', () => {
+    hoisted.linkBlocking.current = true
+    setLootList({ 'tier-a': 1 })
+    render(<LootListContent />)
+
+    expect(screen.getByTestId('link-create-character')).toBeInTheDocument()
+    expect(screen.queryByTestId('need-picker')).toBeNull()
     expect(screen.queryByText('Bracket 1 (50-48)')).toBeNull()
   })
 })
