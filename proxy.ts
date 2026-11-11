@@ -315,7 +315,10 @@ export async function proxy(request: NextRequest) {
       // cause page.tsx to think the user is authenticated → redirect to
       // /overview → middleware rejects again → infinite loop.
       const loginUrl = new URL('/', request.url)
-      loginUrl.searchParams.set('next', pathname)
+      // D-24: the Set your 5 link carries guild and picker in its query, so
+      // next keeps the search string through sign-in. isSafeNextPath still
+      // guards the value on the way back (same-origin relative paths only).
+      loginUrl.searchParams.set('next', pathname + request.nextUrl.search)
       const redirectResponse = NextResponse.redirect(loginUrl)
       const cookies = request.cookies.getAll()
       for (const cookie of cookies) {
