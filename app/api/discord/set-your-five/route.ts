@@ -72,16 +72,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'guild_id is required' }, { status: 400 })
     }
 
-    const botToken = process.env.DISCORD_BOT_TOKEN
-    if (!botToken) {
-      return NextResponse.json({ error: 'Discord notifications temporarily unavailable' }, { status: 503 })
-    }
-
     const supabase = createServiceRoleClient()
 
     const { hasPermission } = await verifyPermission(supabase, user.id, guildId, 'manage_settings')
     if (!hasPermission) {
       return NextResponse.json({ error: SET_YOUR_FIVE_NOT_OFFICER_ERROR }, { status: 403 })
+    }
+
+    // After the permission check, so a signed-in member cannot learn whether
+    // the bot is configured: auth, input, permission, then the token.
+    // regression for IN-04 (Phase 4 review).
+    const botToken = process.env.DISCORD_BOT_TOKEN
+    if (!botToken) {
+      return NextResponse.json({ error: 'Discord notifications temporarily unavailable' }, { status: 503 })
     }
 
     // Discovery gate (D-23): the message only makes sense when raiders have a

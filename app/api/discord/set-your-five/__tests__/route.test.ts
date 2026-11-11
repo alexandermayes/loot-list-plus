@@ -277,6 +277,25 @@ describe('[T-04-18-01] who may send', () => {
     expectNoDiscordCalls()
     expect(calls.filter((c) => c.table !== 'guilds')).toEqual([])
   })
+
+  // regression for IN-04 (Phase 4 review): the token check ran before the
+  // permission check, so any signed-in user could learn whether the bot is
+  // configured.
+  it('refuses a user without manage_settings with 403 even when the bot token is missing', async () => {
+    vi.stubEnv('DISCORD_BOT_TOKEN', '')
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: false } as never)
+    const response = await POST(request())
+    expect(response.status).toBe(403)
+    expectNoDiscordCalls()
+  })
+
+  it('answers 503 to an officer when the bot token is missing, after the permission check', async () => {
+    vi.stubEnv('DISCORD_BOT_TOKEN', '')
+    const response = await POST(request())
+    expect(response.status).toBe(503)
+    expect(verifyPermission).toHaveBeenCalledTimes(1)
+    expectNoDiscordCalls()
+  })
 })
 
 describe('[D-23] the Discovery gate', () => {
