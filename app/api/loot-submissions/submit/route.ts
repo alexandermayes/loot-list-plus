@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { validateBracketRules, type BracketItem, type BracketLimits } from '@/domain/loot/bracket-validation'
+import { validateBracketRules, type BracketItem, type BracketLimits, type BracketViolation } from '@/domain/loot/bracket-validation'
 import { validateItemCopyLimits } from '@/domain/loot/item-copies'
 import { isNeedRow } from '@/domain/loot/item-identity'
 import { checkNeedList } from '@/domain/loot/need-list-rules'
+import { MAX_NEED_TIER_SLOTS } from '@/domain/loot/need-picks'
 import { NEED_BUDGET_CODE, needOverBudgetSentence } from '@/domain/loot/need-budget'
 import { NEED_NOT_ELIGIBLE_CODE, NEED_NOT_ELIGIBLE_ERROR } from '@/domain/loot/need-eligibility'
 import { findLockViolations, lockViolationMessage } from '@/domain/loot/slot-locks'
@@ -19,6 +20,12 @@ import { findPrioViolations, prioViolationMessage, PRIO_VIOLATION_CODE } from '@
 // Shown to the raider when the list's character is not an active member of
 // the list's guild (the same text auto-save shows).
 const NOT_ACTIVE_MEMBER_ERROR = 'Your character needs to rejoin this guild.'
+
+// API-only copy, owner review pending (04-19 sign-off predates it). The editor
+// and the picker never save a row outside these slots, so only a hand-built
+// save_submission_items call can see these lines.
+const ITEM_SLOT_DETAIL = 'Items use slot 1 or 2.'
+const NEED_SLOT_DETAIL = `Needs use slots 1 to ${MAX_NEED_TIER_SLOTS}.`
 
 // PostgREST can return a to-one embed as an object or a one-element array.
 function oneEmbed<T>(embed: T | T[] | null | undefined): T | null {
@@ -42,6 +49,8 @@ function oneEmbed<T>(embed: T | T[] | null | undefined): T | null {
  *    lost after the check) gets the same 403.
  * 3. Read current items + item metadata from DB
  * 4. Read guild enforce_slot_restrictions setting
+ * 4a. Refuse an item row outside slots 1 and 2, or a need row outside the
+ *    tier slot range (422, before any write; CR-01)
  * 5. Validate bracket rules and item copy limits (the same per-item rule the
  *    loot list applies; see domain/loot/item-copies.ts). Rows whose item is
  *    from a raid tier the guild turned off (raid_tiers.is_guild_active = false)
@@ -168,6 +177,34 @@ export async function POST(request: NextRequest) {
       } | null
     }
     const itemRows = (submissionItems || []) as unknown as SubmissionItemRow[]
+
+    // CR-01: the Phase 4 migration widened the table check to slot 1..8 for
+    // every row so need rows can fan out one slot per Discovery tier, and
+    // save_submission_items never reads the slot, so this is the only gate
+    // that keeps item rows at slots 1 and 2. The officer review table places
+    // only slots 1 and 2, so a row outside them would be approved unseen.
+    // Every live row is checked, including rows of tiers the guild turned off:
+    // the GH #357 skip below exists for rows a raider cannot fix, and no
+    // editor or picker save ever puts a row here, so nothing legitimate is
+    // refused.
+    const slotViolations: BracketViolation[] = []
+    const slotOf = (row: SubmissionItemRow) => Number(row.slot)
+    if (itemRows.some((row) => !isNeedRow(row.loot_item) && slotOf(row) !== 1 && slotOf(row) !== 2)) {
+      slotViolations.push({ bracket: 'List', rule: 'item_slot', detail: ITEM_SLOT_DETAIL })
+    }
+    if (itemRows.some((row) => {
+      if (!isNeedRow(row.loot_item)) return false
+      const slot = slotOf(row)
+      return !Number.isInteger(slot) || slot < 1 || slot > MAX_NEED_TIER_SLOTS
+    })) {
+      slotViolations.push({ bracket: 'List', rule: 'need_slot', detail: NEED_SLOT_DETAIL })
+    }
+    if (slotViolations.length > 0) {
+      return NextResponse.json({
+        error: 'List violates bracket rules',
+        violations: slotViolations,
+      }, { status: 422 })
+    }
 
     // GH #357: the loot list page only receives items from raid tiers with
     // is_guild_active = true (resolveTierIdsForPhases in lib/loot-items-query.ts),

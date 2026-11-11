@@ -822,3 +822,75 @@ describe('POST /api/loot-submissions/submit officer prio (#484)', () => {
     expect(statusUpdates(calls)).toHaveLength(0)
   })
 })
+
+// regression for CR-01 (Phase 4 review): the need-list migration widened the
+// slot check to 1..8 for every row, so the route is the only gate left that
+// keeps item rows at slots 1 and 2. The officer review table only places
+// slots 1 and 2, so an item row at slot 3 would reach approval unseen.
+describe('POST /api/loot-submissions/submit row slots (CR-01)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([])
+    vi.mocked(fetchListPrioItems).mockResolvedValue([])
+  })
+
+  const plainItem = (rank: number, slot: number, n: number): SubmissionItem => {
+    const id = `bbbbbbbb-0000-0000-0000-0000000001${String(n).padStart(2, '0')}`
+    return {
+      rank,
+      slot,
+      loot_item_id: id,
+      loot_item: { id, name: `Test Item ${n}`, classification: 'Unlimited', item_type: null, item_slot: 'Neck', wowhead_id: 50000 + n, allocation_cost: 0, kind: 'item' },
+    }
+  }
+
+  it('refuses an item row at slot 3 with 422 item_slot and writes nothing', async () => {
+    const items = [plainItem(40, 1, 1), plainItem(40, 2, 2), plainItem(40, 3, 3)]
+    const { res, body, calls } = await run({ ...baseFixture(), items })
+    expect(res.status).toBe(422)
+    expect(body.error).toBe('List violates bracket rules')
+    expect(body.violations).toEqual([expect.objectContaining({ bracket: 'List', rule: 'item_slot' })])
+    expect(submissionUpdates(calls)).toHaveLength(0)
+    expect(fetchListPrioItems).not.toHaveBeenCalled()
+  })
+
+  it('refuses an item row at slot 3 even when its tier is turned off', async () => {
+    const items = [plainItem(40, 1, 1), withTier(plainItem(12, 3, 2), { is_guild_active: false })]
+    const { res, body, calls } = await run({ ...baseFixture(), items })
+    expect(res.status).toBe(422)
+    expect(body.violations).toEqual([expect.objectContaining({ rule: 'item_slot' })])
+    expect(submissionUpdates(calls)).toHaveLength(0)
+  })
+
+  it('submits an ordinary Known list on slots 1 and 2', async () => {
+    const items = [plainItem(40, 1, 1), plainItem(40, 2, 2), plainItem(30, 1, 3), plainItem(10, 2, 4)]
+    const { res, calls } = await run({ ...baseFixture(), items })
+    expect(res.status).toBe(200)
+    expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+  })
+
+  it('submits need rows on every tier slot from 1 to 8', async () => {
+    const items = needList(TEN_POINT_KEYS, [0, 1, 2, 3, 4, 5, 6, 7])
+    expect(new Set(items.map(row => row.slot))).toEqual(new Set([1, 2, 3, 4, 5, 6, 7, 8]))
+    const { res, calls } = await run({ ...baseFixture(), items })
+    expect(res.status).toBe(200)
+    expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+  })
+
+  it('refuses a need row at slot 9 with 422 need_slot and writes nothing', async () => {
+    const items = [...needList(TEN_POINT_KEYS), ...needRows('chest.cloth.spell-damage', 47, [8])]
+    const { res, body, calls } = await run({ ...baseFixture(), items })
+    expect(res.status).toBe(422)
+    expect(body.violations).toEqual([expect.objectContaining({ bracket: 'List', rule: 'need_slot' })])
+    expect(submissionUpdates(calls)).toHaveLength(0)
+  })
+
+  it('still submits the 15-row Discovery list', async () => {
+    const items = needList(TEN_POINT_KEYS)
+    expect(items).toHaveLength(15)
+    const { res, calls } = await run({ ...baseFixture(), items })
+    expect(res.status).toBe(200)
+    expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+  })
+})

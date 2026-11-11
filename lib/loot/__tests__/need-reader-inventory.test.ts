@@ -354,7 +354,7 @@ export const NEED_READERS: readonly NeedReader[] = [
     file: 'app/api/loot-submissions/submit/route.ts',
     dispositions: ['branch', 'guard'],
     plan: '04-08',
-    note: 'need rows out of bracket rules; 10-point budget and eligibility refusals (D-07, D-10); need copy caps once per need (D-29)',
+    note: 'need rows out of bracket rules; item rows held to slots 1 and 2 and need rows to the tier slot range (CR-01); 10-point budget and eligibility refusals (D-07, D-10); need copy caps once per need (D-29)',
     test: 'app/api/loot-submissions/submit/__tests__/route.test.ts',
   },
   {
