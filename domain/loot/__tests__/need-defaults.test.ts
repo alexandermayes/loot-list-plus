@@ -1,6 +1,11 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { NEED_DEFAULTS, SPECS_WITHOUT_DEFAULT, defaultNeedsFor } from '@/domain/loot/need-defaults'
+import {
+  NEED_DEFAULTS,
+  SPECS_WITHOUT_DEFAULT,
+  defaultNeedsFor,
+  matchesSpecDefault,
+} from '@/domain/loot/need-defaults'
 import { NEED_BUDGET_POINTS, budgetForPicks } from '@/domain/loot/need-budget'
 import { eligibleNeedsFor } from '@/domain/loot/need-eligibility'
 import { findNeedDefinition } from '@/domain/loot/needs'
@@ -98,5 +103,80 @@ describe('NEED_DEFAULTS gate (D-09, D-31)', () => {
     for (const entry of NEED_DEFAULTS) {
       expect(defaultNeedsFor(entry.className, entry.specName)).toEqual(entry.needs)
     }
+  })
+})
+
+describe('defaultNeedsFor edges (D-11, T-04-04-01)', () => {
+  it('returns null for a spec on purpose without a default', () => {
+    expect(defaultNeedsFor('Death Knight', 'Blood')).toBeNull()
+    expect(defaultNeedsFor('Monk', 'Windwalker')).toBeNull()
+  })
+
+  it('returns null for a missing or unknown class or spec', () => {
+    expect(defaultNeedsFor(null, 'Mage')).toBeNull()
+    expect(defaultNeedsFor('Mage', null)).toBeNull()
+    expect(defaultNeedsFor(undefined, undefined)).toBeNull()
+    expect(defaultNeedsFor('Mage', 'Fire')).toBeNull()
+    expect(defaultNeedsFor('Gnome', 'Mage')).toBeNull()
+  })
+
+  it('answers nothing for prototype names', () => {
+    expect(defaultNeedsFor('__proto__', 'x')).toBeNull()
+    expect(defaultNeedsFor('constructor', 'constructor')).toBeNull()
+    expect(defaultNeedsFor('toString', 'valueOf')).toBeNull()
+  })
+
+  it('returns the same frozen array, in the same order, on every call', () => {
+    const first = defaultNeedsFor('Rogue', 'Rogue')
+    const second = defaultNeedsFor('Rogue', 'Rogue')
+    expect(first).not.toBeNull()
+    expect(second).toBe(first)
+    expect(Object.isFrozen(first)).toBe(true)
+    expect(first?.[0]).toBe('main-hand-weapon.agility')
+  })
+})
+
+describe('matchesSpecDefault (D-11, DISC-04 adjacency)', () => {
+  it('is true when all five positions hold the default keys in order', () => {
+    const mage = [...(defaultNeedsFor('Mage', 'Mage') ?? [])]
+    expect(mage).toHaveLength(5)
+    expect(matchesSpecDefault(mage, 'Mage', 'Mage')).toBe(true)
+  })
+
+  it('is true for every default against its own spec', () => {
+    for (const entry of NEED_DEFAULTS) {
+      expect(matchesSpecDefault([...entry.needs], entry.className, entry.specName), entry.specName).toBe(true)
+    }
+  })
+
+  it('is false for the same five keys in another order, because that is an edit', () => {
+    const swapped = [...(defaultNeedsFor('Mage', 'Mage') ?? [])]
+    ;[swapped[3], swapped[4]] = [swapped[4], swapped[3]]
+    expect(matchesSpecDefault(swapped, 'Mage', 'Mage')).toBe(false)
+  })
+
+  it('is false when a position is empty, so four keys and a null is an edit', () => {
+    const four = [...(defaultNeedsFor('Mage', 'Mage') ?? [])]
+    expect(matchesSpecDefault([...four.slice(0, 4), null], 'Mage', 'Mage')).toBe(false)
+    expect(matchesSpecDefault([null, null, null, null, null], 'Mage', 'Mage')).toBe(false)
+  })
+
+  it('is false for a list of the wrong length', () => {
+    const mage = [...(defaultNeedsFor('Mage', 'Mage') ?? [])]
+    expect(matchesSpecDefault(mage.slice(0, 4), 'Mage', 'Mage')).toBe(false)
+    expect(matchesSpecDefault([...mage, 'ring.spell-damage'], 'Mage', 'Mage')).toBe(false)
+  })
+
+  it('is false when the keys belong to a different spec', () => {
+    const rogue = [...(defaultNeedsFor('Rogue', 'Rogue') ?? [])]
+    expect(matchesSpecDefault(rogue, 'Mage', 'Mage')).toBe(false)
+  })
+
+  it('is false for any keys when the spec has no default or is unknown', () => {
+    const keys = [...(defaultNeedsFor('Mage', 'Mage') ?? [])]
+    expect(matchesSpecDefault(keys, 'Death Knight', 'Blood')).toBe(false)
+    expect(matchesSpecDefault(keys, null, 'Mage')).toBe(false)
+    expect(matchesSpecDefault(keys, 'Mage', undefined)).toBe(false)
+    expect(matchesSpecDefault(keys, '__proto__', 'x')).toBe(false)
   })
 })
