@@ -16,13 +16,20 @@ import {
   resolveAppOrigin,
 } from '@/domain/loot/set-your-five'
 
-// Ceiling for the whole request on the host. The DM loop below keeps well
-// inside it: 5 DMs at a time and no new DM after 45 seconds (D-30), which fits
-// a guild of about a hundred members at two Discord calls each.
+// Ceiling for the whole request on the host. The DM loop below keeps inside
+// it: 5 DMs at a time, no new DM after 45 seconds (D-30), which fits a guild
+// of about a hundred members at two Discord calls each, and every Discord
+// call still in flight is cut off at 55 seconds, so a long Retry-After can
+// never run the function past the ceiling once the channel post has landed.
+// regression for WR-03 (Phase 4 review).
 export const maxDuration = 60
 
 const SET_YOUR_FIVE_DM_CONCURRENCY = 5
 const SET_YOUR_FIVE_TIME_BUDGET_MS = 45_000
+// The deadline every Discord call carries, from the start of the request:
+// past it, discordFetch stops waiting on Retry-After and makes no new attempt,
+// and the response is written with the counts so far.
+const SET_YOUR_FIVE_DEADLINE_MS = 55_000
 const SET_YOUR_FIVE_COOLDOWN_MINUTES = 60
 // The send row's audit_logs table_name ('set_your_five_sends'); the cooldown
 // reads the latest one for the guild.
@@ -54,6 +61,8 @@ interface PreferenceRow {
  */
 export async function POST(request: NextRequest) {
   const startedAt = Date.now()
+  const deadline = new AbortController()
+  const deadlineTimer = setTimeout(() => deadline.abort(), SET_YOUR_FIVE_DEADLINE_MS)
   try {
     const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
@@ -195,6 +204,7 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         headers: { Authorization: `Bot ${botToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(message),
+        signal: deadline.signal,
       })
       channelPostOk = posted.ok
     } catch {
@@ -217,18 +227,24 @@ export async function POST(request: NextRequest) {
       newData: { posted: true },
     })
 
-    // Bounded DMs (D-30): a small worker pool, and no new DM once the budget
-    // from the start of the request is spent. Recipients never reached are
-    // counted as skipped.
+    // Bounded DMs (D-30): a small worker pool, no new DM once the budget from
+    // the start of the request is spent, and the deadline on every DM still
+    // in flight after that. Recipients never reached are counted as skipped.
     let sent = 0
     let next = 0
     const worker = async () => {
       while (next < discordIds.length) {
         if (Date.now() - startedAt >= SET_YOUR_FIVE_TIME_BUDGET_MS) return
         const discordId = discordIds[next++]
-        const outcome = await sendDirectMessage(botToken, discordId, message as unknown as Record<string, unknown>)
+        const outcome = await sendDirectMessage(botToken, discordId, message as unknown as Record<string, unknown>, {
+          signal: deadline.signal,
+        })
         if (outcome.ok) {
           sent += 1
+        } else if (deadline.signal.aborted) {
+          // The deadline passed while this DM was in flight: the recipient
+          // counts as never reached, and there is nothing to log.
+          return
         } else if (outcome.status !== 403) {
           // 403 (DMs closed, no shared server, stale id) is a state of the
           // world and stays quiet. Anything else logs stage and status only,
@@ -246,5 +262,7 @@ export async function POST(request: NextRequest) {
     // Fixed message: nothing from the request or from Discord goes in the log.
     console.error('[set-your-five] unexpected failure', { stage: 'handler' })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } finally {
+    clearTimeout(deadlineTimer)
   }
 }

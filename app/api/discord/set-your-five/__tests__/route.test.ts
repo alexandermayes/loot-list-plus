@@ -405,6 +405,78 @@ describe('[DISC-11 ordering] who is counted', () => {
   })
 })
 
+// regression for WR-03 (Phase 4 review): every Discord call carries one
+// deadline from the start of the request, so a long Retry-After on a DM can
+// never run the function past maxDuration after the channel post has landed.
+describe('[WR-03] the request deadline', () => {
+  const DEADLINE_MS = 55_000
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('passes one abort signal to the channel post and to every DM', async () => {
+    await POST(request())
+
+    const [, init] = vi.mocked(discordFetch).mock.calls[0]
+    const signal = init?.signal
+    expect(signal).toBeInstanceOf(AbortSignal)
+    expect(signal?.aborted).toBe(false)
+    expect(sendDirectMessage).toHaveBeenCalledTimes(2)
+    for (const call of vi.mocked(sendDirectMessage).mock.calls) {
+      expect(call[3]).toEqual({ signal })
+    }
+  })
+
+  it('counts a DM still in flight at the deadline as skipped, with no error log', async () => {
+    vi.useFakeTimers()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const abortedWhenAnswered: boolean[] = []
+    vi.mocked(sendDirectMessage).mockImplementation(async (_token, _recipient, _body, options) => {
+      // Discord holds the DM until the deadline passes.
+      vi.advanceTimersByTime(DEADLINE_MS)
+      abortedWhenAnswered.push(options?.signal?.aborted ?? false)
+      return { ok: false, stage: 'send_message', status: null }
+    })
+
+    const response = await POST(request())
+
+    // The first DM was in flight at the deadline; the second never started,
+    // because the 45 second budget had passed by then. Both count as skipped.
+    expect(await response.json()).toEqual({ posted: true, sent: 0, skipped: 2 })
+    expect(abortedWhenAnswered).toEqual([true])
+    expect(sendDirectMessage).toHaveBeenCalledTimes(1)
+    expect(errorSpy).not.toHaveBeenCalled()
+    errorSpy.mockRestore()
+  })
+
+  it('still logs a DM failure that happened before the deadline', async () => {
+    vi.useFakeTimers()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(sendDirectMessage).mockResolvedValue({ ok: false, stage: 'send_message', status: 500 })
+
+    const response = await POST(request())
+
+    expect(await response.json()).toEqual({ posted: true, sent: 0, skipped: 2 })
+    expect(errorSpy).toHaveBeenCalledTimes(2)
+    errorSpy.mockRestore()
+  })
+
+  it('answers 502 when the channel post itself is cut off at the deadline', async () => {
+    vi.useFakeTimers()
+    vi.mocked(discordFetch).mockImplementation(async (_url, init) => {
+      vi.advanceTimersByTime(DEADLINE_MS)
+      expect(init?.signal?.aborted).toBe(true)
+      return { ok: false, status: 429 } as Response
+    })
+
+    const response = await POST(request())
+
+    expect(response.status).toBe(502)
+    expect(sendDirectMessage).not.toHaveBeenCalled()
+  })
+})
+
 describe('[D-30] bounded DMs', () => {
   it('keeps at most 5 DMs in flight with 12 recipients', async () => {
     manyMembers(12)
