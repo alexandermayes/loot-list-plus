@@ -8,7 +8,9 @@ import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Text } from '@/components/ui/typography'
 import ItemLink from '@/app/components/ItemLink'
+import { ScoreSplit, formatScoreValue } from '@/app/components/ScoreSplit'
 import { useNotification } from '@/app/contexts/NotificationContext'
+import { toScoreResult } from '@/domain/scoring/engine'
 import { explainScore, RAIDER_BONUS_GENERIC_DETAIL } from '@/domain/scoring/explain'
 import { toDateString } from '@/utils/date'
 import type {
@@ -224,12 +226,20 @@ function formatDate(dateStr: string): string {
 }
 
 /** Reconstruct ScoreResult from flat PlayerRanking for explainScore() */
-function rankingToExplanation(r: PlayerRanking, config?: Partial<ScoringConfig>) {
+function rankingToExplanation(r: PlayerRanking, config: Partial<ScoringConfig> | undefined, decimalPlaces: number) {
   // Pass the character and today so the raider bonus line lists each reason and end date (GH #357).
+  // Officers read a raider's score, so the sentences say "their", never "your" (UI-12).
   return explainScore({ total: r.loot_score, components: rankingToComponents(r) }, config, {
     characterId: r.character_id,
     asOfDate: toDateString(new Date()),
+    voice: 'other',
+    decimalPlaces,
   })
+}
+
+/** Standing for any row, from the same components the award snapshot records, so the column and the sentence agree. */
+function rankingStanding(r: PlayerRanking): number {
+  return toScoreResult(r.loot_score, rankingToComponents(r)).standing
 }
 
 export const ItemCandidateModal = memo(function ItemCandidateModal({
@@ -510,10 +520,10 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
   const topExplanations = useMemo(() => {
     const map = new Map<string, ReturnType<typeof rankingToExplanation>>()
     for (let i = 0; i < Math.min(3, sortedRankings.length); i++) {
-      map.set(rankingEntryKey(sortedRankings[i]), rankingToExplanation(sortedRankings[i], guildSettings))
+      map.set(rankingEntryKey(sortedRankings[i]), rankingToExplanation(sortedRankings[i], guildSettings, decimalPlaces))
     }
     return map
-  }, [sortedRankings, guildSettings])
+  }, [sortedRankings, guildSettings, decimalPlaces])
 
   // Close-score analysis: group tied candidates and identify close contests
   // Raiders are compared by their best entry (bestRankings).
@@ -533,7 +543,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     let keyDiffs: { key: string; label: string; diff: number }[] = []
     if (tiedAtTop.length === 1 && nextAfterTied) {
       const explain = (r: PlayerRanking) =>
-        topExplanations.get(rankingEntryKey(r)) ?? rankingToExplanation(r, guildSettings)
+        topExplanations.get(rankingEntryKey(r)) ?? rankingToExplanation(r, guildSettings, decimalPlaces)
       const firstExp = explain(bestRankings[0])
       const secondExp = explain(nextAfterTied)
       if (firstExp && secondExp) {
@@ -550,7 +560,7 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
     if (!isTied && !isClose) return null
 
     return { tiedAtTop, nextAfterTied, gapToNext, isTied, isClose, keyDiffs }
-  }, [bestRankings, topExplanations, guildSettings])
+  }, [bestRankings, topExplanations, guildSettings, decimalPlaces])
 
   // Determine which score components are non-zero for any candidate to hide empty columns
   const visibleComponents = useMemo(() => {
@@ -705,7 +715,8 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                     <th className="px-4 py-2 text-right" title={EQUIPPED_COPY.headerTitle}>{EQUIPPED_COPY.header}</th>
                   )}
                   <th className="px-4 py-2 text-right">Score</th>
-                  <th className="px-4 py-2 text-right" title="Item rank on their list">Rank</th>
+                  <th className="px-4 py-2 text-right" title="Standing: attendance, bad luck protection and officer bonuses">Standing</th>
+                  <th className="px-4 py-2 text-right" title="How much they want this item">Interest</th>
                   <th className="px-4 py-2 text-right" title="Attendance score">Attend</th>
                   {visibleComponents.rankMod && <th className="px-4 py-2 text-right" title="Guild rank modifier">Rank mod</th>}
                   {visibleComponents.roleBonus && <th className="px-4 py-2 text-right" title="Raid role bonus">Role</th>}
@@ -745,18 +756,24 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                             <span className="text-11 font-medium px-1.5 py-0.5 rounded bg-success/20 text-success">Has item</span>
                           )}
                         </div>
-                        {/* Inline score explanation for top 3 */}
+                        {/* Standing and interest in plain sentences for the top 3 (D-21) */}
                         {explanation && (
-                          <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
-                            {explanation.lines.map(line => (
-                              <span key={line.key} className="text-11 text-muted-foreground">
-                                {line.label}: <span className={`font-medium tabular-nums ${line.value > 0 ? 'text-foreground-secondary' : line.value < 0 ? 'text-destructive' : ''}`}>
-                                  {line.value > 0 ? '+' : ''}{line.value.toFixed(decimalPlaces)}
-                                </span>
-                                {line.key === 'raiderBonus' && line.detail !== RAIDER_BONUS_GENERIC_DETAIL ? ` (${line.detail})` : ''}
-                                {line.context ? ` (${line.context})` : ''}
-                              </span>
-                            ))}
+                          <div className="mt-1">
+                            <ScoreSplit
+                              standing={explanation.standing}
+                              interest={explanation.interest}
+                              total={explanation.total}
+                              decimalPlaces={decimalPlaces}
+                              variant="rows"
+                            />
+                            {/* The sentence has the bonus number; this keeps the reason and end date visible (#357). */}
+                            {explanation.lines.map(line =>
+                              line.key === 'raiderBonus' && line.detail !== RAIDER_BONUS_GENERIC_DETAIL ? (
+                                <p key={line.key} className="text-11 text-muted-foreground mt-0.5">
+                                  {`Officer bonus (${line.detail})`}
+                                </p>
+                              ) : null
+                            )}
                           </div>
                         )}
                       </td>
@@ -765,6 +782,9 @@ export const ItemCandidateModal = memo(function ItemCandidateModal({
                       )}
                       <td className="px-4 py-2 text-right font-semibold tabular-nums">
                         {r.loot_score.toFixed(decimalPlaces)}
+                      </td>
+                      <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">
+                        {formatScoreValue(rankingStanding(r), decimalPlaces)}
                       </td>
                       <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">{r.rank}</td>
                       <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">

@@ -34,8 +34,12 @@ export interface ScoreSplitProps {
   className?: string
 }
 
-/** toFixed to the guild's places, without a negative zero such as "-0.00". */
-function formatValue(value: number, decimalPlaces: number): string {
+/**
+ * toFixed to the guild's places, without a negative zero such as "-0.00".
+ * Exported so a table column that shows a standing next to ScoreSplit's
+ * sentences formats it the same way.
+ */
+export function formatScoreValue(value: number, decimalPlaces: number): string {
   const fixed = value.toFixed(decimalPlaces)
   return Number(fixed) === 0 ? (0).toFixed(decimalPlaces) : fixed
 }
@@ -60,8 +64,8 @@ export function ScoreSplit({
   totalLabel = 'Total',
   className = '',
 }: ScoreSplitProps) {
-  const standingText = formatValue(standing.value, decimalPlaces)
-  const interestText = formatValue(interest.value, decimalPlaces)
+  const standingText = formatScoreValue(standing.value, decimalPlaces)
+  const interestText = formatScoreValue(interest.value, decimalPlaces)
 
   if (variant === 'rows') {
     return <Sentences standing={standing.sentence} interest={interest.sentence} className={`space-y-1 ${className}`} />
@@ -100,7 +104,7 @@ export function ScoreSplit({
         </div>
         <div className="min-w-0 border-l border-border pl-2">
           <div className="text-12 uppercase tracking-wide text-muted-foreground">{totalLabel}</div>
-          <div className="text-24 font-semibold text-foreground tabular-nums">{formatValue(total, decimalPlaces)}</div>
+          <div className="text-24 font-semibold text-foreground tabular-nums">{formatScoreValue(total, decimalPlaces)}</div>
         </div>
       </div>
       <Sentences standing={standing.sentence} interest={interest.sentence} className="mt-2 space-y-2" />
