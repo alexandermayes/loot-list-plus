@@ -35,7 +35,7 @@
  */
 
 // ─── Public API ──────────────────────────────────────────────
-export { computeScore } from './engine'
+export { computeScore, toScoreResult } from './engine'
 export { explainScore } from './explain'
 export { computeAttendance, resolveStatus, getAttendanceWindowEnd, getAttendanceWindowStart, getCurrentResetWeekEnd, getNextResetWeek, resolveOwnedEvents } from './attendance'
 export { resolveAttendanceWindow } from './attendance-window'

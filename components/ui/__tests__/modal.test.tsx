@@ -330,4 +330,100 @@ describe('Modal', () => {
     expect(panel).toHaveClass('motion-reduce:transition-none', 'motion-reduce:scale-100')
     expect(backdrop).toHaveClass('motion-reduce:transition-none')
   })
+
+  describe('placement (UI-01)', () => {
+    function renderModal(placement?: 'center' | 'sheet', size?: 'sm' | 'default') {
+      render(
+        <Modal open={true} onClose={() => {}} placement={placement} size={size}>
+          <ModalHeader showCloseButton={false}>
+            <ModalTitle>Modal heading</ModalTitle>
+          </ModalHeader>
+          <ModalBody>
+            <button>Only button</button>
+          </ModalBody>
+        </Modal>
+      )
+      const dialog = screen.getByRole('dialog')
+      const panel = dialog.parentElement as HTMLElement
+      const backdrop = panel.parentElement as HTMLElement
+      return { dialog, panel, backdrop }
+    }
+
+    // T-04-10-02: every existing call site passes no placement, so the default
+    // class strings are pinned exactly. A change here changes every dialog.
+    it('renders the same classes as before when no placement is passed', () => {
+      const { dialog, panel, backdrop } = renderModal()
+      expect(backdrop.className).toBe(
+        'fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 transition-opacity duration-150 motion-reduce:transition-none opacity-0'
+      )
+      expect(panel.className).toBe(
+        'w-full flex items-center justify-center transition-[opacity,transform] duration-150 ease-out motion-reduce:transition-none motion-reduce:scale-100 opacity-0 scale-95'
+      )
+      expect(dialog.className).toBe(
+        'bg-background-subtle border border-border-strong rounded-xl w-full overflow-clip flex flex-col max-w-lg max-h-[95vh] sm:max-h-[85vh]'
+      )
+    })
+
+    it("treats placement 'center' exactly like no placement", () => {
+      const { dialog, panel, backdrop } = renderModal('center')
+      expect(backdrop.className).toContain('flex items-center justify-center p-2 sm:p-4')
+      expect(panel.className).not.toContain('translate-y')
+      expect(dialog.className).toContain('rounded-xl')
+      expect(dialog.className).toContain('max-w-lg')
+    })
+
+    it("anchors a 'sheet' to the bottom edge below sm, full width, rounded top, 85vh tall", () => {
+      const { dialog, backdrop } = renderModal('sheet')
+      expect(backdrop).toHaveClass('items-end', 'sm:items-center', 'p-0', 'sm:p-4')
+      expect(dialog).toHaveClass('rounded-b-none', 'sm:rounded-b-xl', 'max-w-none', 'max-h-[85vh]')
+      expect(dialog.className).toContain('env(safe-area-inset-bottom)')
+    })
+
+    it("keeps a 'sheet' the centred size sm from sm up", () => {
+      const { dialog } = renderModal('sheet')
+      expect(dialog).toHaveClass('sm:max-w-md', 'sm:pb-0')
+      expect(dialog).not.toHaveClass('max-w-lg')
+    })
+
+    it("slides a 'sheet' up with duration-normal and drops the motion under reduced motion", () => {
+      const { panel } = renderModal('sheet')
+      expect(panel).toHaveClass('duration-normal', 'ease-out', 'translate-y-full', 'sm:translate-y-0')
+      expect(panel).toHaveClass('motion-reduce:transition-none', 'motion-reduce:translate-y-0')
+    })
+
+    it("inherits the focus trap, Escape and focus return in 'sheet' placement", async () => {
+      const user = userEvent.setup()
+      function Wrapper() {
+        const [open, setOpen] = useState(false)
+        return (
+          <div>
+            <button onClick={() => setOpen(true)}>Open sheet</button>
+            <Modal open={open} onClose={() => setOpen(false)} placement="sheet">
+              <ModalHeader showCloseButton={false}>
+                <ModalTitle>Sheet heading</ModalTitle>
+              </ModalHeader>
+              <ModalBody>
+                <button>First</button>
+                <button>Last</button>
+              </ModalBody>
+            </Modal>
+          </div>
+        )
+      }
+      render(<Wrapper />)
+
+      const trigger = screen.getByRole('button', { name: 'Open sheet' })
+      await user.click(trigger)
+      expect(await screen.findByRole('button', { name: 'First' })).toHaveFocus()
+
+      await user.tab()
+      expect(screen.getByRole('button', { name: 'Last' })).toHaveFocus()
+      await user.tab()
+      expect(screen.getByRole('button', { name: 'First' })).toHaveFocus()
+
+      await user.keyboard('{Escape}')
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+      expect(trigger).toHaveFocus()
+    })
+  })
 })

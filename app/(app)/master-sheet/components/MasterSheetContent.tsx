@@ -51,6 +51,10 @@ import { useRaidTeam } from '@/app/hooks/useRaidTeam'
 import { resolveRaidDays } from '@/domain/raid-team/settings'
 import { TeamSelector } from '@/app/components/TeamSelector'
 
+// WR-02: most need ids one BLP GET may carry. Matches VISIBILITY_ID_CHUNK in
+// the visibility route; a Forever phase can rank up to 435 needs.
+const BLP_NEED_ID_CHUNK = 100
+
 interface LootItem {
   id: string
   name: string
@@ -742,7 +746,9 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
         }
 
         const itemIds = itemsData.map((i: { id: string }) => i.id)
-        // Need ids travel in the POST body only (T-03-10-02), never in a GET URL.
+        // Need ids go in the POST body for the visibility read. The BLP GET for
+        // ranked needs below carries them in the URL, so it sends at most
+        // BLP_NEED_ID_CHUNK ids per request (WR-02).
         const needIds = needRows.map(n => n.id)
 
         // PERFORMANCE: Parallelize independent queries that only need itemIds.
@@ -839,11 +845,21 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
         const shownNeeds = keepRankedNeedRows(needRows, rankedNeedIds)
         const shownNeedIds = shownNeeds.map(n => n.id)
         if (guildSettings.blp_enabled && shownNeedIds.length > 0) {
-          // Pitfall 7: only the ranked need ids reach this GET, in their own request.
-          const needBlp = await fetch(`/api/blp?guild_id=${guildId}&item_ids=${shownNeedIds.join(',')}`)
-            .then(res => res.ok ? res.json() : { data: {} })
-            .catch(() => ({ data: {} }))
-          Object.assign(blpDataMap, needBlp.data || {})
+          // Pitfall 7: only the ranked need ids reach this GET, in their own
+          // requests. WR-02: a Forever phase can have hundreds of ranked needs,
+          // so the ids go in chunks of BLP_NEED_ID_CHUNK to keep each URL short.
+          const needIdChunks: string[][] = []
+          for (let i = 0; i < shownNeedIds.length; i += BLP_NEED_ID_CHUNK) {
+            needIdChunks.push(shownNeedIds.slice(i, i + BLP_NEED_ID_CHUNK))
+          }
+          const needBlpResults = await Promise.all(
+            needIdChunks.map(chunk =>
+              fetch(`/api/blp?guild_id=${guildId}&item_ids=${chunk.join(',')}`)
+                .then(res => res.ok ? res.json() : { data: {} })
+                .catch(() => ({ data: {} })),
+            ),
+          )
+          for (const needBlp of needBlpResults) Object.assign(blpDataMap, needBlp.data || {})
         }
         // Items first, then the ranked needs (they group under 'Needs' after
         // every boss because getBossOrder falls to 999, D-13).
@@ -2043,6 +2059,8 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
           itemName={comparisonData.itemName}
           userRanking={comparisonData.userRanking}
           winnerRanking={comparisonData.winnerRanking}
+          decimalPlaces={guildSettings?.decimal_places}
+          config={guildSettings ?? undefined}
         />
 
         {/* Item Candidate Modal (officer-only) */}

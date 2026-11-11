@@ -171,3 +171,73 @@ describe('BossSection need rows (D-13, DISC-06)', () => {
     expect(within(table).getByText('Trinket, Healing')).toBeInTheDocument()
   })
 })
+
+// D-21, UI-12: the officer score popover shows the split in officer voice
+// ("their"), keeps the component lines minus Item rank, and leaves the notes alone.
+describe('BossSection score popover standing and interest (D-21)', () => {
+  afterEach(cleanup)
+
+  function hoverRanking(entry: PlayerRanking, guildSettings: Record<string, unknown> = {}) {
+    const { container } = render(
+      <BossSection
+        boss="Ragnaros"
+        items={[{ item: ITEM, rankings: [entry, ranking({ player_name: 'Jaina', character_id: 'char-jaina', loot_score: 1 })] }]}
+        isCollapsed={false}
+        onToggleCollapse={() => {}}
+        isOfficer
+        guildSettings={{ max_attendance_bonus: 4, ...guildSettings }}
+      />,
+    )
+    const table = container.querySelector('table')!
+    fireEvent.mouseEnter(within(table).getByText(entry.player_name).parentElement!)
+  }
+
+  const SPLIT_ENTRY = () =>
+    ranking({
+      rank: 50,
+      attendance_score: 3,
+      bad_luck_bonus: 2,
+      raider_bonus: 2.5,
+      loot_score: 57.5,
+    })
+
+  it('P1 shows the standing and interest sentences in officer voice and no Item rank line', async () => {
+    hoverRanking(SPLIT_ENTRY())
+    expect(await screen.findByText('Interest 50: their number 1 pick.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Standing 7.5: attendance 3 of 4, bad luck protection 2, officer bonus 2.5.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Item rank')).toBeNull()
+    expect(screen.queryByText(/your number/)).toBeNull()
+  })
+
+  it('P2 keeps the name and total in the header and the other component lines below the split', async () => {
+    hoverRanking(SPLIT_ENTRY())
+    const interest = await screen.findByText('Interest 50: their number 1 pick.')
+    const popover = interest.closest('.fixed') as HTMLElement
+    expect(within(popover).getByText('57.50')).toBeInTheDocument()
+    expect(within(popover).getByText('Attendance')).toBeInTheDocument()
+    expect(within(popover).getByText('Bad luck protection')).toBeInTheDocument()
+    // The compact split sits between the header and the component lines.
+    const order = [
+      popover.textContent!.indexOf('Standing'),
+      popover.textContent!.indexOf('Attendance'),
+    ]
+    expect(order[0]).toBeGreaterThanOrEqual(0)
+    expect(order[0]).toBeLessThan(order[1])
+  })
+
+  it('P3 uses the guild decimal places for the tile numbers', async () => {
+    hoverRanking(SPLIT_ENTRY(), { decimal_places: 1 })
+    const interest = await screen.findByText('Interest 50: their number 1 pick.')
+    const popover = interest.closest('.fixed') as HTMLElement
+    expect(within(popover).getByText('7.5').className).toContain('tabular-nums')
+    expect(within(popover).getByText('50.0')).toBeInTheDocument()
+  })
+
+  it('P4 keeps the trial and ineligible notes', async () => {
+    hoverRanking({ ...SPLIT_ENTRY(), is_trial: true, is_eligible: false })
+    expect(await screen.findByText('Trial member')).toBeInTheDocument()
+    expect(screen.getByText('Ineligible (min raids not met)')).toBeInTheDocument()
+  })
+})

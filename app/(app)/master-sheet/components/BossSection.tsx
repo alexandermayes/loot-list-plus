@@ -3,6 +3,7 @@
 import { memo, useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import ItemLink from '@/app/components/ItemLink'
+import { ScoreSplit } from '@/app/components/ScoreSplit'
 import { Button } from '@/components/ui/button'
 import { getBossImage } from '@/utils/bossImages'
 import { Card } from '@/components/ui/card'
@@ -15,6 +16,7 @@ async function loadBossQuote(boss: string): Promise<string | null> {
   return _bossQuotes.getBossQuote(boss)
 }
 import type { ScoreResult, ScoreComponents, ScoringConfig } from '@/domain/types'
+import { toScoreResult } from '@/domain/scoring/engine'
 import { explainScore, RAIDER_BONUS_GENERIC_DETAIL } from '@/domain/scoring/explain'
 import { toDateString } from '@/utils/date'
 
@@ -73,7 +75,7 @@ function rankingToScoreResult(r: PlayerRanking): ScoreResult {
     donationBonus: r.donation_bonus,
     raiderBonus: r.raider_bonus,
   }
-  return { total: r.loot_score, components }
+  return toScoreResult(r.loot_score, components)
 }
 
 /** Officer-only score breakdown popover: shows explainScore() lines on hover */
@@ -109,16 +111,19 @@ function ScoreBreakdownPopover({
 
   const result = rankingToScoreResult(ranking)
   // Pass the character and today so the raider bonus line lists each reason and end date (GH #357).
+  // Officers read a raider's score, so the sentences say "their", never "your" (UI-12).
   const explanation = explainScore(result, config, {
     characterId: ranking.character_id,
     asOfDate: toDateString(new Date()),
+    voice: 'other',
+    decimalPlaces,
   })
 
   return createPortal(
     <Card
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className="fixed z-[9999] shadow-lg p-3 w-64"
+      className="fixed z-[9999] shadow-lg p-3 w-72"
       style={{ top: position.top, left: position.left, transform: 'translateX(-50%)' }}
     >
       <div className="flex items-center justify-between mb-2">
@@ -127,8 +132,17 @@ function ScoreBreakdownPopover({
         </span>
         <span className="text-12 font-bold text-foreground tabular-nums">{explanation.total.toFixed(decimalPlaces)}</span>
       </div>
+      <ScoreSplit
+        standing={explanation.standing}
+        interest={explanation.interest}
+        total={explanation.total}
+        decimalPlaces={decimalPlaces}
+        variant="compact"
+        className="pb-2 mb-2 border-b border-border"
+      />
       <div className="space-y-1">
-        {explanation.lines.map(line => (
+        {/* The item rank is the Interest number above, so its line would say it twice. */}
+        {explanation.lines.filter(line => line.key !== 'itemRank').map(line => (
           <div key={line.key}>
             <div className="flex items-center justify-between">
               <span className="text-11 text-foreground-secondary">{line.label}</span>

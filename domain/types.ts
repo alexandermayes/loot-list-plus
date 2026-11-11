@@ -280,10 +280,20 @@ export interface ScoreComponents {
   raiderBonus: number
 }
 
-/** Result from computeScore() */
+/**
+ * Result from computeScore().
+ *
+ * `interest` is the item rank (what the raider asked for) and `standing` is
+ * everything else (what the guild gives them), so standing + interest = total.
+ * Build hand-made results with toScoreResult() so the two never drift.
+ */
 export interface ScoreResult {
   total: number
   components: ScoreComponents
+  /** Total minus interest: attendance, rank, role, priority, bonuses and penalties. */
+  standing: number
+  /** The item rank, the raider's own pick position expressed as points. */
+  interest: number
 }
 
 /** One line of a score explanation */
@@ -301,6 +311,10 @@ export interface ScoreLine {
 export interface ScoreExplanation {
   total: number
   lines: ScoreLine[]
+  /** Unrounded value for tiles, plus one plain sentence naming the non-zero parts. */
+  standing: { value: number; sentence: string }
+  /** Unrounded value for tiles, plus one plain sentence naming the pick position. */
+  interest: { value: number; sentence: string }
 }
 
 // ─── Award Decision Receipt ─────────────────────────────────

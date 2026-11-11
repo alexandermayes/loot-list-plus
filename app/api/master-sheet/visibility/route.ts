@@ -3,11 +3,24 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { roleHasPermission } from '@/domain/guild/roles'
 import { allowedMasterSheetTierIds, type GateExpansion } from '@/domain/loot/master-sheet-gate'
-import { paginatedSelect } from '@/utils/supabase/paginate'
+import { selectAllPagesOrThrow } from '@/utils/supabase/paginate'
 import { findInvalidCharacterIds } from '@/lib/loot/guild-award-refs'
 import { splitCandidatesByMembership } from '@/domain/loot/master-sheet-candidates'
 
 type ServiceClient = ReturnType<typeof createServiceRoleClient>
+
+// WR-02: a Forever phase can ask for up to 435 need ids, and PostgREST
+// carries every .in() id in the request URL, so one call with all of them
+// can overrun the URL limit. 100 matches CHUNK_SIZE in guild-award-refs.ts.
+const VISIBILITY_ID_CHUNK = 100
+
+function chunkIds(ids: string[]): string[][] {
+  const chunks: string[][] = []
+  for (let i = 0; i < ids.length; i += VISIBILITY_ID_CHUNK) {
+    chunks.push(ids.slice(i, i + VISIBILITY_ID_CHUNK))
+  }
+  return chunks
+}
 
 /**
  * Narrow `itemIds` to those whose raid tier is in a phase the caller has
@@ -32,18 +45,25 @@ async function filterItemsToEarnedPhases(
   )
   if (activeCallerCharacterIds.length === 0) return []
 
-  // Paginated: a merged phase can request more than 1000 items, and the
-  // silent 1000-row cap would drop the tail from the allowed set — items
-  // would vanish from the master sheet rather than be denied.
-  const items = await paginatedSelect<{ id: string; raid_tier_id: string | null }>(
-    (start, end) =>
-      supabase
-        .from('loot_items')
-        .select('id, raid_tier_id')
-        .in('id', itemIds)
-        .order('id', { ascending: true })
-        .range(start, end),
-  )
+  // Chunked and paginated: a merged phase can request more than 1000 items,
+  // and the silent 1000-row cap would drop the tail from the allowed set, so
+  // items would vanish from the master sheet rather than be denied. A failed
+  // page throws into the route's catch (500) instead of reading as "no items"
+  // (WR-02).
+  const items: { id: string; raid_tier_id: string | null }[] = []
+  for (const chunk of chunkIds(itemIds)) {
+    const rows = await selectAllPagesOrThrow<{ id: string; raid_tier_id: string | null }>(
+      'master sheet items',
+      (start, end) =>
+        supabase
+          .from('loot_items')
+          .select('id, raid_tier_id')
+          .in('id', chunk)
+          .order('id', { ascending: true })
+          .range(start, end),
+    )
+    items.push(...rows)
+  }
   if (items.length === 0) return []
 
   const tierIds = [
@@ -258,23 +278,30 @@ export async function POST(request: NextRequest) {
     // doesn't override it. A populated guild has well over 1000 rankings for
     // a single phase, and the silently-truncated rows used to drop raiders
     // off the master sheet at random (whichever submissions had rankings in
-    // the tail end of the result). Paginate explicitly via .range() in batches
-    // of 1000 until exhausted. `.order('id')` is REQUIRED — without it,
+    // the tail end of the result). selectAllPagesOrThrow pages explicitly via
+    // .range() until exhausted. `.order('id')` is REQUIRED — without it,
     // successive .range() calls can skip rows and/or duplicate them because
     // Postgres has no deterministic order to apply OFFSET/LIMIT against.
+    //
+    // WR-02: the ids go in chunks of VISIBILITY_ID_CHUNK so a Forever phase's
+    // need ids never overrun the URL, and a rejected page throws into the
+    // catch below (500) instead of passing for "nobody ranked this". Chunks
+    // keep input order; the master sheet keys rankings by submission and item,
+    // so the order across chunks is not observable.
     const rankings: { rank: number; slot: number; submission_id: string; loot_item_id: string }[] = []
-    const PAGE = 1000
-    for (let start = 0; ; start += PAGE) {
-      const { data: page } = await serviceSupabase
-        .from('loot_submission_items')
-        .select('rank, slot, submission_id, loot_item_id')
-        .in('loot_item_id', allowedItemIds)
-        .is('removed_at', null)
-        .order('id', { ascending: true })
-        .range(start, start + PAGE - 1)
-      if (!page || page.length === 0) break
-      rankings.push(...page)
-      if (page.length < PAGE) break
+    for (const chunk of chunkIds(allowedItemIds)) {
+      const rows = await selectAllPagesOrThrow<{ rank: number; slot: number; submission_id: string; loot_item_id: string }>(
+        'master sheet rankings',
+        (start, end) =>
+          serviceSupabase
+            .from('loot_submission_items')
+            .select('rank, slot, submission_id, loot_item_id')
+            .in('loot_item_id', chunk)
+            .is('removed_at', null)
+            .order('id', { ascending: true })
+            .range(start, end),
+      )
+      rankings.push(...rows)
     }
 
     if (rankings.length === 0) {
