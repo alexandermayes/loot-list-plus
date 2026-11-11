@@ -2,6 +2,7 @@ import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { NextResponse } from 'next/server'
 import { trackApiError } from '@/utils/analytics/server'
+import { isNeedRow, NEED_ROW_FIXED_ERROR } from '@/domain/loot/item-identity'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -61,7 +62,8 @@ export async function GET(request: Request) {
           boss_name,
           item_slot,
           wowhead_id,
-          classification
+          classification,
+          kind
         )
       `)
       .eq('guild_id', guildId)
@@ -85,8 +87,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Failed to fetch item priorities' }, { status: 500 })
     }
 
+    // D-03: officer prio does not apply to need rows (officers steer later
+    // with bonuses), so a need-row priority never reaches a caller. Dropped
+    // after the read because the embed is not filterable here (WR-03).
+    const itemPriorities = (priorities || []).filter(
+      (priority: { loot_item?: { kind?: string | null } | null }) => !isNeedRow(priority.loot_item),
+    )
+
     return NextResponse.json(
-      { priorities: priorities || [] },
+      { priorities: itemPriorities },
       {
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
@@ -179,6 +188,22 @@ export async function POST(request: Request) {
     // the dropped guild_members table). Permission is verified above, so use the
     // service client for reads/writes on this table.
     const serviceSupabase = createServiceRoleClient()
+
+    // D-03: a need row cannot carry an officer prio. Refused before any write,
+    // and a failed read answers 500 so the check is never skipped (WR-03).
+    const { data: lootItem, error: lootItemError } = await serviceSupabase
+      .from('loot_items')
+      .select('id, kind')
+      .eq('id', item_id)
+      .maybeSingle()
+
+    if (lootItemError) {
+      console.error('Error reading loot item for priority:', lootItemError)
+      return NextResponse.json({ error: 'Failed to read item' }, { status: 500 })
+    }
+    if (isNeedRow(lootItem)) {
+      return NextResponse.json({ error: NEED_ROW_FIXED_ERROR }, { status: 400 })
+    }
 
     // Check if priority exists for this item
     const { data: existingPriority } = await serviceSupabase
