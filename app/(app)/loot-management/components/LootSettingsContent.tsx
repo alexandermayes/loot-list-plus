@@ -265,7 +265,11 @@ export default function LootSettingsContent({
     max_allocation_points_per_bracket: 3,
     max_tokens_per_bracket: 1,
     max_category_per_bracket: 1,
-    award_slot_lock_enabled: false
+    award_slot_lock_enabled: false,
+
+    // Loot style preset (null = Custom). Part of the autosaved object so a
+    // later knob edit cannot drop the officer's choice.
+    loot_style: null as string | null
   })
 
   const [guildRoles, setGuildRoles] = useState<{ name: string; position: number }[]>([
@@ -357,6 +361,7 @@ export default function LootSettingsContent({
           max_tokens_per_bracket: settings.max_tokens_per_bracket,
           max_category_per_bracket: settings.max_category_per_bracket,
           award_slot_lock_enabled: settings.award_slot_lock_enabled,
+          loot_style: settings.loot_style,
         }
 
         const response = await fetch('/api/guild-settings', {

@@ -29,6 +29,7 @@ import { useConfirm } from '@/components/ui/confirm-modal'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { allRoles, getRoleDisplayName } from '@/domain/loot/spec-role-mapping'
 import { toDateString } from '@/utils/date'
+import { LootStylePicker } from '@/app/components/LootStylePicker'
 
 interface GuildRole {
   name: string
@@ -74,6 +75,20 @@ export function SettingsModal({
           </div>
         </ModalHeader>
         <ModalBody className="space-y-6">
+              {/* Loot style presets: one tap sets the scoring knobs below (D-19) */}
+              <Card variant="unified">
+                <CardHeader>
+                  <CardTitle className="text-15 font-semibold flex items-center gap-2">
+                    <HugeiconsIcon icon={Medal01Icon} size={18} className="text-muted-foreground" />
+                    Loot style
+                  </CardTitle>
+                  <CardDescription>Pick how loot priority works. You can fine-tune every setting afterwards.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <LootStylePicker variant="settings" settings={settings} onApply={setSettings} />
+                </CardContent>
+              </Card>
+
               {/* General Settings */}
               <Card variant="unified">
                 <CardHeader>

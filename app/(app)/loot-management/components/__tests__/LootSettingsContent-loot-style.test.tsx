@@ -5,18 +5,22 @@ import type { ReactNode } from 'react'
 import LootSettingsContent from '../LootSettingsContent'
 import { LOOT_STYLE_PRESETS } from '@/domain/guild/loot-style-presets'
 
-vi.mock('@/app/contexts/GuildContext', () => ({
-  useGuildContext: () => ({
+// One stable object: the page reloads its data whenever activeGuild changes
+// identity, so a fresh object per render would loop forever.
+vi.mock('@/app/contexts/GuildContext', () => {
+  const value = {
     activeGuild: { id: 'guild-1', active_expansion_id: null },
     activeMember: { id: 'member-1' },
     loading: false,
     isOfficer: true,
     hasPermission: () => true,
-  }),
-}))
-vi.mock('@/app/contexts/NotificationContext', () => ({
-  useNotification: () => ({ showNotification: vi.fn() }),
-}))
+  }
+  return { useGuildContext: () => value }
+})
+vi.mock('@/app/contexts/NotificationContext', () => {
+  const value = { showNotification: vi.fn() }
+  return { useNotification: () => value }
+})
 vi.mock('@/app/components/ExpansionGuard', () => ({
   ExpansionGuard: ({ children }: { children: ReactNode }) => <>{children}</>,
 }))
