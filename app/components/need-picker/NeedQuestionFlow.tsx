@@ -21,6 +21,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons'
 
 import { NEED_SLOT_ICONS } from '@/app/components/need-picker/need-slot-icons'
+import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import {
   needCostWord,
@@ -260,9 +261,11 @@ export function NeedQuestionFlow({
 
   const groups = optionsFor(shown, value, eligibility)
   const titleId = React.useId()
+  // The Drop Desk mounts the flow inline, where it sits on the shared Card.
+  const Root = variant === 'inline' ? Card : 'div'
 
   return (
-    <div data-variant={variant} className={cn('flex flex-col gap-4', variant === 'inline' && 'rounded-xl border border-border bg-card p-4')}>
+    <Root data-variant={variant} className={cn('flex flex-col gap-4', variant === 'inline' && 'p-4')}>
       <div className="flex flex-col gap-1">
         {variant === 'inline' && canGoBack ? (
           <button
@@ -354,7 +357,7 @@ export function NeedQuestionFlow({
           )}
         </div>
       )}
-    </div>
+    </Root>
   )
 }
 
