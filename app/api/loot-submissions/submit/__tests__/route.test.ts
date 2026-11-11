@@ -6,6 +6,8 @@ import { POST } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { findNeedDefinition, needRowColumns } from '@/domain/loot/needs'
+import { NEED_BUDGET_CODE, needOverBudgetSentence } from '@/domain/loot/need-budget'
+import { NEED_NOT_ELIGIBLE_CODE, NEED_NOT_ELIGIBLE_ERROR } from '@/domain/loot/need-eligibility'
 import { fetchActiveSlotLocks } from '@/lib/loot/slot-locks'
 import { fetchListPrioItems } from '@/lib/loot/prio-check'
 
@@ -451,6 +453,129 @@ describe('POST /api/loot-submissions/submit', () => {
       expect(characterCalls[0].selectArg).toContain('class:wow_classes(name)')
       expect(characterCalls[0].selectArg).toContain('spec:class_specs(name)')
     })
+  })
+})
+
+// regression for T-04-08-01 and T-04-08-02: an over-budget or ineligible need
+// list must not reach pending through a direct API call.
+describe('POST /api/loot-submissions/submit need refusals (D-07, D-10)', () => {
+  // Three Big picks and two Standard picks: 11 points.
+  const ELEVEN_POINT_KEYS = [
+    'main-hand-weapon.spell-damage',
+    'trinket.spell-damage',
+    'ranged-weapon.spell-damage',
+    'chest.cloth.spell-damage',
+    'head.cloth.spell-damage',
+  ]
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([])
+    vi.mocked(fetchListPrioItems).mockResolvedValue([])
+  })
+
+  it('answers 422 NEED_BUDGET_EXCEEDED with used, limit and the shared sentence, and writes nothing', async () => {
+    const { res, body, calls } = await run({ ...baseFixture(), items: needList(ELEVEN_POINT_KEYS) })
+    expect(res.status).toBe(422)
+    expect(body).toEqual({
+      error: needOverBudgetSentence(3),
+      code: NEED_BUDGET_CODE,
+      used: 11,
+      limit: 10,
+    })
+    expect(body.error).toBe("That's three big picks. Swap a weapon or trinket for armour.")
+    // status, submitted_at and resubmission_count stay as they were.
+    expect(submissionUpdates(calls)).toHaveLength(0)
+  })
+
+  it('counts every key when five different keys stack at one rank', async () => {
+    const stacked = [...TEN_POINT_KEYS, 'ranged-weapon.spell-damage'].flatMap(key => needRows(key, 50))
+    const { res, body, calls } = await run({ ...baseFixture(), items: stacked })
+    expect(res.status).toBe(422)
+    expect(body).toMatchObject({ code: NEED_BUDGET_CODE, used: 13, limit: 10 })
+    expect(submissionUpdates(calls)).toHaveLength(0)
+  })
+
+  it('accepts five keys at one rank when they sum to 10', async () => {
+    const stacked = TEN_POINT_KEYS.flatMap(key => needRows(key, 50))
+    const { res, calls } = await run({ ...baseFixture(), items: stacked })
+    expect(res.status).toBe(200)
+    expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+  })
+
+  it('answers 422 NEED_NOT_ELIGIBLE naming the key for a need the class cannot use, and writes nothing', async () => {
+    const { res, body, calls } = await run({ ...baseFixture(), items: needRows('chest.plate.tank', 50) })
+    expect(res.status).toBe(422)
+    expect(body.error).toBe(NEED_NOT_ELIGIBLE_ERROR)
+    expect(body.code).toBe(NEED_NOT_ELIGIBLE_CODE)
+    expect(body.ineligible.map((row: { need_key: string }) => row.need_key)).toEqual([
+      'chest.plate.tank',
+      'chest.plate.tank',
+      'chest.plate.tank',
+    ])
+    expect(submissionUpdates(calls)).toHaveLength(0)
+  })
+
+  it('reads the class and spec from the character row, so a plate tank list passes for a Warrior', async () => {
+    const warrior = { ...baseFixture().character!, class: { name: 'Warrior' }, spec: { name: 'Protection Warrior' } }
+    const { res, calls } = await run({ ...baseFixture(), character: warrior, items: needRows('chest.plate.tank', 50) })
+    expect(res.status).toBe(200)
+    expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+  })
+
+  it('reads a one-element array embed the same way as an object', async () => {
+    const asArrays = {
+      ...baseFixture().character!,
+      class: [{ name: 'Mage' }],
+      spec: [{ name: 'Mage' }],
+    } as unknown as Fixture['character']
+    const ok = await run({ ...baseFixture(), character: asArrays, items: needList(TEN_POINT_KEYS) })
+    expect(ok.res.status).toBe(200)
+
+    const refused = await run({ ...baseFixture(), character: asArrays, items: needRows('chest.plate.tank', 50) })
+    expect(refused.res.status).toBe(422)
+    expect(refused.body.code).toBe(NEED_NOT_ELIGIBLE_CODE)
+  })
+
+  it('answers NEED_NOT_ELIGIBLE for every need row when the character has no class', async () => {
+    const noClass = { ...baseFixture().character!, class: null, spec: null }
+    const { res, body, calls } = await run({ ...baseFixture(), character: noClass, items: needList(TEN_POINT_KEYS) })
+    expect(res.status).toBe(422)
+    expect(body.code).toBe(NEED_NOT_ELIGIBLE_CODE)
+    expect(body.ineligible).toHaveLength(15)
+    expect(submissionUpdates(calls)).toHaveLength(0)
+  })
+
+  it('answers the budget refusal before the eligibility one when both fail', async () => {
+    const items = [...needList(ELEVEN_POINT_KEYS), ...needRows('chest.plate.tank', 40)]
+    const { body } = await run({ ...baseFixture(), items })
+    expect(body.code).toBe(NEED_BUDGET_CODE)
+  })
+
+  // GH #357: a tier the guild turned off is not raided and not shown, so its
+  // rows never block a raider who cannot see them.
+  it('skips need rows of a tier with is_guild_active false in the budget and eligibility checks', async () => {
+    const off = (rows: SubmissionItem[]) => rows.map(row => withTier(row, { is_guild_active: false }))
+    const overBudget = [
+      ...needList(TEN_POINT_KEYS, [0, 1]),
+      ...off(needRows('ranged-weapon.spell-damage', 40, [2])),
+      ...off(needRows('chest.plate.tank', 39, [2])),
+    ]
+    // Control: the same rows with the tier left on are refused, so the pass
+    // below is the flag at work.
+    const control = await run({ ...baseFixture(), items: overBudget.map(row => withTier(row, { is_guild_active: true })) })
+    expect(control.res.status).toBe(422)
+    const { res, calls } = await run({ ...baseFixture(), items: overBudget })
+    expect(res.status).toBe(200)
+    expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+  })
+
+  it('still counts a tier whose flag is missing (fails closed)', async () => {
+    const items = needList(ELEVEN_POINT_KEYS).map(row => withTier(row, null))
+    const { res, body } = await run({ ...baseFixture(), items })
+    expect(res.status).toBe(422)
+    expect(body.code).toBe(NEED_BUDGET_CODE)
   })
 })
 
