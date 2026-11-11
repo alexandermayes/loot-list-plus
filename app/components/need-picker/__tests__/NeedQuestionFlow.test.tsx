@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
-import { NeedQuestionFlow } from '@/app/components/need-picker/NeedQuestionFlow'
+import { NeedQuestionFlow, type NeedQuestionFlowProps } from '@/app/components/need-picker/NeedQuestionFlow'
 import { NeedQuestionSheet } from '@/app/components/need-picker/NeedQuestionSheet'
 import { NEED_SLOT_ICONS, NEED_SLOT_ICON_FALLBACK } from '@/app/components/need-picker/need-slot-icons'
 import { eligibleNeedsFor } from '@/domain/loot/need-eligibility'
@@ -18,9 +18,17 @@ interface HarnessProps {
   initial?: NeedFlowValue
   currentNeedKey?: string | null
   variant?: 'sheet' | 'inline'
+  optionState?: NeedQuestionFlowProps['optionState']
 }
 
-function Harness({ eligibility, onComplete = () => {}, initial, currentNeedKey, variant = 'sheet' }: HarnessProps) {
+function Harness({
+  eligibility,
+  onComplete = () => {},
+  initial,
+  currentNeedKey,
+  variant = 'sheet',
+  optionState,
+}: HarnessProps) {
   const [value, setValue] = useState<NeedFlowValue>(initial ?? EMPTY_NEED_FLOW_VALUE)
   return (
     <NeedQuestionFlow
@@ -30,6 +38,7 @@ function Harness({ eligibility, onComplete = () => {}, initial, currentNeedKey, 
       eligibility={eligibility}
       currentNeedKey={currentNeedKey}
       variant={variant}
+      optionState={optionState}
     />
   )
 }
@@ -334,5 +343,128 @@ describe('NeedQuestionSheet (D-16, UI-01)', () => {
 
     expect(await screen.findByRole('heading', { name: 'Which slot?' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /^Chest/ })).toHaveAttribute('aria-pressed', 'false')
+  })
+})
+
+describe('blocking at the tap (D-07, D-29, UI-04)', () => {
+  const OVER_BUDGET = "That's three big picks. Swap a weapon or trinket for armour."
+  const THIRD_COPY = 'You already have two of these in your 5.'
+  const DUPLICATE = 'That need is already in your 5.'
+  const paladin = eligibleNeedsFor({ className: 'Paladin', specName: null })
+
+  it('keeps an over-budget slot focusable and aria-disabled, and shows the reason in an alert without advancing', async () => {
+    const user = userEvent.setup()
+    const optionState: NeedQuestionFlowProps['optionState'] = (question, option) =>
+      question === 'slot' && option === 'trinket' ? OVER_BUDGET : null
+    render(<Harness eligibility={protWarrior} optionState={optionState} />)
+
+    const trinket = screen.getByRole('button', { name: /^Trinket/ })
+    expect(trinket).toHaveAttribute('aria-disabled', 'true')
+    expect(trinket).not.toBeDisabled()
+    trinket.focus()
+    expect(trinket).toHaveFocus()
+    expect(screen.queryByRole('alert')).toBeNull()
+
+    await user.click(trinket)
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent(OVER_BUDGET)
+    expect(alert).toHaveClass('bg-warning/10', 'border-warning/30')
+    expect(screen.getByRole('heading', { name: 'Which slot?' })).toBeInTheDocument()
+    expect(trinket).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('points aria-describedby of a disabled slot at the reason text', () => {
+    const optionState: NeedQuestionFlowProps['optionState'] = (question, option) =>
+      question === 'slot' && option === 'trinket' ? OVER_BUDGET : null
+    render(<Harness eligibility={protWarrior} optionState={optionState} />)
+
+    const trinket = screen.getByRole('button', { name: /^Trinket/ })
+    const describedBy = trinket.getAttribute('aria-describedby') as string
+    expect(describedBy).toBeTruthy()
+    expect(document.getElementById(describedBy)).toHaveTextContent(OVER_BUDGET)
+    // The reason is a description, not part of the button's name.
+    expect(trinket).toHaveAccessibleName('Trinket Big')
+    expect(trinket).toHaveAccessibleDescription(OVER_BUDGET)
+  })
+
+  it('clears the panel when another slot is tapped', async () => {
+    const user = userEvent.setup()
+    const optionState: NeedQuestionFlowProps['optionState'] = (question, option) =>
+      question === 'slot' && option === 'trinket' ? OVER_BUDGET : null
+    render(<Harness eligibility={protWarrior} optionState={optionState} />)
+
+    await user.click(screen.getByRole('button', { name: /^Trinket/ }))
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /^Chest/ }))
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('disables the final ring option with the In your 5 label and does not complete', async () => {
+    const user = userEvent.setup()
+    const onComplete = vi.fn()
+    const optionState: NeedQuestionFlowProps['optionState'] = (question, option, context) =>
+      question === 'stat' && option === 'healing' && context.need?.key === 'ring.healing' ? THIRD_COPY : null
+    render(<Harness eligibility={paladin} onComplete={onComplete} optionState={optionState} />)
+
+    await user.click(screen.getByRole('button', { name: /^Ring/ }))
+    const healing = await screen.findByRole('button', { name: /^Healing/ })
+
+    expect(healing).toHaveAttribute('aria-disabled', 'true')
+    expect(within(healing).getByText('In your 5')).toBeInTheDocument()
+    expect(healing).toHaveAccessibleDescription(THIRD_COPY)
+    expect(screen.getByText(THIRD_COPY)).toBeVisible()
+
+    await user.click(healing)
+    expect(onComplete).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: /^Tank/ }))
+    expect(onComplete).toHaveBeenCalledOnce()
+    expect(onComplete.mock.calls[0][0].key).toBe('ring.tank')
+  })
+
+  it('disables a slot tile whose need would be a duplicate when no question is left to ask', async () => {
+    const user = userEvent.setup()
+    const onComplete = vi.fn()
+    const optionState: NeedQuestionFlowProps['optionState'] = (question, option, context) =>
+      question === 'slot' && option === 'neck' && context.need?.key === 'neck.tank' ? DUPLICATE : null
+    render(<Harness eligibility={protWarrior} onComplete={onComplete} optionState={optionState} />)
+
+    const neck = screen.getByRole('button', { name: /^Neck/ })
+    expect(neck).toHaveAttribute('aria-disabled', 'true')
+    expect(neck).toHaveAccessibleDescription(DUPLICATE)
+
+    await user.click(neck)
+    expect(screen.getByRole('alert')).toHaveTextContent(DUPLICATE)
+    expect(onComplete).not.toHaveBeenCalled()
+  })
+
+  it('gives optionState the answer the tap would record, and the need only when it would finish', () => {
+    const optionState = vi.fn<NonNullable<NeedQuestionFlowProps['optionState']>>(() => null)
+    render(<Harness eligibility={protWarrior} optionState={optionState} />)
+
+    const chest = optionState.mock.calls.find(([question, option]) => question === 'slot' && option === 'chest')
+    expect(chest?.[2].value).toEqual({ slot: 'chest', armour: null, stat: null })
+    expect(chest?.[2].need).toBeNull()
+
+    const neck = optionState.mock.calls.find(([question, option]) => question === 'slot' && option === 'neck')
+    expect(neck?.[2].need?.key).toBe('neck.tank')
+  })
+
+  it('treats a blocked option as guidance: no danger or traffic-light classes', async () => {
+    const user = userEvent.setup()
+    const optionState: NeedQuestionFlowProps['optionState'] = () => OVER_BUDGET
+    const { container } = render(<Harness eligibility={protWarrior} optionState={optionState} />)
+    await user.click(screen.getByRole('button', { name: /^Chest/ }))
+
+    expect(container.innerHTML).not.toMatch(/destructive|danger|text-red|bg-red|border-red|text-green|text-yellow/)
+  })
+
+  it('lets every option through when no optionState is given', async () => {
+    const user = userEvent.setup()
+    render(<Harness eligibility={protWarrior} />)
+    expect(screen.getByRole('button', { name: /^Trinket/ })).not.toHaveAttribute('aria-disabled')
+    await user.click(screen.getByRole('button', { name: /^Trinket/ }))
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 })
