@@ -124,6 +124,9 @@ const SCRIPT_NOTES = {
   diagnostics: 'Local test data, RLS probes or diagnostics; reads or deletes by id.' + SCRIPT_RUN_NOTE,
   schema: 'Legacy one-off schema script, superseded by migrations.' + SCRIPT_RUN_NOTE,
 }
+// The Phase 4 proofs (need rows save from browser sessions, tier delete guard).
+const NEED_LISTS_PGLITE = 'app/services/__tests__/need-lists-pglite.test.ts'
+
 const ANALYTICS_NOTE =
   "Analytics query; after Phase 4 it counts need rows, so add li.kind = 'item' before rerunning it for a Forever sample (research A12)."
 
@@ -407,8 +410,8 @@ export const NEED_READERS: readonly NeedReader[] = [
     file: 'app/contexts/LootListContext.tsx',
     dispositions: ['ok'],
     plan: '03-15',
-    note: 'saves rankings through save_submission_items; the picker offers items only (03-07) and the RPC\'s insert is held by enforce_need_ranking_hold, proven by the raider case (D-22)',
-    test: 'app/services/__tests__/discovery-schema-pglite.test.ts',
+    note: 'saves rankings through save_submission_items, including need rows since 20261111120000, proven by the raider RPC case in need-lists-pglite.test.ts',
+    test: NEED_LISTS_PGLITE,
   },
   {
     file: 'app/services/expansionSeeder.ts',
@@ -959,18 +962,18 @@ export const SQL_FUNCTION_READERS: readonly SqlFunctionReader[] = [
     note: 'list status rules by parent list',
   },
   {
-    name: 'enforce_need_ranking_hold',
-    dispositions: ['guard'],
-    definedIn: '20261020120000',
-    note: 'D-22 hold on rankings from browser sessions, dropped in Phase 4',
-    test: PGLITE,
-  },
-  {
     name: 'enforce_raid_tier_list_mode_rules',
     dispositions: ['branch'],
     definedIn: '20261020120000',
     note: 'D-17 and the D-03 backstop',
     test: PGLITE,
+  },
+  {
+    name: 'enforce_raid_tier_need_delete_lock',
+    dispositions: ['guard'],
+    definedIn: '20261111120000',
+    note: 'WR-04: browser sessions cannot delete a Discovery tier with ranked or awarded needs; service role and delete_guild pass (D-25)',
+    test: NEED_LISTS_PGLITE,
   },
   {
     name: 'enforce_reserve_award_refs',
@@ -1027,8 +1030,8 @@ export const SQL_FUNCTION_READERS: readonly SqlFunctionReader[] = [
     name: 'save_submission_items',
     dispositions: ['ok'],
     definedIn: '20261028120000',
-    note: 'redefined Oct 28 to check award slot locks after the delete-then-insert; the insert still hits enforce_need_ranking_hold (D-22), proven by the raider RPC case in 03-15 against the chained Oct 28 definition',
-    test: PGLITE,
+    note: 'redefined Oct 28 to check award slot locks after the delete-then-insert; the D-22 hold was dropped in 20261111120000, so need rows now save from browser sessions, proven by the raider RPC case in need-lists-pglite.test.ts',
+    test: NEED_LISTS_PGLITE,
   },
 ]
 
