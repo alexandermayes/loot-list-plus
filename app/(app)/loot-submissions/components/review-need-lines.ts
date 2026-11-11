@@ -8,7 +8,13 @@
  * need with the 'all 3 raids' or tier-name suffix from lib/loot/need-lines.ts.
  *
  * Live and removed need rows are grouped separately so a struck line never
- * pads the suffix of a live one, and no row is ever left out of a line.
+ * pads the suffix of a live one.
+ *
+ * The rank-and-slot table places slots 1 and 2 only, so a row outside them
+ * that is not part of a need line (an item row a hand-built save put at slot
+ * 3 or above, or a need row with no need key there) comes back in otherRows
+ * instead. An officer must see every row before approving (CR-01), so each
+ * row lands in exactly one of itemRows, a need line or otherRows.
  */
 import { buildTierContext, toNeedLines, type TierInput } from '@/lib/loot/need-lines'
 
@@ -52,7 +58,7 @@ function tierOf(row: ReviewDetailRow): TierInput | null {
 
 export function buildReviewRows<D extends ReviewDetailRow>(
   details: readonly D[],
-): { itemRows: D[]; needLines: Array<ReviewNeedLine<D>> } {
+): { itemRows: D[]; needLines: Array<ReviewNeedLine<D>>; otherRows: D[] } {
   const flat = details.map((detail) => ({
     rank: Number(detail.rank),
     kind: detail.loot_item?.kind ?? null,
@@ -71,9 +77,15 @@ export function buildReviewRows<D extends ReviewDetailRow>(
 
   // Item rows come from the full set so their order and the removed rows are
   // exactly what the table saw before.
-  const itemRows = toNeedLines(flat, listTierIds, tierNameById).flatMap((line) =>
+  const ungrouped = toNeedLines(flat, listTierIds, tierNameById).flatMap((line) =>
     line.type === 'item' ? [line.row.detail] : [],
   )
+  const tableSlot = (detail: D) => {
+    const slot = Number(detail.slot)
+    return slot === 1 || slot === 2
+  }
+  const itemRows = ungrouped.filter(tableSlot)
+  const otherRows = ungrouped.filter((detail) => !tableSlot(detail))
 
   const needLines: Array<ReviewNeedLine<D>> = []
   for (const removed of [false, true]) {
@@ -93,5 +105,5 @@ export function buildReviewRows<D extends ReviewDetailRow>(
   // Rank descending as the table reads; live before removed at one rank.
   needLines.sort((a, b) => b.rank - a.rank || Number(a.removed) - Number(b.removed))
 
-  return { itemRows, needLines }
+  return { itemRows, needLines, otherRows }
 }

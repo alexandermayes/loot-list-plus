@@ -44,6 +44,12 @@ import { bulkDeleteIds, bulkDeleteNotice } from '@/domain/loot/bulk-delete'
 import { createPendingReviewNotification, type ReviewNotificationPayload } from './review-notification'
 import { buildReviewRows, type ReviewDetailRow, type ReviewNeedLine } from './review-need-lines'
 
+// API-only copy, owner review pending (04-19 sign-off predates it). Only a
+// list saved outside the editor and picker has a row off slots 1 and 2, and
+// the submit route refuses those since CR-01, so officers see this label only
+// on a list promoted before that check.
+const OTHER_ROW_LABEL = 'Other row'
+
 interface Submission {
   id: string
   status: string
@@ -899,8 +905,17 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
       rank: line.rank,
       line,
     }))
-    // Rank descending; at one rank the item cells sort ahead of need lines.
-    return [...itemGroups, ...needGroups].sort((a, b) => b.rank - a.rank)
+    // CR-01: a row the table cannot place still gets a line of its own, so an
+    // officer never approves a row they did not see.
+    const otherGroups = reviewRows.otherRows.map((row) => ({
+      type: 'other' as const,
+      key: `other-${detailRowKey(row.loot_item.id, row.rank, row.slot)}-${row.removed_at ?? 'live'}`,
+      rank: Number(row.rank),
+      row,
+    }))
+    // Rank descending; at one rank the item cells sort ahead of need lines,
+    // and other rows come last.
+    return [...itemGroups, ...needGroups, ...otherGroups].sort((a, b) => b.rank - a.rank)
   }, [reviewRows])
 
   return (
@@ -1402,8 +1417,13 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                               <td className="px-3 py-2">{renderItemCell(entry.group.slot1)}</td>
                               <td className="px-3 py-2">{renderItemCell(entry.group.slot2)}</td>
                             </>
-                          ) : (
+                          ) : entry.type === 'need' ? (
                             <td colSpan={2} className="px-3 py-2">{renderNeedCell(entry.line)}</td>
+                          ) : (
+                            <td colSpan={2} className="px-3 py-2">
+                              <p className="text-11 text-muted-foreground font-medium mb-1">{OTHER_ROW_LABEL}</p>
+                              {renderItemCell(entry.row)}
+                            </td>
                           )}
                         </tr>
                       ))}
@@ -1426,6 +1446,8 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                           {renderMobileItem(entry.group.slot1, 'Item #1')}
                           {renderMobileItem(entry.group.slot2, 'Item #2')}
                         </>
+                      ) : entry.type === 'other' ? (
+                        renderMobileItem(entry.row, OTHER_ROW_LABEL)
                       ) : (
                         <div className="px-3 py-2 border-t border-border/50">
                           <p className="text-11 text-muted-foreground font-medium mb-1">Need</p>

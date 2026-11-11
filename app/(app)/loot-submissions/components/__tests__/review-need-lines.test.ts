@@ -136,6 +136,49 @@ describe('buildReviewRows (D-28, review modal)', () => {
   })
 
   it('has nothing to show for an empty list', () => {
-    expect(buildReviewRows([])).toEqual({ itemRows: [], needLines: [] })
+    expect(buildReviewRows([])).toEqual({ itemRows: [], needLines: [], otherRows: [] })
+  })
+
+  // regression for CR-01 (Phase 4 review): the rank table places slots 1 and
+  // 2 only, so a hand-saved item row at slot 3 used to vanish from review and
+  // could be approved unseen.
+  describe('rows the rank table cannot place (CR-01)', () => {
+    it('returns a non-need row at slot 3 as an other row, not an item row', () => {
+      const stray = itemRow('i3', 40, 3)
+      const rows = [itemRow('i1', 40, 1), itemRow('i2', 40, 2), stray]
+      const { itemRows, otherRows } = buildReviewRows(rows)
+      expect(otherRows).toEqual([stray])
+      expect(itemRows).toEqual([rows[0], rows[1]])
+    })
+
+    it('returns a need row with no need key at slot 4 as an other row', () => {
+      const malformed = itemRow('n1', 50, 4, {})
+      malformed.loot_item = { ...malformed.loot_item, kind: 'need', need_key: null }
+      const { otherRows, needLines } = buildReviewRows([...discoveryList(), malformed])
+      expect(otherRows).toEqual([malformed])
+      expect(needLines).toHaveLength(5)
+    })
+
+    it('keeps a removed stray row visible too', () => {
+      const removed = itemRow('i9', 12, 7, { removed_at: '2026-01-01T00:00:00Z' })
+      expect(buildReviewRows([removed]).otherRows).toEqual([removed])
+    })
+
+    it('accounts for every row exactly once across item rows, need lines and other rows', () => {
+      const rows = [itemRow('i1', 30, 1), itemRow('i2', 30, 5), ...discoveryList(), itemRow('i3', 20, 2)]
+      const { itemRows, needLines, otherRows } = buildReviewRows(rows)
+      const shown = [...itemRows, ...needLines.flatMap((line) => line.rows), ...otherRows]
+      expect(shown).toHaveLength(rows.length)
+      expect(new Set(shown)).toEqual(new Set(rows))
+    })
+
+    it('leaves need rows at tier slots 3 to 8 inside their need line', () => {
+      const wide = NEEDS.slice(0, 1).flatMap((need) =>
+        [0, 1, 2].map((tierIndex) => needRow(need, 0, tierIndex, { slot: tierIndex + 6 })),
+      )
+      const { otherRows, needLines } = buildReviewRows(wide)
+      expect(otherRows).toEqual([])
+      expect(needLines).toHaveLength(1)
+    })
   })
 })
