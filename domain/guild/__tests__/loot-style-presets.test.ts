@@ -6,6 +6,8 @@ import {
   applyLootStyle,
   isLootStyleId,
   lootStyleStatus,
+  presetDiff,
+  presetMatches,
 } from '@/domain/guild/loot-style-presets'
 
 const EXPECTED_KNOB_KEYS = [
@@ -156,5 +158,113 @@ describe('lootStyleStatus after applyLootStyle', () => {
   it.each(LOOT_STYLE_IDS)('reads %s back as a matching, uncustomised preset', (id) => {
     const settings = applyLootStyle({ ...UNRELATED_SETTINGS }, id)
     expect(lootStyleStatus(settings)).toEqual({ kind: 'preset', id, customised: false })
+  })
+})
+
+// PostgREST returns numeric(3,2) and numeric(5,2) columns as strings.
+const REWARD_AS_POSTGREST = {
+  ...LOOT_STYLE_PRESETS.reward_attendance.knobs,
+  signup_weight: '0.00',
+  max_attendance_bonus: '4.00',
+  max_attendance_threshold: '0.90',
+  middle_attendance_bonus: '2.00',
+  middle_attendance_threshold: '0.50',
+  bottom_attendance_bonus: '1.00',
+  bottom_attendance_threshold: '0.25',
+  blp_increment: '1.00',
+  blp_maximum: '5.00',
+}
+
+describe('presetMatches', () => {
+  it('matches numeric strings from PostgREST against the numbers in the preset', () => {
+    expect(presetMatches(REWARD_AS_POSTGREST, 'reward_attendance')).toBe(true)
+    expect(presetMatches({ ...REWARD_AS_POSTGREST, bottom_attendance_threshold: '0.25' }, 'reward_attendance')).toBe(true)
+  })
+
+  it('does not match when a numeric string differs in value', () => {
+    expect(presetMatches({ ...REWARD_AS_POSTGREST, max_attendance_bonus: '4.50' }, 'reward_attendance')).toBe(false)
+  })
+
+  it('does not treat a non-numeric string as a number', () => {
+    expect(presetMatches({ ...REWARD_AS_POSTGREST, blp_maximum: 'five' }, 'reward_attendance')).toBe(false)
+    expect(presetMatches({ ...REWARD_AS_POSTGREST, blp_maximum: '' }, 'reward_attendance')).toBe(false)
+    expect(presetMatches({ ...REWARD_AS_POSTGREST, blp_maximum: null }, 'reward_attendance')).toBe(false)
+  })
+
+  it('compares booleans and strings exactly', () => {
+    expect(presetMatches({ ...REWARD_AS_POSTGREST, blp_enabled: 'false' }, 'reward_attendance')).toBe(false)
+    expect(presetMatches({ ...REWARD_AS_POSTGREST, attendance_type: 'breakpoint' }, 'reward_attendance')).toBe(false)
+    expect(presetMatches({ ...REWARD_AS_POSTGREST, use_signups: 0 }, 'reward_attendance')).toBe(false)
+  })
+
+  it('counts a missing knob as different', () => {
+    const { blp_maximum: _omitted, ...withoutKnob } = REWARD_AS_POSTGREST
+    expect(presetMatches(withoutKnob, 'reward_attendance')).toBe(false)
+    expect(presetDiff(withoutKnob, 'reward_attendance')).toEqual(['blp_maximum'])
+  })
+
+  it('ignores settings outside the knobs', () => {
+    expect(presetMatches({ ...REWARD_AS_POSTGREST, ...UNRELATED_SETTINGS }, 'reward_attendance')).toBe(true)
+  })
+})
+
+describe('presetDiff', () => {
+  it('is empty when every knob already matches', () => {
+    expect(presetDiff(REWARD_AS_POSTGREST, 'reward_attendance')).toEqual([])
+  })
+
+  it('lists the attendance bonuses and the six bonus flags and nothing else for officers_decide', () => {
+    expect(presetDiff({ ...LOOT_STYLE_PRESETS.reward_attendance.knobs }, 'officers_decide')).toEqual([
+      'max_attendance_bonus',
+      'middle_attendance_bonus',
+      'bottom_attendance_bonus',
+      'guild_rank_bonuses_enabled',
+      'raid_roles_overall_bonus_priority',
+      'single_raider_overall_bonus',
+      'role_bonus_priority_single_item',
+      'class_bonus_priority_single_item',
+      'single_raider_bonus_single_item',
+    ])
+  })
+
+  it('has a length that is the count the confirm shows', () => {
+    expect(presetDiff({ ...LOOT_STYLE_PRESETS.reward_attendance.knobs }, 'even_rotation')).toHaveLength(4)
+  })
+
+  it('returns a key only when the numeric value really differs', () => {
+    const settings = { ...REWARD_AS_POSTGREST, blp_maximum: '6.00', rolling_attendance_weeks: 4 }
+    expect(presetDiff(settings, 'reward_attendance')).toEqual(['rolling_attendance_weeks', 'blp_maximum'])
+  })
+})
+
+describe('lootStyleStatus', () => {
+  it('is custom for a null loot_style', () => {
+    expect(lootStyleStatus({ loot_style: null, ...REWARD_AS_POSTGREST })).toEqual({ kind: 'custom' })
+  })
+
+  it('is custom for a missing loot_style', () => {
+    expect(lootStyleStatus({ ...REWARD_AS_POSTGREST })).toEqual({ kind: 'custom' })
+  })
+
+  it('is custom for an unknown or prototype loot_style', () => {
+    expect(lootStyleStatus({ loot_style: 'council', ...REWARD_AS_POSTGREST })).toEqual({ kind: 'custom' })
+    expect(lootStyleStatus({ loot_style: '__proto__', ...REWARD_AS_POSTGREST })).toEqual({ kind: 'custom' })
+  })
+
+  it('is an uncustomised preset when PostgREST strings match the map', () => {
+    expect(lootStyleStatus({ loot_style: 'reward_attendance', ...REWARD_AS_POSTGREST })).toEqual({
+      kind: 'preset',
+      id: 'reward_attendance',
+      customised: false,
+    })
+  })
+
+  it('is customised when any knob differs, keeping the choice', () => {
+    const even = LOOT_STYLE_PRESETS.even_rotation.knobs
+    expect(lootStyleStatus({ loot_style: 'even_rotation', ...even, blp_maximum: 6 })).toEqual({
+      kind: 'preset',
+      id: 'even_rotation',
+      customised: true,
+    })
   })
 })
