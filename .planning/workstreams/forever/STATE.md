@@ -2,20 +2,20 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: "WoW Forever Loot: Discovery to Known"
-current_phase: 4
+current_phase: 04
 current_phase_name: Discovery Lists and Score Split
-status: planning
-stopped_at: Phase 4 planned (21 plans in 7 waves); /gsd-execute-phase 4 waits for the owner's go-ahead
-last_updated: "2026-11-11T02:03:07.379Z"
+status: verifying
+stopped_at: Phase 4 executed (21/21 plans); verification human_needed (5/5 success criteria in code, 0 gaps); code review 1 critical / 7 warning / 6 info; run /gsd-verify-work 4
+last_updated: "2026-11-11T08:18:08.644Z"
 last_activity: 2026-11-10
-last_activity_desc: "Phase 4 planned: context, UI design contract, research, pattern map, validation strategy and 21 plans on branch gsd/docs-forever-phase-04"
-state_head: 4ce0a880737db17c1f3dea9522cce24023700911
+last_activity_desc: Phase 04 execution started
+state_head: a975aba7a3aa377098375c583f1e5bef92923086
 progress:
   total_phases: 8
-  completed_phases: 3
+  completed_phases: 2
   total_plans: 62
-  completed_plans: 41
-  percent: 37
+  completed_plans: 62
+  percent: 25
 ---
 
 # Project State
@@ -29,16 +29,16 @@ Roadmap: `.planning/workstreams/forever/ROADMAP.md` (8 phases)
 Research: `.planning/research/SUMMARY.md`
 
 **Core value:** A Forever guild can run loot from day one without knowing a single item: raiders rank generic needs, officers settle every drop in seconds from a Drop Desk, and the whole product feels like a consumer app that just works.
-**Current focus:** Phase 4 — Discovery Lists and Score Split
+**Current focus:** Phase 04 — Discovery Lists and Score Split
 
 ## Current Position
 
-Phase: 4 (Discovery Lists and Score Split) — READY TO EXECUTE
-Plan: 0 of 21 (none started)
-Status: Planned 2026-11-10 (21 plans in 7 waves; 16 owner decisions in 04-CONTEXT.md plus research clarifications D-28 to D-31; UI-SPEC verified; plan checker: two revision passes, no blockers). Execution waits for the owner's go-ahead; the first code step is the migration-only PR (04-01) and its owner stop (04-02: one-way doors, spec defaults review, merge day). The Oct 31 Discovery-lists gate has passed; Phase 4 is the critical path to the Nov 30 Drop Desk gate
-Last activity: 2026-11-10 - Phase 4 planned on branch gsd/docs-forever-phase-04 (docs-only PR #503 to main); Phase 3 code PR #477 and docs PR #478 merged earlier the same day
+Phase: 04 (Discovery Lists and Score Split) — EXECUTING
+Plan: 21 of 21
+Status: Phase complete — ready for verification
+Last activity: 2026-11-10 — Phase 04 execution started
 
-Progress: [████░░░░░░] 3/8 phases ([████████████████████] 41/41 plans, 100% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning; Phase 03: 19/19 plans, UAT 4/4 passed (human_needed), code in PR #477; Phase 04: 0/21 plans, planned
+Progress: [████░░░░░░] 3/8 phases ([████████████████████] 41/41 plans, [███░░░░░░░] 25% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning; Phase 03: 19/19 plans, UAT 4/4 passed (human_needed), code in PR #477; Phase 04: 1/21 plans, executing
 
 ## Hard Dates
 
@@ -111,6 +111,27 @@ Progress: [████░░░░░░] 3/8 phases ([████████
 | Phase 03 P12 | 12 min | 3 tasks | 2 files |
 | Phase 03 P13 | 11 min | 3 tasks | 9 files |
 | Phase 03 P14 | 14min | 2 tasks | 3 files |
+| Phase 04 P01 | 7 min | 3 tasks | 5 files |
+| Phase 04 P03 | 8min | 3 tasks | 7 files |
+| Phase 04 P05 | 6 min | 2 tasks | 7 files |
+| Phase 04 P06 | 5 min | 2 tasks | 2 files |
+| Phase 04 P07 | 9 min | 3 tasks | 7 files |
+| Phase 04 P17 | 25 min | 2 tasks | 5 files |
+| Phase 04 P04 | 4min | 2 tasks | 2 files |
+| Phase 04 P10 | 14min | 3 tasks | 8 files |
+| Phase 04 P12 | 22 min | 2 tasks | 6 files |
+| Phase 04 P18 | 7 min | 3 tasks | 8 files |
+| Phase 04 P21 | 8 min | 2 tasks | 6 files |
+| Phase 04 P14 | 15 min | 2 tasks | 7 files |
+| Phase 04 P02 | checkpoint-gated | 3 tasks | 1 files |
+| Phase 04 P08 | 12min | 3 tasks | 7 files |
+| Phase 04 P09 | 8min | 3 tasks | 8 files |
+| Phase 04 P15 | 5 min | 3 tasks | 8 files |
+| Phase 04 P11 | 15min | 3 tasks | 13 files |
+| Phase 04 P16 | 22min | 3 tasks | 8 files |
+| Phase 04 P13 | 11min | 2 tasks | 9 files |
+| Phase 04 P20 | 18min | 3 tasks | 8 files |
+| Phase 04 P19 | 12 min | 3 tasks | 24 files |
 
 ## Accumulated Context
 
@@ -161,6 +182,35 @@ Progress: [████░░░░░░] 3/8 phases ([████████
 - [Phase 03]: 03-12: enforce_loot_item_need_rules is listed as a SQL branch reader; findBadVia requires every via file to be an exclude entry; reader and boss_name inventories fail CI on any unlisted file
 - [Phase 03]: 03-13: sync reads matched tiers' need keys before any write; write order is tier insert, flip (Known to Discovery, no need rows), then seed; dry run counts new-tier rows via placeholder ids — The database refuses a need row in a non-Discovery tier (D-17); a failed read must leave the expansion untouched
 - [Phase 03]: 03-14: list_mode PATCH makes every decision before the first write; switch to Discovery is switch, seed, compensate; ownership check runs for every field
+- [Phase 04]: 04-01: migration kept as 20261111120000_need_lists.sql; the raid tier delete guard is a plain data predicate (no trigger depth rule), a removed ranking counts, and loot_style has no default so existing rows stay null — delete_guild clears lists and loot history before expansions, so the guild master can still delete while browser deletes of ranked or awarded Discovery tiers are refused (WR-04)
+- [Phase 04]: 04-03: a spec name that does not resolve to a specMapping key is treated like no spec (union of the class's roles); unknown class gets no needs
+- [Phase 04]: 04-03: need budget counts distinct (rank, need_key) picks once; class tables are frozen Maps and Sets so prototype names answer nothing
+- [Phase 04]: 04-05: standing part order puts bad luck protection before officer bonus to match the owner's locked sentence; sign off at 04-19
+- [Phase 04]: 04-06: presetMatches is an empty presetDiff, so the replace-settings confirm count and the Customised badge share one definition of different — One comparison, two surfaces; an empty or non-numeric string never equals a numeric knob because Number('') is 0
+- [Phase 04]: 04-06: applyLootStyle returns Omit<T, knob keys and loot_style> & knobs & loot_style, and LootStyleKnobs is a type alias — T & knobs collapsed to never when settings carried loot_style: null; aliases get the implicit index signature the compare helpers need
+- [Phase 04]: 04-07: id-list reads chunk at 100 per .in() through selectAllPagesOrThrow; a failed page is a 500, never an empty list — A Forever phase asks for up to 435 need ids; PostgREST carries them in the URL (WR-02)
+- [Phase 04]: 04-07: prio-list refuses need rows on POST (400) and drops them on GET; proxy next keeps the query string — D-03 officer prio does not apply to needs; D-24 Set your 5 link must survive sign-in
+- [Phase 04]: 04-17: mixed-mode note counts guild-active tiers only across the resolved phase group, matching D-12 — Raiders get the picker when every guild-active tier is Discovery, so a turned-off tier must not raise a note that is false for them
+- [Phase 04]: 04-17: list-mode success updates the tier in local state and revalidates the raid-tiers and loot-items SWR keys instead of reloading the page — Avoids the full-page skeleton flash and keeps focus on the control
+- [Phase 04]: 04-04: spec defaults are frozen object literals through a freezing helper; matchesSpecDefault treats reordered, partial or empty lists as edits
+- [Phase 04]: 04-10: optionState takes a third { value, need } argument so the host can tell a duplicate need from a budget problem; the picker opens the sheet with an empty value plus currentNeedKey so decided answers are not skipped
+- [Phase 04]: 04-10: Modal placement is additive ('center' default pinned by exact class assertions); 'In your 5' is a tag beside the option label, not a replacement
+- [Phase 04]: 04-12: ScoreSplit rows variant is the two sentences only; the candidate modal keeps the GH #357 raider bonus reason on its own line under them — Sentences already carry label and number and the modal shows numbers in columns; the standing sentence only carries the bonus amount, so the reason would otherwise vanish
+- [Phase 04]: 04-18: Set your 5 route error strings live in domain/loot/set-your-five.ts because a Next route file may only export handlers and config; the audit row is written right after the channel post so the 60-minute cooldown holds if the function is cut off mid-send
+- [Phase 04]: 04-21: need lines take their tier set from the list's own need rows; review modal need lines are read-only; a need row with no need_key stays visible as an item row
+- [Phase 04]: 04-14: ScoreComparisonModal takes optional decimalPlaces and config props so numbers and the attendance maximum follow the guild — The modal had a fixed toFixed(1) and no scoring config; the standing sentence would misstate attendance for non-default guilds
+- [Phase 04]: 04-02: owner confirmed the five one-way doors, accepted the D-08 amended draft-only window and confirmed the 18 spec defaults on 2026-11-11; PR #506 merged, deploy run 42969511761 applied the need lists migration — Recorded in 04-02-SUMMARY.md; types hand-edited because gen:types drifted beyond loot_style
+- [Phase 04]: 04-08: Hold removal and need budget plus eligibility checks shipped in one commit (D-08); refusals are 422 NEED_BUDGET_EXCEEDED then NEED_NOT_ELIGIBLE, before any write; need copy-cap violations collapse to one line per need
+- [Phase 04]: 04-09: need_tier_slots rides in the items payload and slots are computed server-side over every tier of the phases, guild-off tiers included
+- [Phase 04]: 04-15: creation treats loot_style null or missing as no preset; the settings PUT stores null as Custom — Creation has nothing to reset; in the PUT null is an explicit change
+- [Phase 04]: 04-15: addon routes strip loot_style with a copy-and-delete helper so the remaining payload key order and bytes stay identical — D-30: Known guilds' addon payload must not change; avoids an unused-var rest sibling
+- [Phase 04]: 04-11: picker page hides the editor's status banner, nudge, duplicate warning, guidance and How to rank button; rows are built for guild-active tiers only and turned-off tiers' saved rows are carried over on save
+- [Phase 04]: 04-11: Looks right only when the list equals the spec default, nothing changed, the saved list reads back cleanly and status is none or draft; the picker key includes character, spec and phase
+- [Phase 04]: 04-16: Replace your settings? confirm opens only when presetDiff is non-empty; no status shown until the settings row has loaded; creation Fine-tune is collapsed by default with the footnote always visible
+- [Phase 04]: 04-13: Set your 5 card counts a submitted Discovery list in any Discovery phase as submitted; score widget interest is the highest pick still on the approved list and the widget keeps its approved-list visibility rule
+- [Phase 04]: 04-20: unsaved edits show the Draft sentence except on a sent-back list, where the officer note stays visible; a read-only approved row is a plain div; the save error Alert uses text-foreground on the destructive variant
+- [Phase 04]: 04-20: loadFailed added to LootListContext so a failed list read shows the load error instead of a default list that a save would overwrite
+- [Phase 04]: 04-19: owner signed off all Phase 4 copy, the three preset knob tables and the changelog entry as written on 2026-11-11; changelog keeps placeholder date until the ship date is named — Hard Constraint 2; the four carried questions keep their built defaults and stay open as follow-ups
 
 ### Pending Owner Inputs
 
@@ -209,6 +259,6 @@ Progress: [████░░░░░░] 3/8 phases ([████████
 
 ## Session Continuity
 
-Last session: 2026-11-11T00:08:24.441Z
-Stopped at: Phase 4 UI-SPEC approved
-Resume file: .planning/workstreams/forever/phases/04-discovery-lists-and-score-split/04-UI-SPEC.md
+Last session: 2026-11-11T08:18:08.274Z
+Stopped at: Phase 4 executed (21/21 plans); verification human_needed (5/5 success criteria in code, 0 gaps); code review 1 critical / 7 warning / 6 info; run /gsd-verify-work 4
+Resume file: .planning/workstreams/forever/phases/04-discovery-lists-and-score-split/04-UAT.md
