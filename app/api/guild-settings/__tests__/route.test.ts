@@ -1,8 +1,11 @@
 // @vitest-environment node
 // jsdom (the global vitest.config.ts environment) does not provide the web
 // Response/Request globals that next/server relies on.
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { PUT } from '../route'
+import { GET, PUT } from '../route'
+import { LOOT_STYLE_IDS, LOOT_STYLE_PRESETS } from '@/domain/guild/loot-style-presets'
 import { createClient, getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
@@ -136,5 +139,95 @@ describe('PUT /api/guild-settings award_slot_lock_enabled validation', () => {
     expect(body.error).toBe('award_slot_lock_enabled must be true or false')
     expect(service.updates).toHaveLength(0)
     expect(service.inserts).toHaveLength(0)
+  })
+})
+
+describe('PUT /api/guild-settings loot_style', () => {
+  let service: ReturnType<typeof makeServiceClient>
+
+  beforeEach(() => {
+    service = makeServiceClient()
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'user-1' }, error: null } as never)
+    vi.mocked(createClient).mockResolvedValue({} as never)
+    vi.mocked(createServiceRoleClient).mockReturnValue(service.client as never)
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: true } as never)
+  })
+
+  it('records one update holding the preset id and its knobs', async () => {
+    const res = await put({ ...LOOT_STYLE_PRESETS.even_rotation.knobs, loot_style: 'even_rotation' })
+
+    expect(res.status).toBe(200)
+    expect(service.updates).toHaveLength(1)
+    expect(service.updates[0]).toMatchObject({ ...LOOT_STYLE_PRESETS.even_rotation.knobs, loot_style: 'even_rotation' })
+  })
+
+  it('stores null so a guild can go back to Custom', async () => {
+    const res = await put({ loot_style: null })
+
+    expect(res.status).toBe(200)
+    expect(service.updates).toHaveLength(1)
+    expect(service.updates[0].loot_style).toBeNull()
+  })
+
+  it.each([['council'], [7], [true], ['__proto__'], ['']])('answers 400 for %j and writes nothing', async (value) => {
+    const res = await put({ loot_style: value })
+
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'loot_style must be one of the loot style presets' })
+    expect(service.updates).toEqual([])
+    expect(service.inserts).toEqual([])
+  })
+
+  it('still refuses a non-officer before looking at loot_style', async () => {
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: false } as never)
+
+    const res = await put({ loot_style: 'even_rotation' })
+
+    expect(res.status).toBe(403)
+    expect(service.updates).toEqual([])
+  })
+})
+
+describe('GET /api/guild-settings loot_style default', () => {
+  it('includes loot_style null for a guild with no settings row', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sessionClient: any = {
+      from(table: string) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const builder: any = {
+          select: () => builder,
+          eq: () => builder,
+          in: () => builder,
+          limit: () => Promise.resolve({ data: [{ id: 'm1' }], error: null }),
+          single: () => Promise.resolve({ data: null, error: { code: 'PGRST116' } }),
+          then: (resolve: (v: unknown) => unknown) =>
+            resolve(table === 'characters' ? { data: [{ id: 'c1' }], error: null } : { data: null, error: null }),
+        }
+        return builder
+      },
+    }
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'user-1' }, error: null } as never)
+    vi.mocked(createClient).mockResolvedValue(sessionClient as never)
+
+    const res = await GET(new Request('http://localhost/api/guild-settings?guild_id=g1'))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.settings).toHaveProperty('loot_style', null)
+  })
+})
+
+describe('LOOT_STYLE_IDS against the database check', () => {
+  // The route validates with the TypeScript ids and the database check is the
+  // backstop, so a drift between them would let one accept what the other rejects.
+  it('equals the ids in guild_settings_loot_style_check', () => {
+    const sql = readFileSync(join(process.cwd(), 'supabase/migrations/20261111120000_need_lists.sql'), 'utf8')
+    const line = sql.split('\n').find((l) => l.includes('ADD CONSTRAINT "guild_settings_loot_style_check"'))
+    expect(line).toBeDefined()
+    const array = /ARRAY\[([^\]]*)\]/.exec(line as string)
+    expect(array).not.toBeNull()
+    const ids = [...(array as RegExpExecArray)[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1])
+
+    expect([...ids].sort()).toEqual([...LOOT_STYLE_IDS].sort())
   })
 })
