@@ -172,3 +172,52 @@ describe('LootStylePicker (create variant)', () => {
     expect(group.className).not.toContain('md:grid-cols-3')
   })
 })
+
+describe('LootStylePicker load states', () => {
+  it('while loading disables the three cards and selects nothing', () => {
+    render(
+      <LootStylePicker
+        variant="settings"
+        settings={applyLootStyle(BASE, 'even_rotation')}
+        loading
+        onApply={vi.fn()}
+      />,
+    )
+
+    const radios = screen.getAllByRole('radio')
+    expect(radios).toHaveLength(3)
+    for (const radio of radios) {
+      expect(radio).toBeDisabled()
+      expect(radio).not.toBeChecked()
+    }
+    expect(screen.queryByText('Custom')).not.toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('on a load error shows the alert with Retry loading it and the helper, and leaves nothing selected', async () => {
+    const user = userEvent.setup()
+    const onRetryLoad = vi.fn()
+    render(
+      <LootStylePicker
+        variant="settings"
+        settings={BASE}
+        loadError
+        onRetryLoad={onRetryLoad}
+        onApply={vi.fn()}
+      />,
+    )
+
+    const alert = screen.getByRole('alert')
+    expect(within(alert).getByText("Couldn't load your loot style.")).toBeInTheDocument()
+    expect(within(alert).getByText('The settings below still work.')).toBeInTheDocument()
+    for (const radio of screen.getAllByRole('radio')) {
+      expect(radio).toBeDisabled()
+      expect(radio).not.toBeChecked()
+    }
+    // Without a loaded loot_style the row would read Custom, which is a claim we cannot make.
+    expect(screen.queryByText('Custom')).not.toBeInTheDocument()
+
+    await user.click(within(alert).getByRole('button', { name: 'Retry loading it' }))
+    expect(onRetryLoad).toHaveBeenCalledTimes(1)
+  })
+})

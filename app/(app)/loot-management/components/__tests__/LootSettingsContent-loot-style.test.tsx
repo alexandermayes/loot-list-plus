@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import LootSettingsContent from '../LootSettingsContent'
@@ -94,7 +94,10 @@ const STORED_SETTINGS = {
   role_modifiers: {},
 }
 
-function installFetch(settingsStatus = 200) {
+// Each settings GET takes the next status in the list; the last one repeats.
+function installFetch(options: { stored?: Record<string, unknown>; statuses?: number[] } = {}) {
+  const stored = options.stored ?? STORED_SETTINGS
+  const statuses = [...(options.statuses ?? [200])]
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -104,11 +107,12 @@ function installFetch(settingsStatus = 200) {
       requests.push({ url, method, body })
 
       if (url.startsWith('/api/guild-settings') && method === 'GET') {
+        const status = statuses.length > 1 ? statuses.shift()! : statuses[0]
         return {
-          ok: settingsStatus === 200,
-          status: settingsStatus,
+          ok: status === 200,
+          status,
           statusText: '',
-          json: async () => ({ settings: STORED_SETTINGS }),
+          json: async () => ({ settings: stored }),
         }
       }
       if (url === '/api/guild-settings' && method === 'PUT') {
@@ -154,5 +158,45 @@ describe('LootSettingsContent loot style autosave', () => {
     for (const [key, value] of Object.entries(LOOT_STYLE_PRESETS.officers_decide.knobs)) {
       expect(put.body?.settings[key], key).toBe(value)
     }
+  })
+
+  it('keeps the stored loot_style in the autosave of a later knob edit', async () => {
+    installFetch({ stored: { ...STORED_SETTINGS, ...LOOT_STYLE_PRESETS.officers_decide.knobs, loot_style: 'officers_decide' } })
+    const user = userEvent.setup()
+    render(<LootSettingsContent />)
+    await screen.findByRole('button', { name: /Loot settings/ })
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    await openSettingsModal(user)
+
+    // A matching preset collapses Fine-tune; open it and change one general setting.
+    await user.click(await screen.findByRole('button', { name: /Fine-tune/ }))
+    await user.selectOptions(screen.getByDisplayValue('Two decimals (e.g., 42.50)'), '1')
+
+    await waitFor(() => expect(requests.filter((r) => r.method === 'PUT')).toHaveLength(1))
+    const settings = requests.find((r) => r.method === 'PUT')!.body?.settings
+    expect(settings?.decimal_places).toBe(1)
+    expect(settings?.loot_style).toBe('officers_decide')
+  })
+
+  it('shows the load error, saves nothing, and Retry loading it loads the stored style', async () => {
+    installFetch({
+      stored: { ...STORED_SETTINGS, ...LOOT_STYLE_PRESETS.even_rotation.knobs, loot_style: 'even_rotation' },
+      statuses: [503, 200],
+    })
+    const user = userEvent.setup()
+    render(<LootSettingsContent />)
+    await screen.findByRole('button', { name: /Loot settings/ })
+    await openSettingsModal(user)
+
+    const alert = await screen.findByRole('alert')
+    expect(within(alert).getByText("Couldn't load your loot style.")).toBeInTheDocument()
+    // Defaults must never be written over a row we could not read.
+    await new Promise((resolve) => setTimeout(resolve, 1200))
+    expect(requests.filter((r) => r.method === 'PUT')).toHaveLength(0)
+
+    await user.click(within(alert).getByRole('button', { name: 'Retry loading it' }))
+
+    await waitFor(() => expect(screen.queryByText("Couldn't load your loot style.")).not.toBeInTheDocument())
+    expect(screen.getByRole('radio', { name: /Even rotation/ })).toBeChecked()
   })
 })
