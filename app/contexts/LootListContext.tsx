@@ -153,6 +153,12 @@ interface LootListDataContextType {
   // True once tiers have loaded and the active expansion has zero raid tiers
   // (a new expansion such as WoW Forever, or every current tier disabled).
   hasNoRaidTiers: boolean
+  /**
+   * The raider's list could not be read and none came back. The need picker
+   * shows its load error instead of a default list, because saving that
+   * default would overwrite a list that exists but did not load.
+   */
+  loadFailed: boolean
 
   // Computed
   hasChanges: boolean
@@ -434,7 +440,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   )
 
   // Fetch submission for the selected phase
-  const { data: submissionData, isLoading: submissionLoading, mutate: mutateSubmission } = usePhaseSubmission(
+  const { data: submissionData, error: submissionError, isLoading: submissionLoading, mutate: mutateSubmission } = usePhaseSubmission(
     bootstrapReady ? (activeCharacter?.id || null) : null,
     bootstrapReady ? (targetExpansionId || null) : null,
     bootstrapReady ? selectedPhase : null,
@@ -1228,6 +1234,8 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   // immediately and neither tiersLoading nor itemsLoading flips true.
   const isLoading = guildLoading || !bootstrapReady || tiersLoading
   const isContentLoading = !bootstrapReady || itemsLoading || submissionLoading
+  // A failed revalidation keeps the data it had, so only a read with nothing to show counts.
+  const loadFailed = Boolean(submissionError) && !submissionData
 
   // A failed tiers fetch leaves tiersData undefined, so errors do not
   // masquerade as "no raids" -- this only flips true once tiers have
@@ -1282,6 +1290,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     isImportingBis,
     isGearLoading: gearLoading,
     hasNoRaidTiers,
+    loadFailed,
     hasChanges,
     initialRankings,
     originalStatus,
@@ -1308,6 +1317,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     isImportingBis,
     gearLoading,
     hasNoRaidTiers,
+    loadFailed,
     hasChanges,
     initialRankings,
     originalStatus,

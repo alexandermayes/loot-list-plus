@@ -33,6 +33,7 @@ const hoisted = vi.hoisted(() => {
     swrMutate: vi.fn(),
     needTierSlots: { current: null as Record<string, number> | null },
     bootstrapBody: { current: {} as Record<string, unknown> },
+    submissionFailed: { current: false },
   }
 })
 
@@ -72,11 +73,13 @@ vi.mock('@/app/hooks/use-api', () => {
     isLoading: false,
     mutate: vi.fn(),
   }
+  // A read that failed before any list came back (04-20 loadFailed).
+  const failedSubmission = { data: undefined, error: new Error('boom'), isLoading: false, mutate: vi.fn() }
   const statuses = { data: { phaseStatuses: {} } }
   const gear = { data: { items: [], awarded_items: [] }, isLoading: false, mutate: vi.fn() }
   return {
     useRaidTiers: () => tiers,
-    usePhaseSubmission: () => submission,
+    usePhaseSubmission: () => (hoisted.submissionFailed.current ? failedSubmission : submission),
     usePhaseSubmissionStatuses: () => statuses,
     useCharacterGear: () => gear,
     usePhaseLootItems: () => ({
@@ -113,6 +116,7 @@ const fetchMock = vi.fn()
 beforeEach(() => {
   vi.clearAllMocks()
   hoisted.needTierSlots.current = null
+  hoisted.submissionFailed.current = false
   hoisted.bootstrapBody.current = {
     tiers: [],
     current_phase: 1,
@@ -299,5 +303,19 @@ describe('LootListContext save result (D-27, D-07, D-10)', () => {
     const getApi = await mountProvider()
     expect(typeof getApi().reopenForEdit).toBe('function')
   })
-})
 
+  it('reports loadFailed when the list read failed and no list came back', async () => {
+    const getApi = await mountProvider()
+    expect(getApi().loadFailed).toBe(false)
+
+    hoisted.submissionFailed.current = true
+    let api!: Api
+    render(
+      <LootListProvider>
+        <Capture onValue={(value) => { api = value }} />
+      </LootListProvider>,
+    )
+    await waitFor(() => expect(api.isLoading).toBe(false))
+    expect(api.loadFailed).toBe(true)
+  })
+})
