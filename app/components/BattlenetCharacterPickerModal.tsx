@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { UserMultiple02Icon, Download04Icon, Link01Icon } from '@hugeicons/core-free-icons'
 import type { GameVersion } from '@/lib/battlenet'
+import { getGuildGame } from '@/domain/expansion/game'
 import { Card } from '@/components/ui/card'
 
 interface BattlenetCharacter {
@@ -82,11 +83,18 @@ export function BattlenetCharacterPickerModal({
   } | null>(null)
   const [selectedSpecId, setSelectedSpecId] = useState<string>('')
 
+  // The app has no Battle.net support for WoW Forever: GameVersion offers only
+  // Classic namespaces, so a Forever guild would be shown Classic characters
+  // and could import one. Community probing (Blizzard API forum, Nov 2026)
+  // found profile-forever lists account characters but per-character lookups
+  // 404, so import and gear sync cannot work yet. Skip the fetch entirely.
+  const isForeverGuild = getGuildGame(activeGuild) === 'forever'
+
   useEffect(() => {
-    if (open) {
+    if (open && !isForeverGuild) {
       fetchCharacters()
     }
-  }, [open, version])
+  }, [open, version, isForeverGuild])
 
   const fetchCharacters = async () => {
     setLoading(true)
@@ -220,8 +228,19 @@ export function BattlenetCharacterPickerModal({
 
       <ModalBody>
         <div className="space-y-4">
-          {/* Spec picker (shown when Battle.net couldn't detect spec) */}
-          {specPicker ? (
+          {isForeverGuild ? (
+            <EmptyState
+              icon={UserMultiple02Icon}
+              title="Not available for WoW Forever yet"
+              description={
+                isLinkMode
+                  ? 'Battle.net linking works with WoW Classic characters only.'
+                  : 'Battle.net import works with WoW Classic characters only. Close this and add your character by hand.'
+              }
+              size="compact"
+            />
+          ) : /* Spec picker (shown when Battle.net couldn't detect spec) */
+          specPicker ? (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 Couldn&apos;t detect the spec for <span className="font-semibold text-foreground">{specPicker.char.name}</span>. Select their specialization to continue.
