@@ -13,9 +13,10 @@ export interface UpdateEntry {
 }
 
 export const updates: UpdateEntry[] = [
-  // Copy signed off 2026-11-11 (04-19). The date below is still a placeholder: set it
-  // to the ship date before merge. The Discord updates cron posts the newest
-  // entry after merge.
+  // Copy signed off 2026-11-11 (04-19). The entry shipped on 2026-11-11, one day
+  // after the date below. The date stays: the Discord updates cron keys its
+  // once-only post on it (updates:posted:<date-slug>), so changing it after the
+  // merge would post the entry a second time.
   {
     date: 'November 10, 2026',
     items: [
