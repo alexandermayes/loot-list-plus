@@ -22,6 +22,7 @@ import type { NeedOptionContext } from '@/app/components/need-picker/NeedQuestio
 import { useGuildContext, type Character } from '@/app/contexts/GuildContext'
 import { useLootList } from '@/app/contexts/LootListContext'
 import { Button } from '@/components/ui/button'
+import { NeedPickerSkeleton } from '@/components/ui/skeletons'
 import { badgeVariants } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { isNeedRow } from '@/domain/loot/item-identity'
@@ -84,9 +85,10 @@ function samePositions(a: Positions, b: Positions): boolean {
   return a.length === b.length && a.every((key, index) => key === b[index])
 }
 
-/** Gate: the picker needs a character in this guild. */
+/** Gate: the picker needs a character in this guild and a loaded list. */
 export function NeedPicker() {
   const { activeCharacter } = useGuildContext()
+  const { isLoading, isContentLoading } = useLootList()
   const [creating, setCreating] = useState(false)
 
   if (!activeCharacter) {
@@ -104,6 +106,9 @@ export function NeedPicker() {
       </>
     )
   }
+  // The skeleton stands in for the title, rows and footer, so the footer is
+  // absent until the list is in and the layout does not jump.
+  if (isLoading || isContentLoading) return <NeedPickerSkeleton />
   return <NeedPickerBody character={activeCharacter} />
 }
 

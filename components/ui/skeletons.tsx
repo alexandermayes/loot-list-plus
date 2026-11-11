@@ -20,6 +20,42 @@ export function Skeleton({ className }: SkeletonProps) {
 }
 
 /**
+ * Need picker skeleton: the title block and five row shapes.
+ *
+ * The five is coupled to the picker, which always lists exactly five needs
+ * (NEED_PICK_COUNT), so the skeleton reserves the same height and nothing
+ * jumps when the rows arrive (DESIGN.md skeleton rule). The footer is left out
+ * on purpose: it appears only once the list is in.
+ */
+export function NeedPickerSkeleton() {
+  return (
+    <section data-testid="need-picker-skeleton" aria-hidden="true" className="mx-auto w-full max-w-xl">
+      <Skeleton className="h-8 w-3/4" />
+      <Skeleton className="mt-2 h-5 w-1/2" />
+      <div className="mt-2 flex items-center gap-2">
+        <Skeleton className="h-6 w-24" />
+        <Skeleton className="h-11 w-32 rounded-full" />
+      </div>
+      <div className="mt-4 space-y-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Card key={i} data-testid="need-picker-skeleton-row" className="p-4 sm:p-6">
+            <div className="flex min-h-14 items-center gap-2">
+              <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+              <Skeleton className="h-6 w-6 shrink-0" />
+              <Skeleton className="h-5 flex-1" />
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <Skeleton className="h-6 w-24 rounded-full" />
+              <Skeleton className="h-11 w-28 rounded-full" />
+            </div>
+          </Card>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/**
  * Stat card skeleton for Dashboard and Attendance stat cards
  */
 export function StatCardSkeleton() {
