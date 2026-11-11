@@ -30,6 +30,12 @@ const SEND_AUDIT_TABLE = 'set_your_five_sends'
 
 const PREFERENCE_CHUNK_SIZE = 500
 
+// A Discord channel id is a snowflake: 17 to 20 digits and nothing else.
+// regression for WR-02 (Phase 4 review): the stored id is officer text and is
+// interpolated into a bot-token URL, where a value with a path in it would
+// re-target the POST after fetch normalises the dot segments.
+const DISCORD_SNOWFLAKE = /^\d{17,20}$/
+
 interface MembershipRow {
   characters: { user_id: string | null } | null
 }
@@ -105,7 +111,9 @@ export async function POST(request: NextRequest) {
       .eq('guild_id', guildId)
       .single()
     const channelId = settings?.raid_summary_channel_id as string | null | undefined
-    if (!channelId) {
+    // A malformed id is answered like a missing one: either way there is no
+    // channel the bot can post to, and the officer's fix is the same.
+    if (typeof channelId !== 'string' || !DISCORD_SNOWFLAKE.test(channelId)) {
       return NextResponse.json({ error: SET_YOUR_FIVE_NO_CHANNEL_ERROR }, { status: 400 })
     }
 

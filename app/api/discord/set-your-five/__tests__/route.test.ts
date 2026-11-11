@@ -188,6 +188,25 @@ describe('[D-23] POST /api/discord/set-your-five tracer', () => {
     expect(discordFetch).not.toHaveBeenCalled()
     expect(sendDirectMessage).not.toHaveBeenCalled()
   })
+
+  // regression for WR-02 (Phase 4 review): the stored channel id is officer
+  // text, and fetch normalises dot segments, so a value with a path in it
+  // would re-target the bot-token POST at another Discord API path.
+  it.each([
+    ['a path with dot segments', '700000000000000001/../../guilds/700000000000000002/x?'],
+    ['letters', '70000000000000000a'],
+    ['a query string', '700000000000000001?x=1'],
+    ['too few digits', '7000000000000000'],
+    ['too many digits', '700000000000000000001'],
+    ['surrounding space', ' 700000000000000001'],
+  ])('answers 400 with the no-channel error for %s, with no Discord call', async (_label, channelId) => {
+    fixture.channelId = channelId
+    const response = await POST(request())
+    expect(response.status).toBe(400)
+    expect((await response.json()).error).toBe(SET_YOUR_FIVE_NO_CHANNEL_ERROR)
+    expect(discordFetch).not.toHaveBeenCalled()
+    expect(sendDirectMessage).not.toHaveBeenCalled()
+  })
 })
 
 // ─── Task 2: gates, cooldown, bounded DMs, quiet refusals ───
