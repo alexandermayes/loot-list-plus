@@ -269,9 +269,7 @@ export async function POST(request: NextRequest) {
       while (next < discordIds.length) {
         if (Date.now() - startedAt >= SET_YOUR_FIVE_TIME_BUDGET_MS) return
         const discordId = discordIds[next++]
-        const outcome = await sendDirectMessage(botToken, discordId, message as unknown as Record<string, unknown>, {
-          signal: deadline.signal,
-        })
+        const outcome = await sendDirectMessage(botToken, discordId, message, { signal: deadline.signal })
         if (outcome.ok) {
           sent += 1
         } else if (deadline.signal.aborted) {

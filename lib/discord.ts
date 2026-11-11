@@ -146,7 +146,10 @@ export interface SendDirectMessageOptions {
 export async function sendDirectMessage(
   botToken: string,
   recipientId: string,
-  body: Record<string, unknown>,
+  // Any JSON-serialisable message object. `object` rather than
+  // Record<string, unknown> so a typed message interface passes without a
+  // cast (IN-06, Phase 4 review).
+  body: object,
   options?: SendDirectMessageOptions
 ): Promise<SendDirectMessageOutcome> {
   const signal = options?.signal
