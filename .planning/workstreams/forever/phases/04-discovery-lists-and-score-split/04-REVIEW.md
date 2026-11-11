@@ -82,6 +82,16 @@ status: issues_found
 **Files Reviewed:** 63
 **Status:** issues_found
 
+> **Fix status (2026-11-11):** CR-01, WR-01 and WR-02 are fixed (see "Fixes applied" under each finding). WR-03 to WR-08 and IN-01 to IN-06 remain open. The frontmatter status and counts are left as reviewed.
+
+| Finding | Commit | Subject |
+|---------|--------|---------|
+| CR-01 | a4e8ef85 | fix(04-08): refuse item rows outside slots 1 and 2 and need rows outside the tier slot range at submit |
+| CR-01 | ecdbe3e8 | fix(04-21): surface review rows the rank table cannot place |
+| WR-01 | 727d2d45 | fix(04-08): enforce the need list shape at submit |
+| WR-02 | 995eea62 | fix(04-18): validate the raid summary channel id before building the bot URL |
+| WR-02 | 895a652d | fix(04-15): validate raid_summary_channel_id in the guild settings PUT |
+
 ## Summary
 
 I reviewed the 63 listed files at standard depth. New files were read whole. The large files that predate the phase were read as changed hunks with surrounding context. I also read the callers and callees the diff depends on: `lib/discord.ts`, `utils/audit/log.ts`, `utils/server-roles.ts`, `utils/supabase/paginate.ts`, `lib/post-auth-redirect.ts`, `domain/loot/list-row-updates.ts`, `domain/loot/bracket-validation.ts`, `domain/loot/item-identity.ts` and the `20261111120000_need_lists.sql` migration.
@@ -129,6 +139,12 @@ if (badItemSlot) {
 
 In `buildReviewRows`, also return the rows `groupDetailRowsByRank` skipped, for example as an "Other rows" line, so nothing is dropped. Longer term, add a database-level rule that item rows keep slot <= 2, for example a trigger on `loot_submission_items` checking `loot_items.kind`. Do the same for need rows at ranks outside 46 to 50 (see WR-01).
 
+**Fixes applied:**
+
+- `a4e8ef85` (04-08): `app/api/loot-submissions/submit/route.ts` refuses, with 422 and a bracket-rule style violation, any non-need row whose slot is not 1 or 2 (`rule: 'item_slot'`) and any need row whose slot is outside 1..`MAX_NEED_TIER_SLOTS` (`rule: 'need_slot'`). The check runs after the rows are read and before the bracket rules, so nothing is written. It covers every live row, including rows of turned-off tiers, because no editor or picker save produces these slots. The `violations[].detail` lines are API-only copy, marked owner review pending. The need-reader inventory note for the route mentions the slot rule. Tests in `app/api/loot-submissions/submit/__tests__/route.test.ts` ("row slots (CR-01)"): an item row at slot 3 is refused before any write and before the prio read; the same in a turned-off tier; an ordinary Known list on slots 1 and 2 passes; need rows on slots 1 to 8 pass; a need row at slot 9 is refused; the 15-row Discovery list passes.
+- `ecdbe3e8` (04-21): `buildReviewRows` returns `otherRows`, which holds every row that is not in a need line and sits outside slots 1 and 2. `itemRows` now holds slots 1 and 2 only. `LootSubmissionsContent.tsx` shows each other row at its rank under an "Other row" label (API-only copy, owner review pending), on desktop and mobile, with the existing remove and undo controls. The header comment no longer claims that no row is ever left out. Tests in `review-need-lines.test.ts` ("rows the rank table cannot place (CR-01)"): an item row at slot 3, a need row with no key at slot 4, a removed stray row, every row accounted for exactly once, and need rows at tier slots 6 to 8 staying in their line. The empty-list case now also expects `otherRows: []`.
+- **Follow-up, not built (schema frozen this phase):** a database rule that keeps item rows at slot <= 2, for example a trigger on `loot_submission_items` that checks `loot_items.kind`. Until then the submit route is the gate and the review modal is the backstop.
+
 ## Warnings
 
 ### WR-01: A saved need list's shape is not enforced server-side (more than five picks, picks stacked at one rank, ranks outside 46 to 50)
@@ -142,6 +158,12 @@ In `buildReviewRows`, also return the rows `groupDetailRowsByRank` skipped, for 
 `need-budget.ts` acknowledges the stacking case (T-04-03-01) but only prevents it from lowering the budget count, not from being submitted. Officers do review before a list counts (D-27), so this is a fairness and integrity gap rather than an auto-approval, but the rule is exactly the kind the doc comment says the server must refuse "with the same words" as the picker. Note too that rows in a tier with `is_guild_active = false` skip the check entirely (the GH #357 filter), which matters here because the picker deliberately carries those rows through unchanged.
 
 **Fix:** Add a pure `checkNeedShape(rows)` to `need-list-rules.ts` and call it next to `checkNeedList`. It should require ranks in `NEED_PICK_RANKS`, at most `NEED_PICK_COUNT` distinct `(rank, need_key)` picks, one `need_key` per rank, and `slot <= MAX_NEED_TIER_SLOTS`. Return 422 with a stable code.
+
+**Fixes applied:**
+
+- `727d2d45` (04-08): `checkNeedShape(rows)` in `domain/loot/need-list-rules.ts` returns `{ ok: true }` or `{ ok: false, code: 'NEED_SHAPE_INVALID', message, details: { rule, picks, ranks } }`. The rules are `one_key_per_rank`, `pick_count` (more than `NEED_PICK_COUNT` distinct `(rank, need_key)` picks), `rank` (outside `NEED_PICK_RANKS`) and `slot` (outside 1..`MAX_NEED_TIER_SLOTS`). The same key once per tier slot at one rank is the fan-out and counts as one pick. A row with no key counts as a key of its own. The submit route runs it after the budget and eligibility checks, so those signed-off messages still answer first. It answers 422 with one plain sentence (API-only copy, owner review pending) before any write. The shape is judged over the active-tier rows, the same GH #357 set as the budget, because the picker carries an earlier save's rows in a turned-off tier through unchanged. The route comment documents this.
+- Tests: `domain/loot/__tests__/need-list-rules.test.ts` ("checkNeedShape (WR-01)", 12 cases: the picker's 15 rows, gaps, a Ring at two ranks, slots 1 to 8 and an empty list pass; ten cost-1 needs, five keys at rank 50, a second key at rank 49, rank 45, slot 9 and a keyless row are refused). `app/api/loot-submissions/submit/__tests__/route.test.ts` ("need list shape (WR-01)"): ten cost-1 needs at ranks 50 to 41 are refused; a second key at rank 49 is refused; the 15-row picker list passes; a picker list beside carried-over turned-off-tier rows passes; budget answers before shape. Two existing cases changed. "Accepts five keys at one rank when they sum to 10" now expects `NEED_SHAPE_INVALID`. In the Ring copy-cap test, the passing two-Ring list moves its second pick from rank 40 to 49.
+- Known edge: a tier turned back on whose stale rows disagree with the active picks at a rank is refused until the raider re-saves in the picker, which rewrites that tier's rows.
 
 ### WR-02: Officer-controlled `raid_summary_channel_id` is interpolated unvalidated into a bot-token URL
 
@@ -157,6 +179,13 @@ if (!channelId || !SNOWFLAKE.test(channelId)) {
   return NextResponse.json({ error: SET_YOUR_FIVE_NO_CHANNEL_ERROR }, { status: 400 })
 }
 ```
+
+**Fixes applied:**
+
+- `995eea62` (04-18): `app/api/discord/set-your-five/route.ts` requires `raid_summary_channel_id` to match `/^\d{17,20}$/` before any Discord call. A missing or malformed id gets the existing 400 `SET_YOUR_FIVE_NO_CHANNEL_ERROR`. `lib/discord.ts` is unchanged: it has no helper that builds a URL from a stored channel id (`sendDirectMessage` uses the id Discord returns). Tests in `app/api/discord/set-your-five/__tests__/route.test.ts`: six malformed values (dot-segment path, letters, query string, too few digits, too many digits, leading space) are refused with no `discordFetch` or DM call.
+- `895a652d` (04-15): `app/api/guild-settings/route.ts` accepts `raid_summary_channel_id` as null or an empty string (both stored as null) or a snowflake. Anything else gets 400 `raid_summary_channel_id must be a Discord channel id or null` (API-only copy, owner review pending) before any write. The guild settings page is the only writer. It saves an id from the Discord channel list or null, so that flow is unchanged. The Discord bot does not write the field. Tests in `app/api/guild-settings/__tests__/route.test.ts`: a snowflake is stored, null and empty string clear to null, eight malformed values (paths, letters, lengths, a leading space, a number, a boolean, an object) are refused with no write, and a non-officer still gets 403 first.
+- Not changed: `app/api/discord/post-raid-summary/route.ts` and `lib/discord-loot-announcements.ts` also interpolate the stored id. Values written from now on pass the PUT guard, but a malformed value stored before this fix still reaches those two readers. Adding the same guard there, or a one-off check of stored rows, is a follow-up.
+- **Follow-up, not built:** the cross-server case. A real channel id from another server the bot is in is still a valid snowflake. Closing it needs a check that the channel belongs to the guild's linked Discord server (`GET /channels/{id}` and compare `guild_id`) at save time or before sending.
 
 ### WR-03: The DM loop has no per-request deadline, so a Discord rate limit can run past `maxDuration` after the side effects have happened
 
