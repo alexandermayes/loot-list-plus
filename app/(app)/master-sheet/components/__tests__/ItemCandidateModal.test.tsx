@@ -249,10 +249,6 @@ describe('ItemCandidateModal raider bonus reasons (GH #357)', () => {
       [characterKey]: [{ amount: 2, label: 'Full enchants', expires_at: '2026-10-12' }],
     },
   })
-  // Match the whole inline span so the text and its nested value span read as one string.
-  const inlineLine = (text: string) =>
-    screen.findByText((_, el) => el?.tagName === 'SPAN' && el.textContent === text)
-
   beforeEach(() => {
     showNotification.mockReset()
     stubFetch([])
@@ -267,14 +263,18 @@ describe('ItemCandidateModal raider bonus reasons (GH #357)', () => {
     vi.unstubAllGlobals()
   })
 
-  it('M6 the inline breakdown lists the reason and end date after the raider bonus', async () => {
+  // D-21 replaced the label and value chips with two sentences, so the reason
+  // moved to its own line under them; the reason must stay on screen (#357).
+  it('M6 the top candidates list the reason and end date after the raider bonus', async () => {
     renderModal([ranking({ raider_bonus: 2, loot_score: 12 })], vi.fn(), settingsFor('char-thrall'))
-    expect(await inlineLine('Raider bonus: +2.00 (Full enchants: +2 until Oct 12)')).toBeInTheDocument()
+    expect(await screen.findByText('Officer bonus (Full enchants: +2 until Oct 12)')).toBeInTheDocument()
   })
 
-  it('M7 the inline breakdown shows only the number when the entry belongs to another raider', async () => {
+  it('M7 the top candidates show no reason line when the entry belongs to another raider', async () => {
     renderModal([ranking({ raider_bonus: 2, loot_score: 12 })], vi.fn(), settingsFor('char-other'))
-    expect(await inlineLine('Raider bonus: +2.00')).toBeInTheDocument()
+    expect(await screen.findByText(/^Standing 7: .*officer bonus 2\.$/)).toBeInTheDocument()
+    expect(screen.queryByText(/Full enchants/)).toBeNull()
+    expect(screen.queryByText(/^Officer bonus \(/)).toBeNull()
   })
 })
 
@@ -336,5 +336,127 @@ describe('ItemCandidateModal equipped item level column', () => {
     expect(await screen.findByText(RECENT_EMPTY)).toBeInTheDocument()
     expect(screen.queryByRole('columnheader', { name: 'Equipped' })).not.toBeInTheDocument()
     expect(screen.queryByText('Not synced')).not.toBeInTheDocument()
+  })
+})
+
+// D-21, UI-12: Score stays the total, Standing is new, Rank becomes Interest, and
+// the top three read as two officer-voice sentences instead of chips.
+describe('ItemCandidateModal standing and interest (D-21)', () => {
+  const NINE_KEYS = [
+    'attendanceScore',
+    'badLuckBonus',
+    'donationBonus',
+    'itemRank',
+    'priorityBonus',
+    'raiderBonus',
+    'rankModifier',
+    'roleBonus',
+    'trialPenalty',
+  ]
+
+  // Four candidates, highest total first; the fourth is outside the top three.
+  const FOUR = [
+    ranking({ player_name: 'Thrall', character_id: 'c1', loot_score: 50, rank: 45, attendance_score: 5 }),
+    ranking({ player_name: 'Jaina', character_id: 'c2', loot_score: 40, rank: 38, attendance_score: 2 }),
+    ranking({ player_name: 'Sylvanas', character_id: 'c3', loot_score: 30, rank: 29, attendance_score: 1 }),
+    ranking({ player_name: 'Anduin', character_id: 'c4', loot_score: 20, rank: 20, attendance_score: 0 }),
+  ]
+
+  const headers = () => screen.getAllByRole('columnheader').map(th => th.textContent)
+  const cellsOf = (playerName: string) => {
+    const row = screen.getByText(playerName).closest('tr')
+    if (!row) throw new Error(`no row for ${playerName}`)
+    return within(row).getAllByRole('cell').map(td => td.textContent)
+  }
+
+  beforeEach(() => {
+    showNotification.mockReset()
+    stubFetch([])
+  })
+
+  afterEach(() => {
+    cleanup()
+    vi.unstubAllGlobals()
+  })
+
+  it('D1 the header reads Score, Standing, then Interest in place of Rank, with the Interest title', async () => {
+    renderModal(FOUR)
+    await screen.findByText("This item hasn't been awarded yet.")
+    const names = headers()
+    const score = names.indexOf('Score')
+    expect(score).toBeGreaterThanOrEqual(0)
+    expect(names[score + 1]).toBe('Standing')
+    expect(names[score + 2]).toBe('Interest')
+    expect(screen.queryByRole('columnheader', { name: 'Rank' })).toBeNull()
+    expect(screen.getByRole('columnheader', { name: 'Interest' })).toHaveAttribute('title', 'How much they want this item')
+  })
+
+  it('D2 every row shows its total, standing and interest in that order', async () => {
+    renderModal(FOUR)
+    await screen.findByText("This item hasn't been awarded yet.")
+    const score = headers().indexOf('Score')
+    // Anduin is outside the top three, so this also proves Standing is not top-three only.
+    expect(cellsOf('Anduin').slice(score, score + 3)).toEqual(['20.00', '0.00', '20'])
+    expect(cellsOf('Thrall').slice(score, score + 3)).toEqual(['50.00', '5.00', '45'])
+  })
+
+  it('D3 the top three show the two officer-voice sentences and the fourth shows neither', async () => {
+    renderModal(FOUR)
+    await screen.findByText("This item hasn't been awarded yet.")
+    expect(screen.getByText('Interest 45: their number 6 pick.')).toBeInTheDocument()
+    expect(screen.getByText('Standing 5: attendance 5 of 4.')).toBeInTheDocument()
+    expect(screen.getAllByText(/^Interest \d+: their number/)).toHaveLength(3)
+    expect(screen.getAllByText(/^Standing /)).toHaveLength(3)
+    expect(screen.queryByText(/your number/)).toBeNull()
+    // The chips the sentences replace are gone.
+    expect(screen.queryByText(/Item rank:/)).toBeNull()
+  })
+
+  it('D4 keeps the component columns on the right', async () => {
+    renderModal(FOUR)
+    await screen.findByText("This item hasn't been awarded yet.")
+    const names = headers()
+    for (const name of ['Attend', 'Raids']) expect(names).toContain(name)
+    expect(names.indexOf('Attend')).toBeGreaterThan(names.indexOf('Interest'))
+  })
+
+  it('D5 the award request still records the same nine components and the winner components', async () => {
+    const { posts } = stubFetch([{ index: 0, success: true, id: 'hist-1' }])
+    renderModal([
+      ranking({
+        loot_score: 20.5,
+        rank: 10,
+        attendance_score: 4,
+        role_modifier: 1,
+        role_bonus: 0.5,
+        priority_bonus: 1,
+        bad_luck_bonus: 2,
+        trial_penalty: -1,
+        donation_bonus: 0.5,
+        raider_bonus: 2.5,
+      }),
+    ])
+
+    await startAward()
+    await waitFor(() => expect(posts).toHaveLength(1))
+    const context = posts[0].items[0].decision_context as {
+      winner_components: Record<string, number>
+      winner_score: number
+      top_candidates: Array<{ components: Record<string, number> }>
+    }
+    expect(Object.keys(context.winner_components).sort()).toEqual(NINE_KEYS)
+    expect(context.winner_components).toEqual({
+      itemRank: 20.5 - 4 - 1 - 0.5 - 1 - 2 + 1 - 0.5 - 2.5,
+      attendanceScore: 4,
+      rankModifier: 1,
+      roleBonus: 0.5,
+      priorityBonus: 1,
+      trialPenalty: -1,
+      badLuckBonus: 2,
+      donationBonus: 0.5,
+      raiderBonus: 2.5,
+    })
+    expect(context.winner_score).toBe(20.5)
+    expect(Object.keys(context.top_candidates[0].components).sort()).toEqual(NINE_KEYS)
   })
 })
