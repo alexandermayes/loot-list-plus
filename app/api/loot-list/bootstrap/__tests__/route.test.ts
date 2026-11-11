@@ -39,9 +39,20 @@ const NEED_ROW = {
   raid_tier_id: TIER_ID,
 }
 
+interface TierFixture {
+  id: string
+  name: string
+  is_active: boolean
+  is_guild_active: boolean | null
+  submission_deadline: string | null
+  phase: number | null
+  list_mode: 'known' | 'discovery'
+  sort_order: number | null
+}
+
 interface Fixture {
   characterOwner: string | null
-  tiers: Array<{ id: string; name: string; is_active: boolean; is_guild_active: boolean | null; submission_deadline: string | null; phase: number | null }>
+  tiers: TierFixture[]
   submission: { id: string } | null
   submissionItems: Array<{ loot_item_id: string; rank: number; slot: number; removed_at: string | null }>
 }
@@ -50,7 +61,7 @@ function defaultFixture(): Fixture {
   return {
     characterOwner: USER_ID,
     tiers: [
-      { id: TIER_ID, name: 'Barrow Deeps', is_active: true, is_guild_active: true, submission_deadline: null, phase: 1 },
+      { id: TIER_ID, name: 'Barrow Deeps', is_active: true, is_guild_active: true, submission_deadline: null, phase: 1, list_mode: 'known', sort_order: 1 },
     ],
     submission: {
       id: SUBMISSION_ID,
@@ -115,6 +126,26 @@ const FULL_PARAMS = {
   character_id: CHARACTER_ID,
 }
 
+const DISCOVERY_TIER_IDS = [
+  'bbbbbbbb-0000-0000-0000-0000000000a1',
+  'bbbbbbbb-0000-0000-0000-0000000000a2',
+  'bbbbbbbb-0000-0000-0000-0000000000a3',
+]
+
+/** A three-tier Discovery phase group; the third tier is turned off for the guild. */
+function discoveryTiers(): TierFixture[] {
+  return DISCOVERY_TIER_IDS.map((id, index) => ({
+    id,
+    name: `Discovery tier ${index + 1}`,
+    is_active: true,
+    is_guild_active: index < 2,
+    submission_deadline: null,
+    phase: 1,
+    list_mode: 'discovery' as const,
+    sort_order: index + 1,
+  }))
+}
+
 const CHARACTER = { id: CHARACTER_ID, class_id: 1, spec_id: 1, user_id: USER_ID }
 
 describe('GET /api/loot-list/bootstrap', () => {
@@ -149,18 +180,93 @@ describe('GET /api/loot-list/bootstrap', () => {
     expect(fetchFilteredLootItems).not.toHaveBeenCalled()
   })
 
-  it('[D-02] picker stays items only: fetchFilteredLootItems gets exactly three arguments', async () => {
+  it('[D-12] a Known group gets the default: needs hidden and need_tier_slots null', async () => {
     vi.mocked(createServiceRoleClient).mockReturnValue(makeClient(defaultFixture()) as never)
 
     const response = await GET(request(FULL_PARAMS))
+    const body = await response.json()
 
     expect(response.status).toBe(200)
     expect(fetchFilteredLootItems).toHaveBeenCalledTimes(1)
     const args = vi.mocked(fetchFilteredLootItems).mock.calls[0]
-    // No options argument at all, so includeNeeds can never be true here.
-    expect(args).toHaveLength(3)
+    expect(args).toHaveLength(4)
     expect(args[1]).toBe(CHARACTER)
     expect(args[2]).toEqual([TIER_ID])
+    expect(args[3]).toEqual({ includeNeeds: false })
+    expect(body.need_tier_slots).toBeNull()
+  })
+
+  it('[D-12, D-02 amended] a Forever group gets its need rows and a slot per Discovery tier, the turned-off one included', async () => {
+    vi.mocked(createServiceRoleClient).mockReturnValue(
+      makeClient({ ...defaultFixture(), tiers: discoveryTiers() }) as never
+    )
+
+    const response = await GET(request(FULL_PARAMS))
+    const body = await response.json()
+
+    expect(response.status).toBe(200)
+    const args = vi.mocked(fetchFilteredLootItems).mock.calls[0]
+    expect(args[3]).toEqual({ includeNeeds: true })
+    expect(Object.keys(body.need_tier_slots)).toHaveLength(3)
+    expect(body.need_tier_slots).toEqual({
+      [DISCOVERY_TIER_IDS[0]]: 1,
+      [DISCOVERY_TIER_IDS[1]]: 2,
+      [DISCOVERY_TIER_IDS[2]]: 3,
+    })
+  })
+
+  it('[D-12] a mixed group (one Known and one Discovery active tier) keeps needs hidden', async () => {
+    const [first, second] = discoveryTiers()
+    vi.mocked(createServiceRoleClient).mockReturnValue(
+      makeClient({
+        ...defaultFixture(),
+        tiers: [{ ...first, list_mode: 'known' }, { ...second, is_guild_active: true }],
+      }) as never
+    )
+
+    const response = await GET(request(FULL_PARAMS))
+    const body = await response.json()
+
+    expect(vi.mocked(fetchFilteredLootItems).mock.calls[0][3]).toEqual({ includeNeeds: false })
+    expect(body.need_tier_slots).toBeNull()
+  })
+
+  it('[D-02 amended] every tier in the payload carries list_mode and sort_order', async () => {
+    vi.mocked(createServiceRoleClient).mockReturnValue(
+      makeClient({ ...defaultFixture(), tiers: discoveryTiers() }) as never
+    )
+
+    const body = await (await GET(request(FULL_PARAMS))).json()
+
+    expect(body.tiers).toHaveLength(3)
+    for (const tier of body.tiers) {
+      expect(tier.list_mode).toBe('discovery')
+      expect(typeof tier.sort_order).toBe('number')
+    }
+  })
+
+  it('answers 500, never an empty picker, when the raid tier read for the need scope fails', async () => {
+    const fixture = defaultFixture()
+    const client = makeClient(fixture)
+    let tierReads = 0
+    const from = client.from.bind(client)
+    // The first raid_tiers read is the tiers payload; the second is the scope.
+    client.from = (table: string) => {
+      if (table !== 'raid_tiers') return from(table)
+      tierReads += 1
+      if (tierReads === 1) return from(table)
+      const failing: Record<string, unknown> = {}
+      for (const method of ['select', 'eq', 'in']) failing[method] = () => failing
+      failing.then = (onFulfilled: (v: unknown) => unknown) =>
+        Promise.resolve({ data: null, error: { message: 'boom' } }).then(onFulfilled)
+      return failing as ReturnType<typeof from>
+    }
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const response = await GET(request(FULL_PARAMS))
+
+    expect(response.status).toBe(500)
+    expect(fetchFilteredLootItems).not.toHaveBeenCalled()
   })
 
   it("carries a saved need ranking by id like an item id (kind: 'need')", async () => {
@@ -194,6 +300,7 @@ describe('GET /api/loot-list/bootstrap', () => {
       submission: null,
       rankings: {},
       removedItems: [],
+      need_tier_slots: null,
     })
     expect(fetchFilteredLootItems).not.toHaveBeenCalled()
   })
