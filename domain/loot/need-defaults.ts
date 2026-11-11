@@ -256,3 +256,19 @@ export function defaultNeedsFor(
   if (typeof className !== 'string' || typeof specName !== 'string') return null
   return DEFAULT_BY_PAIR.get(pairKey(className, specName))?.needs ?? null
 }
+
+/**
+ * Whether the picker's five positions are exactly this spec's default, in the
+ * default order (D-11). The picker shows "Looks right" while this is true and
+ * "Save my 5" after any edit; the same keys in another order are an edit, and
+ * so is an empty position. A spec with no default never matches.
+ */
+export function matchesSpecDefault(
+  positions: ReadonlyArray<string | null>,
+  className: string | null | undefined,
+  specName: string | null | undefined,
+): boolean {
+  const defaults = defaultNeedsFor(className, specName)
+  if (defaults === null || positions.length !== defaults.length) return false
+  return defaults.every((key, index) => positions[index] === key)
+}
