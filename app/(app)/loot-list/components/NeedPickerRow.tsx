@@ -32,6 +32,12 @@ interface NeedPickerRowProps {
   lockTitle?: string
   /** Move up swaps with the row above; false when that row or this one is locked. */
   canMoveUp: boolean
+  /**
+   * The list is approved and not unlocked: the row is plain content, with no
+   * tap target and no Move up (UI-SPEC surface 1). Unlike `locked`, it carries
+   * no lock wording, because nothing about this one row is pinned.
+   */
+  readOnly?: boolean
   /** A short line for the row (04-20 renders the server refusals here). */
   warning?: string | null
   /** Brief neutral highlight after a change. */
@@ -48,6 +54,7 @@ export function NeedPickerRow({
   locked,
   lockTitle,
   canMoveUp,
+  readOnly = false,
   warning = null,
   highlighted = false,
   onChange,
@@ -70,57 +77,83 @@ export function NeedPickerRow({
           highlighted ? 'bg-muted' : ''
         } ${definition === null ? 'border-dashed border-border-strong' : ''}`}
       >
-        <button
-          ref={mainRef}
-          type="button"
-          aria-label={label}
-          title={locked ? lockTitle : undefined}
-          disabled={locked}
-          onClick={onChange}
-          className="flex min-h-14 w-full items-center gap-2 rounded-lg text-left hover:bg-muted active:bg-muted disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
-        >
-          <span
-            aria-hidden="true"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-md font-semibold tabular-nums"
-          >
-            {number}
-          </span>
-          {definition !== null ? (
-            <>
-              <HugeiconsIcon
-                icon={NEED_SLOT_ICONS[definition.slot]}
-                size={24}
-                aria-hidden="true"
-                className="shrink-0 text-foreground-secondary"
-              />
-              <span className="min-w-0 flex-1 break-words text-lg font-semibold leading-tight">
-                {sentence}
-              </span>
-              {locked ? null : (
-                <HugeiconsIcon icon={Edit02Icon} size={16} aria-hidden="true" className="shrink-0 text-muted-foreground" />
-              )}
-            </>
-          ) : (
-            <>
-              <HugeiconsIcon
-                icon={PlusSignIcon}
-                size={24}
-                aria-hidden="true"
-                className="shrink-0 text-foreground-secondary"
-              />
-              <span className="min-w-0 flex-1 text-lg font-semibold leading-tight">
+        {readOnly ? (
+          <div className="flex min-h-14 w-full items-center gap-2">
+            <span
+              aria-hidden="true"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-md font-semibold tabular-nums"
+            >
+              {number}
+            </span>
+            {definition !== null ? (
+              <>
+                <HugeiconsIcon
+                  icon={NEED_SLOT_ICONS[definition.slot]}
+                  size={24}
+                  aria-hidden="true"
+                  className="shrink-0 text-foreground-secondary"
+                />
+                <span className="min-w-0 flex-1 break-words text-lg font-semibold leading-tight">{sentence}</span>
+              </>
+            ) : (
+              <span className="min-w-0 flex-1 text-lg font-semibold leading-tight text-foreground-secondary">
                 {EMPTY_ROW_LABEL}
               </span>
-            </>
-          )}
-        </button>
+            )}
+          </div>
+        ) : (
+          <button
+            ref={mainRef}
+            type="button"
+            aria-label={label}
+            title={locked ? lockTitle : undefined}
+            disabled={locked}
+            onClick={onChange}
+            className="flex min-h-14 w-full items-center gap-2 rounded-lg text-left hover:bg-muted active:bg-muted disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+          >
+            <span
+              aria-hidden="true"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-md font-semibold tabular-nums"
+            >
+              {number}
+            </span>
+            {definition !== null ? (
+              <>
+                <HugeiconsIcon
+                  icon={NEED_SLOT_ICONS[definition.slot]}
+                  size={24}
+                  aria-hidden="true"
+                  className="shrink-0 text-foreground-secondary"
+                />
+                <span className="min-w-0 flex-1 break-words text-lg font-semibold leading-tight">
+                  {sentence}
+                </span>
+                {locked ? null : (
+                  <HugeiconsIcon icon={Edit02Icon} size={16} aria-hidden="true" className="shrink-0 text-muted-foreground" />
+                )}
+              </>
+            ) : (
+              <>
+                <HugeiconsIcon
+                  icon={PlusSignIcon}
+                  size={24}
+                  aria-hidden="true"
+                  className="shrink-0 text-foreground-secondary"
+                />
+                <span className="min-w-0 flex-1 text-lg font-semibold leading-tight">
+                  {EMPTY_ROW_LABEL}
+                </span>
+              </>
+            )}
+          </button>
+        )}
 
         <div className="mt-2 flex items-center justify-between gap-2">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             {definition !== null ? <NeedCostMarker slot={definition.slot} /> : null}
             {locked ? <span className="text-12 text-foreground-secondary">{LOCKED_RANK_LABEL}</span> : null}
           </div>
-          {number > 1 ? (
+          {number > 1 && !readOnly ? (
             <Button
               ref={moveUpRef}
               type="button"

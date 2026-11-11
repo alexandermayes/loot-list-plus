@@ -22,6 +22,8 @@ import type { NeedOptionContext } from '@/app/components/need-picker/NeedQuestio
 import { useGuildContext, type Character } from '@/app/contexts/GuildContext'
 import { useLootList, type SaveSubmissionResult } from '@/app/contexts/LootListContext'
 import { Button } from '@/components/ui/button'
+import { useConfirm } from '@/components/ui/confirm-modal'
+import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import { NeedPickerSkeleton } from '@/components/ui/skeletons'
 import { badgeVariants } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -72,6 +74,24 @@ export const NEED_PICKER_COPY = {
   noCharacterAction: 'Create character',
 } as const
 
+// DRAFT copy for the 04-19 sign-off, UI-SPEC "After submit (D-27)" and the
+// Change my 5 confirm. One frozen table, so a sign-off edit touches this
+// constant and NeedPicker.test.tsx only. No em dashes.
+export const NEED_PICKER_STATUS_COPY = Object.freeze({
+  pending: 'Waiting for an officer to review your 5.',
+  approved: 'Officers approved your 5.',
+  sentBack: 'Officers sent your 5 back. Change what they asked for, then save to send it again.',
+  recentChangeRejected: 'Your recent changes were rejected. Your last approved list is still active.',
+  changed: 'You changed your 5. Save to send it to officers.',
+  change: 'Change my 5',
+  confirmTitle: 'Change your 5?',
+  confirmBody: 'This list is approved. Once you save a change, officers review it again before it counts.',
+  confirmAction: 'Change my 5',
+  confirmCancel: 'Keep it',
+})
+
+const officerNote = (notes: string) => `Officer note: ${notes}`
+
 const defaultHelper = (spec: string, className: string) =>
   `We picked these for ${spec} ${className}. Tap a row to change it.`
 const incompleteHelper = (picked: number) => `Pick all 5 to save. ${picked} of ${NEED_PICK_COUNT} picked.`
@@ -81,6 +101,51 @@ const scopeLine = (raids: number) =>
 type Positions = ReadonlyArray<string | null>
 
 const EMPTY_POSITIONS: Positions = Array.from({ length: NEED_PICK_COUNT }, () => null)
+
+interface StatusBlock {
+  badge: SubmissionStatus
+  sentence: string
+  /** The officer's note for a list sent back, shown under the sentence. */
+  note: string | null
+}
+
+/**
+ * The one badge and sentence a submitted list shows above its rows (D-27,
+ * UI-SPEC "After submit"). Unsaved edits read as Draft, except on a list the
+ * officers sent back: their note says what to change, so it stays in view
+ * while the raider changes it.
+ */
+function statusBlockFor(
+  status: string | null,
+  options: { changed: boolean; recentChangeRejected: boolean; notes: string | null },
+): StatusBlock | null {
+  if (status === null) return null
+  const sentBack = status === 'needs_revision' || status === 'rejected'
+  if (options.changed && !sentBack) {
+    return { badge: 'draft', sentence: NEED_PICKER_STATUS_COPY.changed, note: null }
+  }
+  switch (status) {
+    case 'pending':
+      return { badge: 'pending', sentence: NEED_PICKER_STATUS_COPY.pending, note: null }
+    case 'approved':
+      return {
+        badge: 'approved',
+        sentence: options.recentChangeRejected
+          ? NEED_PICKER_STATUS_COPY.recentChangeRejected
+          : NEED_PICKER_STATUS_COPY.approved,
+        note: null,
+      }
+    case 'needs_revision':
+    case 'rejected':
+      return {
+        badge: status,
+        sentence: NEED_PICKER_STATUS_COPY.sentBack,
+        note: options.notes?.trim() ? officerNote(options.notes.trim()) : null,
+      }
+    default:
+      return null
+  }
+}
 
 type FailedSave = Extract<SaveSubmissionResult, { ok: false }>
 
@@ -188,6 +253,12 @@ function NeedPickerBody({ character }: { character: Character }) {
     (edited !== null && !samePositions(edited, base)) ||
     (hasSavedList && (!saved.consistent || saved.missingTiers.length > 0))
   const status = submission?.status ?? null
+  // An approved list stays read-only until the raider confirms Change my 5. The
+  // confirm only unlocks the rows: the audited reopen runs inside
+  // saveSubmission when the change is saved, so nothing is demoted before the
+  // raider has actually changed something (D-05, D-27).
+  const [unlocked, setUnlocked] = useState(false)
+  const readOnly = status === 'approved' && !unlocked
   const isDefaultList = matchesSpecDefault(positions, className, specName)
   const looksRight = isDefaultList && !changed && (status === null || status === 'draft')
 
@@ -213,6 +284,25 @@ function NeedPickerBody({ character }: { character: Character }) {
       }),
     [allSlots, lockedPositions],
   )
+
+  // Unlocking is a local choice; a server call happens only at save time.
+  const { confirm, ConfirmDialog } = useConfirm()
+  const askToChange = () =>
+    confirm({
+      title: NEED_PICKER_STATUS_COPY.confirmTitle,
+      description: NEED_PICKER_STATUS_COPY.confirmBody,
+      confirmLabel: NEED_PICKER_STATUS_COPY.confirmAction,
+      cancelLabel: NEED_PICKER_STATUS_COPY.confirmCancel,
+      variant: 'default',
+      onConfirm: () => setUnlocked(true),
+    })
+
+  const statusBlock = statusBlockFor(status, {
+    // A saved list that reads back short only counts as changed once it can be changed.
+    changed: changed && !readOnly,
+    recentChangeRejected: Boolean(submission?.change_rejected_at),
+    notes: submission?.review_notes ?? null,
+  })
 
   const [sheetRow, setSheetRow] = useState(0)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -315,6 +405,8 @@ function NeedPickerBody({ character }: { character: Character }) {
     // quiet: this screen shows the outcome itself, so the editor's toast stays out.
     const result = await saveSubmission(true, { rankings: { ...carried, ...fanOut }, quiet: true })
     setRefusal(result.ok ? null : result)
+    // The saved list is pending now; the next approval starts locked again.
+    if (result.ok) setUnlocked(false)
   }
 
   const specLabel = specName ? `${specName} ${className}` : `${className ?? 'Class'}`
@@ -347,6 +439,18 @@ function NeedPickerBody({ character }: { character: Character }) {
           </div>
         </div>
 
+        {statusBlock ? (
+          <div
+            role="status"
+            data-need-status=""
+            className="mt-4 flex flex-col items-start gap-2 rounded-lg"
+          >
+            <StatusBadge status={statusBlock.badge} />
+            <p className="text-md text-foreground">{statusBlock.sentence}</p>
+            {statusBlock.note ? <p className="break-words text-md text-foreground">{statusBlock.note}</p> : null}
+          </div>
+        ) : null}
+
         {showDefaultHelper ? (
           <p className="mt-4 text-md text-foreground-secondary">{defaultHelper(specName ?? '', className ?? '')}</p>
         ) : showNoDefaultHelper ? (
@@ -362,6 +466,7 @@ function NeedPickerBody({ character }: { character: Character }) {
               locked={locks[row] !== null}
               lockTitle={locks[row] ? lockedRankTitle(locks[row].locked_at) : undefined}
               canMoveUp={row > 0 && !locks[row] && !locks[row - 1]}
+              readOnly={readOnly}
               highlighted={highlightRow === row}
               onChange={() => {
                 setSheetRow(row)
@@ -391,18 +496,22 @@ function NeedPickerBody({ character }: { character: Character }) {
         <BudgetLine used={budget.used} overSentence={overSentence ?? serverOverSentence} />
         <Button
           type="button"
-          variant="primary"
+          variant={readOnly ? 'outline' : 'primary'}
           size="lg"
           className="mt-4 w-full"
-          disabled={!complete || overSentence !== null}
+          disabled={!readOnly && (!complete || overSentence !== null)}
           loading={isSaving}
           loadingText={NEED_PICKER_COPY.saving}
-          aria-describedby={complete ? undefined : 'need-picker-incomplete'}
-          onClick={handleSave}
+          aria-describedby={complete || readOnly ? undefined : 'need-picker-incomplete'}
+          onClick={readOnly ? askToChange : handleSave}
         >
-          {looksRight ? NEED_PICKER_COPY.lookRight : NEED_PICKER_COPY.save}
+          {readOnly
+            ? NEED_PICKER_STATUS_COPY.change
+            : looksRight
+              ? NEED_PICKER_COPY.lookRight
+              : NEED_PICKER_COPY.save}
         </Button>
-        {complete ? null : (
+        {complete || readOnly ? null : (
           <p id="need-picker-incomplete" className="mt-2 text-12 text-foreground-secondary">
             {incompleteHelper(picked)}
           </p>
@@ -418,6 +527,8 @@ function NeedPickerBody({ character }: { character: Character }) {
         optionState={optionState}
         onComplete={(need: NeedDefinition) => replaceRow(sheetRow, need.key)}
       />
+
+      {ConfirmDialog}
 
       {specOpen ? <EditCharacterModal isOpen onClose={() => setSpecOpen(false)} character={character} /> : null}
     </section>

@@ -53,6 +53,8 @@ function setContexts(overrides: Record<string, unknown> = {}) {
     isContentLoading: false,
     isSaving: false,
     saveSubmission: vi.fn().mockResolvedValue({ ok: true }),
+    reopenForEdit: vi.fn().mockResolvedValue(null),
+    refreshData: vi.fn(),
     ...overrides,
   }
   hoisted.guild.current = {
@@ -531,6 +533,200 @@ describe('NeedPicker server budget refusal (D-07, DISC-03)', () => {
     await user.click(screen.getByRole('button', { name: 'Looks right' }))
 
     expect(await screen.findByText('From the message')).toBeInTheDocument()
+  })
+})
+
+
+// ---------------------------------------------------------------------------
+// 04-20 Task 2: status block and the approved read-only state
+// ---------------------------------------------------------------------------
+
+type Submission = { id: string; status: string; review_notes?: string | null; change_rejected_at?: string | null }
+const submissionWith = (status: string, extra: Partial<Submission> = {}): Submission => ({
+  id: 'sub-1',
+  status,
+  review_notes: null,
+  change_rejected_at: null,
+  ...extra,
+})
+const statusRegion = () => screen.getAllByRole('status').find((node) => node.hasAttribute('data-need-status'))
+
+describe('NeedPicker status block (D-11, D-27)', () => {
+  it('shows no status block before a first submit', () => {
+    setSaved(MAGE_DEFAULT)
+    render(<NeedPicker />)
+
+    expect(statusRegion()).toBeUndefined()
+  })
+
+  it('pending: badge, sentence, editable rows and Save my 5', () => {
+    setSaved(EIGHT_POINTS, { submission: submissionWith('pending') })
+    render(<NeedPicker />)
+
+    const region = statusRegion()!
+    expect(within(region).getByText('Pending')).toBeInTheDocument()
+    expect(within(region).getByText('Waiting for an officer to review your 5.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: new RegExp(`^Number 1: ${sentenceOf(EIGHT_POINTS[0])}`) })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Save my 5' })).toBeInTheDocument()
+  })
+
+  it('needs revision: its badge and the send-back sentence', () => {
+    setSaved(EIGHT_POINTS, { submission: submissionWith('needs_revision') })
+    render(<NeedPicker />)
+
+    const region = statusRegion()!
+    expect(within(region).getByText('Needs Revision')).toBeInTheDocument()
+    expect(
+      within(region).getByText('Officers sent your 5 back. Change what they asked for, then save to send it again.'),
+    ).toBeInTheDocument()
+    expect(within(region).queryByText(/Officer note/)).toBeNull()
+    expect(screen.getByRole('button', { name: 'Save my 5' })).toBeInTheDocument()
+  })
+
+  it('rejected: the officer note follows the sentence', () => {
+    setSaved(EIGHT_POINTS, { submission: submissionWith('rejected', { review_notes: 'Pick armour for the legs.' }) })
+    render(<NeedPicker />)
+
+    const region = statusRegion()!
+    expect(within(region).getByText('Rejected')).toBeInTheDocument()
+    expect(within(region).getByText('Officer note: Pick armour for the legs.')).toBeInTheDocument()
+  })
+
+  it('wraps a 300 character officer note with no height cap', () => {
+    const note = 'x'.repeat(300)
+    setSaved(EIGHT_POINTS, { submission: submissionWith('rejected', { review_notes: note }) })
+    render(<NeedPicker />)
+
+    const line = within(statusRegion()!).getByText(`Officer note: ${note}`)
+    expect(line.className).toContain('break-words')
+    expect(statusRegion()!.outerHTML).not.toMatch(/max-h-|overflow-hidden|truncate|line-clamp/)
+  })
+
+  it('approved with a rejected recent change keeps the last list and says so', () => {
+    setSaved(EIGHT_POINTS, { submission: submissionWith('approved', { change_rejected_at: '2026-01-01T00:00:00Z' }) })
+    render(<NeedPicker />)
+
+    const region = statusRegion()!
+    expect(within(region).getByText('Approved')).toBeInTheDocument()
+    expect(
+      within(region).getByText('Your recent changes were rejected. Your last approved list is still active.'),
+    ).toBeInTheDocument()
+  })
+
+  it('an edit on a pending list shows the Draft sentence', async () => {
+    const user = userEvent.setup()
+    setSaved(MAGE_DEFAULT, { submission: submissionWith('pending') })
+    render(<NeedPicker />)
+
+    await user.click(screen.getByRole('button', { name: `Move ${sentenceOf(MAGE_DEFAULT[1])} up to number 1` }))
+
+    const region = statusRegion()!
+    expect(within(region).getByText('Draft')).toBeInTheDocument()
+    expect(within(region).getByText('You changed your 5. Save to send it to officers.')).toBeInTheDocument()
+  })
+
+  it('a pending list with a Discovery tier short of rows opens as changed and one save sends it', async () => {
+    const user = userEvent.setup()
+    // tier-c was turned on after the list was saved, so only tiers a and b hold rows.
+    const distinct = [...new Set([...MAGE_DEFAULT])]
+    setContexts({
+      lootItems: needRows(distinct),
+      rankings: savedRankings(MAGE_DEFAULT, ['tier-a', 'tier-b']),
+      submission: submissionWith('pending'),
+    })
+    render(<NeedPicker />)
+
+    expect(within(statusRegion()!).getByText('You changed your 5. Save to send it to officers.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Save my 5' }))
+
+    const rankings = saveMock().mock.calls[0][1].rankings
+    expect(rankings['50-3']).toBe(`row:tier-c:${MAGE_DEFAULT[0]}`)
+    expect(Object.keys(rankings)).toHaveLength(15)
+  })
+
+  it('an approved list with the same gap keeps Change my 5 and the Approved sentence', () => {
+    const distinct = [...new Set([...MAGE_DEFAULT])]
+    setContexts({
+      lootItems: needRows(distinct),
+      rankings: savedRankings(MAGE_DEFAULT, ['tier-a', 'tier-b']),
+      submission: submissionWith('approved'),
+    })
+    render(<NeedPicker />)
+
+    expect(screen.getByRole('button', { name: 'Change my 5' })).toBeInTheDocument()
+    expect(within(statusRegion()!).getByText('Officers approved your 5.')).toBeInTheDocument()
+  })
+
+  it.each([['pending'], ['rejected'], ['needs_revision']])(
+    'with three picks the footer reads the incomplete helper under %s',
+    (status) => {
+      setSaved([EIGHT_POINTS[0], EIGHT_POINTS[1], EIGHT_POINTS[2], null, null], { submission: submissionWith(status) })
+      render(<NeedPicker />)
+
+      expect(screen.getByText('Pick all 5 to save. 3 of 5 picked.')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Save my 5' })).toBeDisabled()
+    },
+  )
+})
+
+describe('NeedPicker approved list (D-05, D-27)', () => {
+  const approved = () => setSaved(EIGHT_POINTS, { submission: submissionWith('approved') })
+
+  it('renders read-only rows with no tap target and no Move up, and an outline Change my 5', () => {
+    approved()
+    render(<NeedPicker />)
+
+    const rows = within(screen.getByRole('list')).getAllByRole('listitem')
+    expect(rows).toHaveLength(5)
+    for (const row of rows) expect(within(row).queryByRole('button')).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Move/ })).toBeNull()
+    expect(screen.getByText(sentenceOf(EIGHT_POINTS[0]))).toBeInTheDocument()
+    const change = screen.getByRole('button', { name: 'Change my 5' })
+    expect(change.className).toContain('border')
+    expect(change.className).not.toContain('bg-primary')
+    expect(screen.queryByRole('button', { name: 'Save my 5' })).toBeNull()
+  })
+
+  it('opens the Change your 5? confirm and leaves the rows read-only on Keep it', async () => {
+    const user = userEvent.setup()
+    approved()
+    render(<NeedPicker />)
+
+    await user.click(screen.getByRole('button', { name: 'Change my 5' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText('Change your 5?')).toBeInTheDocument()
+    expect(
+      within(dialog).getByText('This list is approved. Once you save a change, officers review it again before it counts.'),
+    ).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: 'Keep it' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(screen.getByRole('button', { name: 'Change my 5' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Number 1:/ })).toBeNull()
+  })
+
+  it('confirming unlocks the rows with no server call, and Save my 5 then saves', async () => {
+    const user = userEvent.setup()
+    const fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
+    approved()
+    render(<NeedPicker />)
+
+    await user.click(screen.getByRole('button', { name: 'Change my 5' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: 'Change my 5' }))
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save my 5' })).toBeInTheDocument())
+    expect(screen.getByRole('button', { name: new RegExp(`^Number 1: ${sentenceOf(EIGHT_POINTS[0])}`) })).toBeEnabled()
+    // T-04-20-01: unlocking demotes nothing; the audited reopen belongs to the save.
+    expect(fetchSpy).not.toHaveBeenCalled()
+    expect((hoisted.lootList.current as { reopenForEdit: SaveMock }).reopenForEdit).not.toHaveBeenCalled()
+    expect(saveMock()).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Save my 5' }))
+    expect(saveMock()).toHaveBeenCalledTimes(1)
+    expect(saveMock().mock.calls[0][0]).toBe(true)
+    vi.unstubAllGlobals()
   })
 })
 
