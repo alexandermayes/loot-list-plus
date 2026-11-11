@@ -62,6 +62,16 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
         <ModalDescription>Understanding how your priority is calculated</ModalDescription>
       </ModalHeader>
       <ModalBody className="space-y-4">
+        {/* The two halves of a score, in plain words (D-21). DRAFT copy for the 04-19 sign-off. */}
+        <div className="space-y-2">
+          <p className="text-md text-foreground-secondary">
+            Standing is what you bring to the raid: attendance, bad luck protection and officer bonuses.
+          </p>
+          <p className="text-md text-foreground-secondary">
+            Interest is how much you want the item. It comes from where you put it on your list.
+          </p>
+        </div>
+
         {/* Formula Overview */}
         <div className="bg-accent/10 border border-accent/30 rounded-lg p-4">
           <p className="text-foreground font-medium text-center text-14">

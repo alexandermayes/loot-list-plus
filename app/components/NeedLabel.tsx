@@ -44,8 +44,11 @@ export function NeedLabel({ name, className = '', onClick, showIcon = true }: Ne
   )
 
   if (onClick) {
+    // The underline and ring say "clickable" without the link colour an item gets;
+    // the span branch below stays plain because it does nothing on click.
+    const buttonClasses = `${classes} text-left rounded-sm hover:underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`
     return (
-      <button type="button" data-need-label="" className={classes} onClick={onClick}>
+      <button type="button" data-need-label="" className={buttonClasses} onClick={onClick}>
         {content}
       </button>
     )
