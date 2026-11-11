@@ -5,15 +5,15 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 4
 current_phase_name: Discovery Lists and Score Split
 status: planning
-stopped_at: Phase 03 complete, ready to plan Phase 4
-last_updated: "2026-11-10T23:17:47Z"
+stopped_at: Phase 4 planned (21 plans in 7 waves); /gsd-execute-phase 4 waits for the owner's go-ahead
+last_updated: "2026-11-11T02:03:07.379Z"
 last_activity: 2026-11-10
-last_activity_desc: Phase 03 complete (PRs #477 and #478 merged), transitioned to Phase 4
-state_head: ad954e14f2274c78d4816188a40254e21e694437
+last_activity_desc: "Phase 4 planned: context, UI design contract, research, pattern map, validation strategy and 21 plans on branch gsd/docs-forever-phase-04"
+state_head: 4ce0a880737db17c1f3dea9522cce24023700911
 progress:
   total_phases: 8
   completed_phases: 3
-  total_plans: 41
+  total_plans: 62
   completed_plans: 41
   percent: 37
 ---
@@ -33,12 +33,12 @@ Research: `.planning/research/SUMMARY.md`
 
 ## Current Position
 
-Phase: 4 — Discovery Lists and Score Split
-Plan: Not started
-Status: Ready to plan (Phase 03 closed 2026-11-10: migration PR #459 live since Oct 21, code PR #477 merged as 19b0b201, docs PR #478 merged as 4b684c1c; the Oct 31 Discovery-lists gate has passed, Phase 4 is the critical path to the Nov 30 Drop Desk gate)
-Last activity: 2026-11-10 - Quick task 261110-g5c (PRs #492 to #496) and three tracked-bug fixes (PRs #442, #499, #500) merged; Phase 3 code PR #477 and docs PR #478 merged
+Phase: 4 (Discovery Lists and Score Split) — READY TO EXECUTE
+Plan: 0 of 21 (none started)
+Status: Planned 2026-11-10 (21 plans in 7 waves; 16 owner decisions in 04-CONTEXT.md plus research clarifications D-28 to D-31; UI-SPEC verified; plan checker: two revision passes, no blockers). Execution waits for the owner's go-ahead; the first code step is the migration-only PR (04-01) and its owner stop (04-02: one-way doors, spec defaults review, merge day). The Oct 31 Discovery-lists gate has passed; Phase 4 is the critical path to the Nov 30 Drop Desk gate
+Last activity: 2026-11-10 - Phase 4 planned on branch gsd/docs-forever-phase-04 (docs-only PR #503 to main); Phase 3 code PR #477 and docs PR #478 merged earlier the same day
 
-Progress: [████░░░░░░] 3/8 phases ([████████████████████] 41/41 plans, 100% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning; Phase 03: 19/19 plans, UAT 4/4 passed (human_needed), code in PR #477
+Progress: [████░░░░░░] 3/8 phases ([████████████████████] 41/41 plans, 100% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning; Phase 03: 19/19 plans, UAT 4/4 passed (human_needed), code in PR #477; Phase 04: 0/21 plans, planned
 
 ## Hard Dates
 
@@ -200,7 +200,6 @@ Progress: [████░░░░░░] 3/8 phases ([████████
 | 261110-fast-2 | Unblock the weekly Refresh wago snapshot (failed Oct 19 to Nov 9 on the branch PR #455 left behind; the job now rebuilds over a tip that is the head of a merged PR) and point the Forever manifest at the live wago product wowf; snapshot regenerated to build 1.60.1.70888, rows unchanged, no promotable bosses. Live client has no map named Barrow Deeps or Hyjal Summit, so boss promotion needs pinned mapIds. Four hand-edited files, one over the gsd-fast limit. Merged 2026-11-10 on the owner's go-ahead (admin bypass of the review rule) | 2026-11-10 | 6b66e4d1 (branch fix/wago-snapshot-refresh, PR #489) | none (gsd-fast, no PLAN or SUMMARY) |
 | 261110-fast-3 | Offer the Roleplay PvP ruleset at WoW Forever guild setup (Blizzard's ruleset article, updated 10/22: it launched Nov 4; additive only, Hardcore stays, stored values still parse). The owner signed off the label Roleplay PvP (Blizzard's name; Roleplaying PvP was the alternative) by asking for PR #490 to be merged on 2026-11-10 (admin bypass of the review rule) | 2026-11-10 | 8468fb46 (branch fix/forever-roleplay-pvp-ruleset, PR #490) | none (gsd-fast, no PLAN or SUMMARY) |
 
-
 ## Deferred Items
 
 | Category | Item | Status | Deferred At | Milestone |
@@ -210,6 +209,6 @@ Progress: [████░░░░░░] 3/8 phases ([████████
 
 ## Session Continuity
 
-Last session: 2026-11-10T23:17:47Z
-Stopped at: Phase 03 complete, ready to plan Phase 4
-Resume file: None
+Last session: 2026-11-11T00:08:24.441Z
+Stopped at: Phase 4 UI-SPEC approved
+Resume file: .planning/workstreams/forever/phases/04-discovery-lists-and-score-split/04-UI-SPEC.md
