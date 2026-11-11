@@ -36,7 +36,7 @@ Research: `.planning/research/SUMMARY.md`
 Phase: 4 (Discovery Lists and Score Split) — READY TO EXECUTE
 Plan: 0 of 21 (none started)
 Status: Planned 2026-11-10 (21 plans in 7 waves; 16 owner decisions in 04-CONTEXT.md plus research clarifications D-28 to D-31; UI-SPEC verified; plan checker: two revision passes, no blockers). Execution waits for the owner's go-ahead; the first code step is the migration-only PR (04-01) and its owner stop (04-02: one-way doors, spec defaults review, merge day). The Oct 31 Discovery-lists gate has passed; Phase 4 is the critical path to the Nov 30 Drop Desk gate
-Last activity: 2026-11-10 - Phase 4 planned on branch gsd/docs-forever-phase-04 (docs-only PR to main); Phase 3 code PR #477 and docs PR #478 merged earlier the same day
+Last activity: 2026-11-10 - Phase 4 planned on branch gsd/docs-forever-phase-04 (docs-only PR #503 to main); Phase 3 code PR #477 and docs PR #478 merged earlier the same day
 
 Progress: [████░░░░░░] 3/8 phases ([████████████████████] 41/41 plans, 100% of planned); Phase 01: 9/9 plans, UAT 4/4 passed, 45/45 threats closed; Phase 02: 13/13 plans, UAT 5/5 passed, 63/63 threats closed, code review 0 critical / 6 warning; Phase 03: 19/19 plans, UAT 4/4 passed (human_needed), code in PR #477; Phase 04: 0/21 plans, planned
 
