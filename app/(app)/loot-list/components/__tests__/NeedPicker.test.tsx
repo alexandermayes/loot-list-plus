@@ -416,6 +416,7 @@ describe('NeedPicker question sheet (D-07, D-29)', () => {
 
   it('lets a Big pick swap for another Big at 10 of 10 and saves the change', async () => {
     const user = userEvent.setup()
+    setContexts({ lootItems: needRows([...MAGE_DEFAULT, 'two-hand-weapon.spell-damage']) })
     render(<NeedPicker />)
 
     await user.click(screen.getByRole('button', { name: new RegExp(`^Number 1: ${sentenceOf(MAGE_DEFAULT[0])}`) }))

@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils'
 import { EMPTY_NEED_FLOW_VALUE, type NeedFlowValue } from '@/domain/loot/need-questions'
 
 export interface NeedQuestionSheetProps
-  extends Pick<NeedQuestionFlowProps, 'eligibility' | 'currentNeedKey' | 'onComplete'> {
+  extends Pick<NeedQuestionFlowProps, 'eligibility' | 'currentNeedKey' | 'onComplete' | 'optionState'> {
   open: boolean
   onClose: () => void
 }
@@ -47,6 +47,7 @@ export function NeedQuestionSheet({
   onComplete,
   eligibility,
   currentNeedKey,
+  optionState,
 }: NeedQuestionSheetProps) {
   return (
     <Modal open={open} onClose={onClose} placement="sheet" size="sm">
@@ -55,6 +56,7 @@ export function NeedQuestionSheet({
         onComplete={onComplete}
         eligibility={eligibility}
         currentNeedKey={currentNeedKey}
+        optionState={optionState}
       />
     </Modal>
   )
@@ -65,7 +67,8 @@ function SheetContent({
   onComplete,
   eligibility,
   currentNeedKey,
-}: Pick<NeedQuestionSheetProps, 'onClose' | 'onComplete' | 'eligibility' | 'currentNeedKey'>) {
+  optionState,
+}: Pick<NeedQuestionSheetProps, 'onClose' | 'onComplete' | 'eligibility' | 'currentNeedKey' | 'optionState'>) {
   const [value, setValue] = React.useState<NeedFlowValue>(EMPTY_NEED_FLOW_VALUE)
   const [info, setInfo] = React.useState<NeedStepInfo>(FIRST_STEP)
   const titleRef = React.useRef<HTMLHeadingElement>(null)
@@ -116,6 +119,7 @@ function SheetContent({
           onChange={setValue}
           eligibility={eligibility}
           currentNeedKey={currentNeedKey}
+          optionState={optionState}
           onComplete={(need) => {
             onComplete(need)
             onClose()
