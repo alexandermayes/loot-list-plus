@@ -8,7 +8,11 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyPermission } from '@/utils/server-roles'
 import { discordFetch, sendDirectMessage } from '@/lib/discord'
-import { buildSetYourFiveMessage, buildSetYourFiveUrl } from '@/domain/loot/set-your-five'
+import {
+  SET_YOUR_FIVE_NO_CHANNEL_ERROR,
+  buildSetYourFiveMessage,
+  buildSetYourFiveUrl,
+} from '@/domain/loot/set-your-five'
 
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
@@ -174,7 +178,7 @@ describe('[D-23] POST /api/discord/set-your-five tracer', () => {
     fixture.channelId = null
     const response = await POST(request())
     expect(response.status).toBe(400)
-    expect((await response.json()).error).toBe('No raid summary channel configured')
+    expect((await response.json()).error).toBe(SET_YOUR_FIVE_NO_CHANNEL_ERROR)
     expect(discordFetch).not.toHaveBeenCalled()
     expect(sendDirectMessage).not.toHaveBeenCalled()
   })
