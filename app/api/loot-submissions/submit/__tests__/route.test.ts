@@ -8,6 +8,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { findNeedDefinition, needRowColumns } from '@/domain/loot/needs'
 import { NEED_BUDGET_CODE, needOverBudgetSentence } from '@/domain/loot/need-budget'
 import { NEED_NOT_ELIGIBLE_CODE, NEED_NOT_ELIGIBLE_ERROR } from '@/domain/loot/need-eligibility'
+import { NEED_SHAPE_CODE, NEED_SHAPE_ERROR } from '@/domain/loot/need-list-rules'
 import { fetchActiveSlotLocks } from '@/lib/loot/slot-locks'
 import { fetchListPrioItems } from '@/lib/loot/prio-check'
 
@@ -415,9 +416,10 @@ describe('POST /api/loot-submissions/submit', () => {
       expect(over.body.violations.map((v: { rule: string }) => v.rule)).toContain('item_copy_limit')
       expect(statusUpdates(over.calls)).toHaveLength(0)
 
+      // Ranks 50 and 49: two picks the picker can save (the shape check, WR-01).
       const ok = await run({
         ...baseFixture(),
-        items: [...needRows('ring.spell-damage', 50, [0]), ...needRows('ring.spell-damage', 40, [0])],
+        items: [...needRows('ring.spell-damage', 50, [0]), ...needRows('ring.spell-damage', 49, [0])],
       })
       expect(ok.res.status).toBe(200)
       expect(statusUpdates(ok.calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
@@ -497,11 +499,14 @@ describe('POST /api/loot-submissions/submit need refusals (D-07, D-10)', () => {
     expect(submissionUpdates(calls)).toHaveLength(0)
   })
 
-  it('accepts five keys at one rank when they sum to 10', async () => {
+  // WR-01 (Phase 4 review): five keys stacked at one rank fit the budget but
+  // not the picker's shape, so the shape check refuses them after the budget.
+  it('refuses five keys at one rank that sum to 10 with NEED_SHAPE_INVALID', async () => {
     const stacked = TEN_POINT_KEYS.flatMap(key => needRows(key, 50))
-    const { res, calls } = await run({ ...baseFixture(), items: stacked })
-    expect(res.status).toBe(200)
-    expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+    const { res, body, calls } = await run({ ...baseFixture(), items: stacked })
+    expect(res.status).toBe(422)
+    expect(body.code).toBe(NEED_SHAPE_CODE)
+    expect(submissionUpdates(calls)).toHaveLength(0)
   })
 
   it('answers 422 NEED_NOT_ELIGIBLE naming the key for a need the class cannot use, and writes nothing', async () => {
@@ -892,5 +897,70 @@ describe('POST /api/loot-submissions/submit row slots (CR-01)', () => {
     const { res, calls } = await run({ ...baseFixture(), items })
     expect(res.status).toBe(200)
     expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+  })
+})
+
+// regression for WR-01 (Phase 4 review): the budget and eligibility checks
+// alone let a direct save hold ten cost-1 needs or stack picks at one rank.
+describe('POST /api/loot-submissions/submit need list shape (WR-01)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(fetchActiveSlotLocks).mockResolvedValue([])
+    vi.mocked(fetchListPrioItems).mockResolvedValue([])
+  })
+
+  const warrior = { ...baseFixture().character!, class: { name: 'Warrior' }, spec: { name: 'Protection Warrior' } }
+  const ARMOUR = ['head', 'shoulders', 'chest', 'wrist', 'hands', 'waist', 'legs', 'feet']
+  // Ten cost-1 needs a Warrior tank can use: 10 points, inside the budget.
+  const TEN_COST_ONE_KEYS = [
+    ...ARMOUR.map(slot => `${slot}.plate.tank`),
+    'head.leather.tank',
+    'chest.leather.tank',
+  ]
+
+  it('refuses ten cost-1 needs at ranks 50 to 41 with 422 and writes nothing', async () => {
+    const items = needList(TEN_COST_ONE_KEYS)
+    expect(new Set(items.map(row => row.rank))).toEqual(new Set([50, 49, 48, 47, 46, 45, 44, 43, 42, 41]))
+    const { res, body, calls } = await run({ ...baseFixture(), character: warrior, items })
+    expect(res.status).toBe(422)
+    expect(body).toMatchObject({ error: NEED_SHAPE_ERROR, code: NEED_SHAPE_CODE, details: { rule: 'pick_count', picks: 10 } })
+    expect(submissionUpdates(calls)).toHaveLength(0)
+  })
+
+  it('refuses a rank-49 row holding a second key', async () => {
+    const items = [...needList(TEN_POINT_KEYS.slice(0, 4)), ...needRows('head.cloth.spell-damage', 49, [3])]
+    const { res, body, calls } = await run({ ...baseFixture(), items })
+    expect(res.status).toBe(422)
+    expect(body).toMatchObject({ code: NEED_SHAPE_CODE, details: { rule: 'one_key_per_rank', ranks: [49] } })
+    expect(submissionUpdates(calls)).toHaveLength(0)
+  })
+
+  it('submits the 15-row picker list (five keys at ranks 50 to 46, three tiers)', async () => {
+    const { res, calls } = await run({ ...baseFixture(), items: needList(TEN_POINT_KEYS) })
+    expect(res.status).toBe(200)
+    expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+  })
+
+  // GH #357: the picker carries rows of a tier the guild turned off through
+  // unchanged, so a list can hold an earlier save's picks there. The shape is
+  // judged over the active tiers only.
+  it('submits a picker list beside carried-over rows of a turned-off tier', async () => {
+    const off = (rows: SubmissionItem[]) => rows.map(row => withTier(row, { is_guild_active: false }))
+    const items = [
+      ...needList(TEN_POINT_KEYS, [0, 1]),
+      // An earlier save's picks in the turned-off tier: other keys, other ranks.
+      ...off(needRows('back.spell-damage', 50, [2])),
+      ...off(needRows('neck.spell-damage', 44, [2])),
+    ]
+    const { res, calls } = await run({ ...baseFixture(), items })
+    expect(res.status).toBe(200)
+    expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+  })
+
+  it('answers the budget refusal before the shape one when both fail', async () => {
+    const stacked = [...TEN_POINT_KEYS, 'ranged-weapon.spell-damage'].flatMap(key => needRows(key, 50))
+    const { body } = await run({ ...baseFixture(), items: stacked })
+    expect(body.code).toBe(NEED_BUDGET_CODE)
   })
 })

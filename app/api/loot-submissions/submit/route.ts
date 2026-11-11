@@ -4,7 +4,7 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { validateBracketRules, type BracketItem, type BracketLimits, type BracketViolation } from '@/domain/loot/bracket-validation'
 import { validateItemCopyLimits } from '@/domain/loot/item-copies'
 import { isNeedRow } from '@/domain/loot/item-identity'
-import { checkNeedList } from '@/domain/loot/need-list-rules'
+import { checkNeedList, checkNeedShape } from '@/domain/loot/need-list-rules'
 import { MAX_NEED_TIER_SLOTS } from '@/domain/loot/need-picks'
 import { NEED_BUDGET_CODE, needOverBudgetSentence } from '@/domain/loot/need-budget'
 import { NEED_NOT_ELIGIBLE_CODE, NEED_NOT_ELIGIBLE_ERROR } from '@/domain/loot/need-eligibility'
@@ -58,7 +58,9 @@ function oneEmbed<T>(embed: T | T[] | null | undefined): T | null {
  * 5a. Check the Discovery need rows (422, before any write): the 10-point
  *    budget counted once per (rank, need key) answers NEED_BUDGET_EXCEEDED,
  *    and a need the character's class and spec cannot use answers
- *    NEED_NOT_ELIGIBLE. Both read the same checked rows as step 5
+ *    NEED_NOT_ELIGIBLE, and a list that breaks the picker's shape (more
+ *    than five picks, a rank outside 50 to 46, two keys at one rank) answers
+ *    NEED_SHAPE_INVALID. All three read the same checked rows as step 5
  * 6. Check officer class prio (#484): a ranked item outside its zone's prio
  *    pool is refused with 400 and code PRIO_VIOLATION, naming the items.
  *    The items and flags are recomputed over the list's phase-group tiers;
@@ -302,6 +304,26 @@ export async function POST(request: NextRequest) {
           error: NEED_NOT_ELIGIBLE_ERROR,
           code: NEED_NOT_ELIGIBLE_CODE,
           ineligible,
+        }, { status: 422 })
+      }
+
+      // WR-01: the picker's shape (at most five picks at ranks 50 to 46, one
+      // key per rank), which the budget cannot see when picks stack at one
+      // rank. It runs after the budget and eligibility so a list that breaks
+      // those gets their signed-off words first. It reads the same active-tier
+      // rows: the picker carries an earlier save's rows in a tier the guild
+      // turned off through unchanged (GH #357), and those can sit at other
+      // ranks or keys, so counting them would refuse the picker's own output.
+      const shape = checkNeedShape(needRows.map((si) => ({
+        rank: si.rank,
+        slot: si.slot,
+        need_key: si.loot_item?.need_key ?? null,
+      })))
+      if (!shape.ok) {
+        return NextResponse.json({
+          error: shape.message,
+          code: shape.code,
+          details: shape.details,
         }, { status: 422 })
       }
     }
