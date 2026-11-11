@@ -8,7 +8,6 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyPermission } from '@/utils/server-roles'
 import { discordFetch, sendDirectMessage } from '@/lib/discord'
-import { logAudit } from '@/utils/audit/log'
 import {
   SET_YOUR_FIVE_COOLDOWN_ERROR,
   SET_YOUR_FIVE_NOT_OFFICER_ERROR,
@@ -23,7 +22,6 @@ vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
 vi.mock('@/utils/server-roles', () => ({ verifyPermission: vi.fn() }))
 vi.mock('@/lib/discord', () => ({ discordFetch: vi.fn(), sendDirectMessage: vi.fn() }))
-vi.mock('@/utils/audit/log', () => ({ logAudit: vi.fn() }))
 
 // Why these cases: the route messages a whole guild, so it must post once with
 // one safe link, reach each member once, and answer with counts only. Every id
@@ -33,6 +31,7 @@ const GUILD_ID = 'aaaaaaaa-0000-0000-0000-000000000001'
 const EXPANSION_ID = 'bbbbbbbb-0000-0000-0000-000000000001'
 const CHANNEL_ID = '700000000000000001'
 const SENDER_ID = 'eeeeeeee-0000-0000-0000-000000000001'
+const SEND_ROW_ID = 'dddddddd-0000-0000-0000-000000000001'
 const BOT_TOKEN = 'test-bot-token-not-real'
 const APP_URL = 'https://app.example.test'
 
@@ -47,13 +46,25 @@ interface Fixture {
   memberships: Array<{ user_id: string }>
   prefs: Array<{ user_id: string; discord_id: string | null }>
   auditRows: Array<{ created_at: string }>
+  failSendRowInsert?: boolean
+  failSendRowDelete?: boolean
+}
+
+interface RecordedCall {
+  table: string
+  filters: Array<[string, string, unknown]>
+  op?: 'insert' | 'delete'
+  payload?: unknown
 }
 
 let fixture: Fixture
-let calls: Array<{ table: string; filters: Array<[string, string, unknown]> }>
+let calls: RecordedCall[]
+
+const sendRowWrites = () => calls.filter((c) => c.table === 'audit_logs' && c.op === 'insert')
+const sendRowReleases = () => calls.filter((c) => c.table === 'audit_logs' && c.op === 'delete')
 
 function makeBuilder(table: string) {
-  const call = { table, filters: [] as Array<[string, string, unknown]> }
+  const call: RecordedCall = { table, filters: [] }
   calls.push(call)
   let range: [number, number] | null = null
   const result = () => {
@@ -71,6 +82,14 @@ function makeBuilder(table: string) {
         return { data: rows.slice(0, 1), error: null }
       }
       case 'audit_logs':
+        if (call.op === 'insert') {
+          return fixture.failSendRowInsert
+            ? { data: null, error: { message: 'insert failed' } }
+            : { data: { id: SEND_ROW_ID }, error: null }
+        }
+        if (call.op === 'delete') {
+          return fixture.failSendRowDelete ? { data: null, error: { message: 'delete failed' } } : { data: null, error: null }
+        }
         return { data: fixture.auditRows.slice(0, 1), error: null }
       case 'character_guild_memberships': {
         const rows = fixture.memberships.map((m) => ({ characters: { user_id: m.user_id } }))
@@ -93,6 +112,15 @@ function makeBuilder(table: string) {
   }
   builder.in = (column: string, values: unknown) => {
     call.filters.push(['in', column, values])
+    return builder
+  }
+  builder.insert = (payload: unknown) => {
+    call.op = 'insert'
+    call.payload = payload
+    return builder
+  }
+  builder.delete = () => {
+    call.op = 'delete'
     return builder
   }
   builder.not = () => builder
@@ -281,7 +309,7 @@ describe('[D-30] the 60-minute cooldown', () => {
     expect(response.status).toBe(429)
     expect(await response.json()).toEqual({ error: SET_YOUR_FIVE_COOLDOWN_ERROR, retry_after_minutes: 40 })
     expectNoDiscordCalls()
-    expect(logAudit).not.toHaveBeenCalled()
+    expect(sendRowWrites()).toEqual([])
   })
 
   it('reads the latest send row for this guild only', async () => {
@@ -302,32 +330,56 @@ describe('[D-30] the 60-minute cooldown', () => {
     expect(discordFetch).toHaveBeenCalledTimes(1)
   })
 
-  it('writes the send row after the channel post, counts only', async () => {
-    await POST(request())
-    expect(logAudit).toHaveBeenCalledTimes(1)
-    expect(logAudit).toHaveBeenCalledWith({
-      supabase: expect.anything(),
-      guildId: GUILD_ID,
-      tableName: 'set_your_five_sends',
-      recordId: GUILD_ID,
-      action: 'INSERT',
-      userId: SENDER_ID,
-      newData: { posted: true },
+  // regression for WR-04 (Phase 4 review): the row used to be written after
+  // the post through logAudit, which swallows its error, so a failed insert
+  // or a function cut off between the two left the next send unthrottled.
+  it('reserves the cooldown row before the channel post, counts only, and checks the write', async () => {
+    let postedAfterWrite = false
+    vi.mocked(discordFetch).mockImplementation(async () => {
+      postedAfterWrite = sendRowWrites().length === 1
+      return { ok: true, status: 200 } as Response
     })
-    const auditOrder = vi.mocked(logAudit).mock.invocationCallOrder[0]
-    expect(vi.mocked(discordFetch).mock.invocationCallOrder[0]).toBeLessThan(auditOrder)
-    expect(vi.mocked(sendDirectMessage).mock.invocationCallOrder[0]).toBeGreaterThan(auditOrder)
+
+    await POST(request())
+
+    expect(postedAfterWrite).toBe(true)
+    expect(sendRowWrites()).toHaveLength(1)
+    expect(sendRowWrites()[0].payload).toEqual({
+      guild_id: GUILD_ID,
+      table_name: 'set_your_five_sends',
+      record_id: GUILD_ID,
+      action: 'INSERT',
+      user_id: SENDER_ID,
+      old_data: null,
+      new_data: { posted: true },
+      changed_fields: null,
+    })
+    expect(sendRowReleases()).toEqual([])
+  })
+
+  it('answers 500 and sends nothing when the cooldown row cannot be written', async () => {
+    fixture.failSendRowInsert = true
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const response = await POST(request())
+
+    expect(response.status).toBe(500)
+    expectNoDiscordCalls()
+    expect(errorSpy).toHaveBeenCalledWith('[set-your-five] unexpected failure', { stage: 'handler' })
+    errorSpy.mockRestore()
   })
 })
 
 describe('channel post failure', () => {
-  it('answers 502 with no DMs and no send row when Discord refuses the post', async () => {
+  it('answers 502 with no DMs and releases the cooldown row when Discord refuses the post', async () => {
     vi.mocked(discordFetch).mockResolvedValue({ ok: false, status: 403 } as Response)
     const response = await POST(request())
     expect(response.status).toBe(502)
     expect((await response.json()).error).toBe(SET_YOUR_FIVE_POST_FAILED_ERROR)
     expect(sendDirectMessage).not.toHaveBeenCalled()
-    expect(logAudit).not.toHaveBeenCalled()
+    expect(sendRowWrites()).toHaveLength(1)
+    expect(sendRowReleases()).toHaveLength(1)
+    expect(sendRowReleases()[0].filters).toEqual([['eq', 'id', SEND_ROW_ID]])
   })
 
   it('answers 502 the same way when the request itself throws', async () => {
@@ -335,7 +387,23 @@ describe('channel post failure', () => {
     const response = await POST(request())
     expect(response.status).toBe(502)
     expect(sendDirectMessage).not.toHaveBeenCalled()
-    expect(logAudit).not.toHaveBeenCalled()
+    expect(sendRowReleases()).toHaveLength(1)
+  })
+
+  // regression for WR-04: a reservation that cannot be released keeps the
+  // hour-long cooldown on a send that did not happen, and says so in a fixed
+  // log line rather than failing open.
+  it('still answers 502 and logs a fixed message when the cooldown row cannot be released', async () => {
+    fixture.failSendRowDelete = true
+    vi.mocked(discordFetch).mockResolvedValue({ ok: false, status: 403 } as Response)
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const response = await POST(request())
+
+    expect(response.status).toBe(502)
+    expect(errorSpy).toHaveBeenCalledTimes(1)
+    expect(errorSpy).toHaveBeenCalledWith('[set-your-five] cooldown release failed', { stage: 'channel_post' })
+    errorSpy.mockRestore()
   })
 })
 

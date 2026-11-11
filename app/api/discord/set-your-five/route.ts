@@ -3,7 +3,6 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
 import { selectAllPagesOrThrow } from '@/utils/supabase/paginate'
-import { logAudit } from '@/utils/audit/log'
 import { discordFetch, sendDirectMessage } from '@/lib/discord'
 import {
   SET_YOUR_FIVE_COOLDOWN_ERROR,
@@ -196,6 +195,30 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Cooldown reservation (D-30): the send row is written before the channel
+    // post, with the insert's error checked, so a send can never happen
+    // without the row that throttles the next one. The row is inserted here
+    // rather than through logAudit, which swallows its insert error. Nothing
+    // about who was messaged is stored: only that a send happened.
+    // regression for WR-04 (Phase 4 review): written after the post and
+    // best-effort, the cooldown failed open.
+    const { data: sendRow, error: sendRowError } = await supabase
+      .from('audit_logs')
+      .insert({
+        guild_id: guildId,
+        table_name: SEND_AUDIT_TABLE,
+        record_id: guildId,
+        action: 'INSERT',
+        user_id: user.id,
+        old_data: null,
+        new_data: { posted: true },
+        changed_fields: null,
+      })
+      .select('id')
+      .single()
+    if (sendRowError || !sendRow) throw new Error('send row write failed')
+    const sendRowId = sendRow.id as string
+
     const message = buildSetYourFiveMessage(buildSetYourFiveUrl(resolveAppOrigin(), guildId))
 
     let channelPostOk = false
@@ -211,21 +234,15 @@ export async function POST(request: NextRequest) {
       channelPostOk = false
     }
     if (!channelPostOk) {
+      // Nothing was sent, so the reservation is released and the officer can
+      // retry at once. If the release itself fails, the cooldown stands for
+      // an hour on a send that did not happen, which is the safe side.
+      const { error: releaseError } = await supabase.from('audit_logs').delete().eq('id', sendRowId)
+      if (releaseError) {
+        console.error('[set-your-five] cooldown release failed', { stage: 'channel_post' })
+      }
       return NextResponse.json({ error: SET_YOUR_FIVE_POST_FAILED_ERROR }, { status: 502 })
     }
-
-    // The row is written as soon as the channel post lands, before the DMs, so
-    // the cooldown holds even if the function is cut off mid-send. Counts of
-    // who was messaged are never stored: only that a send happened.
-    await logAudit({
-      supabase,
-      guildId,
-      tableName: SEND_AUDIT_TABLE,
-      recordId: guildId,
-      action: 'INSERT',
-      userId: user.id,
-      newData: { posted: true },
-    })
 
     // Bounded DMs (D-30): a small worker pool, no new DM once the budget from
     // the start of the request is spent, and the deadline on every DM still
