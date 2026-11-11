@@ -912,7 +912,7 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                       aria-expanded={lootStyleOpen}
                       aria-controls={lootStyleRegionId}
                       onClick={() => setLootStyleOpen(!lootStyleOpen)}
-                      className="mt-3 w-full flex items-center justify-between py-3 px-4 bg-background-subtle hover:bg-background-elevated border border-border-strong rounded-xl h-auto"
+                      className="mt-3 w-full flex items-center justify-between py-3 px-4 bg-background-subtle border border-border-strong rounded-xl h-auto"
                     >
                       <div className="flex items-center gap-2">
                         <HugeiconsIcon icon={Settings01Icon} size={18} className="text-muted-foreground" />
