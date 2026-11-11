@@ -45,6 +45,17 @@ function readOrThrow<T>(label: string, result: { data: T; error: { message: stri
   return result.data
 }
 
+/**
+ * The addon payload stays byte-identical for Known guilds (D-30), so the
+ * loot_style column added for the web app is dropped before the settings row is
+ * spread or serialised. Copying and deleting keeps the remaining key order.
+ */
+function withoutLootStyle<T extends Record<string, unknown>>(row: T): Omit<T, 'loot_style'> {
+  const copy: Record<string, unknown> = { ...row }
+  delete copy.loot_style
+  return copy as Omit<T, 'loot_style'>
+}
+
 /** readOrThrow for list reads: with the error ruled out, a null list can only be empty. */
 function readRowsOrThrow<T>(label: string, result: { data: T[] | null; error: { message: string } | null }): T[] {
   return readOrThrow(label, result) ?? []
@@ -82,10 +93,11 @@ export async function GET(request: NextRequest) {
 
     // Fetch guild settings. maybeSingle: a guild with no settings row has no
     // settings (Pitfall 4), which is not an error.
-    const settings = readOrThrow(
+    const settingsRow = readOrThrow(
       'guild_settings',
       await supabase.from('guild_settings').select('*').eq('guild_id', guildId).maybeSingle(),
     )
+    const settings = settingsRow ? withoutLootStyle(settingsRow) : null
 
     // Collapse per-raider modifier entries into a flat active map so the Lua
     // engine reads a simple { characterId: amount } map and stays date-free.

@@ -175,6 +175,10 @@ export default function LootSettingsContent({
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [settingsSaveStatus, setSettingsSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [advancedExpanded, setAdvancedExpanded] = useState(false)
+  // loot_style rides on the settings row, so its load state is the settings
+  // request's. Autosave stays off until a load succeeds (settingsLoadedRef), so
+  // a failed read can never write defaults over the stored row.
+  const [lootStyleLoad, setLootStyleLoad] = useState<'loading' | 'ready' | 'error'>('loading')
   const [initialSettings, setInitialSettings] = useState<typeof settings | null>(null)
   const [initialGuildRoles, setInitialGuildRoles] = useState<typeof guildRoles | null>(null)
   const settingsLoadedRef = useRef(false)
@@ -265,7 +269,11 @@ export default function LootSettingsContent({
     max_allocation_points_per_bracket: 3,
     max_tokens_per_bracket: 1,
     max_category_per_bracket: 1,
-    award_slot_lock_enabled: false
+    award_slot_lock_enabled: false,
+
+    // Loot style preset (null = Custom). Part of the autosaved object so a
+    // later knob edit cannot drop the officer's choice.
+    loot_style: null as string | null
   })
 
   const [guildRoles, setGuildRoles] = useState<{ name: string; position: number }[]>([
@@ -357,6 +365,7 @@ export default function LootSettingsContent({
           max_tokens_per_bracket: settings.max_tokens_per_bracket,
           max_category_per_bracket: settings.max_category_per_bracket,
           award_slot_lock_enabled: settings.award_slot_lock_enabled,
+          loot_style: settings.loot_style,
         }
 
         const response = await fetch('/api/guild-settings', {
@@ -436,15 +445,22 @@ export default function LootSettingsContent({
   }, [lootItems, loading])
 
   const loadSettings = async (guildId: string) => {
+    setLootStyleLoad('loading')
+    // A later failure (the roles lookup) must not turn a row we did read into a load error.
+    let settingsRead = false
     try {
       const response = await fetch(`/api/guild-settings?guild_id=${guildId}`)
       if (response.ok) {
         const data = await response.json()
+        // A 200 with no row means loot_style is unknown, which is a load failure for the picker.
+        if (!data.settings) setLootStyleLoad('error')
         if (data.settings) {
           setSettings(prevSettings => ({
             ...prevSettings,
             ...data.settings
           }))
+          settingsRead = true
+          setLootStyleLoad('ready')
 
           // Load roles from the guild_roles table (authoritative source)
           const { data: guildRolesData, error: rolesError } = await supabase
@@ -512,9 +528,11 @@ export default function LootSettingsContent({
           setTimeout(() => { settingsLoadedRef.current = true }, 100)
         }
       } else {
+        setLootStyleLoad('error')
         console.error('Failed to load settings:', response.status, response.statusText)
       }
     } catch (error) {
+      if (!settingsRead) setLootStyleLoad('error')
       console.error('Error loading guild settings:', error)
       showNotification('error', 'Couldn\'t load loot settings. Check your connection and try again.')
     }
@@ -1758,6 +1776,10 @@ export default function LootSettingsContent({
           advancedExpanded={advancedExpanded}
           setAdvancedExpanded={setAdvancedExpanded}
           guildRoles={guildRoles}
+          lootStyleLoad={lootStyleLoad}
+          onRetryLootStyleLoad={() => {
+            if (activeGuild) void loadSettings(activeGuild.id)
+          }}
         />
       )}
 

@@ -8,6 +8,8 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { seedExpansionForGuild } from '@/app/services/expansionSeeder'
 import { checkUserManagesDiscordServer } from '@/lib/discord-server-access'
 import { trackEvent } from '@/utils/analytics/server'
+import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
+import { LOOT_STYLE_PRESETS } from '@/domain/guild/loot-style-presets'
 
 vi.mock('@/utils/supabase/server', () => ({
   createClient: vi.fn(),
@@ -395,5 +397,91 @@ describe('POST /api/guilds default roles (GH #351)', () => {
     expect(user.fromCalls).toContain('guild_settings')
     expect(service.fromCalls).toContain('guild_invite_codes')
     expect([...user.fromCalls, ...service.fromCalls]).not.toContain('guild_roles')
+  })
+})
+
+describe('POST /api/guilds loot style preset', () => {
+  const styleBody = { ...baseBody, expansion: 'Forever', realm: 'PvP (EU)' }
+
+  beforeEach(() => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'user-1' }, error: null } as never)
+    vi.mocked(seedExpansionForGuild).mockReset()
+    vi.mocked(seedExpansionForGuild).mockResolvedValue({ expansionId: 'exp-1' } as never)
+    vi.mocked(evaluateGuildFunnel).mockClear()
+  })
+
+  it('inserts the preset knobs and loot_style in the one settings insert', async () => {
+    const { supabase, insertPayloads, writes } = createMockSupabase()
+    vi.mocked(createClient).mockResolvedValue(supabase as never)
+    vi.mocked(createServiceRoleClient).mockReturnValue(supabase as never)
+
+    const res = await POST(request({ ...styleBody, loot_style: 'reward_attendance' }))
+
+    expect(res.status).toBe(200)
+    expect(insertPayloads.guild_settings).toHaveLength(1)
+    expect(insertPayloads.guild_settings[0]).toEqual({
+      guild_id: 'g1',
+      ...LOOT_STYLE_PRESETS.reward_attendance.knobs,
+      loot_style: 'reward_attendance',
+    })
+    expect(Object.keys(insertPayloads.guild_settings[0] as object)).toHaveLength(22)
+    // The preset rides on the insert; nothing updates guild_settings afterwards.
+    expect(writes.filter((w) => w.table === 'guild_settings')).toEqual([])
+  })
+
+  it('applies a preset other than the default with its own knobs', async () => {
+    const { supabase, insertPayloads } = createMockSupabase()
+    vi.mocked(createClient).mockResolvedValue(supabase as never)
+    vi.mocked(createServiceRoleClient).mockReturnValue(supabase as never)
+
+    const res = await POST(request({ ...styleBody, loot_style: 'even_rotation' }))
+
+    expect(res.status).toBe(200)
+    expect(insertPayloads.guild_settings[0]).toMatchObject({ ...LOOT_STYLE_PRESETS.even_rotation.knobs, loot_style: 'even_rotation' })
+  })
+
+  it('inserts exactly the four default fields when no loot_style is sent', async () => {
+    const { supabase, insertPayloads } = createMockSupabase()
+    vi.mocked(createClient).mockResolvedValue(supabase as never)
+    vi.mocked(createServiceRoleClient).mockReturnValue(supabase as never)
+
+    const res = await POST(request(styleBody))
+
+    expect(res.status).toBe(200)
+    expect(insertPayloads.guild_settings).toEqual([
+      { guild_id: 'g1', attendance_type: 'linear', rolling_attendance_weeks: 8, use_signups: false, signup_weight: 0 },
+    ])
+  })
+
+  it.each([['council'], [7], ['__proto__']])('answers 400 for %j before any guild insert', async (value) => {
+    const { supabase, insertPayloads, fromCalls } = createMockSupabase()
+    vi.mocked(createClient).mockResolvedValue(supabase as never)
+    vi.mocked(createServiceRoleClient).mockReturnValue(supabase as never)
+
+    const res = await POST(request({ ...styleBody, loot_style: value }))
+
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'loot_style must be one of the loot style presets' })
+    expect(insertPayloads.guilds).toBeUndefined()
+    expect(insertPayloads.guild_settings).toBeUndefined()
+    expect(fromCalls).not.toContain('guilds')
+  })
+
+  // regression for the activation funnel: loot_settings_completed_at must only
+  // mean an officer tuned settings, so creation never counts as that milestone.
+  it('never marks the loot settings milestone, with or without a preset', async () => {
+    for (const extra of [{}, { loot_style: 'officers_decide' }]) {
+      const { supabase } = createMockSupabase()
+      vi.mocked(createClient).mockResolvedValue(supabase as never)
+      vi.mocked(createServiceRoleClient).mockReturnValue(supabase as never)
+      vi.mocked(evaluateGuildFunnel).mockClear()
+
+      const res = await POST(request({ ...styleBody, ...extra }))
+
+      expect(res.status).toBe(200)
+      for (const call of vi.mocked(evaluateGuildFunnel).mock.calls) {
+        expect(call[2]).toBeUndefined()
+      }
+    }
   })
 })

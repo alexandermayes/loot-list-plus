@@ -13,6 +13,7 @@ import {
   Settings02Icon,
   UserAdd01Icon,
 } from '@hugeicons/core-free-icons'
+import { useId, useState } from 'react'
 import {
   Modal,
   ModalHeader,
@@ -29,6 +30,8 @@ import { useConfirm } from '@/components/ui/confirm-modal'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { allRoles, getRoleDisplayName } from '@/domain/loot/spec-role-mapping'
 import { toDateString } from '@/utils/date'
+import { LootStylePicker } from '@/app/components/LootStylePicker'
+import { lootStyleStatus } from '@/domain/guild/loot-style-presets'
 
 interface GuildRole {
   name: string
@@ -46,6 +49,9 @@ interface SettingsModalProps {
   advancedExpanded: boolean
   setAdvancedExpanded: (v: boolean) => void
   guildRoles: GuildRole[]
+  /** Whether the stored loot style (part of the settings row) has loaded. */
+  lootStyleLoad: 'loading' | 'ready' | 'error'
+  onRetryLootStyleLoad: () => void
 }
 
 export function SettingsModal({
@@ -57,9 +63,25 @@ export function SettingsModal({
   advancedExpanded,
   setAdvancedExpanded,
   guildRoles,
+  lootStyleLoad,
+  onRetryLootStyleLoad,
 }: SettingsModalProps) {
   const { showNotification } = useNotification()
   const { confirm, ConfirmDialog } = useConfirm()
+
+  // Fine-tune starts open when nothing vouches for the knobs (no preset, a
+  // Customised one, or a loot style we could not read) and closed when a preset
+  // matches, so an existing guild sees today's settings until it picks one. The
+  // starting state is fixed once the load settles; after that only the officer
+  // moves it, so a pick never opens or closes the knobs under them.
+  const fineTuneId = useId()
+  const [fineTuneStart, setFineTuneStart] = useState<boolean | null>(null)
+  const [fineTuneChoice, setFineTuneChoice] = useState<boolean | null>(null)
+  if (fineTuneStart === null && lootStyleLoad !== 'loading') {
+    const status = lootStyleStatus(settings)
+    setFineTuneStart(lootStyleLoad === 'error' || status.kind === 'custom' || status.customised)
+  }
+  const fineTuneOpen = fineTuneChoice ?? fineTuneStart ?? true
 
   return (
     <>
@@ -74,6 +96,51 @@ export function SettingsModal({
           </div>
         </ModalHeader>
         <ModalBody className="space-y-6">
+              {/* Loot style presets: one tap sets the scoring knobs below (D-19) */}
+              <Card variant="unified">
+                <CardHeader>
+                  <CardTitle className="text-15 font-semibold flex items-center gap-2">
+                    <HugeiconsIcon icon={Medal01Icon} size={18} className="text-muted-foreground" />
+                    Loot style
+                  </CardTitle>
+                  <CardDescription>Pick how loot priority works. You can fine-tune every setting afterwards.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <LootStylePicker
+                    variant="settings"
+                    settings={settings}
+                    onApply={setSettings}
+                    loading={lootStyleLoad === 'loading'}
+                    loadError={lootStyleLoad === 'error'}
+                    onRetryLoad={onRetryLootStyleLoad}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Fine-tune: every existing settings card, unchanged, one tap behind a preset (D-19) */}
+              <Button
+                type="button"
+                variant="ghost"
+                aria-expanded={fineTuneOpen}
+                aria-controls={fineTuneId}
+                onClick={() => setFineTuneChoice(!fineTuneOpen)}
+                className="w-full flex items-center justify-between py-3 px-4 bg-background-subtle hover:bg-background-elevated border border-border-strong rounded-xl h-auto"
+              >
+                <div className="flex items-center gap-2">
+                  <HugeiconsIcon icon={Settings02Icon} size={18} className="text-muted-foreground" />
+                  <span className="text-16 font-semibold text-foreground">Fine-tune</span>
+                  <span className="text-12 text-muted-foreground">(optional)</span>
+                </div>
+                <HugeiconsIcon
+                  icon={fineTuneOpen ? ArrowUp01Icon : ArrowDown01Icon}
+                  size={20}
+                  className="text-muted-foreground"
+                />
+              </Button>
+
+              {/* hidden, not unmounted: the controls keep their state and aria-controls always resolves */}
+              <div id={fineTuneId} hidden={!fineTuneOpen} className="space-y-6">
+
               {/* General Settings */}
               <Card variant="unified">
                 <CardHeader>
@@ -1110,6 +1177,7 @@ export function SettingsModal({
 
                   </div>
                 )}
+              </div>
               </div>
         </ModalBody>
       </Modal>

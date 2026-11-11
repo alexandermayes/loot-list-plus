@@ -7,9 +7,24 @@ import { trackEvent, trackApiError } from '@/utils/analytics/server'
 import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { toDateString } from '@/utils/date'
 import { validateRaiderModifiers } from '@/domain/scoring/raider-bonus'
+import { isLootStyleId } from '@/domain/guild/loot-style-presets'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+
+// API-only message: the UI never shows it, because the preset picker only offers
+// the three ids. The guild_settings_loot_style_check constraint is the backstop.
+const LOOT_STYLE_INVALID_ERROR = 'loot_style must be one of the loot style presets'
+
+// A Discord channel id is a snowflake: 17 to 20 digits and nothing else.
+// regression for WR-02 (Phase 4 review): the stored id is interpolated into
+// bot-token Discord URLs (the raid summary, loot announcements and Set your 5
+// posts), so a value with a path in it could re-target those requests.
+const DISCORD_SNOWFLAKE = /^\d{17,20}$/
+// API-only copy, owner review pending (04-19 sign-off predates it). The guild
+// settings page saves an id from the Discord channel list or null, so only a
+// direct API caller can see it.
+const RAID_SUMMARY_CHANNEL_INVALID_ERROR = 'raid_summary_channel_id must be a Discord channel id or null'
 
 // Explicit allowlist of fields that can be updated by the client.
 // Fields like id, guild_id, created_at, and updated_at are never client-modifiable.
@@ -91,6 +106,9 @@ const ALLOWED_SETTINGS_FIELDS = [
   'max_tokens_per_bracket',
   'max_category_per_bracket',
   'award_slot_lock_enabled',
+
+  // Loot style preset
+  'loot_style',
 
   // Discord Integration
   'raid_summary_channel_id',
@@ -245,6 +263,9 @@ export async function GET(request: Request) {
             max_category_per_bracket: 1,
             award_slot_lock_enabled: false,
 
+            // Loot style preset: null reads as Custom
+            loot_style: null,
+
             // Warcraft Logs Integration
             wcl_guild_url: null
           }
@@ -329,6 +350,26 @@ export async function PUT(request: Request) {
     // and silently read as on or off, so refuse it before writing.
     if ('award_slot_lock_enabled' in sanitizedSettings && typeof sanitizedSettings.award_slot_lock_enabled !== 'boolean') {
       return NextResponse.json({ error: 'award_slot_lock_enabled must be true or false' }, { status: 400 })
+    }
+
+    // A preset id is stored together with its knobs in this one update (D-18).
+    // Anything that is not null or a known id would otherwise reach the column
+    // check and surface as a 500, so refuse it here with a 400.
+    if ('loot_style' in sanitizedSettings
+      && sanitizedSettings.loot_style !== null
+      && !isLootStyleId(sanitizedSettings.loot_style)) {
+      return NextResponse.json({ error: LOOT_STYLE_INVALID_ERROR }, { status: 400 })
+    }
+
+    // Null or an empty string clears the channel and is stored as null, which
+    // every reader already treats as "no channel".
+    if ('raid_summary_channel_id' in sanitizedSettings) {
+      const channelId = sanitizedSettings.raid_summary_channel_id
+      if (channelId === null || channelId === '') {
+        sanitizedSettings.raid_summary_channel_id = null
+      } else if (typeof channelId !== 'string' || !DISCORD_SNOWFLAKE.test(channelId)) {
+        return NextResponse.json({ error: RAID_SUMMARY_CHANNEL_INVALID_ERROR }, { status: 400 })
+      }
     }
 
     let result

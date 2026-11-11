@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useId } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import type { User } from '@supabase/supabase-js'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Tick01Icon, ArrowRight01Icon, Link01Icon, File01Icon, Settings01Icon } from '@hugeicons/core-free-icons'
+import { Tick01Icon, ArrowRight01Icon, ArrowDown01Icon, ArrowUp01Icon, Link01Icon, File01Icon, Settings01Icon } from '@hugeicons/core-free-icons'
 import { Spinner, LoadingSpinner } from '@/components/ui/loading-spinner'
 import Image from 'next/image'
 import RealmSelector from '@/app/components/RealmSelector'
+import { LootStylePicker } from '@/app/components/LootStylePicker'
 import ForeverRulesetSelector from '@/app/components/ForeverRulesetSelector'
 import {
   Modal,
@@ -27,6 +28,7 @@ import { Card } from '@/components/ui/card'
 import { getExpansionDisplayName } from '@/utils/expansionVisuals'
 import { GAME_VERSION_LABELS, resolveSignupExpansion, DEFAULT_SIGNUP_GAME } from '@/domain/expansion/game'
 import type { GameVersion } from '@/domain/expansion/game'
+import { LOOT_STYLE_PRESETS, isLootStyleId, type LootStyleId } from '@/domain/guild/loot-style-presets'
 
 interface DiscordGuild {
   id: string
@@ -94,6 +96,11 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
   const [realmRegion, setRealmRegion] = useState('All')
   const [realm, setRealm] = useState('')
   const [faction, setFaction] = useState<'Alliance' | 'Horde'>('Alliance')
+  // Reward attendance equals today's new-guild defaults, so leaving it alone
+  // changes nothing for an officer who skips the choice (UI-10).
+  const [lootStyle, setLootStyle] = useState<LootStyleId>('reward_attendance')
+  const [lootStyleOpen, setLootStyleOpen] = useState(false)
+  const lootStyleRegionId = useId()
   const [game, setGame] = useState<GameVersion>(DEFAULT_SIGNUP_GAME)
   const [classicExpansion, setClassicExpansion] = useState('Classic')
   const expansion = resolveSignupExpansion(game, classicExpansion)
@@ -369,7 +376,11 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
           faction,
           discord_server_id: discordServerId,
           expansion,
-          game
+          game,
+          // Sent with the create call, not as a settings PUT afterwards: a PUT
+          // here would mark the loot settings milestone before the officer
+          // has opened them (research F4).
+          loot_style: lootStyle
         })
       })
 
@@ -884,6 +895,49 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                     `}</style>
                   </div>
 
+                  {/* Loot style (D-19): a preset now, the knobs later in Loot system settings */}
+                  <div>
+                    <Label className="mb-2">Loot style</Label>
+                    <LootStylePicker
+                      variant="create"
+                      settings={null}
+                      value={lootStyle}
+                      onApply={(next) => {
+                        if (isLootStyleId(next.loot_style)) setLootStyle(next.loot_style)
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      aria-expanded={lootStyleOpen}
+                      aria-controls={lootStyleRegionId}
+                      onClick={() => setLootStyleOpen(!lootStyleOpen)}
+                      className="mt-3 w-full flex items-center justify-between py-3 px-4 bg-background-subtle border border-border-strong rounded-xl h-auto"
+                    >
+                      <div className="flex items-center gap-2">
+                        <HugeiconsIcon icon={Settings01Icon} size={18} className="text-muted-foreground" />
+                        <span className="text-16 font-semibold text-foreground">Fine-tune</span>
+                        <span className="text-12 text-muted-foreground">(optional)</span>
+                      </div>
+                      <HugeiconsIcon
+                        icon={lootStyleOpen ? ArrowUp01Icon : ArrowDown01Icon}
+                        size={20}
+                        className="text-muted-foreground"
+                      />
+                    </Button>
+                    <div id={lootStyleRegionId} hidden={!lootStyleOpen} className="mt-3 px-1">
+                      <p className="text-12 text-muted-foreground mb-2">What this sets</p>
+                      <ul className="list-disc space-y-1 pl-5 text-13 text-foreground">
+                        {LOOT_STYLE_PRESETS[lootStyle].summary.map((line) => (
+                          <li key={line}>{line}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <p className="text-11 text-muted-foreground mt-2">
+                      You can change this any time in Loot system settings.
+                    </p>
+                  </div>
+
                   {/* Summary */}
                   <Card className="p-4 border-border-strong">
                     <p className="text-12 text-muted-foreground mb-2">Summary</p>
@@ -891,6 +945,9 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
                       <p className="text-14 text-foreground font-medium">{guildName}</p>
                       <p className="text-12 text-muted-foreground">
                         {getExpansionDisplayName(expansion)} • {realm || (isForeverExpansion ? 'No ruleset selected' : 'No realm selected')} • {faction}
+                      </p>
+                      <p className="text-12 text-muted-foreground">
+                        Loot style: {LOOT_STYLE_PRESETS[lootStyle].name}
                       </p>
                       {selectedGuild && (
                         <p className="text-12 text-muted-foreground">
