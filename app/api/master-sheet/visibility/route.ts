@@ -9,6 +9,17 @@ import { splitCandidatesByMembership } from '@/domain/loot/master-sheet-candidat
 
 type ServiceClient = ReturnType<typeof createServiceRoleClient>
 
+// WR-06 (Phase 4 review): item_ids is raider input, and the chunked reads
+// below are a loop of service-role queries, so the array is bounded, every
+// element must be a UUID (a stray value answers 400 rather than a 500 from
+// Postgres), and the ids are de-duplicated so one id repeated across chunks
+// cannot produce repeated ranking rows. The bound leaves room above the
+// largest request the sheet makes today: a Forever phase asks for 435 need
+// ids and a merged Known phase group for somewhat over 1000 items.
+const VISIBILITY_MAX_ITEM_IDS = 2000
+// Identical to UUID_PATTERN in lib/loot/guild-award-refs.ts.
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 // WR-02: a Forever phase can ask for up to 435 need ids, and PostgREST
 // carries every .in() id in the request URL, so one call with all of them
 // can overrun the URL limit. The chunk size is the one shared constant.
@@ -181,6 +192,13 @@ export async function POST(request: NextRequest) {
     if (typeof guild_id !== 'string' || !Array.isArray(item_ids)) {
       return NextResponse.json({ error: 'guild_id and item_ids[] are required' }, { status: 400 })
     }
+    if (item_ids.length > VISIBILITY_MAX_ITEM_IDS) {
+      return NextResponse.json({ error: `item_ids holds more than ${VISIBILITY_MAX_ITEM_IDS} ids` }, { status: 400 })
+    }
+    if (!item_ids.every((id: unknown) => typeof id === 'string' && UUID_PATTERN.test(id))) {
+      return NextResponse.json({ error: 'item_ids must hold item ids only' }, { status: 400 })
+    }
+    const itemIds: string[] = [...new Set(item_ids as string[])]
 
     const serviceSupabase = createServiceRoleClient()
 
@@ -225,7 +243,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Not a member of this guild' }, { status: 403 })
     }
 
-    if (item_ids.length === 0) {
+    if (itemIds.length === 0) {
       return NextResponse.json({ rankings: [], submissions: [], characters: [], memberships: [] })
     }
 
@@ -257,12 +275,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    let allowedItemIds: string[] = item_ids
+    let allowedItemIds: string[] = itemIds
     if (!bypassPhaseGate) {
       allowedItemIds = await filterItemsToEarnedPhases(
         serviceSupabase,
         guild_id,
-        item_ids,
+        itemIds,
         callerCharacterIds,
       )
       if (allowedItemIds.length === 0) {
