@@ -916,6 +916,7 @@ export type Database = {
           late_early_penalty_enabled: boolean | null
           late_early_penalty_value: number | null
           loot_announcements_enabled: boolean
+          loot_style: string | null
           max_allocation_points_per_bracket: number
           max_attendance_bonus: number
           max_attendance_threshold: number
@@ -987,6 +988,7 @@ export type Database = {
           late_early_penalty_enabled?: boolean | null
           late_early_penalty_value?: number | null
           loot_announcements_enabled?: boolean
+          loot_style?: string | null
           max_allocation_points_per_bracket?: number
           max_attendance_bonus?: number
           max_attendance_threshold?: number
@@ -1058,6 +1060,7 @@ export type Database = {
           late_early_penalty_enabled?: boolean | null
           late_early_penalty_value?: number | null
           loot_announcements_enabled?: boolean
+          loot_style?: string | null
           max_allocation_points_per_bracket?: number
           max_attendance_bonus?: number
           max_attendance_threshold?: number

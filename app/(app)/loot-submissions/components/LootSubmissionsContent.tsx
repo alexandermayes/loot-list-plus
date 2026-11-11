@@ -42,6 +42,13 @@ import { lockedRankTitle, LOCKED_RANK_LABEL, type ListSlotLock } from '@/domain/
 import { diffListItems, type DiffEntry } from '@/domain/loot/list-diff'
 import { bulkDeleteIds, bulkDeleteNotice } from '@/domain/loot/bulk-delete'
 import { createPendingReviewNotification, type ReviewNotificationPayload } from './review-notification'
+import { buildReviewRows, type ReviewDetailRow, type ReviewNeedLine } from './review-need-lines'
+
+// API-only copy, owner review pending (04-19 sign-off predates it). Only a
+// list saved outside the editor and picker has a row off slots 1 and 2, and
+// the submit route refuses those since CR-01, so officers see this label only
+// on a list promoted before that check.
+const OTHER_ROW_LABEL = 'Other row'
 
 interface Submission {
   id: string
@@ -89,19 +96,9 @@ interface RaidTierInfo {
   phase: number | null
 }
 
-interface SubmissionDetailItem {
-  rank: number
-  slot: number
-  removed_at?: string | null
-  loot_item: {
-    id: string
-    name: string
-    boss_name: string
-    item_slot: string
-    wowhead_id: number
-    classification: string | null
-  }
-}
+// The review read also carries kind, need_key and the tier so a Discovery
+// list's fan-out rows can be shown once per need (D-28).
+type SubmissionDetailItem = ReviewDetailRow
 
 interface RawSubmissionCharacter {
   name: string | null
@@ -691,7 +688,7 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
           rank,
           slot,
           removed_at,
-          loot_item:loot_items(id, name, boss_name, item_slot, wowhead_id, classification)
+          loot_item:loot_items(id, name, boss_name, item_slot, wowhead_id, classification, kind, need_key, raid_tier_id, raid_tier:raid_tiers(name, sort_order))
         `)
         .eq('submission_id', submissionId)
         .order('rank', { ascending: false }),
@@ -891,7 +888,35 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
   // One cell per rank and slot (GH #354): a removed row and a live row can
   // share a position since the partial unique index only guards live rows,
   // and the live one is shown.
-  const groupedSubmissionDetails = useMemo(() => groupDetailRowsByRank(submissionDetails), [submissionDetails])
+  // Item rows stay on that table; need rows become one line per need through
+  // toNeedLines() inside buildReviewRows (D-28), so a Discovery list's 15
+  // fan-out rows read as five needs and none of them is dropped.
+  const reviewRows = useMemo(() => buildReviewRows(submissionDetails), [submissionDetails])
+  const reviewDisplayRows = useMemo(() => {
+    const itemGroups = groupDetailRowsByRank(reviewRows.itemRows).map((group) => ({
+      type: 'items' as const,
+      key: `items-${group.rank}`,
+      rank: group.rank,
+      group,
+    }))
+    const needGroups = reviewRows.needLines.map((line) => ({
+      type: 'need' as const,
+      key: `need-${line.rank}-${line.needKey}-${line.removed ? 'removed' : 'live'}`,
+      rank: line.rank,
+      line,
+    }))
+    // CR-01: a row the table cannot place still gets a line of its own, so an
+    // officer never approves a row they did not see.
+    const otherGroups = reviewRows.otherRows.map((row) => ({
+      type: 'other' as const,
+      key: `other-${detailRowKey(row.loot_item.id, row.rank, row.slot)}-${row.removed_at ?? 'live'}`,
+      rank: Number(row.rank),
+      row,
+    }))
+    // Rank descending; at one rank the item cells sort ahead of need lines,
+    // and other rows come last.
+    return [...itemGroups, ...needGroups, ...otherGroups].sort((a, b) => b.rank - a.rank)
+  }, [reviewRows])
 
   return (
     <div className="font-poppins">
@@ -1245,6 +1270,33 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
           )
         }
 
+        // A need line stands for one row per tier. It is read-only here: a
+        // removal acts on one (rank, slot) row, and removing a single tier's
+        // row would leave the fan-out uneven.
+        const renderNeedCell = (line: ReviewNeedLine<SubmissionDetailItem>) => {
+          const lock = line.removed ? undefined : line.rows.map(lockFor).find((candidate) => candidate !== undefined)
+          return (
+            <div className={`flex flex-wrap items-center gap-x-2 gap-y-0.5 ${line.removed ? 'opacity-50' : ''}`}>
+              <ItemLink
+                name={line.name}
+                wowheadId={null}
+                className={`font-medium text-sm ${line.removed ? 'line-through' : ''}`}
+              />
+              {line.suffix && <span className="text-xs text-muted-foreground">{line.suffix}</span>}
+              {lock && (
+                <span
+                  role="img"
+                  aria-label={LOCKED_RANK_LABEL}
+                  title={lockedRankTitle(lock.locked_at)}
+                  className="text-muted-foreground shrink-0"
+                >
+                  <HugeiconsIcon icon={LockIcon} size={12} />
+                </span>
+              )}
+            </div>
+          )
+        }
+
         const renderMobileItem = (item: SubmissionDetailItem | undefined, slotLabel: string) => {
           if (!item) return null
           const isRemoved = !!item.removed_at
@@ -1355,13 +1407,24 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
                       </tr>
                     </thead>
                     <tbody>
-                      {groupedSubmissionDetails.map((group) => (
-                        <tr key={group.rank} className="border-b border-border">
-                          <td className={`px-3 py-2 font-semibold text-sm text-foreground bg-gradient-to-r ${getRankGradient(group.rank)}`}>
-                            {group.rank}
+                      {reviewDisplayRows.map((entry) => (
+                        <tr key={entry.key} className="border-b border-border">
+                          <td className={`px-3 py-2 font-semibold text-sm text-foreground bg-gradient-to-r ${getRankGradient(entry.rank)}`}>
+                            {entry.rank}
                           </td>
-                          <td className="px-3 py-2">{renderItemCell(group.slot1)}</td>
-                          <td className="px-3 py-2">{renderItemCell(group.slot2)}</td>
+                          {entry.type === 'items' ? (
+                            <>
+                              <td className="px-3 py-2">{renderItemCell(entry.group.slot1)}</td>
+                              <td className="px-3 py-2">{renderItemCell(entry.group.slot2)}</td>
+                            </>
+                          ) : entry.type === 'need' ? (
+                            <td colSpan={2} className="px-3 py-2">{renderNeedCell(entry.line)}</td>
+                          ) : (
+                            <td colSpan={2} className="px-3 py-2">
+                              <p className="text-11 text-muted-foreground font-medium mb-1">{OTHER_ROW_LABEL}</p>
+                              {renderItemCell(entry.row)}
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -1370,16 +1433,27 @@ export default function LootSubmissionsContent({ serverHeading }: LootSubmission
 
                 {/* Mobile card list */}
                 <div className="sm:hidden space-y-2 p-2">
-                  {groupedSubmissionDetails.map((group) => (
-                    <Card key={group.rank} className="overflow-hidden">
+                  {reviewDisplayRows.map((entry) => (
+                    <Card key={entry.key} className="overflow-hidden">
                       <div className="px-3 py-2 flex items-center gap-2">
-                        <span className={`inline-flex items-center justify-center w-8 h-6 rounded text-12 font-bold text-white ${getRankBg(group.rank)}`}>
-                          {group.rank}
+                        <span className={`inline-flex items-center justify-center w-8 h-6 rounded text-12 font-bold text-white ${getRankBg(entry.rank)}`}>
+                          {entry.rank}
                         </span>
-                        <span className="text-13 text-muted-foreground">Rank {group.rank}</span>
+                        <span className="text-13 text-muted-foreground">Rank {entry.rank}</span>
                       </div>
-                      {renderMobileItem(group.slot1, 'Item #1')}
-                      {renderMobileItem(group.slot2, 'Item #2')}
+                      {entry.type === 'items' ? (
+                        <>
+                          {renderMobileItem(entry.group.slot1, 'Item #1')}
+                          {renderMobileItem(entry.group.slot2, 'Item #2')}
+                        </>
+                      ) : entry.type === 'other' ? (
+                        renderMobileItem(entry.row, OTHER_ROW_LABEL)
+                      ) : (
+                        <div className="px-3 py-2 border-t border-border/50">
+                          <p className="text-11 text-muted-foreground font-medium mb-1">Need</p>
+                          {renderNeedCell(entry.line)}
+                        </div>
+                      )}
                     </Card>
                   ))}
                 </div>

@@ -23,6 +23,8 @@ interface ErrorStateProps {
   message: string
   /** Optional retry handler - shows "Try again" button when provided */
   onRetry?: () => void
+  /** Retry button text; defaults to "Try again" for callers with nothing more specific to say. */
+  retryLabel?: string
   /** Size variant */
   size?: 'compact' | 'default' | 'lg'
   /** Visual variant */
@@ -57,6 +59,7 @@ const sizeConfig = {
 export function ErrorState({
   message,
   onRetry,
+  retryLabel = 'Try again',
   size = 'default',
   variant = 'default',
   className,
@@ -90,7 +93,7 @@ export function ErrorState({
           size={size === 'compact' ? 'sm' : 'default'}
           className={config.button}
         >
-          Try again
+          {retryLabel}
         </Button>
       )}
     </div>

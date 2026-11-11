@@ -12,10 +12,14 @@ import { ArrowLeft01Icon } from '@hugeicons/core-free-icons'
 import { getExpansionVisuals, getExpansionDisplayName } from '@/utils/expansionVisuals'
 import { getRaidIcon, getRaidShorthand } from '@/utils/raidIcons'
 import { resolvePhaseGroups, isMergedGroup, type PhaseGroup } from '@/domain/expansion/phase-groups'
-import { getGuildGame, type GameVersion } from '@/domain/expansion/game'
+import { getGuildGame, FOREVER_EXPANSION_NAME, type GameVersion } from '@/domain/expansion/game'
+import { isListMode, type ListMode } from '@/domain/loot/list-mode'
 import { Button } from '@/components/ui/button'
 import { DateTimePicker } from '@/components/ui/date-time-picker'
 import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
+import { SegmentedControl } from '@/components/ui/segmented-control'
+import { useConfirm } from '@/components/ui/confirm-modal'
 import { Skeleton } from '@/components/ui/skeletons'
 import { trackClientEvent } from '@/utils/analytics/client'
 import { Card } from '@/components/ui/card'
@@ -26,6 +30,7 @@ interface RaidTier {
   phase: number | null
   is_guild_active: boolean
   master_sheet_visible: boolean
+  list_mode: ListMode
 }
 
 interface Expansion {
@@ -35,65 +40,119 @@ interface Expansion {
   is_current: boolean
 }
 
+// Only passed for tiers of the Forever expansion (D-15); every other expansion
+// renders the row exactly as before.
+interface ListModeSurface {
+  canManage: boolean
+  /** The route's refusal for this tier, shown verbatim under the row */
+  reason: string | undefined
+  onChange: (nextMode: ListMode) => void
+  onDismissReason: () => void
+}
+
 interface CompactRaidToggleProps {
   tier: RaidTier
   game: GameVersion
   updating: string | null
+  listMode?: ListModeSurface
   onToggleActive: (tierId: string, currentValue: boolean) => void
   onToggleRankings: (tierId: string, currentValue: boolean) => void
 }
 
-function CompactRaidToggle({
+// Copy signed off 2026-11-11 (04-19).
+const LIST_MODE_FALLBACK_REASON = "Couldn't change the list mode. Try again."
+
+const LIST_MODE_OPTIONS: { value: ListMode; label: string }[] = [
+  { value: 'known', label: 'Known' },
+  { value: 'discovery', label: 'Discovery' },
+]
+
+export function CompactRaidToggle({
   tier,
   game,
   updating,
+  listMode,
   onToggleActive,
   onToggleRankings,
 }: CompactRaidToggleProps) {
   const isUpdating = updating === tier.id
+  const showListModeControl = listMode?.canManage === true
+  const showDiscoveryBadge = listMode !== undefined && !listMode.canManage && tier.list_mode === 'discovery'
+  // The row wraps (name, then the controls) only when it carries the extra
+  // control, so rows on other expansions keep their single-line layout.
+  const wraps = showListModeControl || showDiscoveryBadge
 
   return (
     <div
-      className={`flex items-center gap-3 p-2.5 rounded-lg transition-colors ${
+      className={`p-2.5 rounded-lg transition-colors ${
         tier.is_guild_active
           ? 'bg-background-subtle'
           : 'bg-background-subtle/50 opacity-60'
       }`}
     >
-      {/* Icon + Name */}
-      <div className="flex items-center gap-2 min-w-0 flex-1">
-        <img
-          src={getRaidIcon(tier.name, game)}
-          alt={tier.name}
-          className="w-6 h-6 rounded border border-border/50 flex-shrink-0"
-        />
-        <span className="font-medium text-13 text-foreground truncate">
-          {getRaidShorthand(tier.name)}
-        </span>
+      <div className={wraps ? 'flex flex-wrap items-center gap-2' : 'flex items-center gap-3'}>
+        {/* Icon + Name */}
+        <div className={`flex items-center gap-2 min-w-0 ${wraps ? 'w-full sm:w-auto sm:flex-1' : 'flex-1'}`}>
+          <img
+            src={getRaidIcon(tier.name, game)}
+            alt={tier.name}
+            className="w-6 h-6 rounded border border-border/50 flex-shrink-0"
+          />
+          <span className="font-medium text-13 text-foreground truncate">
+            {getRaidShorthand(tier.name)}
+          </span>
+        </div>
+
+        {/* Toggles */}
+        <div className={wraps ? 'flex flex-wrap items-center gap-2 sm:flex-shrink-0' : 'flex items-center gap-3 flex-shrink-0'}>
+          {showListModeControl && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-11 text-muted-foreground">List mode</span>
+              <div role="group" aria-label={`List mode for ${tier.name}`}>
+                <SegmentedControl
+                  size="sm"
+                  options={LIST_MODE_OPTIONS}
+                  value={tier.list_mode}
+                  onChange={listMode.onChange}
+                  disabled={isUpdating}
+                />
+              </div>
+            </div>
+          )}
+          {showDiscoveryBadge && <Badge variant="outline">Discovery</Badge>}
+
+          <label className="flex items-center gap-1.5 cursor-pointer" title="Include in loot lists">
+            <span className="text-11 text-muted-foreground">Loot</span>
+            <Switch
+              checked={tier.is_guild_active}
+              onCheckedChange={() => onToggleActive(tier.id, tier.is_guild_active)}
+              disabled={isUpdating}
+              className="data-[state=checked]:bg-accent scale-90"
+            />
+          </label>
+
+          <label className="flex items-center gap-1.5 cursor-pointer" title="Show rankings to players">
+            <span className="text-11 text-muted-foreground">Ranks</span>
+            <Switch
+              checked={tier.master_sheet_visible && tier.is_guild_active}
+              onCheckedChange={() => onToggleRankings(tier.id, tier.master_sheet_visible)}
+              disabled={isUpdating || !tier.is_guild_active}
+              className="data-[state=checked]:bg-green-600 scale-90"
+            />
+          </label>
+        </div>
       </div>
 
-      {/* Toggles */}
-      <div className="flex items-center gap-3 flex-shrink-0">
-        <label className="flex items-center gap-1.5 cursor-pointer" title="Include in loot lists">
-          <span className="text-11 text-muted-foreground">Loot</span>
-          <Switch
-            checked={tier.is_guild_active}
-            onCheckedChange={() => onToggleActive(tier.id, tier.is_guild_active)}
-            disabled={isUpdating}
-            className="data-[state=checked]:bg-accent scale-90"
-          />
-        </label>
-
-        <label className="flex items-center gap-1.5 cursor-pointer" title="Show rankings to players">
-          <span className="text-11 text-muted-foreground">Ranks</span>
-          <Switch
-            checked={tier.master_sheet_visible && tier.is_guild_active}
-            onCheckedChange={() => onToggleRankings(tier.id, tier.master_sheet_visible)}
-            disabled={isUpdating || !tier.is_guild_active}
-            className="data-[state=checked]:bg-green-600 scale-90"
-          />
-        </label>
-      </div>
+      {listMode?.reason && (
+        // A tap dismisses it; the next successful change clears it as well.
+        <div
+          role="alert"
+          onClick={listMode.onDismissReason}
+          className="mt-2 cursor-pointer rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-12 text-foreground break-words"
+        >
+          {listMode.reason}
+        </div>
+      )}
     </div>
   )
 }
@@ -107,6 +166,13 @@ interface PhaseCardProps {
   isCurrentPhase: boolean
   isUnlocked: boolean
   updating: string | null
+  listMode?: {
+    canManage: boolean
+    reasons: Record<string, string>
+    mixed: boolean
+    onChange: (tierId: string, nextMode: ListMode) => void
+    onDismissReason: (tierId: string) => void
+  }
   onDeadlineInputChange: (value: string) => void
   onUpdateDeadline: (value: string) => void
   onToggleRaidActive: (tierId: string, currentValue: boolean) => void
@@ -122,6 +188,7 @@ function PhaseCard({
   isCurrentPhase,
   isUnlocked,
   updating,
+  listMode,
   onDeadlineInputChange,
   onUpdateDeadline,
   onToggleRaidActive,
@@ -183,10 +250,21 @@ function PhaseCard({
                 tier={tier}
                 game={game}
                 updating={updating}
+                listMode={listMode && {
+                  canManage: listMode.canManage,
+                  reason: listMode.reasons[tier.id],
+                  onChange: (nextMode) => listMode.onChange(tier.id, nextMode),
+                  onDismissReason: () => listMode.onDismissReason(tier.id),
+                }}
                 onToggleActive={onToggleRaidActive}
                 onToggleRankings={onToggleRaidRankings}
               />
             ))}
+            {listMode?.mixed && (
+              <p className="text-12 text-muted-foreground">
+                Raids in this phase use different list modes. Raiders see the item list until every raid matches.
+              </p>
+            )}
           </div>
         </div>
       ) : (
@@ -211,12 +289,14 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
   const [mergeMode, setMergeMode] = useState<'display' | 'selecting'>('display')
   const [newGroupSelection, setNewGroupSelection] = useState<Set<number>>(new Set())
   const [mergeError, setMergeError] = useState<{ message: string; characters?: string[] } | null>(null)
+  const [listModeReasons, setListModeReasons] = useState<Record<string, string>>({})
 
   const supabase = createClient()
   const router = useRouter()
   const { mutate } = useSWRConfig()
   const { activeGuild, loading: guildLoading, hasPermission } = useGuildContext()
   const { showNotification } = useNotification()
+  const { confirm, ConfirmDialog } = useConfirm()
   const isForeverGuild = getGuildGame(activeGuild) === 'forever'
 
   useEffect(() => {
@@ -305,17 +385,19 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
       // Load raid tiers for this expansion (only fields we need)
       const { data: tiersData, error: tiersError } = await supabase
         .from('raid_tiers')
-        .select('id, name, phase, is_guild_active, master_sheet_visible')
+        .select('id, name, phase, is_guild_active, master_sheet_visible, list_mode')
         .eq('expansion_id', expansionId)
 
       if (tiersError) {
         console.error('Error loading raid tiers:', tiersError)
       } else {
         // Sort by progression order
-        const sortedTiers = (tiersData || []).map((tier: { id: string; name: string; phase: number | null; is_guild_active: boolean | null; master_sheet_visible: boolean | null }) => ({
+        const sortedTiers = (tiersData || []).map((tier: { id: string; name: string; phase: number | null; is_guild_active: boolean | null; master_sheet_visible: boolean | null; list_mode: string | null }) => ({
           ...tier,
           is_guild_active: tier.is_guild_active ?? true,
-          master_sheet_visible: tier.master_sheet_visible ?? true
+          master_sheet_visible: tier.master_sheet_visible ?? true,
+          // Anything but a known mode reads as Known, the safe side (D-12 fails closed to the editor).
+          list_mode: isListMode(tier.list_mode) ? tier.list_mode : 'known'
 })).sort((a: RaidTier, b: RaidTier) => {
           return getRaidTierOrder(a.name) - getRaidTierOrder(b.name)
         })
@@ -422,6 +504,71 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
     }
   }
 
+  const isForeverExpansion = expansion?.expansion_name === FOREVER_EXPANSION_NAME
+  const canManageListMode = hasPermission('manage_settings')
+
+  const applyListMode = async (tierId: string, nextMode: ListMode) => {
+    if (!activeGuild) return
+    setUpdating(tierId)
+
+    try {
+      const res = await fetch('/api/raid-tiers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guild_id: activeGuild.id, tier_id: tierId, updates: { list_mode: nextMode } }),
+      })
+
+      if (!res.ok) {
+        // The route's own reason (D-03 409, D-17 or validation 400) is the
+        // explanation; the control is driven by the saved mode, so it stays put.
+        const errBody = await res.json().catch(() => ({}))
+        const reason = typeof errBody?.error === 'string' && errBody.error ? errBody.error : LIST_MODE_FALLBACK_REASON
+        setListModeReasons((prev) => ({ ...prev, [tierId]: reason }))
+        return
+      }
+
+      setListModeReasons((prev) => {
+        const { [tierId]: _cleared, ...rest } = prev
+        void _cleared
+        return rest
+      })
+      setRaidTiers((prev) => prev.map((t) => (t.id === tierId ? { ...t, list_mode: nextMode } : t)))
+      mutate((key: string) => typeof key === 'string' && (key.startsWith('/api/raid-tiers') || key.startsWith('/api/loot-items')), undefined, { revalidate: true })
+    } catch (error: unknown) {
+      console.error('List mode change error:', error)
+      setListModeReasons((prev) => ({ ...prev, [tierId]: LIST_MODE_FALLBACK_REASON }))
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  const handleChangeListMode = (tierId: string, nextMode: ListMode) => {
+    const tier = raidTiers.find((t) => t.id === tierId)
+    if (!tier || tier.list_mode === nextMode || updating === tierId) return
+
+    // Only Known to Discovery asks first: it is hard to undo once a need is ranked.
+    if (nextMode === 'discovery') {
+      confirm({
+        title: `Switch ${tier.name} to Discovery?`,
+        description: 'Raiders will pick five gear needs instead of ranking items. You can switch back until a need is ranked or won.',
+        confirmLabel: 'Switch to Discovery',
+        cancelLabel: 'Not now',
+        variant: 'default',
+        onConfirm: () => applyListMode(tierId, nextMode),
+      })
+      return
+    }
+    return applyListMode(tierId, nextMode)
+  }
+
+  const handleDismissListModeReason = (tierId: string) => {
+    setListModeReasons((prev) => {
+      const { [tierId]: _cleared, ...rest } = prev
+      void _cleared
+      return rest
+    })
+  }
+
   const handleUpdatePhaseDeadline = async (phase: number, value?: string) => {
     if (!activeGuild) return
     setUpdating(`phase-${phase}`)
@@ -492,6 +639,17 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
   // Compute available phases from tiers and resolved groups
   const availablePhases = [...new Set(raidTiers.map(t => t.phase).filter((p): p is number => p != null))].sort((a, b) => a - b)
   const currentResolvedGroups = resolvePhaseGroups(phaseGroupsConfig, availablePhases)
+
+  // Raiders get the picker only when every guild-active tier of the phase group
+  // is Discovery (D-12), so a turned-off tier cannot make the group mixed.
+  const hasMixedListModes = (phase: number): boolean => {
+    const group = currentResolvedGroups.find((g) => g.phases.includes(phase))
+    const phases = group?.phases ?? [phase]
+    const modes = new Set(
+      raidTiers.filter((t) => t.is_guild_active && t.phase !== null && phases.includes(t.phase)).map((t) => t.list_mode)
+    )
+    return modes.size > 1
+  }
 
   // Shared save function — takes the full config directly (no state dependency)
   const savePhaseGroups = async (config: number[][] | null) => {
@@ -945,6 +1103,13 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
                 isCurrentPhase={isCurrent}
                 isUnlocked={isUnlocked}
                 updating={updating}
+                listMode={isForeverExpansion ? {
+                  canManage: canManageListMode,
+                  reasons: listModeReasons,
+                  mixed: hasMixedListModes(phase),
+                  onChange: handleChangeListMode,
+                  onDismissReason: handleDismissListModeReason,
+                } : undefined}
                 onDeadlineInputChange={(value) => setPhaseDeadlineInputs({
                   ...phaseDeadlineInputs,
                   [phase]: value
@@ -964,6 +1129,8 @@ export default function ExpansionDetailPage({ params }: { params: Promise<{ expa
           <p className="text-foreground-muted">{isForeverGuild ? 'WoW Forever has no raids open yet.' : 'No raid tiers found for this expansion'}</p>
         </Card>
       )}
+
+      {ConfirmDialog}
     </div>
   )
 }

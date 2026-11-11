@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
-import { validateBracketRules, type BracketItem, type BracketLimits } from '@/domain/loot/bracket-validation'
+import { validateBracketRules, type BracketItem, type BracketLimits, type BracketViolation } from '@/domain/loot/bracket-validation'
 import { validateItemCopyLimits } from '@/domain/loot/item-copies'
 import { isNeedRow } from '@/domain/loot/item-identity'
-import { isHeldNeedRanking, NEED_RANKING_HOLD_ERROR } from '@/domain/loot/need-ranking-hold'
+import { checkNeedList, checkNeedShape } from '@/domain/loot/need-list-rules'
+import { MAX_NEED_TIER_SLOTS } from '@/domain/loot/need-picks'
+import { NEED_BUDGET_CODE, needOverBudgetSentence } from '@/domain/loot/need-budget'
+import { NEED_NOT_ELIGIBLE_CODE, NEED_NOT_ELIGIBLE_ERROR } from '@/domain/loot/need-eligibility'
 import { findLockViolations, lockViolationMessage } from '@/domain/loot/slot-locks'
 import { logStatusChange } from '@/utils/audit/log'
 import { trackEvent, setUserMilestone } from '@/utils/analytics/server'
@@ -17,6 +20,17 @@ import { findPrioViolations, prioViolationMessage, PRIO_VIOLATION_CODE } from '@
 // Shown to the raider when the list's character is not an active member of
 // the list's guild (the same text auto-save shows).
 const NOT_ACTIVE_MEMBER_ERROR = 'Your character needs to rejoin this guild.'
+
+// API-only copy, owner review pending (04-19 sign-off predates it). The editor
+// and the picker never save a row outside these slots, so only a hand-built
+// save_submission_items call can see these lines.
+const ITEM_SLOT_DETAIL = 'Items use slot 1 or 2.'
+const NEED_SLOT_DETAIL = `Needs use slots 1 to ${MAX_NEED_TIER_SLOTS}.`
+
+// PostgREST can return a to-one embed as an object or a one-element array.
+function oneEmbed<T>(embed: T | T[] | null | undefined): T | null {
+  return (Array.isArray(embed) ? embed[0] : embed) ?? null
+}
 
 /**
  * POST /api/loot-submissions/submit
@@ -35,10 +49,18 @@ const NOT_ACTIVE_MEMBER_ERROR = 'Your character needs to rejoin this guild.'
  *    lost after the check) gets the same 403.
  * 3. Read current items + item metadata from DB
  * 4. Read guild enforce_slot_restrictions setting
+ * 4a. Refuse an item row outside slots 1 and 2, or a need row outside the
+ *    tier slot range (422, before any write; CR-01)
  * 5. Validate bracket rules and item copy limits (the same per-item rule the
  *    loot list applies; see domain/loot/item-copies.ts). Rows whose item is
  *    from a raid tier the guild turned off (raid_tiers.is_guild_active = false)
  *    are skipped, because the loot list page never shows them (GH #357)
+ * 5a. Check the Discovery need rows (422, before any write): the 10-point
+ *    budget counted once per (rank, need key) answers NEED_BUDGET_EXCEEDED,
+ *    and a need the character's class and spec cannot use answers
+ *    NEED_NOT_ELIGIBLE, and a list that breaks the picker's shape (more
+ *    than five picks, a rank outside 50 to 46, two keys at one rank) answers
+ *    NEED_SHAPE_INVALID. All three read the same checked rows as step 5
  * 6. Check officer class prio (#484): a ranked item outside its zone's prio
  *    pool is refused with 400 and code PRIO_VIOLATION, naming the items.
  *    The items and flags are recomputed over the list's phase-group tiers;
@@ -75,7 +97,7 @@ export async function POST(request: NextRequest) {
     // Verify user owns the character
     const { data: character } = await serviceSupabase
       .from('characters')
-      .select('id, user_id')
+      .select('id, user_id, class:wow_classes(name), spec:class_specs(name)')
       .eq('id', submission.character_id)
       .single()
 
@@ -99,7 +121,7 @@ export async function POST(request: NextRequest) {
         rank,
         slot,
         loot_item_id,
-        loot_item:loot_items(id, name, classification, item_type, item_slot, wowhead_id, allocation_cost, kind, raid_tier:raid_tiers(is_guild_active))
+        loot_item:loot_items(id, name, classification, item_type, item_slot, wowhead_id, allocation_cost, kind, need_key, raid_tier:raid_tiers(is_guild_active))
       `)
       .eq('submission_id', submission_id)
       .is('removed_at', null)
@@ -151,18 +173,39 @@ export async function POST(request: NextRequest) {
         item_slot?: string | null
         allocation_cost?: number | null
         kind?: string | null
+        need_key?: string | null
         // PostgREST can return a to-one embed as an object or a one-element array.
         raid_tier?: { is_guild_active?: boolean | null } | Array<{ is_guild_active?: boolean | null }> | null
       } | null
     }
     const itemRows = (submissionItems || []) as unknown as SubmissionItemRow[]
 
-    // D-22: ranking a need is held until Phase 4. Every loaded row is checked,
-    // before the GH #357 filter below, because a need in a turned-off tier is
-    // still a ranked need. Nothing has been written yet, so the refusal leaves
-    // status, submitted_at and resubmission_count as they were.
-    if (itemRows.some((si) => isHeldNeedRanking(si.loot_item))) {
-      return NextResponse.json({ error: NEED_RANKING_HOLD_ERROR }, { status: 422 })
+    // CR-01: the Phase 4 migration widened the table check to slot 1..8 for
+    // every row so need rows can fan out one slot per Discovery tier, and
+    // save_submission_items never reads the slot, so this is the only gate
+    // that keeps item rows at slots 1 and 2. The officer review table places
+    // only slots 1 and 2, so a row outside them would be approved unseen.
+    // Every live row is checked, including rows of tiers the guild turned off:
+    // the GH #357 skip below exists for rows a raider cannot fix, and no
+    // editor or picker save ever puts a row here, so nothing legitimate is
+    // refused.
+    const slotViolations: BracketViolation[] = []
+    const slotOf = (row: SubmissionItemRow) => Number(row.slot)
+    if (itemRows.some((row) => !isNeedRow(row.loot_item) && slotOf(row) !== 1 && slotOf(row) !== 2)) {
+      slotViolations.push({ bracket: 'List', rule: 'item_slot', detail: ITEM_SLOT_DETAIL })
+    }
+    if (itemRows.some((row) => {
+      if (!isNeedRow(row.loot_item)) return false
+      const slot = slotOf(row)
+      return !Number.isInteger(slot) || slot < 1 || slot > MAX_NEED_TIER_SLOTS
+    })) {
+      slotViolations.push({ bracket: 'List', rule: 'need_slot', detail: NEED_SLOT_DETAIL })
+    }
+    if (slotViolations.length > 0) {
+      return NextResponse.json({
+        error: 'List violates bracket rules',
+        violations: slotViolations,
+      }, { status: 422 })
     }
 
     // GH #357: the loot list page only receives items from raid tiers with
@@ -178,8 +221,8 @@ export async function POST(request: NextRequest) {
     })
     // Need rows are outside the bracket rules: their cost is the need's size
     // (3, 2, 1), not a classification, so summing it against the bracket limit
-    // would reject valid need lists. Their 10-point budget is Phase 4's check
-    // (DISC-03). Copy caps below still apply to them.
+    // would reject valid need lists. Their 10-point budget is checked by
+    // checkNeedList below (DISC-03). Copy caps below still apply to them.
     const validationItems = checkedRows.filter((si) => !isNeedRow(si.loot_item)).map((si) => ({
       rank: si.rank,
       slot: si.slot,
@@ -192,6 +235,28 @@ export async function POST(request: NextRequest) {
       } as BracketItem,
     }))
 
+    const toCopyEntry = (si: SubmissionItemRow) => ({
+      rank: si.rank,
+      item: {
+        id: si.loot_item_id,
+        name: si.loot_item?.name,
+        item_slot: si.loot_item?.item_slot,
+        wowhead_id: si.loot_item?.wowhead_id,
+        kind: si.loot_item?.kind,
+      },
+    })
+
+    // A need pick is fanned out over every Discovery tier, and each tier's row
+    // is its own copy group, so a need ranked twice breaks its cap once per
+    // tier with the same words. Collapsing identical lines gives the raider one
+    // message per need (D-29). Item rows are counted exactly as before.
+    const needCopyViolations = [
+      ...new Map(
+        validateItemCopyLimits(checkedRows.filter((si) => isNeedRow(si.loot_item)).map(toCopyEntry))
+          .map((v) => [`${v.bracket}|${v.rule}|${v.detail}`, v] as const),
+      ).values(),
+    ]
+
     // Validate bracket rules, then copies per item (GH #293, #331)
     const violations = [
       ...validateBracketRules(
@@ -199,16 +264,8 @@ export async function POST(request: NextRequest) {
         enforceSlotRestrictions,
         bracketLimits
       ),
-      ...validateItemCopyLimits(checkedRows.map((si) => ({
-        rank: si.rank,
-        item: {
-          id: si.loot_item_id,
-          name: si.loot_item?.name,
-          item_slot: si.loot_item?.item_slot,
-          wowhead_id: si.loot_item?.wowhead_id,
-          kind: si.loot_item?.kind,
-        },
-      }))),
+      ...validateItemCopyLimits(checkedRows.filter((si) => !isNeedRow(si.loot_item)).map(toCopyEntry)),
+      ...needCopyViolations,
     ]
 
     if (violations.length > 0) {
@@ -216,6 +273,59 @@ export async function POST(request: NextRequest) {
         error: 'List violates bracket rules',
         violations,
       }, { status: 422 })
+    }
+
+    // Need rows: the budget (D-07) and the character's eligibility (D-10), after
+    // the same GH #357 filter as the bracket rules so a need in a tier the guild
+    // turned off never blocks a raider who cannot see it. Nothing has been
+    // written yet, so a refusal leaves status, submitted_at and
+    // resubmission_count as they were.
+    const needRows = checkedRows.filter((si) => isNeedRow(si.loot_item))
+    if (needRows.length > 0) {
+      const { budget, ineligible } = checkNeedList(
+        needRows.map((si) => ({
+          loot_item_id: si.loot_item_id,
+          rank: si.rank,
+          need_key: si.loot_item?.need_key ?? null,
+          allocation_cost: si.loot_item?.allocation_cost ?? null,
+        })),
+        { className: oneEmbed(character.class)?.name ?? null, specName: oneEmbed(character.spec)?.name ?? null },
+      )
+      if (!budget.ok) {
+        return NextResponse.json({
+          error: needOverBudgetSentence(budget.bigPicks),
+          code: NEED_BUDGET_CODE,
+          used: budget.used,
+          limit: budget.limit,
+        }, { status: 422 })
+      }
+      if (ineligible.length > 0) {
+        return NextResponse.json({
+          error: NEED_NOT_ELIGIBLE_ERROR,
+          code: NEED_NOT_ELIGIBLE_CODE,
+          ineligible,
+        }, { status: 422 })
+      }
+
+      // WR-01: the picker's shape (at most five picks at ranks 50 to 46, one
+      // key per rank), which the budget cannot see when picks stack at one
+      // rank. It runs after the budget and eligibility so a list that breaks
+      // those gets their signed-off words first. It reads the same active-tier
+      // rows: the picker carries an earlier save's rows in a tier the guild
+      // turned off through unchanged (GH #357), and those can sit at other
+      // ranks or keys, so counting them would refuse the picker's own output.
+      const shape = checkNeedShape(needRows.map((si) => ({
+        rank: si.rank,
+        slot: si.slot,
+        need_key: si.loot_item?.need_key ?? null,
+      })))
+      if (!shape.ok) {
+        return NextResponse.json({
+          error: shape.message,
+          code: shape.code,
+          details: shape.details,
+        }, { status: 422 })
+      }
     }
 
     // Lists saved before an officer changed prio keep items the editor would

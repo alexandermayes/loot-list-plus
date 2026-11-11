@@ -588,7 +588,7 @@ describe('GET /api/raid-tiers', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
   })
 
-  it('selects list_mode on every tier', async () => {
+  it('selects list_mode and sort_order on every tier', async () => {
     const calls: Call[] = []
     const { client } = makeClient(baseFixture(), calls)
     setupMocks(client)
@@ -601,16 +601,23 @@ describe('GET /api/raid-tiers', () => {
     expect(res.status).toBe(200)
     const tierSelect = calls.find(c => c.table === 'raid_tiers' && c.op === 'select')
     expect(tierSelect?.selectCols).toContain('list_mode')
+    // [D-02 amended] the stable tier-to-slot order is (sort_order, id), so the
+    // picker needs sort_order from this list.
+    expect(tierSelect?.selectCols).toContain('sort_order')
     expect(json.tiers.length).toBeGreaterThan(0)
   })
 })
 
-describe('[D-02] no list-mode control in Phase 3', () => {
-  it('the expansion page does not mention list_mode', () => {
+// Phase 3 held the list-mode control back (D-02) and asserted the expansion page
+// never mentioned list_mode. Phase 4 ships it (D-15); the behaviour is covered in
+// the page's list-mode-control test, and this one source check keeps the handoff visible.
+describe('[D-15] the expansion page carries the list-mode control', () => {
+  it('the expansion page source mentions list_mode and sends it through this route', () => {
     const source = readFileSync(
       path.resolve(__dirname, '../../../../app/(app)/expansions/[expansionId]/_client.tsx'),
       'utf8'
     )
-    expect(source).not.toMatch(/list_mode|listMode|Discovery/)
+    expect(source).toMatch(/list_mode/)
+    expect(source).toContain("'/api/raid-tiers'")
   })
 })

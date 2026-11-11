@@ -26,6 +26,7 @@ import {
 import { resolveUnlockedPhaseGroups } from '@/domain/expansion/phase-groups'
 import { fetchActiveSlotLocks } from '@/lib/loot/slot-locks'
 import type { ListSlotLock } from '@/domain/loot/slot-locks'
+import { resolveNeedListScope } from '@/lib/loot/need-list-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,6 +37,8 @@ interface RaidTierRow {
   is_guild_active: boolean | null
   submission_deadline: string | null
   phase: number | null
+  list_mode: 'known' | 'discovery' | null
+  sort_order: number | null
 }
 
 export async function GET(request: NextRequest) {
@@ -87,7 +90,7 @@ export async function GET(request: NextRequest) {
         .single(),
       supabase
         .from('raid_tiers')
-        .select('id, name, is_active, is_guild_active, submission_deadline, phase')
+        .select('id, name, is_active, is_guild_active, submission_deadline, phase, list_mode, sort_order')
         .eq('expansion_id', expansionId)
         .eq('is_guild_active', true)
         .order('phase')
@@ -148,6 +151,7 @@ export async function GET(request: NextRequest) {
         rankings: {},
         removedItems: [],
         locks: [],
+        need_tier_slots: null,
       })
     }
 
@@ -161,10 +165,20 @@ export async function GET(request: NextRequest) {
       .filter((t) => t.phase != null && phaseSet.has(t.phase))
       .map((t) => t.id)
 
+    // Need rows go only to an all-Discovery group (D-12): the Known editor
+    // would otherwise list them. A failed read throws into the catch below, a
+    // 500, rather than showing a Discovery guild the Known editor.
+    const scope = await resolveNeedListScope(supabase, {
+      expansionId,
+      phases: selectedPhases,
+    })
+
     // Parallel batch B: items for the selected phase group + the
     // character's submission for the canonical phase (with ranking items).
     const [items, submissionRow] = await Promise.all([
-      fetchFilteredLootItems(supabase, character, selectedTierIds),
+      fetchFilteredLootItems(supabase, character, selectedTierIds, {
+        includeNeeds: scope.includeNeeds,
+      }),
       supabase
         .from('loot_submissions')
         .select('id, status, submitted_at, review_notes, expansion_id, phase, change_rejected_at')
@@ -222,6 +236,9 @@ export async function GET(request: NextRequest) {
         rankings,
         removedItems,
         locks,
+        // Rides with the items so the picker decides Discovery from the same
+        // response that supplied its need rows.
+        need_tier_slots: scope.tierSlots,
       },
       {
         headers: {

@@ -23,8 +23,7 @@ import path from 'node:path'
  *             ItemLink or NeedLabel instead of building a Wowhead link
  *   key       the reader keys rows with itemIdentityKey, never wowhead_id
  *   branch    the reader has an explicit need branch (isNeedRow or kind = 'need')
- *   guard     the reader refuses or skips a need row (isNeedRow, noteNeedSkipped
- *             or isHeldNeedRanking)
+ *   guard     the reader refuses or skips a need row (isNeedRow or noteNeedSkipped)
  *   ok        the reader handles a need row unchanged and cites a test that
  *             holds a need fixture, so "ok" always means a test exercises one
  *   agnostic  the reader counts, links or deletes rows by id and its source
@@ -299,8 +298,9 @@ export const NEED_READERS: readonly NeedReader[] = [
   {
     file: 'app/api/loot-items/route.ts',
     dispositions: ['guard'],
-    plan: '03-07',
-    note: 'PATCH refuses need rows; GET reads items through fetchFilteredLootItems',
+    plan: '04-09',
+    note: 'PATCH refuses need rows; GET passes includeNeeds for all-Discovery groups and returns need_tier_slots (D-12, resolveNeedListScope)',
+    test: 'app/api/loot-items/__tests__/route.test.ts',
   },
   {
     file: 'app/api/loot-items/specs/route.ts',
@@ -311,8 +311,8 @@ export const NEED_READERS: readonly NeedReader[] = [
   {
     file: 'app/api/loot-list/bootstrap/route.ts',
     dispositions: ['ok'],
-    plan: '03-18',
-    note: 'items through fetchFilteredLootItems with no options (D-02); rankings by id',
+    plan: '04-09',
+    note: 'items through fetchFilteredLootItems with includeNeeds for all-Discovery groups and need_tier_slots (D-12); rankings by id',
     test: 'app/api/loot-list/bootstrap/__tests__/route.test.ts',
   },
   {
@@ -353,8 +353,9 @@ export const NEED_READERS: readonly NeedReader[] = [
   {
     file: 'app/api/loot-submissions/submit/route.ts',
     dispositions: ['branch', 'guard'],
-    plan: '03-09',
-    note: 'D-22 hold (isHeldNeedRanking); need rows out of bracket rules; need copy caps',
+    plan: '04-08',
+    note: 'need rows out of bracket rules; item rows held to slots 1 and 2 and need rows to the tier slot range (CR-01); 10-point budget, eligibility and picker shape refusals (D-07, D-10, WR-01); need copy caps once per need (D-29)',
+    test: 'app/api/loot-submissions/submit/__tests__/route.test.ts',
   },
   {
     file: 'app/api/master-sheet/visibility/route.ts',
@@ -365,10 +366,9 @@ export const NEED_READERS: readonly NeedReader[] = [
   },
   {
     file: 'app/api/prio-list/route.ts',
-    dispositions: ['ok'],
-    plan: '03-18',
-    note: 'a need-embedded priority is returned unchanged',
-    test: 'app/api/prio-list/__tests__/route.test.ts',
+    dispositions: ['exclude'],
+    plan: '04-07',
+    note: 'GET drops need-row priorities; POST refuses need rows (D-03, WR-03)',
   },
   {
     file: 'app/api/raid-tiers/route.ts',
@@ -468,9 +468,9 @@ export const NEED_READERS: readonly NeedReader[] = [
   },
   {
     file: 'lib/loot-items-query.ts',
-    dispositions: ['exclude'],
-    plan: '03-07',
-    note: 'includeNeeds off by default (D-02)',
+    dispositions: ['exclude', 'branch'],
+    plan: '04-09',
+    note: 'items only by default; need rows pass the proficiency filter untouched when callers set includeNeeds for an all-Discovery group (D-12)',
   },
   {
     file: 'lib/loot/addon-award-insert.ts',
@@ -897,7 +897,7 @@ export const NEED_READERS: readonly NeedReader[] = [
 export const DISPOSITION_MARKERS: Partial<Record<NeedDisposition, RegExp>> = {
   exclude:
     /\.eq\(\s*['"]kind['"]\s*,\s*['"]item['"]\s*\)|\.eq\(\s*['"]list_mode['"]\s*,\s*['"]known['"]\s*\)|isNeedRow\(/,
-  guard: /isNeedRow\(|noteNeedSkipped\(|isHeldNeedRanking\(/,
+  guard: /isNeedRow\(|noteNeedSkipped\(/,
   key: /itemIdentityKey\(/,
   branch: /isNeedRow\(|\.eq\(\s*['"](loot_items\.)?kind['"]\s*,\s*['"]need['"]\s*\)/,
   label: /wowheadIdForDisplay\(|<ItemLink\b|<NeedLabel\b/,

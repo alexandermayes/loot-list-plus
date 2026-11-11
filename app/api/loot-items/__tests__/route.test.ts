@@ -2,17 +2,30 @@
 // jsdom (the global vitest.config.ts environment) does not provide the web
 // Response/Request globals that next/server relies on.
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { PATCH } from '../route'
+import { NextRequest } from 'next/server'
+import { GET, PATCH } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyPermission } from '@/utils/server-roles'
 import { NEED_ROW_FIXED_ERROR } from '@/domain/loot/item-identity'
+import {
+  fetchFilteredLootItems,
+  fetchLootItemsCharacter,
+  resolveTierIdsForPhases,
+} from '@/lib/loot-items-query'
+import { resolveNeedListScope } from '@/lib/loot/need-list-scope'
 
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
 vi.mock('@/utils/server-roles', () => ({ verifyPermission: vi.fn() }))
 vi.mock('@/utils/audit/log', () => ({ logAudit: vi.fn() }))
 vi.mock('@/utils/analytics/server', () => ({ trackApiError: vi.fn() }))
+vi.mock('@/lib/loot-items-query', () => ({
+  fetchLootItemsCharacter: vi.fn(),
+  fetchFilteredLootItems: vi.fn(),
+  resolveTierIdsForPhases: vi.fn(),
+}))
+vi.mock('@/lib/loot/need-list-scope', () => ({ resolveNeedListScope: vi.fn() }))
 
 const GUILD_ID = 'cccccccc-0000-0000-0000-000000000001'
 const ITEM_ID = 'cccccccc-0000-0000-0000-000000000002'
@@ -98,5 +111,116 @@ describe('PATCH /api/loot-items', () => {
     const { res, calls } = await run({ id: ITEM_ID, raid_tier_id: 'tier-1', kind: 'item' }, { permitted: false })
     expect(res.status).toBe(403)
     expect(updates(calls)).toHaveLength(0)
+  })
+})
+
+describe('GET /api/loot-items need list scope (D-12, D-02 amended)', () => {
+  const USER_ID = 'cccccccc-0000-0000-0000-000000000010'
+  const CHARACTER_ID = 'cccccccc-0000-0000-0000-000000000011'
+  const EXPANSION_ID = 'cccccccc-0000-0000-0000-000000000012'
+  const TIER_ID = 'cccccccc-0000-0000-0000-000000000013'
+  const GUILD_ID_PARAM = 'cccccccc-0000-0000-0000-000000000014'
+  const CHARACTER = { id: CHARACTER_ID, class_id: 1, spec_id: 1, class_name: null }
+  const ITEMS = [{ id: 'item-1', kind: 'item' }]
+  const SLOTS = { 'tier-a': 1, 'tier-b': 2, 'tier-c': 3 }
+
+  function getClient() {
+    return {
+      from: () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const builder: any = {
+          select: () => builder,
+          eq: () => builder,
+          single: () => Promise.resolve({ data: { user_id: USER_ID }, error: null }),
+        }
+        return builder
+      },
+    }
+  }
+
+  function getRequest(params: Record<string, string>) {
+    const url = new URL('http://localhost/api/loot-items')
+    for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value)
+    return new NextRequest(url)
+  }
+
+  const PHASES_PARAMS = {
+    expansion_id: EXPANSION_ID,
+    phases: '1,2',
+    character_id: CHARACTER_ID,
+    guild_id: GUILD_ID_PARAM,
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(createServiceRoleClient).mockReturnValue(getClient() as unknown as ReturnType<typeof createServiceRoleClient>)
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: USER_ID }, error: null } as unknown as Awaited<ReturnType<typeof getAuthenticatedUser>>)
+    vi.mocked(fetchLootItemsCharacter).mockResolvedValue(CHARACTER as never)
+    vi.mocked(resolveTierIdsForPhases).mockResolvedValue([TIER_ID])
+    vi.mocked(fetchFilteredLootItems).mockResolvedValue(ITEMS)
+  })
+
+  it('serves needs and the slot map for an all-Discovery group on the phases path', async () => {
+    vi.mocked(resolveNeedListScope).mockResolvedValue({ includeNeeds: true, tierSlots: SLOTS })
+
+    const res = await GET(getRequest(PHASES_PARAMS))
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ items: ITEMS, need_tier_slots: SLOTS })
+    expect(resolveNeedListScope).toHaveBeenCalledWith(expect.anything(), {
+      expansionId: EXPANSION_ID,
+      phases: [1, 2],
+    })
+    expect(vi.mocked(fetchFilteredLootItems).mock.calls[0][3]).toEqual({ includeNeeds: true })
+  })
+
+  it('keeps needs hidden for a Known group and returns need_tier_slots null', async () => {
+    vi.mocked(resolveNeedListScope).mockResolvedValue({ includeNeeds: false, tierSlots: null })
+
+    const res = await GET(getRequest({ ...PHASES_PARAMS, phases: '1' }))
+
+    expect(await res.json()).toEqual({ items: ITEMS, need_tier_slots: null })
+    expect(vi.mocked(fetchFilteredLootItems).mock.calls[0][3]).toEqual({ includeNeeds: false })
+  })
+
+  it('decides the single phase path the same way', async () => {
+    vi.mocked(resolveNeedListScope).mockResolvedValue({ includeNeeds: true, tierSlots: SLOTS })
+    const { expansion_id, character_id, guild_id } = PHASES_PARAMS
+
+    const res = await GET(getRequest({ expansion_id, character_id, guild_id, phase: '3' }))
+
+    expect(resolveNeedListScope).toHaveBeenCalledWith(expect.anything(), {
+      expansionId: EXPANSION_ID,
+      phases: [3],
+    })
+    expect((await res.json()).need_tier_slots).toEqual(SLOTS)
+  })
+
+  it('leaves the legacy tier_id path items only: includeNeeds false, need_tier_slots null', async () => {
+    const res = await GET(getRequest({ tier_id: TIER_ID, character_id: CHARACTER_ID }))
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ items: ITEMS, need_tier_slots: null })
+    expect(resolveNeedListScope).not.toHaveBeenCalled()
+    expect(vi.mocked(fetchFilteredLootItems).mock.calls[0][3]).toEqual({ includeNeeds: false })
+  })
+
+  it('answers 500 when the scope read fails, with no items served', async () => {
+    vi.mocked(resolveNeedListScope).mockRejectedValue(new Error('Failed to read raid tiers for the need list'))
+
+    const res = await GET(getRequest(PHASES_PARAMS))
+
+    expect(res.status).toBe(500)
+    expect(fetchFilteredLootItems).not.toHaveBeenCalled()
+  })
+
+  it('does not read the scope when no tier is guild-active for the phases', async () => {
+    vi.mocked(resolveTierIdsForPhases).mockResolvedValue([])
+
+    const res = await GET(getRequest(PHASES_PARAMS))
+
+    expect(await res.json()).toEqual({ items: [] })
+    expect(resolveNeedListScope).not.toHaveBeenCalled()
   })
 })

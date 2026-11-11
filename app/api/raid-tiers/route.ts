@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     // Note: is_guild_active can be null (treated as true/enabled by default) or explicitly true/false
     let query = supabase
       .from('raid_tiers')
-      .select('id, name, is_active, is_guild_active, list_mode, submission_deadline, phase')
+      .select('id, name, is_active, is_guild_active, list_mode, sort_order, submission_deadline, phase')
       .eq('expansion_id', expansionId)
       .eq('is_guild_active', true)
 
@@ -106,7 +106,8 @@ export async function GET(request: NextRequest) {
  * need rows; 'known' is refused once any need is ranked or awarded (D-03). The
  * database repeats both rules in enforce_raid_tier_list_mode_rules for writes
  * that skip this route, so the route checks first and answers with the reason.
- * No page calls this with list_mode yet (D-02, Phase 4 adds the control).
+ * The expansion page's List mode control (D-15) calls this with list_mode and shows
+ * the 400 and 409 reasons as they come back.
  */
 export async function PATCH(request: NextRequest) {
   try {
