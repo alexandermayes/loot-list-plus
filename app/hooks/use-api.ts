@@ -199,6 +199,8 @@ export interface RaidTier {
   name: string
   is_active: boolean
   is_guild_active?: boolean
+  // 'known' or 'discovery'; the list endpoint has selected it since 04-17.
+  list_mode?: 'known' | 'discovery'
   submission_deadline: string | null
   phase?: number
 }

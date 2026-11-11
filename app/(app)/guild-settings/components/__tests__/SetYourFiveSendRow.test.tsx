@@ -35,6 +35,8 @@ async function sendAndConfirm(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Send Set your 5' }))
   const dialog = await screen.findByRole('dialog')
   await user.click(within(dialog).getByRole('button', { name: 'Send Set your 5' }))
+  // The modal fades out, so wait until only the row's own button is left.
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
 }
 
 beforeEach(() => {
@@ -94,6 +96,7 @@ describe('[UI-15] confirm before sending', () => {
     await user.click(screen.getByRole('button', { name: 'Send Set your 5' }))
     const dialog = await screen.findByRole('dialog')
     await user.click(within(dialog).getByRole('button', { name: 'Not now' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
     expect(fetchMock).not.toHaveBeenCalled()
     expect(screen.getByRole('button', { name: 'Send Set your 5' })).toBeEnabled()
   })

@@ -9,6 +9,7 @@ import MemberManager from './MemberManager'
 import RoleManager from './RoleManager'
 import ExpansionManager from './ExpansionManager'
 import { BillingSection } from './BillingSection'
+import { SetYourFiveSendRow } from './SetYourFiveSendRow'
 import RealmSelector from '@/app/components/RealmSelector'
 import ForeverRulesetSelector from '@/app/components/ForeverRulesetSelector'
 import { getRegionForRealm } from '@/data/wow-realms'
@@ -27,7 +28,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Heading } from '@/components/ui/typography'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { useGuildMembers } from '@/app/hooks/use-api'
+import { useGuildMembers, useRaidTiers } from '@/app/hooks/use-api'
 import { Select } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -106,6 +107,17 @@ export default function GuildSettingsContent() {
   const guildMembers = membersData?.members || []
   // Filter out current user from potential new owners
   const eligibleNewOwners = guildMembers.filter((m) => m.user_id !== user?.id)
+
+  // The Send Set your 5 row exists only for officers who can send it, in a
+  // guild whose active expansion has a guild-active Discovery tier (D-23). The
+  // tier list endpoint already returns guild-active tiers only, across phases.
+  const canSendSetYourFive = hasPermission('manage_settings')
+  const { data: raidTiersData } = useRaidTiers(
+    canSendSetYourFive ? (activeGuild?.active_expansion_id ?? null) : null,
+    canSendSetYourFive ? (activeGuild?.id ?? null) : null,
+    true,
+  )
+  const hasDiscoveryTier = (raidTiersData?.tiers ?? []).some((tier) => tier.list_mode === 'discovery')
 
   // Set page title
   useEffect(() => {
@@ -754,6 +766,14 @@ export default function GuildSettingsContent() {
                       disabled={savingLootAnnouncements || !raidSummaryChannelId}
                     />
                   </div>
+
+                  {canSendSetYourFive && activeGuild && (
+                    <SetYourFiveSendRow
+                      guildId={activeGuild.id}
+                      hasChannel={Boolean(raidSummaryChannelId)}
+                      hasDiscoveryTier={hasDiscoveryTier}
+                    />
+                  )}
                 </div>
               )}
             </div>
