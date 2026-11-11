@@ -299,8 +299,9 @@ export const NEED_READERS: readonly NeedReader[] = [
   {
     file: 'app/api/loot-items/route.ts',
     dispositions: ['guard'],
-    plan: '03-07',
-    note: 'PATCH refuses need rows; GET reads items through fetchFilteredLootItems',
+    plan: '04-09',
+    note: 'PATCH refuses need rows; GET asks for need rows only for an all-Discovery group (resolveNeedListScope)',
+    test: 'app/api/loot-items/__tests__/route.test.ts',
   },
   {
     file: 'app/api/loot-items/specs/route.ts',
@@ -311,8 +312,8 @@ export const NEED_READERS: readonly NeedReader[] = [
   {
     file: 'app/api/loot-list/bootstrap/route.ts',
     dispositions: ['ok'],
-    plan: '03-18',
-    note: 'items through fetchFilteredLootItems with no options (D-02); rankings by id',
+    plan: '04-09',
+    note: 'items through fetchFilteredLootItems, includeNeeds only for an all-Discovery group (D-12); rankings by id',
     test: 'app/api/loot-list/bootstrap/__tests__/route.test.ts',
   },
   {
@@ -471,7 +472,7 @@ export const NEED_READERS: readonly NeedReader[] = [
     file: 'lib/loot-items-query.ts',
     dispositions: ['exclude'],
     plan: '03-07',
-    note: 'includeNeeds off by default (D-02)',
+    note: 'includeNeeds off by default; the bootstrap and loot-items routes turn it on for an all-Discovery group (D-12)',
   },
   {
     file: 'lib/loot/addon-award-insert.ts',
