@@ -55,7 +55,9 @@ export const LOOT_STYLE_KNOB_KEYS = [
 
 export type LootStyleKnobKey = (typeof LOOT_STYLE_KNOB_KEYS)[number]
 
-export interface LootStyleKnobs {
+// A type alias, not an interface: aliases get an implicit index signature, so an
+// applied settings object can go straight to lootStyleStatus.
+export type LootStyleKnobs = {
   attendance_type: 'linear' | 'breakpoint' | 'points-per-raid'
   rolling_attendance_weeks: number
   use_signups: boolean
@@ -187,21 +189,49 @@ export const LOOT_STYLE_PRESETS: Readonly<Record<LootStyleId, LootStylePreset>> 
   }),
 })
 
+/** The settings after a preset: the caller's other keys, the 20 knobs, and the choice. */
+export type LootStyleApplied<T> = Omit<T, LootStyleKnobKey | 'loot_style'> &
+  LootStyleKnobs & { loot_style: LootStyleId }
+
 /**
  * A copy of the settings with the preset's knobs written over it and the choice
- * recorded in loot_style. Every other key is left as it was.
+ * recorded in loot_style. Every other key is left as it was. The knob keys are
+ * omitted from T first so a settings type that carries loot_style: null (or a
+ * wider knob type) does not intersect down to never.
  */
 export function applyLootStyle<T extends Record<string, unknown>>(
   settings: T,
   id: LootStyleId,
-): T & LootStyleKnobs & { loot_style: LootStyleId } {
+): LootStyleApplied<T> {
   return { ...settings, ...LOOT_STYLE_PRESETS[id].knobs, loot_style: id }
+}
+
+// PostgREST returns numeric(3,2) and numeric(5,2) columns as strings ('0.25',
+// '4.00'), so numbers compare through Number(). An empty or non-numeric string
+// becomes NaN, which never equals a preset number; Number('') would otherwise
+// read as 0 and match a zero knob.
+function knobEquals(actual: unknown, expected: unknown): boolean {
+  if (typeof expected === 'number') {
+    if (typeof actual === 'number') return actual === expected
+    if (typeof actual !== 'string' || actual.trim() === '') return false
+    const parsed = Number(actual)
+    return !Number.isNaN(parsed) && parsed === expected
+  }
+  return Object.is(actual, expected)
+}
+
+/**
+ * The knob keys whose value would change if the preset were applied. Its length
+ * is the {n} in the "Replace your settings?" confirm; a missing knob counts.
+ */
+export function presetDiff(settings: Record<string, unknown>, id: LootStyleId): LootStyleKnobKey[] {
+  const knobs: Record<string, unknown> = { ...LOOT_STYLE_PRESETS[id].knobs }
+  return LOOT_STYLE_KNOB_KEYS.filter((key) => !knobEquals(settings[key], knobs[key]))
 }
 
 /** True when every knob in the settings equals the preset's value. */
 export function presetMatches(settings: Record<string, unknown>, id: LootStyleId): boolean {
-  const knobs: Record<string, unknown> = { ...LOOT_STYLE_PRESETS[id].knobs }
-  return LOOT_STYLE_KNOB_KEYS.every((key) => Object.is(settings[key], knobs[key]))
+  return presetDiff(settings, id).length === 0
 }
 
 export type LootStyleStatus =

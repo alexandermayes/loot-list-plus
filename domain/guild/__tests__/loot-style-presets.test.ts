@@ -198,7 +198,8 @@ describe('presetMatches', () => {
   })
 
   it('counts a missing knob as different', () => {
-    const { blp_maximum: _omitted, ...withoutKnob } = REWARD_AS_POSTGREST
+    const withoutKnob: Record<string, unknown> = { ...REWARD_AS_POSTGREST }
+    delete withoutKnob.blp_maximum
     expect(presetMatches(withoutKnob, 'reward_attendance')).toBe(false)
     expect(presetDiff(withoutKnob, 'reward_attendance')).toEqual(['blp_maximum'])
   })
