@@ -10,6 +10,7 @@ import {
   needCostWord,
   nextNeedQuestion,
   optionsFor,
+  pruneNeedValue,
   questionsFor,
   resolveNeed,
   topArmourFor,
@@ -160,6 +161,20 @@ describe('applyNeedAnswer and nextNeedQuestion', () => {
   it('keeps later answers when the same option is chosen again', () => {
     const next = applyNeedAnswer({ slot: 'chest', armour: 'plate', stat: 'tank' }, 'slot', 'chest')
     expect(next).toEqual({ slot: 'chest', armour: 'plate', stat: 'tank' })
+  })
+
+  it('keeps answers decided before the slot, and prunes any the slot does not allow', () => {
+    const decidedEarly = applyNeedAnswer(value({ armour: 'plate' }), 'slot', 'chest')
+    expect(decidedEarly).toEqual({ slot: 'chest', armour: 'plate', stat: null })
+    expect(pruneNeedValue(decidedEarly, protWarrior)).toEqual(decidedEarly)
+
+    // Plate is not offered for a trinket, and a mage has no plate at all.
+    expect(pruneNeedValue(value({ slot: 'trinket', armour: 'plate' }), protWarrior).armour).toBeNull()
+    expect(pruneNeedValue(value({ slot: 'chest', armour: 'plate', stat: 'tank' }), mage)).toEqual({
+      slot: 'chest',
+      armour: null,
+      stat: null,
+    })
   })
 
   it('moves to the next undecided question and skips a decided one', () => {

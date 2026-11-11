@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { NeedQuestionFlow } from '@/app/components/need-picker/NeedQuestionFlow'
@@ -58,13 +58,13 @@ describe('NeedQuestionFlow tracer (D-16)', () => {
     expect(screen.queryByRole('checkbox')).toBeNull()
   })
 
-  it('waits 150ms after a tap, then shows the next question title and moves focus to it', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: false })
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  it('waits 150ms after a tap, then shows the next question title and moves focus to it', () => {
+    // fireEvent, not userEvent: userEvent waits on timers that stay frozen here.
+    vi.useFakeTimers()
     render(<Harness eligibility={protWarrior} />)
 
     expect(screen.getByRole('heading', { name: 'Which slot?' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /^Chest/ }))
+    fireEvent.click(screen.getByRole('button', { name: /^Chest/ }))
     expect(screen.getByRole('heading', { name: 'Which slot?' })).toBeInTheDocument()
 
     act(() => {
