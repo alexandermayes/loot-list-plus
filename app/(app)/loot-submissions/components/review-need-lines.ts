@@ -21,8 +21,6 @@ export interface ReviewDetailRow {
   loot_item: {
     id: string
     name: string
-    boss_name: string
-    item_slot: string
     wowhead_id: number | null
     classification: string | null
     kind?: string | null

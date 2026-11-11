@@ -29,8 +29,6 @@ function needRow(
     loot_item: {
       id: `${need.key}@${tier.id}`,
       name: need.name,
-      boss_name: 'Needs',
-      item_slot: 'Trinket',
       wowhead_id: null,
       classification: null,
       kind: 'need',
@@ -54,8 +52,6 @@ function itemRow(id: string, rank: number, slot: number, overrides: Partial<Revi
     loot_item: {
       id,
       name: `Item ${id}`,
-      boss_name: 'Boss',
-      item_slot: 'Head',
       wowhead_id: 1000,
       classification: 'Unlimited',
       kind: 'item',
