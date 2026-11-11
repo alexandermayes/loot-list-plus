@@ -1,4 +1,16 @@
 /**
+ * Upper bound on the ids one `.in()` filter carries.
+ *
+ * PostgREST puts every id of an `.in()` filter in the request URL, so a few
+ * hundred UUIDs (about 19 KB at 500) can overrun the URL limit at the gateway
+ * and fail the whole read. Callers slice their id lists into chunks of this
+ * size and read each chunk, paginated, in turn. One constant for the master
+ * sheet visibility route, the Set your 5 send and the award reference checks
+ * (WR-05, Phase 4 review).
+ */
+export const IN_FILTER_CHUNK_SIZE = 100
+
+/**
  * Iterate a Supabase select query past the server-side 1000-row cap.
  *
  * Supabase enforces a hard 1000-row response cap by default that `.limit(N)`

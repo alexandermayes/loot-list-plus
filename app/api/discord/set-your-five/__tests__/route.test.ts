@@ -545,6 +545,24 @@ describe('[WR-03] the request deadline', () => {
   })
 })
 
+// regression for WR-05 (Phase 4 review): 500 ids per preference read put
+// about 19 KB of UUIDs in one PostgREST URL, so a guild of a few hundred
+// members got a gateway error before anything was sent.
+describe('[WR-05] member preference reads', () => {
+  it('reads 250 members in three chunks of at most 100 ids that together carry every id', async () => {
+    manyMembers(250)
+
+    const response = await POST(request())
+
+    expect(await response.json()).toEqual({ posted: true, sent: 250, skipped: 0 })
+    const reads = calls.filter((c) => c.table === 'user_preferences')
+    expect(reads).toHaveLength(3)
+    const sent = reads.map((c) => c.filters.find((f) => f[0] === 'in' && f[1] === 'user_id')?.[2] as string[])
+    for (const chunk of sent) expect(chunk.length).toBeLessThanOrEqual(100)
+    expect(sent.flat().sort()).toEqual(Array.from({ length: 250 }, (_, i) => userId(i + 1)).sort())
+  })
+})
+
 describe('[D-30] bounded DMs', () => {
   it('keeps at most 5 DMs in flight with 12 recipients', async () => {
     manyMembers(12)

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
-import { selectAllPagesOrThrow } from '@/utils/supabase/paginate'
+import { IN_FILTER_CHUNK_SIZE, selectAllPagesOrThrow } from '@/utils/supabase/paginate'
 import { discordFetch, sendDirectMessage } from '@/lib/discord'
 import {
   SET_YOUR_FIVE_COOLDOWN_ERROR,
@@ -33,8 +33,6 @@ const SET_YOUR_FIVE_COOLDOWN_MINUTES = 60
 // The send row's audit_logs table_name ('set_your_five_sends'); the cooldown
 // reads the latest one for the guild.
 const SEND_AUDIT_TABLE = 'set_your_five_sends'
-
-const PREFERENCE_CHUNK_SIZE = 500
 
 // A Discord channel id is a snowflake: 17 to 20 digits and nothing else.
 // regression for WR-02 (Phase 4 review): the stored id is officer text and is
@@ -175,9 +173,12 @@ export async function POST(request: NextRequest) {
       ),
     ]
 
+    // The ids go in chunks of the shared size: PostgREST carries every .in()
+    // id in the URL, and a few hundred members would overrun it in one read.
+    // regression for WR-05 (Phase 4 review).
     const discordIds: string[] = []
-    for (let i = 0; i < memberIds.length; i += PREFERENCE_CHUNK_SIZE) {
-      const chunk = memberIds.slice(i, i + PREFERENCE_CHUNK_SIZE)
+    for (let i = 0; i < memberIds.length; i += IN_FILTER_CHUNK_SIZE) {
+      const chunk = memberIds.slice(i, i + IN_FILTER_CHUNK_SIZE)
       const rows = await selectAllPagesOrThrow<PreferenceRow>('member preferences', (start, end) =>
         supabase
           .from('user_preferences')

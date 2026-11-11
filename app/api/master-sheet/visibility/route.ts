@@ -3,7 +3,7 @@ import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { roleHasPermission } from '@/domain/guild/roles'
 import { allowedMasterSheetTierIds, type GateExpansion } from '@/domain/loot/master-sheet-gate'
-import { selectAllPagesOrThrow } from '@/utils/supabase/paginate'
+import { IN_FILTER_CHUNK_SIZE, selectAllPagesOrThrow } from '@/utils/supabase/paginate'
 import { findInvalidCharacterIds } from '@/lib/loot/guild-award-refs'
 import { splitCandidatesByMembership } from '@/domain/loot/master-sheet-candidates'
 
@@ -11,13 +11,11 @@ type ServiceClient = ReturnType<typeof createServiceRoleClient>
 
 // WR-02: a Forever phase can ask for up to 435 need ids, and PostgREST
 // carries every .in() id in the request URL, so one call with all of them
-// can overrun the URL limit. 100 matches CHUNK_SIZE in guild-award-refs.ts.
-const VISIBILITY_ID_CHUNK = 100
-
+// can overrun the URL limit. The chunk size is the one shared constant.
 function chunkIds(ids: string[]): string[][] {
   const chunks: string[][] = []
-  for (let i = 0; i < ids.length; i += VISIBILITY_ID_CHUNK) {
-    chunks.push(ids.slice(i, i + VISIBILITY_ID_CHUNK))
+  for (let i = 0; i < ids.length; i += IN_FILTER_CHUNK_SIZE) {
+    chunks.push(ids.slice(i, i + IN_FILTER_CHUNK_SIZE))
   }
   return chunks
 }
@@ -283,7 +281,7 @@ export async function POST(request: NextRequest) {
     // successive .range() calls can skip rows and/or duplicate them because
     // Postgres has no deterministic order to apply OFFSET/LIMIT against.
     //
-    // WR-02: the ids go in chunks of VISIBILITY_ID_CHUNK so a Forever phase's
+    // WR-02: the ids go in chunks of IN_FILTER_CHUNK_SIZE so a Forever phase's
     // need ids never overrun the URL, and a rejected page throws into the
     // catch below (500) instead of passing for "nobody ranked this". Chunks
     // keep input order; the master sheet keys rankings by submission and item,
