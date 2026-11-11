@@ -125,7 +125,7 @@ ALTER TABLE "public"."loot_submission_items" VALIDATE CONSTRAINT "loot_submissio
 
 ALTER TABLE "public"."loot_submission_items" DROP CONSTRAINT IF EXISTS "loot_submission_items_slot_check";
 
-COMMENT ON COLUMN "public"."loot_submission_items"."slot" IS 'Slot within the rank: 1 or 2 on item lists; 1 to 8 on Discovery need lists, one per Discovery tier in (sort_order, id) order (D-02). Readers resolve a need''s tier through loot_items.raid_tier_id, never through slot.';
+COMMENT ON COLUMN "public"."loot_submission_items"."slot" IS 'Slot within the rank: 1 or 2 on item lists, 1 to 8 on Discovery need lists with one slot per Discovery tier in (sort_order, id) order (D-02). Readers resolve a need''s tier through loot_items.raid_tier_id, never through slot.';
 
 ALTER TABLE "public"."guild_settings" ADD COLUMN IF NOT EXISTS "loot_style" "text";
 
