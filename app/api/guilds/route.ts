@@ -9,7 +9,12 @@ import { trackApiError, trackEvent, setUserMilestone } from '@/utils/analytics/s
 import { evaluateGuildFunnel } from '@/utils/analytics/funnel'
 import { checkUserManagesDiscordServer, discordServerAccessError } from '@/lib/discord-server-access'
 import { getStripe } from '@/lib/billing/stripe'
+import { isLootStyleId, LOOT_STYLE_PRESETS } from '@/domain/guild/loot-style-presets'
 import { endGuildBillingBeforeDelete, GUILD_DELETE_BILLING_ERRORS } from '@/lib/billing/cancel-guild-subscription'
+
+// API-only message, kept in step with the guild-settings route (route modules do
+// not import each other). The creation picker only offers the three ids.
+const LOOT_STYLE_INVALID_ERROR = 'loot_style must be one of the loot style presets'
 
 // POST - Create a new guild
 export async function POST(request: NextRequest) {
@@ -38,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json()
-    const { name, realm, faction, discord_server_id, expansion, game: requestedGame } = body
+    const { name, realm, faction, discord_server_id, expansion, game: requestedGame, loot_style } = body
 
     // Validate required fields
     if (!name || !faction) {
@@ -79,6 +84,13 @@ export async function POST(request: NextRequest) {
         { error: 'Game version does not match the selected expansion.' },
         { status: 400 }
       )
+    }
+
+    // The loot style is optional; null or a missing key means the guild starts
+    // with today's defaults. Refuse an unknown id before anything is created.
+    const lootStyle = loot_style === undefined || loot_style === null ? null : loot_style
+    if (lootStyle !== null && !isLootStyleId(lootStyle)) {
+      return NextResponse.json({ error: LOOT_STYLE_INVALID_ERROR }, { status: 400 })
     }
 
     // WoW Forever has no realms; guilds.realm stores a "{Ruleset} ({Region})"
@@ -210,7 +222,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create default guild settings
+    // Create default guild settings. A chosen preset rides on this insert (D-19
+    // amended) instead of going through the settings PUT, because that route
+    // marks the loot_settings_completed_at activation milestone and creation
+    // is not an officer tuning settings.
     const { error: settingsError } = await supabase
       .from('guild_settings')
       .insert({
@@ -219,6 +234,9 @@ export async function POST(request: NextRequest) {
         rolling_attendance_weeks: 8,
         use_signups: false,
         signup_weight: 0,
+        ...(lootStyle !== null && isLootStyleId(lootStyle)
+          ? { ...LOOT_STYLE_PRESETS[lootStyle].knobs, loot_style: lootStyle }
+          : {}),
       })
 
     if (settingsError) {
