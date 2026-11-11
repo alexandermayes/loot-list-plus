@@ -93,6 +93,30 @@ export interface SaveSubmissionOptions {
   rankings?: Record<string, string>
   /** Replaces the success notification text. */
   successMessage?: string
+  /**
+   * Shows no notification on success or failure. The need picker renders the
+   * outcome itself (status line, refusal sentences, retry), so a toast would
+   * say it twice.
+   */
+  quiet?: boolean
+}
+
+/**
+ * What saveSubmission resolves to. A refusal from the submit route carries its
+ * `code` and parsed JSON body as `details`, so a caller can tell a budget or
+ * eligibility refusal (422) from any other failure without parsing the message.
+ * The editor ignores the value and keeps reading its notifications.
+ */
+export type SaveSubmissionResult =
+  | { ok: true }
+  | { ok: false; code?: string; message: string; details?: unknown }
+
+// Carries the submit route's refusal out of the try block to the catch, which
+// turns it into a SaveSubmissionResult.
+class SubmitRefusal extends Error {
+  constructor(message: string, readonly code?: string, readonly details?: unknown) {
+    super(message)
+  }
 }
 
 // Separate interface for data (changes frequently, triggers re-renders)
@@ -145,7 +169,14 @@ interface LootListActionsContextType {
   handleItemSelect: (rank: number, slot: number, itemId: string) => void
   moveRanking: (sourceKey: string, targetKey: string) => void
   clearAllRankings: () => void
-  saveSubmission: (submit: boolean, options?: SaveSubmissionOptions) => Promise<void>
+  saveSubmission: (submit: boolean, options?: SaveSubmissionOptions) => Promise<SaveSubmissionResult>
+  /**
+   * Drops a reviewed list back to draft through the audited route. Resolves the
+   * message to show when it could not be reopened, or null when it is a draft.
+   * saveSubmission already calls it before a save; this is for callers that
+   * need the outcome on its own.
+   */
+  reopenForEdit: (submissionId: string) => Promise<string | null>
   refreshData: () => void
   importBisItems: () => Promise<BisImportResult>
   refreshGear: () => void
@@ -914,8 +945,10 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   }, [rankings, activeCharacter?.id, selectedPhase, targetExpansionId, activeGuild?.id, initialLoadComplete])
 
   // Save submission (manual save/submit)
-  const saveSubmission = useCallback(async (submit: boolean, options?: SaveSubmissionOptions) => {
-    if (!activeCharacter || selectedPhase === null || !targetExpansionId || !activeGuild?.id) return
+  const saveSubmission = useCallback(async (submit: boolean, options?: SaveSubmissionOptions): Promise<SaveSubmissionResult> => {
+    if (!activeCharacter || selectedPhase === null || !targetExpansionId || !activeGuild?.id) {
+      return { ok: false, message: 'No character or phase selected' }
+    }
 
     // The picker passes the finished list; the editor saves its state.
     const toSave = options?.rankings ?? rankings
@@ -996,22 +1029,25 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         })
 
         if (!response.ok) {
-          const data = await response.json()
-          if (data.violations) {
+          // A body that is not JSON (a proxy error page) gives no code.
+          const data = await response.json().catch(() => null)
+          if (data?.violations) {
             const violationMsg = data.violations.map((v: { bracket: string; detail: string }) => `${v.bracket}: ${v.detail}`).join('. ')
-            throw new Error(`Bracket rules violated. ${violationMsg}`)
+            throw new SubmitRefusal(`Bracket rules violated. ${violationMsg}`, data.code, data)
           }
-          throw new Error(data.error || 'Couldn\'t submit list')
+          throw new SubmitRefusal(data?.error || 'Couldn\'t submit list', data?.code, data ?? undefined)
         }
       }
 
       const finalStatus = submit ? 'pending' : 'draft'
 
-      showNotification(
-        'success',
-        options?.successMessage ??
-          (submit ? 'Loot List submitted. Officers will review it.' : 'Draft saved. Pick up where you left off anytime.')
-      )
+      if (!options?.quiet) {
+        showNotification(
+          'success',
+          options?.successMessage ??
+            (submit ? 'Loot List submitted. Officers will review it.' : 'Draft saved. Pick up where you left off anytime.')
+        )
+      }
       trackClientEvent(submit ? 'loot_list_submitted' : 'loot_list_saved', {
         character_id: activeCharacter.id,
         phase: selectedPhase,
@@ -1060,11 +1096,16 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       if (submit) {
         notifySubmissionChanged()
       }
+      setIsSaving(false)
+      return { ok: true }
     } catch (error) {
-      showNotification('error', error instanceof Error ? error.message : 'Couldn\'t save. Try again.')
+      const message = error instanceof Error ? error.message : 'Couldn\'t save. Try again.'
+      if (!options?.quiet) showNotification('error', message)
+      setIsSaving(false)
+      return error instanceof SubmitRefusal
+        ? { ok: false, message, code: error.code, details: error.details }
+        : { ok: false, message }
     }
-
-    setIsSaving(false)
   }, [activeCharacter, selectedPhase, targetExpansionId, activeGuild, rankings, submissionData, supabase, showNotification, mutateSubmission, reopenForEdit])
 
   // Refresh data - clears local changes to allow fresh data to load
@@ -1282,6 +1323,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     moveRanking,
     clearAllRankings,
     saveSubmission,
+    reopenForEdit,
     refreshData,
     importBisItems,
     refreshGear,
@@ -1293,6 +1335,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     moveRanking,
     clearAllRankings,
     saveSubmission,
+    reopenForEdit,
     refreshData,
     importBisItems,
     refreshGear,

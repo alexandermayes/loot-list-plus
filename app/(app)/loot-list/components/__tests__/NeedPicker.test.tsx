@@ -52,7 +52,7 @@ function setContexts(overrides: Record<string, unknown> = {}) {
     isLoading: false,
     isContentLoading: false,
     isSaving: false,
-    saveSubmission: vi.fn().mockResolvedValue(undefined),
+    saveSubmission: vi.fn().mockResolvedValue({ ok: true }),
     ...overrides,
   }
   hoisted.guild.current = {
@@ -86,6 +86,8 @@ describe('NeedPicker tracer (D-11, D-27)', () => {
     expect(saveSubmission).toHaveBeenCalledTimes(1)
     const [submit, options] = saveSubmission.mock.calls[0]
     expect(submit).toBe(true)
+    // The picker shows its own result, so the editor's toast stays quiet (04-20).
+    expect(options.quiet).toBe(true)
     expect(Object.keys(options.rankings).sort()).toEqual(
       ['50', '49', '48', '47', '46'].flatMap((rank) => [1, 2, 3].map((slot) => `${rank}-${slot}`)).sort(),
     )
@@ -478,3 +480,57 @@ describe('NeedPicker loading (UI-SPEC E1 loading)', () => {
     expect(container.querySelector('.sticky')).not.toBeNull()
   })
 })
+
+
+// ---------------------------------------------------------------------------
+// 04-20 Task 1: a server refusal reaches the footer
+// ---------------------------------------------------------------------------
+
+const BUDGET_SENTENCE = "That's four big picks. Swap a weapon or trinket for armour."
+const budgetRefusal = {
+  ok: false,
+  code: 'NEED_BUDGET_EXCEEDED',
+  message: BUDGET_SENTENCE,
+  details: { error: BUDGET_SENTENCE, code: 'NEED_BUDGET_EXCEEDED', used: 14, limit: 10 },
+}
+
+describe('NeedPicker server budget refusal (D-07, DISC-03)', () => {
+  it('shows the server sentence in the footer warning panel instead of the budget sentence', async () => {
+    const user = userEvent.setup()
+    setContexts({ saveSubmission: vi.fn().mockResolvedValue(budgetRefusal) })
+    render(<NeedPicker />)
+
+    await user.click(screen.getByRole('button', { name: 'Looks right' }))
+
+    const panel = await screen.findByText(BUDGET_SENTENCE)
+    expect(panel.className).toContain('bg-warning/10')
+    expect(panel.className).not.toMatch(/destructive|danger/)
+    expect(screen.queryByText(/points used\./)).toBeNull()
+  })
+
+  it('clears the refusal at the next edit', async () => {
+    const user = userEvent.setup()
+    setContexts({ saveSubmission: vi.fn().mockResolvedValue(budgetRefusal) })
+    render(<NeedPicker />)
+    await user.click(screen.getByRole('button', { name: 'Looks right' }))
+    await screen.findByText(BUDGET_SENTENCE)
+
+    await user.click(screen.getByRole('button', { name: `Move ${sentenceOf(MAGE_DEFAULT[1])} up to number 1` }))
+
+    expect(screen.queryByText(BUDGET_SENTENCE)).toBeNull()
+    expect(screen.getByText('10 of 10 points used.')).toBeInTheDocument()
+  })
+
+  it('falls back to the code-less message when the refusal has no details sentence', async () => {
+    const user = userEvent.setup()
+    setContexts({
+      saveSubmission: vi.fn().mockResolvedValue({ ...budgetRefusal, message: 'From the message', details: undefined }),
+    })
+    render(<NeedPicker />)
+
+    await user.click(screen.getByRole('button', { name: 'Looks right' }))
+
+    expect(await screen.findByText('From the message')).toBeInTheDocument()
+  })
+})
+

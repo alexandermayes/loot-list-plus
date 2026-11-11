@@ -211,3 +211,93 @@ describe('LootListContext need picker support (D-12, D-27)', () => {
     expect(getApi().rankings).toEqual({ '50-1': 'item-from-state' })
   })
 })
+
+// 04-20: the picker needs to know why a save failed and to save without the
+// editor's toasts, while the editor (which ignores the return value) must see
+// exactly what it saw before.
+describe('LootListContext save result (D-27, D-07, D-10)', () => {
+  const refuseSubmit = (status: number, body: unknown | null) => {
+    fetchMock.mockImplementation(async (url: string) => {
+      if (String(url).startsWith('/api/loot-list/bootstrap')) {
+        return { ok: true, json: async () => hoisted.bootstrapBody.current }
+      }
+      if (String(url) === '/api/loot-submissions/submit') {
+        return {
+          ok: false,
+          status,
+          json: async () => {
+            if (body === null) throw new SyntaxError('Unexpected token')
+            return body
+          },
+        }
+      }
+      return { ok: true, json: async () => ({}) }
+    })
+  }
+
+  it('resolves { ok: true } after a save and submit', async () => {
+    const getApi = await mountProvider()
+    let result: unknown
+    await act(async () => {
+      result = await getApi().saveSubmission(true, { rankings: { '50-1': 'need-a' }, quiet: true })
+    })
+    expect(result).toEqual({ ok: true })
+  })
+
+  it('quiet shows no notification on success', async () => {
+    const getApi = await mountProvider()
+    await act(async () => {
+      await getApi().saveSubmission(true, { rankings: { '50-1': 'need-a' }, quiet: true })
+    })
+    expect(hoisted.showNotification).not.toHaveBeenCalled()
+  })
+
+  it('resolves the 422 code and body of a budget refusal, and stays quiet when asked', async () => {
+    const body = { error: "That's four big picks. Swap a weapon or trinket for armour.", code: 'NEED_BUDGET_EXCEEDED', used: 14, limit: 10 }
+    refuseSubmit(422, body)
+    const getApi = await mountProvider()
+    let result: unknown
+    await act(async () => {
+      result = await getApi().saveSubmission(true, { rankings: { '50-1': 'need-a' }, quiet: true })
+    })
+    expect(result).toEqual({ ok: false, code: 'NEED_BUDGET_EXCEEDED', message: body.error, details: body })
+    expect(hoisted.showNotification).not.toHaveBeenCalled()
+  })
+
+  it('shows the existing error notification for a refusal when not quiet', async () => {
+    refuseSubmit(422, { error: 'Nope', code: 'NEED_BUDGET_EXCEEDED' })
+    const getApi = await mountProvider()
+    let result: { ok: boolean } | undefined
+    await act(async () => {
+      result = await getApi().saveSubmission(true)
+    })
+    expect(result?.ok).toBe(false)
+    expect(hoisted.showNotification).toHaveBeenLastCalledWith('error', 'Nope')
+  })
+
+  it('gives no code and the fallback message when the refusal body is not JSON', async () => {
+    refuseSubmit(502, null)
+    const getApi = await mountProvider()
+    let result: unknown
+    await act(async () => {
+      result = await getApi().saveSubmission(true, { rankings: { '50-1': 'need-a' }, quiet: true })
+    })
+    expect(result).toEqual({ ok: false, message: "Couldn't submit list" })
+  })
+
+  it('resolves a failed items save without a code', async () => {
+    hoisted.rpc.mockResolvedValueOnce({ error: { message: 'boom' } } as never)
+    const getApi = await mountProvider()
+    let result: unknown
+    await act(async () => {
+      result = await getApi().saveSubmission(true, { rankings: { '50-1': 'need-a' }, quiet: true })
+    })
+    expect(result).toEqual({ ok: false, message: 'boom' })
+  })
+
+  it('exposes reopenForEdit in the actions context', async () => {
+    const getApi = await mountProvider()
+    expect(typeof getApi().reopenForEdit).toBe('function')
+  })
+})
+

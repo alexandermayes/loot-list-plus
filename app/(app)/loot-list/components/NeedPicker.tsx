@@ -20,7 +20,7 @@ import { BudgetLine } from '@/app/components/need-picker/BudgetLine'
 import { NeedQuestionSheet } from '@/app/components/need-picker/NeedQuestionSheet'
 import type { NeedOptionContext } from '@/app/components/need-picker/NeedQuestionFlow'
 import { useGuildContext, type Character } from '@/app/contexts/GuildContext'
-import { useLootList } from '@/app/contexts/LootListContext'
+import { useLootList, type SaveSubmissionResult } from '@/app/contexts/LootListContext'
 import { Button } from '@/components/ui/button'
 import { NeedPickerSkeleton } from '@/components/ui/skeletons'
 import { badgeVariants } from '@/components/ui/badge'
@@ -28,6 +28,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { isNeedRow } from '@/domain/loot/item-identity'
 import { positionKey } from '@/domain/loot/list-row-updates'
 import {
+  NEED_BUDGET_CODE,
   NEED_BUDGET_POINTS,
   budgetForPicks,
   costForSlot,
@@ -80,6 +81,21 @@ const scopeLine = (raids: number) =>
 type Positions = ReadonlyArray<string | null>
 
 const EMPTY_POSITIONS: Positions = Array.from({ length: NEED_PICK_COUNT }, () => null)
+
+type FailedSave = Extract<SaveSubmissionResult, { ok: false }>
+
+/**
+ * The sentence the server refused with. Its 422 body carries the fixed
+ * over-budget sentence in `error`; the message is the fallback, so a body
+ * without one still says something.
+ */
+function refusalSentence(result: FailedSave): string {
+  const details = result.details
+  if (details && typeof details === 'object' && 'error' in details && typeof details.error === 'string') {
+    return details.error
+  }
+  return result.message
+}
 
 function samePositions(a: Positions, b: Positions): boolean {
   return a.length === b.length && a.every((key, index) => key === b[index])
@@ -180,6 +196,10 @@ function NeedPickerBody({ character }: { character: Character }) {
   const budget = budgetForPicks(positions)
   const overSentence = budget.used > NEED_BUDGET_POINTS ? needOverBudgetSentence(budget.bigPicks) : null
 
+  // The server's own refusal of the last save; the next edit clears it.
+  const [refusal, setRefusal] = useState<FailedSave | null>(null)
+  const serverOverSentence = refusal?.code === NEED_BUDGET_CODE ? refusalSentence(refusal) : null
+
   // D-05: an award on this rank in any tier, turned-off ones included, pins the row.
   const allSlots = useMemo(() => Object.values(needTierSlots ?? {}), [needTierSlots])
   const locks = useMemo(
@@ -242,6 +262,7 @@ function NeedPickerBody({ character }: { character: Character }) {
     const next = [...positions]
     next[row] = key
     setEdited(next)
+    setRefusal(null)
     setHighlightRow(row)
   }
 
@@ -251,6 +272,7 @@ function NeedPickerBody({ character }: { character: Character }) {
     ;[next[row - 1], next[row]] = [next[row], next[row - 1]]
     pendingFocus.current = row - 1
     setEdited(next)
+    setRefusal(null)
     setAnnouncement(`Moved to number ${row}.`)
   }
 
@@ -290,7 +312,9 @@ function NeedPickerBody({ character }: { character: Character }) {
     for (const [key, id] of Object.entries(rankings)) {
       if (!rowsById.has(id)) carried[key] = id
     }
-    await saveSubmission(true, { rankings: { ...carried, ...fanOut } })
+    // quiet: this screen shows the outcome itself, so the editor's toast stays out.
+    const result = await saveSubmission(true, { rankings: { ...carried, ...fanOut }, quiet: true })
+    setRefusal(result.ok ? null : result)
   }
 
   const specLabel = specName ? `${specName} ${className}` : `${className ?? 'Class'}`
@@ -364,7 +388,7 @@ function NeedPickerBody({ character }: { character: Character }) {
         ref={footerRef}
         className="sticky bottom-0 mt-4 border-t border-border bg-background-subtle p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
       >
-        <BudgetLine used={budget.used} overSentence={overSentence} />
+        <BudgetLine used={budget.used} overSentence={overSentence ?? serverOverSentence} />
         <Button
           type="button"
           variant="primary"

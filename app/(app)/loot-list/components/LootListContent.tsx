@@ -1439,7 +1439,10 @@ export default function LootListContent({
         confirmLabel: 'Submit anyway',
         cancelLabel: 'Keep editing',
         variant: 'default',
-        onConfirm: () => saveSubmission(true),
+        // The confirm hook wants no value back; the editor reads its toasts.
+        onConfirm: async () => {
+          await saveSubmission(true)
+        },
       })
       return
     }
