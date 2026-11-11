@@ -201,6 +201,8 @@ export interface RaidTier {
   is_guild_active?: boolean
   // 'known' or 'discovery'; the list endpoint has selected it since 04-17.
   list_mode?: 'known' | 'discovery'
+  // Orders a Discovery group's tiers into picker slots (D-02 amended).
+  sort_order?: number | null
   submission_deadline: string | null
   phase?: number
 }
@@ -345,7 +347,9 @@ export function usePhaseLootItems(
     ? `/api/loot-items?expansion_id=${expansionId}&${phaseParam}&character_id=${characterId}&guild_id=${guildId}`
     : null
 
-  return useSWR<{ items: PhaseLootItem[] }>(
+  // The slot map is set only for an all-Discovery group (D-12): Discovery
+  // tier id to picker slot, null for a Known, mixed or over-8 group.
+  return useSWR<{ items: PhaseLootItem[]; need_tier_slots?: Record<string, number> | null }>(
     url,
     fetcher,
     {
