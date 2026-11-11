@@ -13,6 +13,29 @@ export interface UpdateEntry {
 }
 
 export const updates: UpdateEntry[] = [
+  // DRAFT (04-19): wording and date wait for the owner's copy sign-off. The
+  // Discord updates cron posts the newest entry after merge, so this must not
+  // merge until the sign-off is recorded.
+  {
+    date: 'November 10, 2026',
+    items: [
+      {
+        category: 'feature',
+        title: 'Discovery lists for WoW Forever',
+        description: 'Raiders pick five gear needs in about a minute, with a short question flow that works on a phone. One list covers every Forever raid of the phase, and officers review it as usual.',
+      },
+      {
+        category: 'feature',
+        title: 'Loot style presets',
+        description: 'Pick Reward attendance, Even rotation or Officers decide when you set up a guild. The score advises, and Fine-tune keeps every setting open if you want to change one.',
+      },
+      {
+        category: 'improvement',
+        title: 'Standing and interest on every score',
+        description: 'Each score now shows what you bring and how much you want the item, with one plain sentence for each. Totals are unchanged.',
+      },
+    ],
+  },
   {
     date: 'October 28, 2026',
     items: [
