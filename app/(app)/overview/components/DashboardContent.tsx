@@ -37,13 +37,16 @@ import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { useGuildContext } from '@/app/contexts/GuildContext'
 import { useResubmitCount } from '@/app/hooks/useResubmitCount'
 import ItemLink from '@/app/components/ItemLink'
-import { computeScore, computeAttendance, explainScore, getRoleModifierWithLabel, calculateBadLuckBonus, resolveAttendanceWindow, type ItemPriority, type AttendanceResult, type ScoreExplanation } from '@/domain/scoring'
+import { computeScore, computeAttendance, getRoleModifierWithLabel, calculateBadLuckBonus, resolveAttendanceWindow, type ItemPriority, type AttendanceResult, type ScoreExplanation, type ScoreInput } from '@/domain/scoring'
 import { calculateDonationsBatch } from '@/lib/donations/batch'
 import { getSpecRoles, getRoleDisplayName, type Role } from '@/domain/loot/spec-role-mapping'
 import { refreshWowheadTooltips } from '@/lib/wowhead'
 import { useNotification } from '@/app/contexts/NotificationContext'
 import { trackClientEvent, usePagePerf } from '@/utils/analytics/client'
 import { SetupGuide } from './SetupGuide'
+import { SetYourFiveCard, discoveryListStatus, shouldShowSetYourFiveCard } from './SetYourFiveCard'
+import { buildOverviewScoreExplanation, topPickRank } from './overview-score'
+import { ScoreSplit } from '@/app/components/ScoreSplit'
 import { hasFeature } from '@/domain/guild/feature-flags'
 import type { RaidTeam } from '@/domain/raid-team/types'
 import type { Tables } from '@/lib/database.types'
@@ -297,6 +300,7 @@ interface RaidTier {
   name: string
   is_active: boolean
   phase?: number
+  list_mode?: string
 }
 
 interface Character {
@@ -414,6 +418,10 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
 
   // Widget state — score explanation from the engine + BLP range (which is item-dependent)
   const [scoreExplanation, setScoreExplanation] = useState<ScoreExplanation | null>(null)
+
+  // What the Set your 5 card needs, keyed by guild and character so a result for
+  // the previous one never shows while the next loads (no flash, no stale card).
+  const [listStatus, setListStatus] = useState<({ key: string } & ReturnType<typeof discoveryListStatus>) | null>(null)
   const [blpInfo, setBlpInfo] = useState<{ enabled: boolean; range: { min: number; max: number } | null }>({ enabled: false, range: null })
 
   const [attendanceData, setAttendanceData] = useState<{
@@ -683,10 +691,10 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
 
       try {
         // Fire all independent queries in parallel: tiers, deadlines, and dashboard data
-        const [tiersResult, deadlineResult] = await Promise.all([
+        const [tiersResult, deadlineResult, submissionRead] = await Promise.all([
           supabase
             .from('raid_tiers')
-            .select('id, name, is_active, phase')
+            .select('id, name, is_active, phase, list_mode')
             .eq('expansion_id', expansionId)
             .eq('is_guild_active', true),
           supabase
@@ -707,6 +715,20 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
         } else {
           setRaidTiers(tiersData || [])
           setNoRaidTiers((tiersData || []).length === 0)
+        }
+
+        // The card reads the same two results the page already has. A thrown
+        // error skips this, so the card stays hidden rather than guessing (E3).
+        if (submissionRead && activeCharacter) {
+          setListStatus({
+            key: `${activeGuild.id}:${activeCharacter.id}`,
+            ...discoveryListStatus({
+              tiers: tiersData,
+              tiersError: Boolean(tiersError),
+              submissions: submissionRead.submissions,
+              submissionsError: submissionRead.error,
+            }),
+          })
         }
 
         const { data: expansionDeadlineData } = deadlineResult
@@ -735,7 +757,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
   }, [user, guildLoading, activeGuild, activeCharacter, currentExpansion, characterTeams])
 
   // Function to load all dashboard data for current character
-  const loadDashboardData = async (userId: string, guildId: string, currentExpansionTiers: RaidTier[], expansionId: string) => {
+  const loadDashboardData = async (userId: string, guildId: string, currentExpansionTiers: RaidTier[], expansionId: string): Promise<{ submissions: Array<{ phase: number | null; status: string }> | null; error: boolean } | undefined> => {
     try {
       if (!activeCharacter) {
         return
@@ -822,9 +844,14 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
       )
       setActionsNeeded(actions)
 
+      return {
+        submissions: submissionsError ? null : transformedSubmissions.map(sub => ({ phase: sub.phase, status: sub.status })),
+        error: Boolean(submissionsError),
+      }
     } catch (error) {
       console.error('Error loading dashboard data:', error)
       showNotification('error', 'Couldn\'t load dashboard data. Check your connection and try again.')
+      return { submissions: null, error: true }
     }
   }
 
@@ -842,7 +869,10 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
       let specRole: string | null = null
       let missedRaids: { date: string; status: string }[] = []
       let trialPenaltyValue = 0
-      let baseExplanation: ScoreExplanation | null = null
+      // The widget's inputs, kept so the split can be scored once the raider's
+      // number 1 pick is known further down (D-21, UI-11).
+      let baseScoreInput: ScoreInput | null = null
+      let widgetDecimalPlaces = 2
       let attendedRaidCount = 0
       let totalRaidCount = 0
       let membershipStatus = 'full'
@@ -1160,8 +1190,10 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
           roleBonus = dummyScore.components.roleBonus
           trialPenaltyValue = dummyScore.components.trialPenalty
 
-          // Generate contract-driven explanation for the score widget
-          baseExplanation = explainScore(dummyScore, baseInput)
+          // The explanation is built after the pick is known; standing does not
+          // depend on it, so the item rank 0 score above is still the standing.
+          baseScoreInput = baseInput
+          widgetDecimalPlaces = guildSettings.decimal_places ?? 2
 
           // Get matched role label for display
           const roleResult = getRoleModifierWithLabel(specRoles, guildSettings)
@@ -1639,7 +1671,13 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
 
       // Hoist computed values to widget state
       // Score explanation from the engine (contract-driven)
-      setScoreExplanation(baseExplanation)
+      // Interest is that of the number 1 pick still on the list: the widget has no
+      // item context, and rank 50 is the pick that reads "your number 1 pick".
+      setScoreExplanation(
+        baseScoreInput
+          ? buildOverviewScoreExplanation(baseScoreInput, topPickRank(priorityItems.map(item => item.rank)), widgetDecimalPlaces)
+          : null
+      )
 
       // BLP range is item-dependent (varies across the player's list), so computed separately
       const blpValues = Object.values(blpData).map(tp => calculateBadLuckBonus(tp, (savedGuildSettings || {}) as Parameters<typeof calculateBadLuckBonus>[1]))
@@ -1903,6 +1941,14 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
   const raidTierStatus: RaidTierStatus = loading ? 'loading' : noRaidTiers ? 'none' : 'available'
   const hideRaidCards = hidesRaidDependentCards(getGuildGame(activeGuild), raidTierStatus)
   const dataLoading = loading || guildLoading
+  // D-14: nudge a raider with no submitted Discovery list. The status counts as
+  // loaded only for this guild and character, so nothing flashes while it loads.
+  const showSetYourFive = heroReady && !!activeCharacter && !hideRaidCards && shouldShowSetYourFiveCard({
+    hasDiscoveryTier: listStatus?.hasDiscoveryTier ?? false,
+    statusLoaded: listStatus !== null && listStatus.key === `${activeGuild?.id}:${activeCharacter?.id}`,
+    statusError: listStatus?.statusError ?? false,
+    submissionStatus: listStatus?.submissionStatus ?? null,
+  })
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6 font-poppins">
@@ -2006,6 +2052,8 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
           </div>
         )}
       </div>
+
+      {showSetYourFive && <SetYourFiveCard />}
 
       {/* Resubmit nudge: lists the raider edited-after-submit or that officers
           sent back. Officers can't act until they're resubmitted (GH #123). */}
@@ -2113,6 +2161,15 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                     <HugeiconsIcon icon={AnalyticsUpIcon} size={18} className="text-accent" />
                     <h3 className="text-15 font-semibold text-foreground">Score breakdown</h3>
                   </div>
+                  <ScoreSplit
+                    variant="tiles"
+                    standing={scoreExplanation.standing}
+                    interest={scoreExplanation.interest}
+                    total={scoreExplanation.total}
+                    decimalPlaces={decimalPlaces}
+                    totalLabel="Total for your number 1 pick"
+                    className="mb-4"
+                  />
                   <div className="space-y-2.5">
                     {scoreExplanation.lines
                       .filter(line => line.key !== 'itemRank' && line.key !== 'badLuckBonus')
@@ -2136,17 +2193,16 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
                           </div>
                         )
                       })}
-                    <div className="border-t border-border pt-2 mt-2">
-                      <p className="text-11 text-muted-foreground">
-                        Base score before item ranking
-                        {blpInfo.enabled && (
-                          <span className="inline-flex items-center gap-1 ml-1">
-                            &middot; BLP applied per item
-                            <InfoTooltip content="Bad luck protection varies per item. When loot is awarded through raid tracking and you don't win, your BLP for that item increases. Resets when you receive it." />
-                          </span>
-                        )}
-                      </p>
-                    </div>
+                    {/* The tiles say the lines are standing, so the old base score note is gone;
+                        the BLP note stays because that line is left out of the list above. */}
+                    {blpInfo.enabled && (
+                      <div className="border-t border-border pt-2 mt-2">
+                        <p className="text-11 text-muted-foreground inline-flex items-center gap-1">
+                          BLP applied per item
+                          <InfoTooltip content="Bad luck protection varies per item. When loot is awarded through raid tracking and you don't win, your BLP for that item increases. Resets when you receive it." />
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </Card>
               )}

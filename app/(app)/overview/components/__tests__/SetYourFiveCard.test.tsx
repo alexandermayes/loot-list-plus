@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 
-import { SetYourFiveCard, shouldShowSetYourFiveCard } from '@/app/(app)/overview/components/SetYourFiveCard'
+import { SetYourFiveCard, discoveryListStatus, shouldShowSetYourFiveCard } from '@/app/(app)/overview/components/SetYourFiveCard'
 import { SET_YOUR_FIVE_BODY, SET_YOUR_FIVE_CTA, SET_YOUR_FIVE_TITLE } from '@/domain/loot/set-your-five'
 
 describe('SetYourFiveCard', () => {
@@ -77,5 +77,63 @@ describe('shouldShowSetYourFiveCard', () => {
 
   it('treats an unknown status as already submitted rather than nagging', () => {
     expect(shouldShowSetYourFiveCard({ ...base, submissionStatus: 'something_new' })).toBe(false)
+  })
+})
+
+describe('discoveryListStatus', () => {
+  const discoveryTiers = [
+    { phase: 1, list_mode: 'discovery' },
+    { phase: 1, list_mode: 'discovery' },
+  ]
+  const read = { tiersError: false, submissionsError: false }
+
+  it('has no Discovery tier for a guild whose tiers are all Known', () => {
+    const result = discoveryListStatus({ tiers: [{ phase: 1, list_mode: 'known' }], submissions: [], ...read })
+
+    expect(result.hasDiscoveryTier).toBe(false)
+  })
+
+  it('reports no submission when the character has no list in a Discovery phase', () => {
+    expect(discoveryListStatus({ tiers: discoveryTiers, submissions: [], ...read })).toEqual({
+      hasDiscoveryTier: true,
+      statusError: false,
+      submissionStatus: null,
+    })
+  })
+
+  it('reports a draft when the only list in a Discovery phase is a draft', () => {
+    const result = discoveryListStatus({ tiers: discoveryTiers, submissions: [{ phase: 1, status: 'draft' }], ...read })
+
+    expect(result.submissionStatus).toBe('draft')
+  })
+
+  it('reports the submitted status when a draft sits beside a submitted list', () => {
+    const result = discoveryListStatus({
+      tiers: discoveryTiers,
+      submissions: [
+        { phase: 1, status: 'draft' },
+        { phase: 1, status: 'pending' },
+      ],
+      ...read,
+    })
+
+    expect(result.submissionStatus).toBe('pending')
+  })
+
+  it('ignores lists in phases that have no Discovery tier', () => {
+    const result = discoveryListStatus({
+      tiers: [...discoveryTiers, { phase: 2, list_mode: 'known' }],
+      submissions: [{ phase: 2, status: 'approved' }],
+      ...read,
+    })
+
+    expect(result.submissionStatus).toBeNull()
+  })
+
+  it.each([
+    ['the tier read', { tiersError: true, submissionsError: false }],
+    ['the submission read', { tiersError: false, submissionsError: true }],
+  ])('flags an error when %s failed', (_label, errors) => {
+    expect(discoveryListStatus({ tiers: null, submissions: null, ...errors }).statusError).toBe(true)
   })
 })
