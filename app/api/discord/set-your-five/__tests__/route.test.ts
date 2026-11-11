@@ -410,8 +410,8 @@ describe('[D-30] bounded DMs', () => {
     let clock = realNow
     const nowSpy = vi.spyOn(Date, 'now').mockImplementation(() => clock)
     vi.mocked(sendDirectMessage).mockImplementation(async () => {
-      // Each DM "takes" 10 seconds: the first five start at 0s, finish at 10s,
-      // and the budget is gone before a sixth can start.
+      // Each finished DM moves the clock on 10 seconds, so the 45-second
+      // budget runs out part way through the list.
       await Promise.resolve()
       clock += 10_000
       return { ok: true, stage: 'send_message', status: 200 }
