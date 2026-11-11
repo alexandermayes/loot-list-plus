@@ -2006,7 +2006,9 @@ export default function LootListContent({
             Otherwise: content loading state (initial load only, phase switches
             keep showing previous content). */}
         {pickerMode ? (
-          <NeedPicker key={`${activeCharacter?.id ?? ''}:${selectedPhase ?? ''}`} />
+          // The key drops the picker's local edits when the character, their spec
+          // (a new spec means a new default) or the phase changes.
+          <NeedPicker key={`${activeCharacter?.id ?? ''}:${activeCharacter?.spec_id ?? ''}:${selectedPhase ?? ''}`} />
         ) : (isLoading || isContentLoading) && !hasLoadedOnce.current ? (
           <LootListContentSkeleton />
         ) : (
