@@ -19,9 +19,25 @@ import { cn } from "@/lib/utils"
  * - lg: max-w-2xl (complex forms, lists)
  * - xl: max-w-3xl (large content)
  * - full: max-w-4xl (very large content)
+ *
+ * Placement:
+ * - center (default): the centred dialog every call site gets today
+ * - sheet: below 640px a bottom sheet (full width, rounded top, 85vh tall,
+ *   slides up); from 640px the same centred dialog at size sm (UI-01)
  */
 
 const TRANSITION_MS = 150
+// The sheet slides with duration-normal (200ms), so it unmounts after that.
+const SHEET_TRANSITION_MS = 200
+
+type ModalPlacement = "center" | "sheet"
+
+// Below sm the sheet sits on the bottom edge with no page padding; from sm up
+// it is centred again. max-w-none/sm:max-w-md replaces the size variant, so a
+// sheet is always size sm once it is centred.
+const SHEET_BACKDROP_CLASSES = "items-end sm:items-center p-0 sm:p-4"
+const SHEET_CONTAINER_CLASSES =
+  "rounded-b-none sm:rounded-b-xl max-w-none sm:max-w-md max-h-[85vh] pb-[env(safe-area-inset-bottom)] sm:pb-0"
 
 // Context carrying the current Modal's generated titleId down to a
 // descendant ModalTitle, so ModalTitle can self-assign an `id` that the
@@ -231,6 +247,8 @@ interface ModalProps extends VariantProps<typeof modalContainerVariants> {
   className?: string
   maxHeight?: string
   zIndex?: number
+  /** Where the dialog sits below 640px; 'center' (default) leaves every existing dialog unchanged. */
+  placement?: ModalPlacement
   /** Id of the element that describes the dialog, forwarded to the dialog container so consumers do not need to nest their own dialog (GH #304). */
   "aria-describedby"?: string
 }
@@ -243,8 +261,10 @@ const Modal = ({
   className,
   maxHeight,
   zIndex = 50,
+  placement = "center",
   "aria-describedby": ariaDescribedBy,
 }: ModalProps) => {
+  const isSheet = placement === "sheet"
   // Two-phase state: `mounted` controls whether the DOM exists, `visible`
   // controls the CSS transition. When closing, we drop `visible` first,
   // wait for the transition to play, then unmount.
@@ -276,9 +296,12 @@ const Modal = ({
       return () => cancelAnimationFrame(id)
     }
     setVisible(false)
-    const id = setTimeout(() => setMounted(false), TRANSITION_MS)
+    const id = setTimeout(
+      () => setMounted(false),
+      isSheet ? SHEET_TRANSITION_MS : TRANSITION_MS
+    )
     return () => clearTimeout(id)
-  }, [open])
+  }, [open, isSheet])
 
   // Handle escape key — only the topmost simultaneously-open Modal responds
   // (D-04). Without the isTopmost guard, every open Modal would independently
@@ -435,6 +458,7 @@ const Modal = ({
         ref={backdropRef}
         className={cn(
           "fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 transition-opacity duration-150 motion-reduce:transition-none",
+          isSheet && SHEET_BACKDROP_CLASSES,
           visible ? "opacity-100" : "opacity-0"
         )}
         style={{ zIndex }}
@@ -444,7 +468,13 @@ const Modal = ({
         <div
           className={cn(
             "w-full flex items-center justify-center transition-[opacity,transform] duration-150 ease-out motion-reduce:transition-none motion-reduce:scale-100",
-            visible ? "opacity-100 scale-100" : "opacity-0 scale-95"
+            isSheet &&
+              "duration-normal motion-reduce:translate-y-0",
+            visible
+              ? "opacity-100 scale-100"
+              : isSheet
+                ? "opacity-0 translate-y-full sm:translate-y-0 sm:scale-95"
+                : "opacity-0 scale-95"
           )}
         >
           <ModalContainer
@@ -455,7 +485,7 @@ const Modal = ({
             aria-describedby={ariaDescribedBy}
             tabIndex={-1}
             size={size}
-            className={className}
+            className={cn(isSheet && SHEET_CONTAINER_CLASSES, className)}
             maxHeight={maxHeight}
           >
             {children}
