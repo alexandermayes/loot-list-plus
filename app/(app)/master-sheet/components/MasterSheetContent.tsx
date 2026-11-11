@@ -2059,6 +2059,8 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
           itemName={comparisonData.itemName}
           userRanking={comparisonData.userRanking}
           winnerRanking={comparisonData.winnerRanking}
+          decimalPlaces={guildSettings?.decimal_places}
+          config={guildSettings ?? undefined}
         />
 
         {/* Item Candidate Modal (officer-only) */}
