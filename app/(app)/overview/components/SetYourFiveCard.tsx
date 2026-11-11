@@ -13,7 +13,7 @@ import { Target02Icon } from '@hugeicons/core-free-icons'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { SET_YOUR_FIVE_BODY, SET_YOUR_FIVE_CTA, SET_YOUR_FIVE_TITLE } from '@/domain/loot/set-your-five'
+import * as setYourFiveCopy from '@/domain/loot/set-your-five'
 
 interface SetYourFiveCardProps {
   href?: string
@@ -28,11 +28,11 @@ export function SetYourFiveCard({ href = '/loot-list?picker=1' }: SetYourFiveCar
           <HugeiconsIcon icon={Target02Icon} size={20} className="text-accent" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="text-16 font-semibold text-foreground">{SET_YOUR_FIVE_TITLE}</h2>
-          <p className="mt-1 text-14 text-foreground-secondary">{SET_YOUR_FIVE_BODY}</p>
+          <h2 className="text-16 font-semibold text-foreground">{setYourFiveCopy.SET_YOUR_FIVE_TITLE}</h2>
+          <p className="mt-1 text-14 text-foreground-secondary">{setYourFiveCopy.SET_YOUR_FIVE_BODY}</p>
         </div>
         <Button asChild variant="primary" className="w-full sm:w-auto sm:shrink-0">
-          <Link href={href}>{SET_YOUR_FIVE_CTA}</Link>
+          <Link href={href}>{setYourFiveCopy.SET_YOUR_FIVE_CTA}</Link>
         </Button>
       </div>
     </Card>
