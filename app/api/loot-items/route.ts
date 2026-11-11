@@ -10,6 +10,7 @@ import {
   resolveTierIdsForPhases,
 } from '@/lib/loot-items-query'
 import { NEED_ROW_FIXED_ERROR, isNeedRow } from '@/domain/loot/item-identity'
+import { resolveNeedListScope, type NeedListScope } from '@/lib/loot/need-list-scope'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,6 +66,9 @@ export async function GET(request: NextRequest) {
 
     // Resolve the set of raid tier IDs to query.
     let tierIds: string[] = []
+    // Needs are served only to an all-Discovery phase group (D-12). The legacy
+    // tier_id path has no group to decide on, and no picker calls it.
+    let scope: NeedListScope = { includeNeeds: false, tierSlots: null }
 
     if (tierId) {
       // Legacy single-tier query.
@@ -99,12 +103,24 @@ export async function GET(request: NextRequest) {
       if (tierIds.length === 0) {
         return NextResponse.json({ items: [] })
       }
+
+      // Same rule as the bootstrap, so an SWR refresh never flips the page
+      // between the picker and the editor. A failed read throws into the
+      // catch below (500).
+      scope = await resolveNeedListScope(supabase, {
+        expansionId,
+        phases: phaseValues,
+      })
     }
 
-    const enrichedItems = await fetchFilteredLootItems(supabase, character, tierIds)
+    const enrichedItems = await fetchFilteredLootItems(supabase, character, tierIds, {
+      includeNeeds: scope.includeNeeds,
+    })
 
+    // need_tier_slots rides with the items so the picker decides Discovery
+    // from the response that supplied its need rows, not a second cached one.
     return NextResponse.json(
-      { items: enrichedItems },
+      { items: enrichedItems, need_tier_slots: scope.tierSlots },
       {
         headers: {
           // Spec-filtered loot list for a character. Stable until admins edit
