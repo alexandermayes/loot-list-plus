@@ -28,7 +28,7 @@ const fixture: { expansionName: string; tiers: TierFixture[] } = {
 const guildState = {
   loading: false,
   activeGuild: { id: GUILD_ID, game: 'forever' } as { id: string; game: string },
-  hasPermission: (_permission: string) => true,
+  hasPermission: (() => true) as (permission: string) => boolean,
 }
 
 const mutateMock = vi.fn()
