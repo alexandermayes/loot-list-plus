@@ -48,7 +48,7 @@ export interface NeedOptionGroup {
   options: readonly NeedOption[]
 }
 
-// DRAFT copy for the 04-19 sign-off. Slot, armour and stat words are the
+// Copy signed off 2026-11-11 (04-19). Slot, armour and stat words are the
 // taxonomy's own; a test keeps them equal to the names in NEED_DEFINITIONS.
 export const NEED_SLOT_LABELS: Readonly<Record<NeedSlotKey, string>> = Object.freeze({
   'two-hand-weapon': 'Two-hand weapon',

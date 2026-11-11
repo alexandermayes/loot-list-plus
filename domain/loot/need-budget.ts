@@ -131,7 +131,7 @@ export function needCopyViolation(
   return limit > 1 ? 'third-copy' : 'duplicate'
 }
 
-// DRAFT copy: the owner signs these off in 04-19. No em or en dash may appear.
+// Copy signed off 2026-11-11 (04-19). No em or en dash may appear.
 const WORD_BY_COUNT: Readonly<Record<number, string>> = Object.freeze({
   3: 'three',
   4: 'four',

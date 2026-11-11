@@ -9,9 +9,9 @@
  * Pure and client-safe: no I/O. No key is added to DEFAULT_SETTINGS,
  * ScoringConfig or withDefaults, so the Lua exporter output cannot change.
  *
- * DRAFT: the names, lines, summaries and knob values are proposals. The owner
- * signs them with the rest of the copy at the 04-19 sign-off, and changing a
- * value later is a code edit, not a migration.
+ * Signed off by the owner on 2026-11-11 (04-19): the names, lines, summaries and
+ * knob values stand as built. Changing a value later is a code edit, not a
+ * migration.
  */
 
 export const LOOT_STYLE_IDS = ['reward_attendance', 'even_rotation', 'officers_decide'] as const

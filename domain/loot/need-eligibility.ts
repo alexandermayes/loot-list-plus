@@ -32,7 +32,7 @@ import {
 } from '@/domain/loot/needs'
 import { getSpecRoles, specMapping, type Role } from '@/domain/loot/spec-role-mapping'
 
-/** DRAFT copy for the 04-19 sign-off. No em or en dash may appear. */
+/** Copy signed off 2026-11-11 (04-19). No em or en dash may appear. */
 export const NEED_NOT_ELIGIBLE_CODE = 'NEED_NOT_ELIGIBLE'
 export const NEED_NOT_ELIGIBLE_ERROR = "Your spec can't use this need. Change it to continue."
 

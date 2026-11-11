@@ -185,7 +185,7 @@ describe('needCopyViolation (D-29)', () => {
   })
 })
 
-describe('needOverBudgetSentence (D-07, UI-14, DRAFT copy for the 04-19 sign-off)', () => {
+describe('needOverBudgetSentence (D-07, UI-14, copy signed off 2026-11-11, 04-19)', () => {
   it('names three, four and five big picks', () => {
     expect(needOverBudgetSentence(3)).toBe("That's three big picks. Swap a weapon or trinket for armour.")
     expect(needOverBudgetSentence(4)).toBe("That's four big picks. Swap a weapon or trinket for armour.")

@@ -96,7 +96,7 @@ describe('explainScore split values', () => {
   })
 })
 
-// ─── Sentences (copy is DRAFT until the owner signs it off) ──────────────
+// ─── Sentences (copy signed off 2026-11-11, 04-19) ──────────────
 
 const opts = { maxAttendance: 4, decimalPlaces: 2 }
 

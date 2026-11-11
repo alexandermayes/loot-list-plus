@@ -9,7 +9,7 @@
  * Closing any other way discards the unfinished change: the flow lives inside
  * the dialog, which unmounts on close, so it always opens fresh at Q1.
  *
- * Copy is DRAFT for the owner's 04-19 sign-off.
+ * Copy signed off 2026-11-11 (04-19).
  */
 import * as React from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'

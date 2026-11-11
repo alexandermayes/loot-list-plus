@@ -14,7 +14,7 @@
  * inside the flow. A decided question is skipped when the flow moves on, and a
  * tap advances after 150ms, with no delay under prefers-reduced-motion.
  *
- * All copy is DRAFT for the owner's 04-19 sign-off.
+ * All copy signed off 2026-11-11 (04-19).
  */
 import * as React from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'

@@ -62,7 +62,7 @@ export default function ScoreBreakdownModal({ open, onClose, guildSettings }: Sc
         <ModalDescription>Understanding how your priority is calculated</ModalDescription>
       </ModalHeader>
       <ModalBody className="space-y-4">
-        {/* The two halves of a score, in plain words (D-21). DRAFT copy for the 04-19 sign-off. */}
+        {/* The two halves of a score, in plain words (D-21). Copy signed off 2026-11-11 (04-19). */}
         <div className="space-y-2">
           <p className="text-md text-foreground-secondary">
             Standing is what you bring to the raid: attendance, bad luck protection and officer bonuses.

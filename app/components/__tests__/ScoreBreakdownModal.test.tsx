@@ -39,7 +39,7 @@ describe('ScoreBreakdownModal raider bonus section (#329)', () => {
 })
 
 // D-21: the modal opens with the two halves of a score in two short paragraphs.
-// DRAFT copy: the owner signs it off in 04-19.
+// Copy signed off 2026-11-11 (04-19).
 const STANDING_PARAGRAPH = 'Standing is what you bring to the raid: attendance, bad luck protection and officer bonuses.'
 const INTEREST_PARAGRAPH = 'Interest is how much you want the item. It comes from where you put it on your list.'
 

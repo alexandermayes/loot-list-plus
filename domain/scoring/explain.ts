@@ -41,7 +41,7 @@ export function formatScoreNumber(value: number, decimalPlaces = DEFAULT_SENTENC
   return String(rounded === 0 ? 0 : rounded)
 }
 
-// DRAFT copy: the owner signs these sentences off in 04-19. No em dashes.
+// Copy signed off 2026-11-11 (04-19). No em dashes.
 const STANDING_PREFIX = 'Standing'
 const STANDING_EMPTY = 'no bonuses yet'
 const INTEREST_PREFIX = 'Interest'

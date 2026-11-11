@@ -222,7 +222,7 @@ describe('isNeedEligible', () => {
   })
 })
 
-describe('refusal copy (DRAFT for the 04-19 sign-off)', () => {
+describe('refusal copy (copy signed off 2026-11-11, 04-19)', () => {
   it('carries the code and sentence, with no em or en dash', () => {
     expect(NEED_NOT_ELIGIBLE_CODE).toBe('NEED_NOT_ELIGIBLE')
     expect(NEED_NOT_ELIGIBLE_ERROR).toBe("Your spec can't use this need. Change it to continue.")
