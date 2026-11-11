@@ -16,7 +16,7 @@ Worktree root: `/private/tmp/claude-502/-Users-alexander-mayes-Code-personal/591
 | `domain/loot/need-defaults.ts` (new) | config (frozen data) | transform | `domain/loot/needs.ts` (frozen tables) | role-match |
 | `domain/loot/__tests__/need-{picks,budget,eligibility,defaults}.test.ts` (new) | test | transform | `domain/loot/__tests__/` neighbours (not excerpted) | role-match |
 | `domain/guild/loot-style-presets.ts` (new) | config (frozen data + pure compare) | transform | `domain/loot/needs.ts` (`Object.freeze` maps) | role-match |
-| `lib/loot/need-list-checks.ts` (new, thin glue) | service | request-response | `fetchListPrioItems` call in `app/api/loot-submissions/submit/route.ts` | role-match |
+| `domain/loot/need-list-rules.ts` (new, pure; plan 04-08) | utility (pure check) | transform | `findPrioViolations` call in `app/api/loot-submissions/submit/route.ts` and `domain/loot/prio-violations.ts` | role-match |
 | `app/api/discord/set-your-five/route.ts` (new) | controller | request-response, batch | `app/api/discord/post-raid-summary/route.ts` + `lib/billing/trial-ending.ts` | exact |
 | `app/api/discord/set-your-five/__tests__/route.test.ts` (new) | test | request-response | `app/api/raid-tiers/__tests__/route.test.ts` (recording fakes) | role-match |
 | `app/(app)/loot-list/components/NeedPicker.tsx` (new) | component | request-response | `app/contexts/LootListContext.tsx` (save path, consumed not copied) | partial |
@@ -126,7 +126,7 @@ Apply to `defaultNeedsFor(className, specName)`: a frozen array of `{ className,
 
 **Shape to copy:** `Object.freeze` per preset id; a `LOOT_STYLE_IDS` tuple that must equal the DB check constraint values (`reward_attendance`, `even_rotation`, `officers_decide`, per RESEARCH Topic 2); `isLootStyleId` as a type guard; `presetMatches(settings, id)` and `presetDiff(settings, id)`. Compare numerics with `Number()` because `signup_weight` is `numeric(3,2)`. Do not add any key to `DEFAULT_SETTINGS` or `ScoringConfig` defaults (F9). The Lua exporter prints `getDefaultSettings()`.
 
-### `lib/loot/need-list-checks.ts` (service, thin glue)
+### `domain/loot/need-list-rules.ts` (utility, pure check; plan 04-08)
 
 **Analog:** the prio read in `app/api/loot-submissions/submit/route.ts` lines 225-246.
 ```ts
@@ -144,7 +144,7 @@ const prioViolations = findPrioViolations(
   locks,
 )
 ```
-Keep the glue to "rows in, pure result out". It reads no tables itself (see the reader inventory note below).
+Keep it "rows in, pure result out": `checkNeedList(rows, character)` takes the need rows and the class and spec names the route already read, calls `checkNeedBudget` and `isNeedEligible`, and reads no tables itself, so it lives in `domain/` with the other pure rules rather than in `lib/` (see the reader inventory note below). The route keeps the reads and the 422 responses.
 
 ### `app/api/loot-submissions/submit/route.ts` (controller, request-response) (modify)
 

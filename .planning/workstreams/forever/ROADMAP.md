@@ -210,7 +210,51 @@ Plans:
   4. An officer setting up a guild picks one of three loot style presets, with Fine-tune behind a disclosure
   5. Every score shows standing and interest separately, each with a one-sentence explanation, and score totals for Known guilds are unchanged (golden and Lua fixtures byte-identical)
 
-**Plans**: TBD
+**Plans**: 21 plans in 7 waves, shipped as 4 PRs (PR 1 migration-only: 04-01, opened and merged in 04-02; PR 2 need primitives and score split: 04-03 to 04-07, 04-10, 04-12, 04-14; PR 3 Discovery lists and the list-mode control after the deploy: the 04-02 types commit, 04-08, 04-09, 04-11, 04-20, 04-13, 04-21, 04-17, 04-18; PR 4 presets after the deploy: 04-15, 04-16). Owner stops: 04-02 (one-way doors including the D-08 amended draft-only window, spec defaults review, migration merge day) and 04-19 (copy sign-off before any code PR merges, against the sign-off change map in its Task 3).
+
+Plans:
+**Wave 1**
+
+- [ ] 04-01-PLAN.md (wave 1): Phase 4 migration (drop the D-22 hold, slot check 1..8, guild_settings.loot_style, WHEN-gated raid_tiers delete guard for WR-04) with PGlite proofs on a clean chain, contract test, Phase 3 test kept true, inventory SQL entries (DISC-03, DISC-05, DISC-10)
+- [ ] 04-03-PLAN.md (wave 1): pure need picks (ranks 50 to 46, stable tier slots, fan-out and read-back, grouping), 10-point budget and copy caps, class and spec eligibility (DISC-02, DISC-03, DISC-04, DISC-05)
+- [ ] 04-05-PLAN.md (wave 1): score split in computeScore and explainScore with sentences, voice and decimals; golden and Lua locks (DISC-08)
+- [ ] 04-06-PLAN.md (wave 1): three loot style presets as frozen knob maps with the Customised compare (DISC-10)
+- [ ] 04-07-PLAN.md (wave 1): Phase 3 carry-overs: WR-02 chunked visibility reads, WR-03 prio-list, proxy keeps the query through sign-in, keepRankedNeedRows kept (DISC-05, DISC-11)
+- [ ] 04-17-PLAN.md (wave 1): officer list-mode control on the expansion page, mixed-mode note, sort_order on GET raid tiers; ships in PR 3 with the picker (DISC-05)
+
+**Wave 2**
+
+- [ ] 04-04-PLAN.md (wave 2): 18 frozen spec defaults with the eligibility and budget gate (DISC-04)
+- [ ] 04-10-PLAN.md (wave 2): reusable need question flow and bottom sheet (Modal placement prop), budget and cap blocking at the tap (DISC-02, DISC-03)
+- [ ] 04-12-PLAN.md (wave 2): ScoreSplit and the master sheet popover and candidate modal split (DISC-08)
+- [ ] 04-18-PLAN.md (wave 2): Set your 5 module, officer-only sender route (cooldown, bounded DMs, counts only) and the Guild Settings send row (DISC-11)
+- [ ] 04-21-PLAN.md (wave 2): one line per need position on the officer review modal and the Overview loot priority through lib/loot/need-lines.ts, 'all 3 raids' or tier names (D-28); split from 04-13, ships in PR 3 (DISC-05, DISC-02)
+
+**Wave 3**
+
+- [ ] 04-02-PLAN.md (wave 3): [BLOCKING] open PR 1, owner confirms the one-way doors (with the D-08 amended draft-only window) and the spec defaults and merges with --admin on a non-raid day, deploy recorded, loot_style types (DISC-03, DISC-04, DISC-05, DISC-10)
+- [ ] 04-14-PLAN.md (wave 3): score comparison and breakdown modals split, NeedLabel look (DISC-08, DISC-02)
+
+**Wave 4** *(blocked on 04-02)*
+
+- [ ] 04-08-PLAN.md (wave 4): hold lifted with the submit budget and eligibility refusals, copy caps once per need, prio and locks on need rows (DISC-03, DISC-04, DISC-05)
+- [ ] 04-09-PLAN.md (wave 4): bootstrap and loot-items serve needs to all-Discovery groups with need_tier_slots; tier list_mode and sort_order (DISC-02, DISC-05)
+- [ ] 04-15-PLAN.md (wave 4): loot_style in the settings PUT and the creation insert; addon payloads leave it out (DISC-10)
+
+**Wave 5**
+
+- [ ] 04-11-PLAN.md (wave 5): the five-row picker on /loot-list: page switch, fan-out save with explicit rankings, rows, question sheet, Move up, budget footer and skeleton (DISC-02, DISC-03, DISC-04, DISC-05)
+- [ ] 04-16-PLAN.md (wave 5): LootStylePicker in Loot system settings with Fine-tune, and in guild creation (DISC-10)
+
+**Wave 6**
+
+- [ ] 04-13-PLAN.md (wave 6): Set your 5 deep link entry, Overview card and score tiles; the per-need grouping moved to 04-21 (DISC-02, DISC-08, DISC-11)
+- [ ] 04-20-PLAN.md (wave 6): the picker's context save results, list statuses, approved read-only state with Change my 5, budget and eligibility refusals, load and save errors (DISC-02, DISC-03, DISC-04, DISC-05)
+
+**Wave 7**
+
+- [ ] 04-19-PLAN.md (wave 7): reader inventory sweep, Known-guild locks, surface sweep with the draft changelog entry, owner copy sign-off (all seven)
+
 **UI hint**: yes
 **Research**: None needed for the score split (golden fixtures define it). Run `/gsd-ui-phase 4` for the picker and presets.
 **Owner inputs**: spec defaults review for all 22 specs, especially Enhancement Shaman (Windfury rework) and Feral, by Oct 26 (Decision 5); copy sign-off for picker, presets and "Set your 5" by Oct 26 (Decision 7); community input for the presets review: a council-style preset that shows attendance, bad luck protection and a future preparation score side by side, and how often raiders may re-rank need rows within a tier.

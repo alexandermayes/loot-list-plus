@@ -244,7 +244,7 @@ domain/guild/
 domain/scoring/
   engine.ts, explain.ts    # minimal edits (Topic 4)
 lib/loot/
-  need-list-checks.ts      # thin server glue: rows -> budget and eligibility violations (no table reads of its own)
+  need-list-rules.ts      # thin server glue: rows -> budget and eligibility violations (no table reads of its own)
 app/api/discord/set-your-five/route.ts
 app/(app)/loot-list/components/NeedPicker.tsx, NeedPickerRow.tsx     # per 04-UI-SPEC component inventory
 app/components/need-picker/                                          # reusable flow, sheet, cost marker, budget line
@@ -608,21 +608,23 @@ for (let i = 0; i < allowedItemIds.length; i += CHUNK) {
 | A9 | The addon repo's `gen_web_fixtures.mts` may serialise whole `ScoreResult` objects | Topic 4 | Two new keys appear in addon fixtures; ask the owner to run it once |
 | A10 | `loot_style` ids `reward_attendance`, `even_rotation`, `officers_decide` | Topic 2 | Renaming later is a migration (the check constraint) |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Which specs, and what defaults?**
+Every question below was settled in 04-CONTEXT.md on 2026-11-10 (clarifications D-28 to D-31 and the amendments); the resolution is marked on each.
+
+1. **Which specs, and what defaults?** RESOLVED by D-09 and D-31: defaults for the 18 specs of the nine Forever classes, Death Knight and Monk have none and are listed in SPECS_WITHOUT_DEFAULT, Shadow Priest's fifth pick becomes a Standard cloth piece or a Medium ring; the owner review of the file is still pending at the 04-02 stop.
    - What we know: roadmap and research say 22 specs; `class_specs` seeds 23 names (Arms and Fury merged into `Arms/Fury`); FEATURES has 19 default rows (Arms and Fury separate, no Death Knight or Monk); Shadow Priest's row costs 11.
    - What's unclear: whether Death Knight and Monk exist for Forever, which of Arms or Fury is the `Arms/Fury` default, the Shadow Priest fifth pick.
    - Recommendation: the planner puts the defaults file in one task with an owner checkpoint; the gate test lists `SPECS_WITHOUT_DEFAULT` explicitly so a missing spec is a visible decision.
-2. **Slot-wide copy caps for needs.**
+2. **Slot-wide copy caps for needs.** RESOLVED by D-29: caps stay per need key as Phase 3 shipped them.
    - Known: caps are per need row, so Chest twice with different stats and a third Ring from three keys pass the server (P6).
    - Unclear: whether D-07 "a second Ring or Trinket need costs again" intends a slot-wide cap.
    - Recommendation: keep per-key (matches shipped behaviour and the UI-SPEC strings); add a slot-wide check only if the owner asks.
-3. **"Set your 5" consent and volume.** No opt-out preference exists for this message; `notify_resubmit_reminder` is specific to resubmits. Recommendation: officer-only, confirm modal (UI-15), counts only, a server cooldown; ask the owner whether members need an opt-out before the first send.
-4. **"Pass and see item bonuses" in D-17 is not a column.** Recommendation: map it to the three single-item flags (`role_bonus_priority_single_item`, `class_bonus_priority_single_item`, `single_raider_bonus_single_item`) and confirm in the copy review.
-5. **Preset visibility for Known (Classic) guilds.** D-19 does not say. Recommendation: show presets only for guilds whose game is Forever (`getGuildGame(activeGuild) === 'forever'`), so Classic guild screens and creation stay unchanged.
-6. **Addon `settings` payload and `loot_style`.** Recommendation: drop the key server-side in the two addon routes so Known payload bytes do not change (F14); low effort, optional.
-7. **Fan-out presentation on Overview and officer review (P10).** Recommendation: group by rank in both, showing "all 3 raids" or the tier names.
+3. **"Set your 5" consent and volume.** RESOLVED by D-30: officer-only with the confirm modal, counts only, a 60 minute server cooldown per guild, bounded DM work; no member opt-out ships in this phase. No opt-out preference exists for this message; `notify_resubmit_reminder` is specific to resubmits. Recommendation: officer-only, confirm modal (UI-15), counts only, a server cooldown; ask the owner whether members need an opt-out before the first send.
+4. **"Pass and see item bonuses" in D-17 is not a column.** RESOLVED by D-17 amended: the three single-item bonus flags, confirmed at the copy review. Recommendation: map it to the three single-item flags (`role_bonus_priority_single_item`, `class_bonus_priority_single_item`, `single_raider_bonus_single_item`) and confirm in the copy review.
+5. **Preset visibility for Known (Classic) guilds.** RESOLVED by D-19 amended: presets show for every guild; the Forever-only option was not taken. D-19 does not say. Recommendation: show presets only for guilds whose game is Forever (`getGuildGame(activeGuild) === 'forever'`), so Classic guild screens and creation stay unchanged.
+6. **Addon `settings` payload and `loot_style`.** RESOLVED by D-30: the two addon routes drop the key server-side (plan 04-15). Recommendation: drop the key server-side in the two addon routes so Known payload bytes do not change (F14); low effort, optional.
+7. **Fan-out presentation on Overview and officer review (P10).** RESOLVED by D-28: one line per need position, grouped by rank, showing "all 3 raids" or the tier names. Recommendation: group by rank in both, showing "all 3 raids" or the tier names.
 
 ## Environment Availability
 
