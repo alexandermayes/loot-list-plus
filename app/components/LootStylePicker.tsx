@@ -33,7 +33,7 @@ interface LootStylePickerProps {
   onRetryLoad?: () => void
 }
 
-// All copy here is DRAFT until the owner's 04-19 sign-off.
+// All copy here was signed off by the owner on 2026-11-11 (04-19).
 export function LootStylePicker({
   variant,
   settings,
