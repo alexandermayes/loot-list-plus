@@ -28,6 +28,14 @@ const DISCOVERY_FILE = path.resolve(
   '../../../supabase/migrations/20261020120000_discovery_schema.sql',
 )
 
+// Applied after the Discovery re-apply so the end state matches production:
+// the Discovery file alone would recreate the need-ranking hold that this
+// file drops (D-25 amended).
+const NEED_LISTS_FILE = path.resolve(
+  __dirname,
+  '../../../supabase/migrations/20261111120000_need_lists.sql',
+)
+
 // Synthetic ids only: this repo is public.
 const GUILD_ID = '00000000-0000-4000-8000-000000000001'
 const FOREVER_EXPANSION_ID = '00000000-0000-4000-8000-000000000002'
@@ -55,7 +63,6 @@ const ITEM_FOREVER_ID = '00000000-0000-4000-8000-0000000000a2'
 const ITEM_FOREVER_SECOND_ID = '00000000-0000-4000-8000-0000000000a3'
 const NEED_TWO_ID = '00000000-0000-4000-8000-0000000000a4' // need 2, ring.tank in F1, ranked by nobody
 const PIN_ID = '00000000-0000-4000-8000-0000000000b1' // ITEM_FOREVER_ID pinned to NEED_TWO_ID, so NEED_ID has no item behind it
-const DRAFT_LIST_ID = '00000000-0000-4000-8000-000000000032' // the raider's draft list (D-22)
 const USER_A_ID = '00000000-0000-4000-8000-00000000000c'
 const USER_B_ID = '00000000-0000-4000-8000-00000000000d'
 const CHARACTER_A_ID = '00000000-0000-4000-8000-000000000025'
@@ -72,7 +79,6 @@ const GUARD_TRIGGERS = [
   'enforce_raid_tier_known_switch',
   'enforce_loot_item_need_rules_insert',
   'enforce_loot_item_need_rules_update',
-  'enforce_need_ranking_hold',
   'enforce_expansion_forever_name_insert',
   'enforce_expansion_forever_name_update',
   'enforce_raid_tier_expansion_lock',
@@ -116,7 +122,7 @@ async function guildExpansionNames(): Promise<string[]> {
 
 beforeAll(async () => {
   // Every existing migration, in filename order, then the Discovery file a
-  // second time. The hook checks that the chain holds the Discovery file,
+  // second time and the Phase 4 file after it. The hook checks that the chain holds the Discovery file,
   // not that it is the newest file, so a later migration cannot fail it
   // (#309). The default 10 s hook timeout is too short for the chain.
   const files = listMigrationFiles()
@@ -124,6 +130,7 @@ beforeAll(async () => {
   db = await createChainedDb(files)
   await db.exec('SET search_path TO public, extensions; RESET role;')
   await db.exec(fs.readFileSync(DISCOVERY_FILE, 'utf8'))
+  await db.exec(fs.readFileSync(NEED_LISTS_FILE, 'utf8'))
 
   // Seed as the superuser, which stands in for the service role: the guard
   // locks check only anon and authenticated sessions.
@@ -923,106 +930,10 @@ describe('column grants', () => {
   })
 })
 
-describe('D-22 need-ranking hold', () => {
-  const MSG_HOLD = 'Need rows cannot be ranked yet'
-  const seededRows = [
-    { loot_item_id: ITEM_FOREVER_ID, rank: 1, slot: 1 },
-    { loot_item_id: ITEM_FOREVER_SECOND_ID, rank: 2, slot: 2 },
-  ]
-
-  beforeAll(async () => {
-    // A draft list stays writable for its owner (20260930000000), which is why
-    // the fixture is a draft: the hold is the only thing that can refuse.
-    await db.query(
-      `INSERT INTO loot_submissions (id, user_id, guild_id, raid_tier_id, character_id, status)
-       VALUES ($1, $2, $3, $4, $5, 'draft')`,
-      [DRAFT_LIST_ID, RAIDER_USER_ID, GUILD_ID, FOREVER_TIER_ID, RAIDER_CHARACTER_ID],
-    )
-    await db.query(
-      `INSERT INTO loot_submission_items (submission_id, loot_item_id, rank, slot)
-       VALUES ($1, $2, 1, 1), ($1, $3, 2, 2)`,
-      [DRAFT_LIST_ID, ITEM_FOREVER_ID, ITEM_FOREVER_SECOND_ID],
-    )
-  })
-
-  const liveRows = () =>
-    query(
-      db,
-      `SELECT loot_item_id, rank, slot FROM loot_submission_items
-       WHERE submission_id = $1 AND removed_at IS NULL ORDER BY rank`,
-      [DRAFT_LIST_ID],
-    )
-
-  it('[D-22] rejects a raider saving a list whose items include a need row, and leaves the live rows as they were', async () => {
-    const items = JSON.stringify([
-      { loot_item_id: ITEM_CLASSIC_ID, rank: 1, slot: 1 },
-      { loot_item_id: NEED_ID, rank: 2, slot: 2 },
-    ])
-    // A plain statement on purpose: a rolled-back transaction would hide a
-    // hold that fired after the RPC had already replaced the list.
-    await asRole(db, 'authenticated', RAIDER_USER_ID)
-    try {
-      await expect(
-        db.query(`SELECT public.save_submission_items($1, $2::jsonb)`, [DRAFT_LIST_ID, items]),
-      ).rejects.toThrow(MSG_HOLD)
-    } finally {
-      await resetRole(db)
-    }
-    expect(await liveRows()).toEqual(seededRows)
-  })
-
-  it('[D-22] rejects a raider inserting a loot_submission_items row for a need, and still lets the raider rank an item the same way', async () => {
-    await rejectedAs(
-      RAIDER_USER_ID,
-      `INSERT INTO loot_submission_items (submission_id, loot_item_id, rank, slot) VALUES ($1, $2, 3, 1)`,
-      [DRAFT_LIST_ID, NEED_ID],
-      MSG_HOLD,
-    )
-    expect(await liveRows()).toEqual(seededRows)
-
-    expect(
-      await changedAs(
-        RAIDER_USER_ID,
-        `INSERT INTO loot_submission_items (submission_id, loot_item_id, rank, slot) VALUES ($1, $2, 3, 1)`,
-        [DRAFT_LIST_ID, ITEM_CLASSIC_ID],
-      ),
-    ).toBe(1)
-  })
-
-  it('saves item rows through save_submission_items as before (positive control for the same role and RPC)', async () => {
-    await inRolledBackTransaction(db, async () => {
-      const items = JSON.stringify([
-        { loot_item_id: ITEM_CLASSIC_ID, rank: 1, slot: 1 },
-        { loot_item_id: ITEM_FOREVER_ID, rank: 2, slot: 2 },
-      ])
-      const result = await asUser(RAIDER_USER_ID, `SELECT public.save_submission_items($1, $2::jsonb) AS saved`, [
-        DRAFT_LIST_ID,
-        items,
-      ])
-      expect(result.rows).toEqual([{ saved: 2 }])
-      await resetRole(db)
-      expect(await liveRows()).toEqual([
-        { loot_item_id: ITEM_CLASSIC_ID, rank: 1, slot: 1 },
-        { loot_item_id: ITEM_FOREVER_ID, rank: 2, slot: 2 },
-      ])
-    })
-  })
-
-  it('[D-22] lets the superuser rank a need, which is how every fixture in this phase gets past the hold', async () => {
-    await inRolledBackTransaction(db, async () => {
-      const result = await db.query(
-        `INSERT INTO loot_submission_items (submission_id, loot_item_id, rank, slot) VALUES ($1, $2, 3, 1)`,
-        [DRAFT_LIST_ID, NEED_ID],
-      )
-      expect(result.affectedRows).toBe(1)
-    })
-  })
-})
-
 describe('BLP accrues on a need row (DISC-07)', () => {
   beforeAll(async () => {
-    // Fixtures go in as the superuser, never by disabling a trigger: the hold
-    // checks only anon and authenticated sessions (D-22).
+    // Fixtures go in as the superuser, never by disabling a trigger: the guards
+    // check only anon and authenticated sessions.
     for (const [id, tag] of [
       [USER_A_ID, 'a'],
       [USER_B_ID, 'b'],
