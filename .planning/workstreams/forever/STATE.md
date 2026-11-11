@@ -5,11 +5,11 @@ milestone_name: "WoW Forever Loot: Discovery to Known"
 current_phase: 4
 current_phase_name: Discovery Lists and Score Split
 status: planning
-stopped_at: Phase 4 context gathered
-last_updated: "2026-11-10T23:46:02.420Z"
+stopped_at: Phase 4 UI-SPEC approved
+last_updated: "2026-11-11T00:08:24.771Z"
 last_activity: 2026-11-10
 last_activity_desc: "Phase 03 complete (PRs #477 and #478 merged), transitioned to Phase 4"
-state_head: 45bc29805396ce5c155b0d36c12e90b7ae99d479
+state_head: 5fa16c27a3ef676fbd6c17e3f5fccc3728f568ff
 progress:
   total_phases: 8
   completed_phases: 2
@@ -209,6 +209,6 @@ Progress: [████░░░░░░] 3/8 phases ([████████
 
 ## Session Continuity
 
-Last session: 2026-11-10T23:46:02.124Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/workstreams/forever/phases/04-discovery-lists-and-score-split/04-CONTEXT.md
+Last session: 2026-11-11T00:08:24.441Z
+Stopped at: Phase 4 UI-SPEC approved
+Resume file: .planning/workstreams/forever/phases/04-discovery-lists-and-score-split/04-UI-SPEC.md
