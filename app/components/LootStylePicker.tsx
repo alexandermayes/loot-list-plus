@@ -1,6 +1,7 @@
 'use client'
 
 import { useId } from 'react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useConfirm } from '@/components/ui/confirm-modal'
@@ -25,15 +26,31 @@ interface LootStylePickerProps {
   onApply: (next: Record<string, unknown>) => void
   /** Creation only: the preset shown as selected. */
   value?: LootStyleId
+  /** The stored loot_style has not arrived yet: cards disabled, nothing selected. */
+  loading?: boolean
+  /** The stored loot_style could not be read: the alert replaces any guess about it. */
+  loadError?: boolean
+  onRetryLoad?: () => void
 }
 
 // All copy here is DRAFT until the owner's 04-19 sign-off.
-export function LootStylePicker({ variant, settings, onApply, value }: LootStylePickerProps) {
+export function LootStylePicker({
+  variant,
+  settings,
+  onApply,
+  value,
+  loading = false,
+  loadError = false,
+  onRetryLoad,
+}: LootStylePickerProps) {
   const groupId = useId()
   const { confirm, ConfirmDialog } = useConfirm()
 
   const live = settings ?? {}
-  const status = variant === 'settings' ? lootStyleStatus(live) : null
+  // Until the stored row has been read there is no honest status: showing
+  // Custom would claim the guild has no preset when we simply do not know yet.
+  const unavailable = loading || loadError
+  const status = variant === 'settings' && !unavailable ? lootStyleStatus(live) : null
   const selectedId: LootStyleId | null =
     variant === 'create' ? (value ?? null) : status?.kind === 'preset' ? status.id : null
   const customisedId = status?.kind === 'preset' && status.customised ? status.id : null
@@ -74,8 +91,23 @@ export function LootStylePicker({ variant, settings, onApply, value }: LootStyle
         </div>
       )}
 
+      {loadError && (
+        <Alert variant="destructive">
+          <AlertDescription className="space-y-2">
+            <p className="font-semibold">{"Couldn't load your loot style."}</p>
+            <p>The settings below still work.</p>
+            {onRetryLoad && (
+              <Button type="button" variant="outline" onClick={onRetryLoad}>
+                Retry loading it
+              </Button>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <RadioGroup
         aria-label="Loot style"
+        disabled={unavailable}
         value={selectedId ?? ''}
         onValueChange={(next) => {
           if (isLootStyleId(next)) choose(next)
@@ -93,8 +125,9 @@ export function LootStylePicker({ variant, settings, onApply, value }: LootStyle
               key={id}
               htmlFor={inputId}
               className={cn(
-                'flex min-h-[72px] cursor-pointer items-start justify-between gap-3 rounded-xl border p-4 transition-colors',
-                selected ? 'border-accent bg-accent/5' : 'border-border hover:border-border-strong',
+                'flex min-h-[72px] items-start justify-between gap-3 rounded-xl border p-4 transition-colors',
+                unavailable ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+                selected ? 'border-accent bg-accent/5' : cn('border-border', !unavailable && 'hover:border-border-strong'),
               )}
             >
               <span className="min-w-0 space-y-1">

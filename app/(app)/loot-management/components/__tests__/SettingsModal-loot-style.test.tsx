@@ -20,7 +20,6 @@ const SETTINGS = {
   fifth_raid_day: null,
   reset_date: '2026-01-01',
   decimal_places: 2,
-  signup_weight: 0,
   minimum_raid_days_enabled: true,
   minimum_raid_days: 2,
   weekly_attendance_minimum: null,
