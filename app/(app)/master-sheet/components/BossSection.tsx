@@ -15,6 +15,7 @@ async function loadBossQuote(boss: string): Promise<string | null> {
   return _bossQuotes.getBossQuote(boss)
 }
 import type { ScoreResult, ScoreComponents, ScoringConfig } from '@/domain/types'
+import { toScoreResult } from '@/domain/scoring/engine'
 import { explainScore, RAIDER_BONUS_GENERIC_DETAIL } from '@/domain/scoring/explain'
 import { toDateString } from '@/utils/date'
 
@@ -73,7 +74,7 @@ function rankingToScoreResult(r: PlayerRanking): ScoreResult {
     donationBonus: r.donation_bonus,
     raiderBonus: r.raider_bonus,
   }
-  return { total: r.loot_score, components }
+  return toScoreResult(r.loot_score, components)
 }
 
 /** Officer-only score breakdown popover: shows explainScore() lines on hover */

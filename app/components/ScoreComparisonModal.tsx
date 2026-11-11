@@ -21,6 +21,7 @@ import {
   Time01Icon,
   Shield01Icon,
 } from '@hugeicons/core-free-icons'
+import { toScoreResult } from '@/domain/scoring/engine'
 import { explainScore } from '@/domain/scoring/explain'
 import type { ScoreResult, ScoreComponents, ScoreLine } from '@/domain/types'
 
@@ -63,7 +64,7 @@ function rankingToScoreResult(r: PlayerRanking): ScoreResult {
     donationBonus: r.donation_bonus,
     raiderBonus: r.raider_bonus,
   }
-  return { total: r.loot_score, components }
+  return toScoreResult(r.loot_score, components)
 }
 
 /** Icon + color per component key (UI concern, not domain) */

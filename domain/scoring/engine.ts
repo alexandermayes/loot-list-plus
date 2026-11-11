@@ -14,6 +14,20 @@ import { getRankModifier, getRoleModifier, getRaiderBonus, getTrialPenalty, calc
 import { calculatePriorityBonus } from './priority'
 
 /**
+ * Pair a total with its components and split it into standing and interest.
+ * The single place the split is defined, so callers that rebuild a result from
+ * flat fields (master sheet, comparison modal) cannot disagree with computeScore.
+ */
+export function toScoreResult(total: number, components: ScoreComponents): ScoreResult {
+  return {
+    total,
+    components,
+    standing: total - components.itemRank,
+    interest: components.itemRank,
+  }
+}
+
+/**
  * Compute the complete loot score for one character on one item.
  *
  * Formula:
@@ -54,5 +68,5 @@ export function computeScore(input: ScoreInput): ScoreResult {
     + components.donationBonus
     + components.raiderBonus
 
-  return { total, components }
+  return toScoreResult(total, components)
 }

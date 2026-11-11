@@ -9,7 +9,7 @@
  * map for richer rendering (e.g., guild rank name, matched role label).
  */
 
-import type { ScoreResult, ScoreExplanation, ScoreLine, ScoringConfig, ScoreInput } from '../types'
+import type { ScoreResult, ScoreExplanation, ScoreLine, ScoringConfig, ScoreInput, ScoreComponents } from '../types'
 import { withDefaults } from './defaults'
 import { getRoleModifierWithLabel, getActiveRaiderBonusEntries } from './modifiers'
 import { describeRaiderBonusEntries } from './raider-bonus'
@@ -23,6 +23,29 @@ export interface ExplainScoreOptions {
   characterId?: string | null
   /** YYYY-MM-DD date the score was computed for. Omit it and dated bonus entries are left out. */
   asOfDate?: string
+  /** Whose pick it is: 'self' writes "your", 'other' writes "their" (officers read raiders' scores). */
+  voice?: 'self' | 'other'
+  /** The guild's decimal places for the sentence numbers. Defaults to 2. */
+  decimalPlaces?: number
+}
+
+const DEFAULT_SENTENCE_DECIMALS = 2
+
+/** Placeholder wording until the sentence copy lands in the next commit. */
+export function formatScoreNumber(value: number, decimalPlaces = DEFAULT_SENTENCE_DECIMALS): string {
+  return String(Number(value.toFixed(decimalPlaces)) || 0)
+}
+
+export function standingSentence(
+  _components: ScoreComponents,
+  standing: number,
+  options: { maxAttendance: number; decimalPlaces: number }
+): string {
+  return `Standing ${formatScoreNumber(standing, options.decimalPlaces)}.`
+}
+
+export function interestSentence(itemRank: number, _voice: 'self' | 'other'): string {
+  return `Interest ${itemRank}.`
 }
 
 /**
@@ -33,7 +56,7 @@ export interface ExplainScoreOptions {
  * @param opts - Used only when configOrInput is a config; the ScoreInput path ignores it
  */
 export function explainScore(
-  result: ScoreResult,
+  result: Pick<ScoreResult, 'total' | 'components'>,
   configOrInput: Partial<ScoringConfig> | ScoreInput = {},
   opts: ExplainScoreOptions = {}
 ): ScoreExplanation {
@@ -156,5 +179,24 @@ export function explainScore(
     })
   }
 
-  return { total: result.total, lines }
+  // Derived here rather than read from the result so a hand-built { total, components }
+  // explains exactly like one that came from computeScore.
+  const interest = s.itemRank
+  const standing = result.total - interest
+
+  return {
+    total: result.total,
+    lines,
+    standing: {
+      value: standing,
+      sentence: standingSentence(s, standing, {
+        maxAttendance: c.max_attendance_bonus,
+        decimalPlaces: opts.decimalPlaces ?? DEFAULT_SENTENCE_DECIMALS,
+      }),
+    },
+    interest: {
+      value: interest,
+      sentence: interestSentence(interest, opts.voice ?? 'self'),
+    },
+  }
 }
