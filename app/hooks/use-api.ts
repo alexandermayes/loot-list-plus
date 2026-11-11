@@ -156,6 +156,10 @@ export interface LootItem {
   boss_name: string
   item_slot: string
   wowhead_id: number
+  /** 'need' for a Discovery need row (no real wowhead_id); the items route always selects it. */
+  kind?: string | null
+  /** The need's taxonomy key on a need row, null on an item. */
+  need_key?: string | null
   classification?: string
   item_type?: string
   armor_type?: string  // Cloth, Leather, Mail, Plate

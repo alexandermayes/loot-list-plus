@@ -82,10 +82,30 @@ interface BisImportResult {
   code?: string
 }
 
+/**
+ * Options for saveSubmission. The editor passes none and saves its own state.
+ * The need picker (Discovery lists) holds its five picks locally and hands the
+ * finished rankings in, so one tap writes the whole list. Kept as an object so
+ * later callers can add keys without another signature change.
+ */
+export interface SaveSubmissionOptions {
+  /** The list to save instead of the editor state; becomes the new state on success. */
+  rankings?: Record<string, string>
+  /** Replaces the success notification text. */
+  successMessage?: string
+}
+
 // Separate interface for data (changes frequently, triggers re-renders)
 interface LootListDataContextType {
   // Data
   lootItems: PhaseLootItem[]
+  /**
+   * Discovery tier id to picker slot for an all-Discovery phase group, else
+   * null (D-12). Non-null is what switches /loot-list from the 50-rank editor
+   * to the need picker; it comes from the same response that supplied the need
+   * rows, so the page never shows the picker without them.
+   */
+  needTierSlots: Record<string, number> | null
   submission: LootSubmission | null
   rankings: Record<string, string>
   raidTiers: RaidTier[]
@@ -125,7 +145,7 @@ interface LootListActionsContextType {
   handleItemSelect: (rank: number, slot: number, itemId: string) => void
   moveRanking: (sourceKey: string, targetKey: string) => void
   clearAllRankings: () => void
-  saveSubmission: (submit: boolean) => Promise<void>
+  saveSubmission: (submit: boolean, options?: SaveSubmissionOptions) => Promise<void>
   refreshData: () => void
   importBisItems: () => Promise<BisImportResult>
   refreshGear: () => void
@@ -258,6 +278,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         selected_phase: number | null
         selected_phases: number[]
         items: PhaseLootItem[]
+        need_tier_slots?: Record<string, number> | null
         submission: LootSubmission | null
         rankings: Record<string, string>
         removedItems: Array<{ loot_item_id: string; rank: number; slot: number }>
@@ -283,7 +304,13 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
             ? `phase=${sortedPhases[0]}`
             : `phases=${sortedPhases.join(',')}`
           const itemsKey = `/api/loot-items?expansion_id=${targetExpansionId}&${phaseParam}&character_id=${activeCharacter.id}&guild_id=${activeGuild.id}`
-          swrMutate(itemsKey, { items: data.items }, { revalidate: false })
+          // The slot map rides with the items so the first render already knows
+          // whether this group gets the picker (D-12).
+          swrMutate(
+            itemsKey,
+            { items: data.items, need_tier_slots: data.need_tier_slots ?? null },
+            { revalidate: false }
+          )
 
           const submissionKey = `/api/loot-submissions?character_id=${activeCharacter.id}&expansion_id=${targetExpansionId}&phase=${data.selected_phase}&guild_id=${activeGuild.id}`
           swrMutate(
@@ -887,8 +914,11 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
   }, [rankings, activeCharacter?.id, selectedPhase, targetExpansionId, activeGuild?.id, initialLoadComplete])
 
   // Save submission (manual save/submit)
-  const saveSubmission = useCallback(async (submit: boolean) => {
+  const saveSubmission = useCallback(async (submit: boolean, options?: SaveSubmissionOptions) => {
     if (!activeCharacter || selectedPhase === null || !targetExpansionId || !activeGuild?.id) return
+
+    // The picker passes the finished list; the editor saves its state.
+    const toSave = options?.rankings ?? rankings
 
     setIsSaving(true)
 
@@ -942,7 +972,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
       submissionId = upsertedSub.id
 
       // Atomic save: DELETE + INSERT in a single transaction via RPC
-      const itemsJson = Object.entries(rankings).map(([key, loot_item_id]) => {
+      const itemsJson = Object.entries(toSave).map(([key, loot_item_id]) => {
         const [rankStr, slotStr] = key.split('-')
         return { loot_item_id, rank: parseInt(rankStr), slot: parseInt(slotStr) }
       })
@@ -977,11 +1007,15 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
       const finalStatus = submit ? 'pending' : 'draft'
 
-      showNotification('success', submit ? 'Loot List submitted. Officers will review it.' : 'Draft saved. Pick up where you left off anytime.')
+      showNotification(
+        'success',
+        options?.successMessage ??
+          (submit ? 'Loot List submitted. Officers will review it.' : 'Draft saved. Pick up where you left off anytime.')
+      )
       trackClientEvent(submit ? 'loot_list_submitted' : 'loot_list_saved', {
         character_id: activeCharacter.id,
         phase: selectedPhase,
-        item_count: Object.keys(rankings).length
+        item_count: Object.keys(toSave).length
       })
 
       // Notify officers when submitting (fire and forget)
@@ -999,18 +1033,21 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
         }).catch(err => console.error('Failed to notify officers:', err))
       }
 
-      // Update initial state to reflect saved state
-      setInitialRankings({ ...rankings })
+      // Update initial state to reflect saved state. Explicit rankings also
+      // become the editor state, so a later read of rankings sees what was
+      // saved; lastSavedRankingsRef below keeps autosave from writing it again.
+      if (options?.rankings) setRankings({ ...toSave })
+      setInitialRankings({ ...toSave })
       setOriginalStatus(finalStatus)
 
       // Store what we saved so the sync effect doesn't overwrite local state
-      lastSavedRankingsRef.current = { ...rankings }
+      lastSavedRankingsRef.current = { ...toSave }
       lastSavedRef.current = new Date()
       localChangesRef.current = false
 
       // Optimistically update the SWR submission data so the status banner updates immediately
       mutateSubmission(
-        { ...submissionData, submission: { ...submissionData?.submission, ...upsertedSub, status: finalStatus } as LootSubmission, rankings },
+        { ...submissionData, submission: { ...submissionData?.submission, ...upsertedSub, status: finalStatus } as LootSubmission, rankings: toSave },
         false // don't revalidate — we already have the correct data
       )
 
@@ -1180,8 +1217,11 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
 
   // Memoize data value to prevent unnecessary re-renders
   // This object changes when data state changes
+  const needTierSlots = itemsData?.need_tier_slots ?? null
+
   const dataValue = useMemo<LootListDataContextType>(() => ({
     lootItems: filteredLootItems,
+    needTierSlots,
     submission: submissionData?.submission || null,
     rankings,
     raidTiers: sortedTiers,
@@ -1208,6 +1248,7 @@ export function LootListProvider({ children }: { children: React.ReactNode }) {
     lockedPositions
   }), [
     filteredLootItems,
+    needTierSlots,
     submissionData?.submission,
     rankings,
     sortedTiers,

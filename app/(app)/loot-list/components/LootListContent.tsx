@@ -49,6 +49,7 @@ import { ClassificationBadge } from '@/components/ui/classification-badge'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 import { Card } from '@/components/ui/card'
 import { NoRaidsEmptyState } from '@/app/components/NoRaidsEmptyState'
+import { NeedPicker } from '@/app/(app)/loot-list/components/NeedPicker'
 import { getExpansionDisplayName } from '@/utils/expansionVisuals'
 // BisImportModal is lazy-loaded — its ~326-line chunk only downloads when
 // the user actually clicks "Import BiS" rather than on every page load.
@@ -840,6 +841,7 @@ export default function LootListContent({
     originalStatus,
     removedItems,
     lockedPositions,
+    needTierSlots,
     setSelectedPhase,
     handleItemSelect,
     moveRanking,
@@ -853,6 +855,11 @@ export default function LootListContent({
 
   const [removingItemId, setRemovingItemId] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
+
+  // A group whose active tiers are all Discovery gets the five-row picker
+  // instead of the 50-rank editor (D-12). The slot map is only present for such
+  // a group, so Known and mixed groups keep this page exactly as it was.
+  const pickerMode = Boolean(needTierSlots)
 
   // Build a set of removed item IDs keyed by rank-slot for display
   const removedRankings = useMemo(() => {
@@ -1614,12 +1621,15 @@ export default function LootListContent({
                   ))}
                 </Select>
               )}
-              {/* How to Rank Button */}
-              <Button variant="outline" onClick={() => setShowInstructionsModal(true)}>
-                <HugeiconsIcon icon={InformationCircleIcon} size={18} />
-                <span className="hidden sm:inline">How to rank</span>
-                <span className="sm:hidden">Info</span>
-              </Button>
+              {/* How to Rank Button. The guide explains the 50-level editor, which a
+                  Discovery group does not see, so the picker page leaves it out. */}
+              {!pickerMode && (
+                <Button variant="outline" onClick={() => setShowInstructionsModal(true)}>
+                  <HugeiconsIcon icon={InformationCircleIcon} size={18} />
+                  <span className="hidden sm:inline">How to rank</span>
+                  <span className="sm:hidden">Info</span>
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -1754,7 +1764,7 @@ export default function LootListContent({
           </div>
         )}
         {/* Status Banner - inside sticky header */}
-        {!isLoading && !isContentLoading && selectedPhase !== null && (
+        {!pickerMode && !isLoading && !isContentLoading && selectedPhase !== null && (
           <div className="px-4 sm:px-6 lg:px-8 pb-2">
             <div className={`rounded-xl p-4 sm:p-6 border ${submission ? getStatusColor(submission.status) : getStatusColor('draft')}`}>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1911,7 +1921,7 @@ export default function LootListContent({
         {/* Resubmit nudge: the list was submitted before but an edit reverted it
             to a draft, or officers rejected it. Either way officers can't act
             until the raider resubmits. */}
-        {!isLoading && !isContentLoading && needsResubmitNudge && (
+        {!pickerMode && !isLoading && !isContentLoading && needsResubmitNudge && (
           <div className="px-4 sm:px-6 lg:px-8 pb-2">
             <div className="bg-yellow-900/20 border border-yellow-500/30 rounded-xl px-4 py-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1962,7 +1972,7 @@ export default function LootListContent({
         </div>
 
         {/* Duplicate Warning - outside flex container so sidebar aligns with brackets */}
-        {!isLoading && !isContentLoading && (
+        {!pickerMode && !isLoading && !isContentLoading && (
         <div
           className="grid transition-[grid-template-rows] duration-300 ease-in-out px-4 sm:px-6 lg:px-8"
           style={{ gridTemplateRows: duplicateItems.length > 0 ? '1fr' : '0fr' }}
@@ -1978,7 +1988,7 @@ export default function LootListContent({
         )}
 
         {/* First-time guidance - outside flex container so sidebar aligns with brackets */}
-        {!isLoading && !isContentLoading && Object.keys(rankings).length === 0 && (
+        {!pickerMode && !isLoading && !isContentLoading && Object.keys(rankings).length === 0 && (
           <div className="px-4 sm:px-6 lg:px-8 pb-4">
             <Card className="px-4 py-3">
               <p className="text-sm text-foreground-secondary">
@@ -1992,8 +2002,12 @@ export default function LootListContent({
         <div className={`flex items-start px-4 sm:px-6 lg:px-8 pt-1.5 pb-6 ${showUnrankedPanel ? 'gap-6' : ''}`}>
         {/* Loot List Content */}
         <div className={`flex-1 min-w-0 space-y-6 transition-all duration-300 ${showUnrankedPanel ? 'pr-0' : ''}`}>
-        {/* Content Loading State (initial load only — phase switches keep showing previous content) */}
-        {(isLoading || isContentLoading) && !hasLoadedOnce.current ? (
+        {/* Discovery groups get the picker, which brings its own loading skeleton.
+            Otherwise: content loading state (initial load only, phase switches
+            keep showing previous content). */}
+        {pickerMode ? (
+          <NeedPicker key={`${activeCharacter?.id ?? ''}:${selectedPhase ?? ''}`} />
+        ) : (isLoading || isContentLoading) && !hasLoadedOnce.current ? (
           <LootListContentSkeleton />
         ) : (
         <div className={`space-y-4 transition-opacity duration-200 ${contentReady ? 'opacity-100' : 'opacity-0'}`}>
