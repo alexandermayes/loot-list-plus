@@ -170,7 +170,7 @@ describe('standingSentence', () => {
       raiderBonus: 4, trialPenalty: -2, badLuckBonus: 5, donationBonus: 6,
     })
     expect(standingSentence(c, 23, opts)).toBe(
-      'Standing 23: attendance 4 of 4, guild rank 1, role 2, officer priority 3, officer bonus 4, trial penalty -2, bad luck protection 5, bank donations 6.'
+      'Standing 23: attendance 4 of 4, guild rank 1, role 2, officer priority 3, bad luck protection 5, officer bonus 4, trial penalty -2, bank donations 6.'
     )
   })
 
