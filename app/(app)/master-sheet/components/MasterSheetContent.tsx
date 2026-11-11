@@ -1987,7 +1987,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
               <RaidModeView
                 sortedRaidTiers={sortedRaidTiers}
                 onItemClick={handleItemClick}
-                decimalPlaces={guildSettings?.decimal_places}
+                decimalPlaces={guildSettings?.decimal_places ?? 2}
               />
             ) : (
             <>
@@ -2059,7 +2059,7 @@ export default function MasterSheetContent({ serverHeading }: MasterSheetContent
           itemName={comparisonData.itemName}
           userRanking={comparisonData.userRanking}
           winnerRanking={comparisonData.winnerRanking}
-          decimalPlaces={guildSettings?.decimal_places}
+          decimalPlaces={guildSettings?.decimal_places ?? 2}
           config={guildSettings ?? undefined}
         />
 
