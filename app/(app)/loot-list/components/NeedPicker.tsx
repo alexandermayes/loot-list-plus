@@ -21,12 +21,14 @@ import { NeedQuestionSheet } from '@/app/components/need-picker/NeedQuestionShee
 import type { NeedOptionContext } from '@/app/components/need-picker/NeedQuestionFlow'
 import { useGuildContext, type Character } from '@/app/contexts/GuildContext'
 import { useLootList, type SaveSubmissionResult } from '@/app/contexts/LootListContext'
+import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useConfirm } from '@/components/ui/confirm-modal'
 import { StatusBadge, type SubmissionStatus } from '@/components/ui/status-badge'
 import { NeedPickerSkeleton } from '@/components/ui/skeletons'
 import { badgeVariants } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
+import { ErrorState } from '@/components/ui/error-state'
 import { isNeedRow } from '@/domain/loot/item-identity'
 import { positionKey } from '@/domain/loot/list-row-updates'
 import {
@@ -39,7 +41,11 @@ import {
   wouldGoOver,
 } from '@/domain/loot/need-budget'
 import { defaultNeedsFor, matchesSpecDefault } from '@/domain/loot/need-defaults'
-import { eligibleNeedsFor } from '@/domain/loot/need-eligibility'
+import {
+  NEED_NOT_ELIGIBLE_CODE,
+  NEED_NOT_ELIGIBLE_ERROR,
+  eligibleNeedsFor,
+} from '@/domain/loot/need-eligibility'
 import {
   NEED_PICK_COUNT,
   NEED_PICK_RANKS,
@@ -88,6 +94,11 @@ export const NEED_PICKER_STATUS_COPY = Object.freeze({
   confirmBody: 'This list is approved. Once you save a change, officers review it again before it counts.',
   confirmAction: 'Change my 5',
   confirmCancel: 'Keep it',
+  saved: 'Saved. Officers will review your 5.',
+  saveError: "Couldn't save your 5. Try again.",
+  retrySave: 'Retry saving my 5',
+  loadError: "Couldn't load your 5. Check your connection and try again.",
+  retryLoad: 'Retry loading my 5',
 })
 
 const officerNote = (notes: string) => `Officer note: ${notes}`
@@ -117,8 +128,10 @@ interface StatusBlock {
  */
 function statusBlockFor(
   status: string | null,
-  options: { changed: boolean; recentChangeRejected: boolean; notes: string | null },
+  options: { changed: boolean; recentChangeRejected: boolean; notes: string | null; justSaved: boolean },
 ): StatusBlock | null {
+  // Right after a save the list is pending, whatever the cache has caught up to yet.
+  if (options.justSaved) return { badge: 'pending', sentence: NEED_PICKER_STATUS_COPY.saved, note: null }
   if (status === null) return null
   const sentBack = status === 'needs_revision' || status === 'rejected'
   if (options.changed && !sentBack) {
@@ -150,16 +163,47 @@ function statusBlockFor(
 type FailedSave = Extract<SaveSubmissionResult, { ok: false }>
 
 /**
- * The sentence the server refused with. Its 422 body carries the fixed
- * over-budget sentence in `error`; the message is the fallback, so a body
- * without one still says something.
+ * The sentence the server refused a budget with. Its 422 body carries the
+ * fixed over-budget sentence in `error`; the message is the fallback, so a
+ * body without one still says something.
  */
-function refusalSentence(result: FailedSave): string {
+function budgetRefusalSentence(result: FailedSave): string {
   const details = result.details
   if (details && typeof details === 'object' && 'error' in details && typeof details.error === 'string') {
     return details.error
   }
   return result.message
+}
+
+/**
+ * The need keys the server refused as unusable by the character. Only keys are
+ * read from the body, never its text, so nothing else the server sent reaches
+ * the screen (T-04-20-03).
+ */
+function ineligibleNeedKeys(result: FailedSave): string[] {
+  const details = result.details
+  if (!details || typeof details !== 'object' || !('ineligible' in details) || !Array.isArray(details.ineligible)) {
+    return []
+  }
+  return details.ineligible.flatMap((entry: unknown) =>
+    entry && typeof entry === 'object' && 'need_key' in entry && typeof entry.need_key === 'string'
+      ? [entry.need_key]
+      : [],
+  )
+}
+
+/** The load error, shared by the list failing to load and by a gap in the need rows. */
+function NeedPickerLoadError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <section className="mx-auto w-full max-w-xl">
+      <ErrorState
+        message={NEED_PICKER_STATUS_COPY.loadError}
+        onRetry={onRetry}
+        retryLabel={NEED_PICKER_STATUS_COPY.retryLoad}
+        size="lg"
+      />
+    </section>
+  )
 }
 
 function samePositions(a: Positions, b: Positions): boolean {
@@ -169,7 +213,7 @@ function samePositions(a: Positions, b: Positions): boolean {
 /** Gate: the picker needs a character in this guild and a loaded list. */
 export function NeedPicker() {
   const { activeCharacter } = useGuildContext()
-  const { isLoading, isContentLoading } = useLootList()
+  const { isLoading, isContentLoading, loadFailed, refreshData } = useLootList()
   const [creating, setCreating] = useState(false)
 
   if (!activeCharacter) {
@@ -190,12 +234,23 @@ export function NeedPicker() {
   // The skeleton stands in for the title, rows and footer, so the footer is
   // absent until the list is in and the layout does not jump.
   if (isLoading || isContentLoading) return <NeedPickerSkeleton />
+  // Without the raider's list the picker would show a default and invite a save over it.
+  if (loadFailed) return <NeedPickerLoadError onRetry={refreshData} />
   return <NeedPickerBody character={activeCharacter} />
 }
 
 function NeedPickerBody({ character }: { character: Character }) {
-  const { lootItems, submission, rankings, phaseTiers, needTierSlots, lockedPositions, isSaving, saveSubmission } =
-    useLootList()
+  const {
+    lootItems,
+    submission,
+    rankings,
+    phaseTiers,
+    needTierSlots,
+    lockedPositions,
+    isSaving,
+    saveSubmission,
+    refreshData,
+  } = useLootList()
   const className = character.class?.name
   const specName = character.spec?.name
 
@@ -267,9 +322,15 @@ function NeedPickerBody({ character }: { character: Character }) {
   const budget = budgetForPicks(positions)
   const overSentence = budget.used > NEED_BUDGET_POINTS ? needOverBudgetSentence(budget.bigPicks) : null
 
-  // The server's own refusal of the last save; the next edit clears it.
-  const [refusal, setRefusal] = useState<FailedSave | null>(null)
-  const serverOverSentence = refusal?.code === NEED_BUDGET_CODE ? refusalSentence(refusal) : null
+  // What the last save came back with. The footer sentence (a budget or
+  // eligibility refusal) and the save error clear at the next edit; a refused
+  // need's mark clears when that row changes; the success line clears at the
+  // next edit too.
+  const [footerRefusal, setFooterRefusal] = useState<string | null>(null)
+  const [refusedNeeds, setRefusedNeeds] = useState<readonly string[]>([])
+  const [failedPayload, setFailedPayload] = useState<Record<string, string> | null>(null)
+  const [justSaved, setJustSaved] = useState(false)
+  const [rowsMissing, setRowsMissing] = useState(false)
 
   // D-05: an award on this rank in any tier, turned-off ones included, pins the row.
   const allSlots = useMemo(() => Object.values(needTierSlots ?? {}), [needTierSlots])
@@ -302,7 +363,15 @@ function NeedPickerBody({ character }: { character: Character }) {
     changed: changed && !readOnly,
     recentChangeRejected: Boolean(submission?.change_rejected_at),
     notes: submission?.review_notes ?? null,
+    justSaved,
   })
+
+  // The save announces itself by taking focus, so a screen reader reads the
+  // status line it just wrote (UI-SPEC surface 1).
+  const statusRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (justSaved) statusRef.current?.focus()
+  }, [justSaved])
 
   const [sheetRow, setSheetRow] = useState(0)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -348,11 +417,21 @@ function NeedPickerBody({ character }: { character: Character }) {
     return () => observer.disconnect()
   }, [])
 
+  // Any edit makes the last save's outcome stale. Refused needs are cleared per
+  // row by replaceRow, because a Move up leaves a refused need refused.
+  const clearOutcome = () => {
+    setFooterRefusal(null)
+    setFailedPayload(null)
+    setJustSaved(false)
+  }
+
   const replaceRow = (row: number, key: string) => {
     const next = [...positions]
+    const replaced = positions[row]
     next[row] = key
     setEdited(next)
-    setRefusal(null)
+    clearOutcome()
+    setRefusedNeeds((marked) => marked.filter((marker) => marker !== replaced))
     setHighlightRow(row)
   }
 
@@ -362,7 +441,7 @@ function NeedPickerBody({ character }: { character: Character }) {
     ;[next[row - 1], next[row]] = [next[row], next[row - 1]]
     pendingFocus.current = row - 1
     setEdited(next)
-    setRefusal(null)
+    clearOutcome()
     setAnnouncement(`Moved to number ${row}.`)
   }
 
@@ -386,6 +465,34 @@ function NeedPickerBody({ character }: { character: Character }) {
     return null
   }
 
+  // quiet: this screen shows the outcome itself, so the editor's toast stays out.
+  const send = async (payload: Record<string, string>) => {
+    clearOutcome()
+    setRefusedNeeds([])
+    const result = await saveSubmission(true, { rankings: payload, quiet: true })
+    if (result.ok) {
+      // The saved list is pending now; the next approval starts locked again.
+      setUnlocked(false)
+      setJustSaved(true)
+      return
+    }
+    if (result.code === NEED_BUDGET_CODE) {
+      setFooterRefusal(budgetRefusalSentence(result))
+      return
+    }
+    if (result.code === NEED_NOT_ELIGIBLE_CODE) {
+      const keys = ineligibleNeedKeys(result)
+      if (keys.length > 0) {
+        setRefusedNeeds(keys)
+        setFooterRefusal(NEED_NOT_ELIGIBLE_ERROR)
+        return
+      }
+    }
+    // Anything else, or a refusal that names no row: a fixed sentence and a
+    // retry of exactly this list. The server's text is never shown.
+    setFailedPayload(payload)
+  }
+
   const handleSave = async () => {
     if (!complete || overSentence !== null || isSaving) return
     const { rankings: fanOut, missing } = buildNeedRankings({
@@ -395,18 +502,28 @@ function NeedPickerBody({ character }: { character: Character }) {
     })
     // Need rows are seeded data, so a gap means the load is incomplete. Saving
     // fewer rows than the tiers need would be silent data loss.
-    if (missing.length > 0) return
+    if (missing.length > 0) {
+      setRowsMissing(true)
+      return
+    }
 
     // Rows the picker cannot see (a turned-off tier's) ride along unchanged.
     const carried: Record<string, string> = {}
     for (const [key, id] of Object.entries(rankings)) {
       if (!rowsById.has(id)) carried[key] = id
     }
-    // quiet: this screen shows the outcome itself, so the editor's toast stays out.
-    const result = await saveSubmission(true, { rankings: { ...carried, ...fanOut }, quiet: true })
-    setRefusal(result.ok ? null : result)
-    // The saved list is pending now; the next approval starts locked again.
-    if (result.ok) setUnlocked(false)
+    await send({ ...carried, ...fanOut })
+  }
+
+  if (rowsMissing) {
+    return (
+      <NeedPickerLoadError
+        onRetry={() => {
+          setRowsMissing(false)
+          refreshData()
+        }}
+      />
+    )
   }
 
   const specLabel = specName ? `${specName} ${className}` : `${className ?? 'Class'}`
@@ -441,9 +558,11 @@ function NeedPickerBody({ character }: { character: Character }) {
 
         {statusBlock ? (
           <div
+            ref={statusRef}
             role="status"
             data-need-status=""
-            className="mt-4 flex flex-col items-start gap-2 rounded-lg"
+            tabIndex={-1}
+            className="mt-4 flex flex-col items-start gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <StatusBadge status={statusBlock.badge} />
             <p className="text-md text-foreground">{statusBlock.sentence}</p>
@@ -467,6 +586,7 @@ function NeedPickerBody({ character }: { character: Character }) {
               lockTitle={locks[row] ? lockedRankTitle(locks[row].locked_at) : undefined}
               canMoveUp={row > 0 && !locks[row] && !locks[row - 1]}
               readOnly={readOnly}
+              warning={key !== null && refusedNeeds.includes(key) ? NEED_NOT_ELIGIBLE_ERROR : null}
               highlighted={highlightRow === row}
               onChange={() => {
                 setSheetRow(row)
@@ -493,7 +613,15 @@ function NeedPickerBody({ character }: { character: Character }) {
         ref={footerRef}
         className="sticky bottom-0 mt-4 border-t border-border bg-background-subtle p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
       >
-        <BudgetLine used={budget.used} overSentence={overSentence ?? serverOverSentence} />
+        {failedPayload ? (
+          <Alert variant="destructive" className="mb-4 flex flex-col items-start gap-2 text-foreground">
+            <p className="text-md">{NEED_PICKER_STATUS_COPY.saveError}</p>
+            <Button type="button" variant="outline" disabled={isSaving} onClick={() => send(failedPayload)}>
+              {NEED_PICKER_STATUS_COPY.retrySave}
+            </Button>
+          </Alert>
+        ) : null}
+        <BudgetLine used={budget.used} overSentence={overSentence ?? footerRefusal} />
         <Button
           type="button"
           variant={readOnly ? 'outline' : 'primary'}

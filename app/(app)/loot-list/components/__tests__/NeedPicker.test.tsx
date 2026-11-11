@@ -730,3 +730,201 @@ describe('NeedPicker approved list (D-05, D-27)', () => {
   })
 })
 
+
+// ---------------------------------------------------------------------------
+// 04-20 Task 3: eligibility refusal, save and load errors, success
+// ---------------------------------------------------------------------------
+
+const ELIGIBILITY_SENTENCE = "Your spec can't use this need. Change it to continue."
+
+function eligibilityRefusal(needKeys: string[]) {
+  return {
+    ok: false,
+    code: 'NEED_NOT_ELIGIBLE',
+    message: ELIGIBILITY_SENTENCE,
+    details: {
+      error: ELIGIBILITY_SENTENCE,
+      code: 'NEED_NOT_ELIGIBLE',
+      ineligible: needKeys.map((need_key) => ({ loot_item_id: `row:tier-a:${need_key}`, need_key })),
+    },
+  }
+}
+
+describe('NeedPicker eligibility refusal (D-10, DISC-04)', () => {
+  it('marks only the refused row with the server sentence, in the warning panel', async () => {
+    const user = userEvent.setup()
+    setContexts({ saveSubmission: vi.fn().mockResolvedValue(eligibilityRefusal([MAGE_DEFAULT[2]])) })
+    render(<NeedPicker />)
+
+    await user.click(screen.getByRole('button', { name: 'Looks right' }))
+
+    const rows = within(screen.getByRole('list')).getAllByRole('listitem')
+    const warned = await within(rows[2]).findByText(ELIGIBILITY_SENTENCE)
+    expect(warned.parentElement!.className).toContain('bg-warning/10')
+    for (const index of [0, 1, 3, 4]) expect(within(rows[index]).queryByText(ELIGIBILITY_SENTENCE)).toBeNull()
+  })
+
+  it('clears the mark when that row is changed, and keeps it when another row moves', async () => {
+    const user = userEvent.setup()
+    setContexts({
+      lootItems: needRows([...MAGE_DEFAULT, 'two-hand-weapon.spell-damage']),
+      saveSubmission: vi.fn().mockResolvedValue(eligibilityRefusal([MAGE_DEFAULT[0]])),
+    })
+    render(<NeedPicker />)
+    await user.click(screen.getByRole('button', { name: 'Looks right' }))
+    const rowOne = () => within(screen.getByRole('list')).getAllByRole('listitem')[0]
+    await within(rowOne()).findByText(ELIGIBILITY_SENTENCE)
+
+    // Moving a different row leaves the refused row marked.
+    await user.click(screen.getByRole('button', { name: `Move ${sentenceOf(MAGE_DEFAULT[3])} up to number 3` }))
+    expect(within(rowOne()).getByText(ELIGIBILITY_SENTENCE)).toBeInTheDocument()
+
+    // Changing the refused row itself clears it.
+    await user.click(screen.getByRole('button', { name: new RegExp(`^Number 1: ${sentenceOf(MAGE_DEFAULT[0])}`) }))
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: /^Two-hand weapon/ }))
+    await waitFor(() => expect(screen.queryByText(ELIGIBILITY_SENTENCE)).toBeNull())
+  })
+
+  it('also says it in the footer, the one place a screen reader hears it', async () => {
+    const user = userEvent.setup()
+    setContexts({ saveSubmission: vi.fn().mockResolvedValue(eligibilityRefusal([MAGE_DEFAULT[2]])) })
+    render(<NeedPicker />)
+
+    await user.click(screen.getByRole('button', { name: 'Looks right' }))
+    await screen.findAllByText(ELIGIBILITY_SENTENCE)
+
+    const footerSentence = screen
+      .getAllByText(ELIGIBILITY_SENTENCE)
+      .find((node) => node.getAttribute('aria-live') === 'polite')
+    expect(footerSentence).toBeDefined()
+  })
+
+  it('renders neither refusal with a danger or destructive class (guidance, not an error)', async () => {
+    const user = userEvent.setup()
+    setContexts({ saveSubmission: vi.fn().mockResolvedValue(eligibilityRefusal([MAGE_DEFAULT[2]])) })
+    const { container, unmount } = render(<NeedPicker />)
+    await user.click(screen.getByRole('button', { name: 'Looks right' }))
+    await screen.findAllByText(ELIGIBILITY_SENTENCE)
+    expect(container.innerHTML).not.toMatch(/destructive|danger/)
+    expect(screen.queryByRole('alert')).toBeNull()
+    unmount()
+
+    setContexts({ saveSubmission: vi.fn().mockResolvedValue(budgetRefusal) })
+    const second = render(<NeedPicker />)
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Looks right' }))
+    await screen.findByText(BUDGET_SENTENCE)
+    expect(second.container.innerHTML).not.toMatch(/destructive|danger/)
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('falls back to the save error when a refusal names no rows', async () => {
+    const user = userEvent.setup()
+    setContexts({ saveSubmission: vi.fn().mockResolvedValue({ ...eligibilityRefusal([]), details: { code: 'NEED_NOT_ELIGIBLE' } }) })
+    render(<NeedPicker />)
+
+    await user.click(screen.getByRole('button', { name: 'Looks right' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't save your 5. Try again.")
+  })
+})
+
+describe('NeedPicker save error (UI-SPEC E1 error)', () => {
+  const failure = { ok: false, message: 'database said no: secret detail' }
+
+  it('keeps the list on screen and shows the Alert with a retry, never the raw message', async () => {
+    const user = userEvent.setup()
+    setContexts({ saveSubmission: vi.fn().mockResolvedValue(failure) })
+    render(<NeedPicker />)
+
+    await user.click(screen.getByRole('button', { name: 'Looks right' }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent("Couldn't save your 5. Try again.")
+    // T-04-20-03: only the fixed sentence reaches the raider.
+    expect(document.body.textContent).not.toContain('secret detail')
+    expect(within(alert).getByRole('button', { name: 'Retry saving my 5' })).toBeInTheDocument()
+    expect(within(screen.getByRole('list')).getAllByRole('listitem')).toHaveLength(5)
+  })
+
+  it('Retry sends the same rankings again', async () => {
+    const user = userEvent.setup()
+    const save = vi.fn().mockResolvedValueOnce(failure).mockResolvedValueOnce({ ok: true })
+    setContexts({ saveSubmission: save })
+    render(<NeedPicker />)
+    await user.click(screen.getByRole('button', { name: 'Looks right' }))
+    await user.click(await screen.findByRole('button', { name: 'Retry saving my 5' }))
+
+    expect(save).toHaveBeenCalledTimes(2)
+    expect(save.mock.calls[1]).toEqual(save.mock.calls[0])
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
+  })
+
+  it('drops the Alert at the next edit, so a retry never re-sends an old list', async () => {
+    const user = userEvent.setup()
+    setContexts({ saveSubmission: vi.fn().mockResolvedValue(failure) })
+    render(<NeedPicker />)
+    await user.click(screen.getByRole('button', { name: 'Looks right' }))
+    await screen.findByRole('alert')
+
+    await user.click(screen.getByRole('button', { name: `Move ${sentenceOf(MAGE_DEFAULT[1])} up to number 1` }))
+
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+})
+
+describe('NeedPicker save success (D-27)', () => {
+  beforeEach(() => setContexts())
+
+  it('moves focus to the status region reading Saved. Officers will review your 5.', async () => {
+    const user = userEvent.setup()
+    render(<NeedPicker />)
+
+    await user.click(screen.getByRole('button', { name: 'Looks right' }))
+
+    await waitFor(() => expect(statusRegion()).toHaveFocus())
+    const region = statusRegion()!
+    expect(region).toHaveTextContent('Saved. Officers will review your 5.')
+    expect(within(region).getByText('Pending')).toBeInTheDocument()
+  })
+
+  it('clears the success line at the next edit', async () => {
+    const user = userEvent.setup()
+    render(<NeedPicker />)
+    await user.click(screen.getByRole('button', { name: 'Looks right' }))
+    await waitFor(() => expect(statusRegion()).toHaveFocus())
+
+    await user.click(screen.getByRole('button', { name: `Move ${sentenceOf(MAGE_DEFAULT[1])} up to number 1` }))
+
+    expect(screen.queryByText('Saved. Officers will review your 5.')).toBeNull()
+  })
+})
+
+describe('NeedPicker load error (UI-SPEC E1 error)', () => {
+  it('shows the load error with Retry loading my 5 when the list failed to load, and retries through refreshData', async () => {
+    const user = userEvent.setup()
+    setContexts({ loadFailed: true })
+    render(<NeedPicker />)
+
+    expect(screen.getByText("Couldn't load your 5. Check your connection and try again.")).toBeInTheDocument()
+    expect(screen.queryByRole('list')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Looks right' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Retry loading my 5' }))
+
+    expect((hoisted.lootList.current as { refreshData: SaveMock }).refreshData).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows it when a Discovery tier has no need row, instead of saving fewer rows', async () => {
+    const user = userEvent.setup()
+    setContexts({ lootItems: needRows(MAGE_DEFAULT, ['tier-a', 'tier-b']) })
+    render(<NeedPicker />)
+
+    await user.click(screen.getByRole('button', { name: 'Looks right' }))
+
+    expect(await screen.findByText("Couldn't load your 5. Check your connection and try again.")).toBeInTheDocument()
+    expect(saveMock()).not.toHaveBeenCalled()
+    await user.click(screen.getByRole('button', { name: 'Retry loading my 5' }))
+    expect((hoisted.lootList.current as { refreshData: SaveMock }).refreshData).toHaveBeenCalledTimes(1)
+  })
+})
+
