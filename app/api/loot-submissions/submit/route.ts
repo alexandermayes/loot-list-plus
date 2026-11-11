@@ -4,7 +4,9 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { validateBracketRules, type BracketItem, type BracketLimits } from '@/domain/loot/bracket-validation'
 import { validateItemCopyLimits } from '@/domain/loot/item-copies'
 import { isNeedRow } from '@/domain/loot/item-identity'
-import { isHeldNeedRanking, NEED_RANKING_HOLD_ERROR } from '@/domain/loot/need-ranking-hold'
+import { checkNeedList } from '@/domain/loot/need-list-rules'
+import { NEED_BUDGET_CODE, needOverBudgetSentence } from '@/domain/loot/need-budget'
+import { NEED_NOT_ELIGIBLE_CODE, NEED_NOT_ELIGIBLE_ERROR } from '@/domain/loot/need-eligibility'
 import { findLockViolations, lockViolationMessage } from '@/domain/loot/slot-locks'
 import { logStatusChange } from '@/utils/audit/log'
 import { trackEvent, setUserMilestone } from '@/utils/analytics/server'
@@ -17,6 +19,11 @@ import { findPrioViolations, prioViolationMessage, PRIO_VIOLATION_CODE } from '@
 // Shown to the raider when the list's character is not an active member of
 // the list's guild (the same text auto-save shows).
 const NOT_ACTIVE_MEMBER_ERROR = 'Your character needs to rejoin this guild.'
+
+// PostgREST can return a to-one embed as an object or a one-element array.
+function oneEmbed<T>(embed: T | T[] | null | undefined): T | null {
+  return (Array.isArray(embed) ? embed[0] : embed) ?? null
+}
 
 /**
  * POST /api/loot-submissions/submit
@@ -39,6 +46,10 @@ const NOT_ACTIVE_MEMBER_ERROR = 'Your character needs to rejoin this guild.'
  *    loot list applies; see domain/loot/item-copies.ts). Rows whose item is
  *    from a raid tier the guild turned off (raid_tiers.is_guild_active = false)
  *    are skipped, because the loot list page never shows them (GH #357)
+ * 5a. Check the Discovery need rows (422, before any write): the 10-point
+ *    budget counted once per (rank, need key) answers NEED_BUDGET_EXCEEDED,
+ *    and a need the character's class and spec cannot use answers
+ *    NEED_NOT_ELIGIBLE. Both read the same checked rows as step 5
  * 6. Check officer class prio (#484): a ranked item outside its zone's prio
  *    pool is refused with 400 and code PRIO_VIOLATION, naming the items.
  *    The items and flags are recomputed over the list's phase-group tiers;
@@ -75,7 +86,7 @@ export async function POST(request: NextRequest) {
     // Verify user owns the character
     const { data: character } = await serviceSupabase
       .from('characters')
-      .select('id, user_id')
+      .select('id, user_id, class:wow_classes(name), spec:class_specs(name)')
       .eq('id', submission.character_id)
       .single()
 
@@ -99,7 +110,7 @@ export async function POST(request: NextRequest) {
         rank,
         slot,
         loot_item_id,
-        loot_item:loot_items(id, name, classification, item_type, item_slot, wowhead_id, allocation_cost, kind, raid_tier:raid_tiers(is_guild_active))
+        loot_item:loot_items(id, name, classification, item_type, item_slot, wowhead_id, allocation_cost, kind, need_key, raid_tier:raid_tiers(is_guild_active))
       `)
       .eq('submission_id', submission_id)
       .is('removed_at', null)
@@ -151,19 +162,12 @@ export async function POST(request: NextRequest) {
         item_slot?: string | null
         allocation_cost?: number | null
         kind?: string | null
+        need_key?: string | null
         // PostgREST can return a to-one embed as an object or a one-element array.
         raid_tier?: { is_guild_active?: boolean | null } | Array<{ is_guild_active?: boolean | null }> | null
       } | null
     }
     const itemRows = (submissionItems || []) as unknown as SubmissionItemRow[]
-
-    // D-22: ranking a need is held until Phase 4. Every loaded row is checked,
-    // before the GH #357 filter below, because a need in a turned-off tier is
-    // still a ranked need. Nothing has been written yet, so the refusal leaves
-    // status, submitted_at and resubmission_count as they were.
-    if (itemRows.some((si) => isHeldNeedRanking(si.loot_item))) {
-      return NextResponse.json({ error: NEED_RANKING_HOLD_ERROR }, { status: 422 })
-    }
 
     // GH #357: the loot list page only receives items from raid tiers with
     // is_guild_active = true (resolveTierIdsForPhases in lib/loot-items-query.ts),
@@ -178,8 +182,8 @@ export async function POST(request: NextRequest) {
     })
     // Need rows are outside the bracket rules: their cost is the need's size
     // (3, 2, 1), not a classification, so summing it against the bracket limit
-    // would reject valid need lists. Their 10-point budget is Phase 4's check
-    // (DISC-03). Copy caps below still apply to them.
+    // would reject valid need lists. Their 10-point budget is checked by
+    // checkNeedList below (DISC-03). Copy caps below still apply to them.
     const validationItems = checkedRows.filter((si) => !isNeedRow(si.loot_item)).map((si) => ({
       rank: si.rank,
       slot: si.slot,
@@ -216,6 +220,39 @@ export async function POST(request: NextRequest) {
         error: 'List violates bracket rules',
         violations,
       }, { status: 422 })
+    }
+
+    // Need rows: the budget (D-07) and the character's eligibility (D-10), after
+    // the same GH #357 filter as the bracket rules so a need in a tier the guild
+    // turned off never blocks a raider who cannot see it. Nothing has been
+    // written yet, so a refusal leaves status, submitted_at and
+    // resubmission_count as they were.
+    const needRows = checkedRows.filter((si) => isNeedRow(si.loot_item))
+    if (needRows.length > 0) {
+      const { budget, ineligible } = checkNeedList(
+        needRows.map((si) => ({
+          loot_item_id: si.loot_item_id,
+          rank: si.rank,
+          need_key: si.loot_item?.need_key ?? null,
+          allocation_cost: si.loot_item?.allocation_cost ?? null,
+        })),
+        { className: oneEmbed(character.class)?.name ?? null, specName: oneEmbed(character.spec)?.name ?? null },
+      )
+      if (!budget.ok) {
+        return NextResponse.json({
+          error: needOverBudgetSentence(budget.bigPicks),
+          code: NEED_BUDGET_CODE,
+          used: budget.used,
+          limit: budget.limit,
+        }, { status: 422 })
+      }
+      if (ineligible.length > 0) {
+        return NextResponse.json({
+          error: NEED_NOT_ELIGIBLE_ERROR,
+          code: NEED_NOT_ELIGIBLE_CODE,
+          ineligible,
+        }, { status: 422 })
+      }
     }
 
     // Lists saved before an officer changed prio keep items the editor would

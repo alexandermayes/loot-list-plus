@@ -1,20 +1,14 @@
 // @vitest-environment node
 // jsdom (the global vitest.config.ts environment) does not provide the web
 // Response/Request globals that next/server relies on.
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { POST } from '../route'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
-import { isHeldNeedRanking, NEED_RANKING_HOLD_ERROR } from '@/domain/loot/need-ranking-hold'
+import { findNeedDefinition, needRowColumns } from '@/domain/loot/needs'
 import { fetchActiveSlotLocks } from '@/lib/loot/slot-locks'
 import { fetchListPrioItems } from '@/lib/loot/prio-check'
 
-// The hold is a real predicate by default; a describe can open it (the Phase 4
-// state) and the beforeEach below restores it for every other test.
-vi.mock('@/domain/loot/need-ranking-hold', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/domain/loot/need-ranking-hold')>()
-  return { ...actual, isHeldNeedRanking: vi.fn(actual.isHeldNeedRanking) }
-})
 vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn() }))
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
 vi.mock('@/utils/audit/log', () => ({ logStatusChange: vi.fn() }))
@@ -35,7 +29,8 @@ type Call = { table: string; filters: Array<[string, unknown]>; updatePayload?: 
 
 interface Fixture {
   submission: { id: string; guild_id: string; character_id: string | null; expansion_id: string; phase: number; status: string; resubmission_count: number; submitted_at: string | null } | null
-  character: { id: string; user_id: string } | null
+  // The class and spec names ride in as the PostgREST to-one embeds the route selects.
+  character: { id: string; user_id: string; class?: { name: string } | null; spec?: { name: string } | null } | null
   activeMemberships: Array<{ character_id: string; guild_id: string }>
   membershipError?: { message: string } | null
   statusUpdateError?: { code?: string; message: string } | null
@@ -57,6 +52,7 @@ interface SubmissionItem {
     wowhead_id: number | null
     allocation_cost: number | null
     kind?: string | null
+    need_key?: string | null
     // PostgREST can return a to-one embed as an object or a one-element array.
     raid_tier?: RaidTierEmbed | RaidTierEmbed[] | null
   }
@@ -135,7 +131,7 @@ function baseFixture(): Fixture {
       resubmission_count: 1,
       submitted_at: '2026-09-01T00:00:00.000Z',
     },
-    character: { id: CHARACTER_ID, user_id: OWNER_USER_ID },
+    character: { id: CHARACTER_ID, user_id: OWNER_USER_ID, class: { name: 'Mage' }, spec: { name: 'Mage' } },
     activeMemberships: [{ character_id: CHARACTER_ID, guild_id: GUILD_ID }],
   }
 }
@@ -177,6 +173,49 @@ function withTier(row: SubmissionItem, raidTier: SubmissionItem['loot_item']['ra
 }
 
 const submissionUpdates = (calls: Call[]) => calls.filter(c => c.table === 'loot_submissions' && c.updatePayload)
+
+// A Discovery need pick is fanned out over every Discovery tier of the phase
+// group: one loot_items row per tier, the pick's rank, and slot = tier + 1.
+const TEN_POINT_KEYS = [
+  'main-hand-weapon.spell-damage', // 3
+  'trinket.spell-damage', // 3
+  'ring.spell-damage', // 2
+  'chest.cloth.spell-damage', // 1
+  'head.cloth.spell-damage', // 1
+]
+
+function needRows(key: string, rank: number, tiers: readonly number[] = [0, 1, 2], over: Partial<SubmissionItem['loot_item']> = {}): SubmissionItem[] {
+  const definition = findNeedDefinition(key)
+  if (!definition) throw new Error(`unknown need key ${key}`)
+  const columns = needRowColumns(definition)
+  return tiers.map(tier => {
+    const id = `need-row:${key}:${tier}`
+    return {
+      rank,
+      slot: tier + 1,
+      loot_item_id: id,
+      loot_item: {
+        id,
+        name: columns.name,
+        classification: columns.classification,
+        item_type: null,
+        item_slot: columns.item_slot,
+        wowhead_id: null,
+        allocation_cost: columns.allocation_cost,
+        kind: 'need',
+        need_key: key,
+        ...over,
+      },
+    }
+  })
+}
+
+// Picks at ranks 50, 49, 48 and so on, one per key, every tier.
+function needList(keys: readonly string[], tiers: readonly number[] = [0, 1, 2]): SubmissionItem[] {
+  return keys.flatMap((key, index) => needRows(key, 50 - index, tiers))
+}
+
+const statusUpdates = (calls: Call[]) => submissionUpdates(calls).filter(c => c.updatePayload && 'status' in c.updatePayload)
 
 async function run(fixture: Fixture, userId = OWNER_USER_ID) {
   const { client, calls } = makeClient(fixture)
@@ -330,43 +369,64 @@ describe('POST /api/loot-submissions/submit', () => {
     })
   })
 
-  // regression for D-22: a need row cannot be ranked before Phase 4
-  describe('ranking needs is held (D-22)', () => {
-    const NEED_IDS = ['bbbbbbbb-0000-0000-0000-0000000000e1', 'bbbbbbbb-0000-0000-0000-0000000000e2']
-
-    function needRow(rank: number, idx: number, over: Partial<SubmissionItem['loot_item']> = {}): SubmissionItem {
-      return {
-        rank,
-        slot: 1,
-        loot_item_id: NEED_IDS[idx],
-        loot_item: {
-          id: NEED_IDS[idx],
-          name: 'Trinket',
-          classification: 'Reserved',
-          item_type: null,
-          item_slot: 'Trinket',
-          wowhead_id: null,
-          allocation_cost: 3,
-          kind: 'need',
-          ...over,
-        },
-      }
-    }
-
-    it('returns 422 with the hold error and writes nothing when a live row is a need', async () => {
-      const fixture = { ...baseFixture(), items: [bindings(50, 0), needRow(40, 0)] }
-      const { res, body, calls } = await run(fixture)
-      expect(res.status).toBe(422)
-      expect(body).toEqual({ error: NEED_RANKING_HOLD_ERROR })
-      expect(submissionUpdates(calls)).toHaveLength(0)
+  // The hold on ranking needs (D-22) is gone: a Discovery list submits, behind
+  // the budget and eligibility checks (D-07, D-10).
+  describe('need lists (D-08, DISC-05)', () => {
+    it('promotes a 15-row, 10-point list (five keys, ranks 50 to 46, three tiers) to pending', async () => {
+      const items = needList(TEN_POINT_KEYS)
+      expect(items).toHaveLength(15)
+      const { res, body, calls } = await run({ ...baseFixture(), items })
+      expect(res.status).toBe(200)
+      expect(body).toEqual({ success: true })
+      expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
     })
 
-    it('holds a need in a tier the guild turned off, because the hold reads every loaded row', async () => {
-      const row = withTier(needRow(40, 0), { is_guild_active: false })
-      const { res, body, calls } = await run({ ...baseFixture(), items: [row] })
+    it('submits a Big need and a Standard need in one bracket with no bracket violation', async () => {
+      // As item rows the same costs break the allocation limit (next case).
+      const items = [...needRows('trinket.spell-damage', 50, [0]), ...needRows('chest.cloth.spell-damage', 49, [0])]
+      const { res, calls } = await run({ ...baseFixture(), items })
+      expect(res.status).toBe(200)
+      expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+    })
+
+    it('still answers allocation_limit for the same costs on item rows', async () => {
+      const asItem = (row: SubmissionItem, wowheadId: number): SubmissionItem => ({
+        ...row,
+        loot_item: { ...row.loot_item, kind: undefined, need_key: undefined, wowhead_id: wowheadId },
+      })
+      const items = [
+        asItem(needRows('trinket.spell-damage', 50, [0])[0], 1001),
+        asItem(needRows('chest.cloth.spell-damage', 49, [0])[0], 1002),
+      ]
+      const { res, body, calls } = await run({ ...baseFixture(), items })
       expect(res.status).toBe(422)
-      expect(body).toEqual({ error: NEED_RANKING_HOLD_ERROR })
-      expect(submissionUpdates(calls)).toHaveLength(0)
+      expect(body.violations.map((v: { rule: string }) => v.rule)).toContain('allocation_limit')
+      expect(statusUpdates(calls)).toHaveLength(0)
+    })
+
+    it('answers item_copy_limit for a third copy of a Ring need and accepts two', async () => {
+      const over = await run({
+        ...baseFixture(),
+        items: [...needRows('ring.spell-damage', 50, [0]), ...needRows('ring.spell-damage', 40, [0]), ...needRows('ring.spell-damage', 30, [0])],
+      })
+      expect(over.res.status).toBe(422)
+      expect(over.body.violations.map((v: { rule: string }) => v.rule)).toContain('item_copy_limit')
+      expect(statusUpdates(over.calls)).toHaveLength(0)
+
+      const ok = await run({
+        ...baseFixture(),
+        items: [...needRows('ring.spell-damage', 50, [0]), ...needRows('ring.spell-damage', 40, [0])],
+      })
+      expect(ok.res.status).toBe(200)
+      expect(statusUpdates(ok.calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
+    })
+
+    it('answers item_copy_limit for a second copy of a Main hand weapon need', async () => {
+      const items = [...needRows('main-hand-weapon.spell-damage', 50, [0]), ...needRows('main-hand-weapon.spell-damage', 40, [0])]
+      const { res, body, calls } = await run({ ...baseFixture(), items })
+      expect(res.status).toBe(422)
+      expect(body.violations.map((v: { rule: string }) => v.rule)).toContain('item_copy_limit')
+      expect(statusUpdates(calls)).toHaveLength(0)
     })
 
     it('submits a list of item rows exactly as before', async () => {
@@ -378,68 +438,18 @@ describe('POST /api/loot-submissions/submit', () => {
       ])
     })
 
-    it('reads kind through the existing loot_submission_items select', async () => {
+    it('reads kind and need_key through the existing loot_submission_items select', async () => {
       const { calls } = await run({ ...baseFixture(), items: [bindings(50, 0)] })
       const itemCalls = calls.filter(c => c.table === 'loot_submission_items')
-      expect(itemCalls[0].selectArg).toMatch(/loot_item:loot_items\([^)]*\bkind\b/)
+      expect(itemCalls[0].selectArg).toMatch(/loot_item:loot_items\([^)]*\bkind\b[^)]*\bneed_key\b/)
     })
 
-    describe('with the hold lifted (Phase 4 state)', () => {
-      beforeEach(() => {
-        vi.mocked(isHeldNeedRanking).mockReturnValue(false)
-      })
-
-      // Put the real predicate back so the hold is on for every other test.
-      afterEach(async () => {
-        const actual = await vi.importActual<typeof import('@/domain/loot/need-ranking-hold')>('@/domain/loot/need-ranking-hold')
-        vi.mocked(isHeldNeedRanking).mockImplementation(actual.isHeldNeedRanking)
-      })
-
-      const statusUpdates = (calls: Call[]) =>
-        submissionUpdates(calls).filter(u => u.updatePayload && 'status' in u.updatePayload)
-
-      // A Big need (cost 3, Reserved) and a Standard need (cost 1) in one
-      // bracket; as item rows the same costs break the allocation limit.
-      it('submits a Big need and a Standard need in one bracket with no bracket violation', async () => {
-        const items = [
-          needRow(50, 0, { item_slot: 'Trinket', classification: 'Reserved', allocation_cost: 3 }),
-          needRow(49, 1, { item_slot: 'Chest', classification: 'Unlimited', allocation_cost: 1 }),
-        ]
-        const { res, calls } = await run({ ...baseFixture(), items })
-        expect(res.status).toBe(200)
-        expect(statusUpdates(calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
-      })
-
-      it('still answers allocation_limit for the same costs on item rows', async () => {
-        const items = [
-          needRow(50, 0, { kind: undefined, wowhead_id: 1001, item_slot: 'Trinket', classification: 'Reserved', allocation_cost: 3 }),
-          needRow(49, 1, { kind: undefined, wowhead_id: 1002, item_slot: 'Chest', classification: 'Unlimited', allocation_cost: 1 }),
-        ]
-        const { res, body, calls } = await run({ ...baseFixture(), items })
-        expect(res.status).toBe(422)
-        expect(body.violations.map((v: { rule: string }) => v.rule)).toContain('allocation_limit')
-        expect(statusUpdates(calls)).toHaveLength(0)
-      })
-
-      it('answers item_copy_limit for a third copy of a Ring need and accepts two', async () => {
-        const ring = (rank: number) => needRow(rank, 0, { name: 'Ring', item_slot: 'Finger', classification: 'Unlimited', allocation_cost: 1 })
-        const over = await run({ ...baseFixture(), items: [ring(50), ring(40), ring(30)] })
-        expect(over.res.status).toBe(422)
-        expect(over.body.violations.map((v: { rule: string }) => v.rule)).toContain('item_copy_limit')
-        expect(statusUpdates(over.calls)).toHaveLength(0)
-
-        const ok = await run({ ...baseFixture(), items: [ring(50), ring(40)] })
-        expect(ok.res.status).toBe(200)
-        expect(statusUpdates(ok.calls).map(u => u.updatePayload?.status)).toEqual(['pending'])
-      })
-
-      it('answers item_copy_limit for a second copy of a Main hand weapon need', async () => {
-        const mh = (rank: number) => needRow(rank, 1, { name: 'Main hand weapon', item_slot: 'Main Hand', classification: 'Reserved', allocation_cost: 3 })
-        const { res, body, calls } = await run({ ...baseFixture(), items: [mh(50), mh(40)] })
-        expect(res.status).toBe(422)
-        expect(body.violations.map((v: { rule: string }) => v.rule)).toContain('item_copy_limit')
-        expect(statusUpdates(calls)).toHaveLength(0)
-      })
+    it('reads the class and spec names through the existing character select', async () => {
+      const { calls } = await run({ ...baseFixture(), items: [bindings(50, 0)] })
+      const characterCalls = calls.filter(c => c.table === 'characters')
+      expect(characterCalls).toHaveLength(1)
+      expect(characterCalls[0].selectArg).toContain('class:wow_classes(name)')
+      expect(characterCalls[0].selectArg).toContain('spec:class_specs(name)')
     })
   })
 })
