@@ -188,6 +188,64 @@ describe('PUT /api/guild-settings loot_style', () => {
   })
 })
 
+// regression for WR-02 (Phase 4 review): the channel id is interpolated into
+// bot-token Discord URLs, so only a snowflake (or a clear) may be stored.
+describe('PUT /api/guild-settings raid_summary_channel_id', () => {
+  let service: ReturnType<typeof makeServiceClient>
+  const CHANNEL_ID = '700000000000000001'
+
+  beforeEach(() => {
+    service = makeServiceClient()
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'user-1' }, error: null } as never)
+    vi.mocked(createClient).mockResolvedValue({} as never)
+    vi.mocked(createServiceRoleClient).mockReturnValue(service.client as never)
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: true } as never)
+  })
+
+  it('stores a channel id picked from the Discord channel list', async () => {
+    const res = await put({ raid_summary_channel_id: CHANNEL_ID })
+
+    expect(res.status).toBe(200)
+    expect(service.updates).toHaveLength(1)
+    expect(service.updates[0].raid_summary_channel_id).toBe(CHANNEL_ID)
+  })
+
+  it.each([[null], ['']])('clears the channel for %j and stores null', async (value) => {
+    const res = await put({ raid_summary_channel_id: value })
+
+    expect(res.status).toBe(200)
+    expect(service.updates).toHaveLength(1)
+    expect(service.updates[0].raid_summary_channel_id).toBeNull()
+  })
+
+  it.each([
+    ['700000000000000001/../../guilds/700000000000000002/x?'],
+    ['70000000000000000a'],
+    ['7000000000000000'],
+    ['700000000000000000001'],
+    [' 700000000000000001'],
+    [700000000000000001],
+    [true],
+    [{}],
+  ])('answers 400 for %j and writes nothing', async (value) => {
+    const res = await put({ raid_summary_channel_id: value })
+
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'raid_summary_channel_id must be a Discord channel id or null' })
+    expect(service.updates).toEqual([])
+    expect(service.inserts).toEqual([])
+  })
+
+  it('still refuses a non-officer before looking at the channel id', async () => {
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: false } as never)
+
+    const res = await put({ raid_summary_channel_id: 'not-an-id' })
+
+    expect(res.status).toBe(403)
+    expect(service.updates).toEqual([])
+  })
+})
+
 describe('GET /api/guild-settings loot_style default', () => {
   it('includes loot_style null for a guild with no settings row', async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
