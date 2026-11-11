@@ -27,7 +27,7 @@ const CreateCharacterModal = dynamic(() =>
   import('@/app/components/CreateCharacterModal').then((mod) => ({ default: mod.CreateCharacterModal })),
 )
 
-// DRAFT copy, UI-SPEC "Picker (surface 1)": the owner signs it off in 04-19.
+// Copy signed off 2026-11-11 (04-19), UI-SPEC "Picker (surface 1)".
 const NO_CHARACTER_TITLE = 'Create a character first'
 const NO_CHARACTER_BODY = 'You need a character in this guild before you can set your 5.'
 const NO_CHARACTER_ACTION = 'Create character'

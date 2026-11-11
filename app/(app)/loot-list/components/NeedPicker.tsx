@@ -9,7 +9,7 @@
  * once (five picks fanned out over every Discovery tier, D-02). Both save
  * buttons submit to officer review; nothing is approved here (D-27).
  *
- * All copy is DRAFT for the owner's 04-19 sign-off, so it sits in one table.
+ * All copy was signed off by the owner on 2026-11-11 (04-19), so it sits in one table.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
@@ -64,7 +64,7 @@ const CreateCharacterModal = dynamic(() =>
   import('@/app/components/CreateCharacterModal').then((mod) => ({ default: mod.CreateCharacterModal })),
 )
 
-// DRAFT copy, UI-SPEC "Picker (surface 1)". The over-budget sentence comes from
+// Copy signed off 2026-11-11 (04-19), UI-SPEC "Picker (surface 1)". The over-budget sentence comes from
 // needOverBudgetSentence so the picker and the submit route say the same words.
 export const NEED_PICKER_COPY = {
   title: 'Your top 5 for Forever raids',
@@ -80,7 +80,7 @@ export const NEED_PICKER_COPY = {
   noCharacterAction: 'Create character',
 } as const
 
-// DRAFT copy for the 04-19 sign-off, UI-SPEC "After submit (D-27)" and the
+// Copy signed off 2026-11-11 (04-19), UI-SPEC "After submit (D-27)" and the
 // Change my 5 confirm. One frozen table, so a sign-off edit touches this
 // constant and NeedPicker.test.tsx only. No em dashes.
 export const NEED_PICKER_STATUS_COPY = Object.freeze({

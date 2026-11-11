@@ -7,7 +7,7 @@
  * guidance, not an error, so it never uses the destructive palette. The meter
  * is decoration (aria-hidden); the sentence carries the number.
  *
- * Copy is DRAFT for the owner's 04-19 sign-off.
+ * Copy signed off 2026-11-11 (04-19).
  */
 import { NEED_BUDGET_POINTS } from '@/domain/loot/need-budget'
 

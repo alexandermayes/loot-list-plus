@@ -6,7 +6,7 @@
  * The top line is a single button that opens the question sheet; the bottom
  * line holds the cost marker and Move up. Rows are plain Cards in an ol, 8px
  * apart, and the need sentence wraps to as many lines as it needs, because it
- * is never truncated. Copy is DRAFT for the owner's 04-19 sign-off.
+ * is never truncated. Copy signed off 2026-11-11 (04-19).
  */
 import type { Ref } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'

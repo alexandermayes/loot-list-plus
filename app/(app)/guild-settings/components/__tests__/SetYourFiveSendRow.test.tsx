@@ -6,7 +6,7 @@ import { SET_YOUR_FIVE_COOLDOWN_ERROR, SET_YOUR_FIVE_POST_FAILED_ERROR } from '@
 
 // Why these cases: an officer's send reaches the whole guild, so the row has to
 // ask first, show only counts, and stop a double tap (UI-15, D-23). Copy is
-// DRAFT for the 04-19 sign-off. The guild id is synthetic.
+// Copy signed off 2026-11-11 (04-19). The guild id is synthetic.
 
 const GUILD_ID = 'guild-1'
 const showNotification = vi.fn()

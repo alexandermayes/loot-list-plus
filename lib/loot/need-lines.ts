@@ -7,8 +7,8 @@
  * grouping and its wording live in this one helper. The master sheet, Summary
  * and Raid Mode stay per tier and never call it.
  *
- * Pure and client-safe: it reads no table. The copy is DRAFT until the
- * owner's sign-off in 04-19.
+ * Pure and client-safe: it reads no table. The copy was signed off by the
+ * owner on 2026-11-11 (04-19).
  */
 import { describeNeedGroupTiers, groupNeedRowsByRank } from '@/domain/loot/need-picks'
 

@@ -13,9 +13,9 @@ export interface UpdateEntry {
 }
 
 export const updates: UpdateEntry[] = [
-  // DRAFT (04-19): wording and date wait for the owner's copy sign-off. The
-  // Discord updates cron posts the newest entry after merge, so this must not
-  // merge until the sign-off is recorded.
+  // Copy signed off 2026-11-11 (04-19). The date below is still a placeholder: set it
+  // to the ship date before merge. The Discord updates cron posts the newest
+  // entry after merge.
   {
     date: 'November 10, 2026',
     items: [

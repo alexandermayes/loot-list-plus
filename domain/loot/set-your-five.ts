@@ -7,14 +7,14 @@
  * (app/api/discord/set-your-five) and the picker entry import from here.
  */
 
-// DRAFT copy: the owner signs it off in the 04-19 copy review. The title is
+// Copy signed off 2026-11-11 (04-19 copy review). The title is
 // locked (UI-SPEC). No em dash in any of it.
 export const SET_YOUR_FIVE_TITLE = 'Set your 5 for Forever raids (1 minute)'
 export const SET_YOUR_FIVE_BODY =
   'Pick the five gear needs you want most. Officers review your list before it counts.'
 export const SET_YOUR_FIVE_CTA = 'Set my 5'
 
-// Route answers, DRAFT for the same sign-off. They live here, not in the route
+// Route answers, signed off with the same copy. They live here, not in the route
 // file, because a Next route file may only export handlers and route config,
 // and the send row shows the post-failed sentence too.
 export const SET_YOUR_FIVE_NOT_OFFICER_ERROR = 'Only officers can send Set your 5'

@@ -23,7 +23,7 @@ interface SetYourFiveSendRowProps {
   hasDiscoveryTier: boolean
 }
 
-// Counts only, never names. DRAFT copy for the 04-19 sign-off.
+// Counts only, never names. Copy signed off 2026-11-11 (04-19).
 function describeResult(sent: number, skipped: number): string {
   if (sent <= 0) return 'Posted in the channel. Nobody to message.'
   const sentText = sent === 1 ? 'Sent to 1 member.' : `Sent to ${sent} members.`

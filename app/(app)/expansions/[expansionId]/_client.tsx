@@ -59,7 +59,7 @@ interface CompactRaidToggleProps {
   onToggleRankings: (tierId: string, currentValue: boolean) => void
 }
 
-// DRAFT copy for the 04-19 sign-off.
+// Copy signed off 2026-11-11 (04-19).
 const LIST_MODE_FALLBACK_REASON = "Couldn't change the list mode. Try again."
 
 const LIST_MODE_OPTIONS: { value: ListMode; label: string }[] = [
