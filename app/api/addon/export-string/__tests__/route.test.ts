@@ -79,7 +79,7 @@ interface LootSubmissionRow {
 
 interface Fixture {
   guilds: Array<{ id: string; name: string; active_expansion_id: string | null }>
-  guild_settings: Array<{ guild_id: string }>
+  guild_settings: Array<{ guild_id: string; [column: string]: unknown }>
   expansions: Array<{ id: string; name: string; current_phase: number }>
   raid_tiers: RaidTierRow[]
   character_guild_memberships: MembershipRow[]
@@ -1232,5 +1232,55 @@ describe('FIX-02: every read that fails answers 500 (owner decisions 7 and 8)', 
     vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
     const res = await GET(request())
     expect(JSON.stringify(await res.json())).not.toContain('boom')
+  })
+})
+
+describe('D-30: the import string settings leave loot_style out', () => {
+  beforeEach(() => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'u1' }, error: null } as never)
+    vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
+    vi.mocked(trackApiError).mockClear()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  const settingsRow = {
+    guild_id: GUILD_ID,
+    attendance_type: 'linear',
+    rolling_attendance_weeks: 8,
+    use_signups: false,
+    signup_weight: 0,
+    single_raider_modifiers: {},
+  }
+
+  async function exportFor(row: Record<string, unknown>) {
+    const fixture = baseFixture()
+    fixture.guild_settings = [row as Fixture['guild_settings'][number]]
+    const { client } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    const res = await GET(request())
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    return { exportString: body.exportString as string, settings: decodePayload(body.exportString).settings as Record<string, unknown> }
+  }
+
+  it('S1 a row holding loot_style serialises settings with no loot_style, and the string equals the one without the column', async () => {
+    const before = await exportFor(settingsRow)
+    const after = await exportFor({ ...settingsRow, loot_style: 'even_rotation' })
+
+    expect(after.settings).not.toHaveProperty('loot_style')
+    expect(after.settings).toEqual(before.settings)
+    expect(after.exportString).toBe(before.exportString)
+  })
+
+  it('S2 a null loot_style is omitted too', async () => {
+    const after = await exportFor({ ...settingsRow, loot_style: null })
+
+    expect(after.settings).not.toHaveProperty('loot_style')
+    expect(after.settings.rolling_attendance_weeks).toBe(8)
   })
 })

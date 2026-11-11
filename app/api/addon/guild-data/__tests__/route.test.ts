@@ -69,7 +69,7 @@ interface LootSubmissionRow {
 
 interface Fixture {
   guilds: Array<{ id: string; name: string; active_expansion_id: string | null }>
-  guild_settings: Array<{ guild_id: string }>
+  guild_settings: Array<{ guild_id: string; [column: string]: unknown }>
   expansions: Array<{ id: string; name: string; current_phase: number }>
   raid_tiers: Array<{ id: string; name: string; phase: number; expansion_id: string }>
   character_guild_memberships: MembershipRow[]
@@ -1041,5 +1041,48 @@ describe('FIX-02: every read that fails answers 500 (owner decision 7)', () => {
     expect(res.status).toBe(500)
     expect(trackApiError).toHaveBeenCalledTimes(1)
     expect(calls.filter(c => c.table === 'blp_tracking')).toHaveLength(2)
+  })
+})
+
+describe('D-30: the companion settings payload leaves loot_style out', () => {
+  beforeEach(() => {
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: 'u1' }, error: null } as never)
+    vi.mocked(verifyOfficerPermissions).mockResolvedValue({ hasPermission: true } as never)
+    vi.mocked(trackApiError).mockClear()
+  })
+
+  const settingsRow = {
+    guild_id: GUILD_ID,
+    attendance_type: 'linear',
+    rolling_attendance_weeks: 8,
+    use_signups: false,
+    signup_weight: 0,
+    single_raider_modifiers: {},
+  }
+
+  async function settingsFor(row: Record<string, unknown>) {
+    const fixture = baseFixture()
+    fixture.guild_settings = [row as Fixture['guild_settings'][number]]
+    const { client } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    const res = await GET(request())
+    expect(res.status).toBe(200)
+    return (await res.json()).settings as Record<string, unknown>
+  }
+
+  it('S1 a row holding loot_style returns the settings it had before the column existed, key for key', async () => {
+    const before = await settingsFor(settingsRow)
+    const after = await settingsFor({ ...settingsRow, loot_style: 'even_rotation' })
+
+    expect(after).not.toHaveProperty('loot_style')
+    expect(Object.keys(after)).toEqual(Object.keys(before))
+    expect(after).toEqual(before)
+  })
+
+  it('S2 a null loot_style is omitted too', async () => {
+    const after = await settingsFor({ ...settingsRow, loot_style: null })
+
+    expect(after).not.toHaveProperty('loot_style')
+    expect(after.rolling_attendance_weeks).toBe(8)
   })
 })
