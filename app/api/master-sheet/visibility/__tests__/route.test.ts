@@ -52,9 +52,13 @@ interface RecordedCall {
  * select string and filters; eq/in/is filters apply generically against
  * whatever rows the fixture put in `tables[table]`. options.failCgmSelect
  * makes a character_guild_memberships call whose select string matches fail
- * with an error, simulating a lookup failure (D-03).
+ * with an error, simulating a lookup failure (D-03). options.failTable makes
+ * every read of that table fail, simulating a rejected page (WR-02).
  */
-function makeClient(tables: Record<string, Row[]>, options?: { failCgmSelect?: string }) {
+function makeClient(
+  tables: Record<string, Row[]>,
+  options?: { failCgmSelect?: string; failTable?: string },
+) {
   const calls: RecordedCall[] = []
 
   function applyFilters(rows: Row[], filters: FilterOp[]): Row[] {
@@ -69,6 +73,8 @@ function makeClient(tables: Record<string, Row[]>, options?: { failCgmSelect?: s
   }
 
   function shouldFail(call: RecordedCall): boolean {
+    // failTable: every read of that table answers an error (WR-02).
+    if (options?.failTable !== undefined && call.table === options.failTable) return true
     return (
       call.table === 'character_guild_memberships' &&
       options?.failCgmSelect !== undefined &&
@@ -747,5 +753,122 @@ describe('need row (past the D-22 hold)', () => {
 
     expect(res.status).toBe(200)
     expect(body).toEqual({ rankings: [], submissions: [], characters: [], memberships: [] })
+  })
+})
+
+describe('WR-02: id reads go in chunks of at most 100 and a failed page answers 500', () => {
+  const ITEM_B = 'aaaaaaaa-0000-0000-0000-000000000030'
+  const SUB_B = 'aaaaaaaa-0000-0000-0000-000000000031'
+
+  // Distinct ids that match no fixture row, so the chunk sizes are the only
+  // thing the reads can reveal.
+  function fillerIds(count: number): string[] {
+    return Array.from({ length: count }, (_, i) => `ffffffff-0000-0000-0000-${String(i).padStart(12, '0')}`)
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: USER_ID }, error: null } as never)
+  })
+
+  it('250 item ids produce three rankings reads of at most 100 ids each that together carry every id', async () => {
+    const ids = fillerIds(250)
+    const { client, calls } = makeClient(baseTables())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: ids }))
+
+    expect(res.status).toBe(200)
+    const rankingReads = calls.filter(c => c.table === 'loot_submission_items')
+    expect(rankingReads).toHaveLength(3)
+    const sent = rankingReads.map(c => c.filters.find(f => f.type === 'in' && f.col === 'loot_item_id')!.val as string[])
+    for (const chunk of sent) expect(chunk.length).toBeLessThanOrEqual(100)
+    expect(sent.flat()).toEqual(ids)
+  })
+
+  it('a raider path read of 250 ids chunks the earned-phase item lookup the same way', async () => {
+    const ids = fillerIds(250)
+    const { client, calls } = makeClient(
+      baseTables({
+        guilds: [{ id: GUILD, created_by: OTHER_USER }],
+        character_guild_memberships: [
+          { character_id: CALLER_CHAR, guild_id: GUILD, role: 'Member', membership_status: 'active', is_active: true },
+        ],
+        guild_roles: [{ guild_id: GUILD, name: 'Member', position: 0, permissions: [] }],
+      }),
+    )
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: ids }))
+
+    expect(res.status).toBe(200)
+    const itemReads = calls.filter(c => c.table === 'loot_items' && c.select === 'id, raid_tier_id')
+    expect(itemReads).toHaveLength(3)
+    const sent = itemReads.map(c => c.filters.find(f => f.type === 'in' && f.col === 'id')!.val as string[])
+    for (const chunk of sent) expect(chunk.length).toBeLessThanOrEqual(100)
+    expect(sent.flat()).toEqual(ids)
+  })
+
+  it('a rankings page that errors answers 500 with no rankings key, never an empty list', async () => {
+    const { client } = makeClient(baseTables(), { failTable: 'loot_submission_items' })
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: [ITEM] }))
+    const body = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(body).not.toHaveProperty('rankings')
+    errorSpy.mockRestore()
+  })
+
+  it('an item lookup page that errors answers 500 on the raider path instead of denying every item', async () => {
+    const { client } = makeClient(
+      baseTables({
+        guilds: [{ id: GUILD, created_by: OTHER_USER }],
+        character_guild_memberships: [
+          { character_id: CALLER_CHAR, guild_id: GUILD, role: 'Member', membership_status: 'active', is_active: true },
+        ],
+        guild_roles: [{ guild_id: GUILD, name: 'Member', position: 0, permissions: [] }],
+      }),
+      { failTable: 'loot_items' },
+    )
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: [ITEM] }))
+    const body = await res.json()
+
+    expect(res.status).toBe(500)
+    expect(body).not.toHaveProperty('rankings')
+    errorSpy.mockRestore()
+  })
+
+  it('an item-only request returns the rankings a single unchunked read would, rows from every chunk included', async () => {
+    // ITEM sits in the first chunk and ITEM_B in the second; the departed
+    // raider's row is still left out.
+    const ids = [ITEM, ...fillerIds(119), ITEM_B]
+    const tables = baseTables({
+      loot_submission_items: [
+        { id: 'r1', rank: 1, slot: 1, submission_id: SUB_ACTIVE, loot_item_id: ITEM, removed_at: null },
+        { id: 'r2', rank: 2, slot: 1, submission_id: SUB_DEPARTED, loot_item_id: ITEM, removed_at: null },
+        { id: 'r3', rank: 3, slot: 1, submission_id: SUB_ACTIVE, loot_item_id: ITEM_B, removed_at: null },
+      ],
+      loot_submissions: [
+        { id: SUB_ACTIVE, status: 'approved', character_id: ACTIVE_CHAR, guild_id: GUILD },
+        { id: SUB_DEPARTED, status: 'approved', character_id: DEPARTED_CHAR, guild_id: GUILD },
+        { id: SUB_B, status: 'approved', character_id: ACTIVE_CHAR, guild_id: GUILD },
+      ],
+    })
+    const { client, calls } = makeClient(tables)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: ids }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(calls.filter(c => c.table === 'loot_submission_items')).toHaveLength(2)
+    const key = (r: { submission_id: string; loot_item_id: string }) => `${r.loot_item_id}:${r.submission_id}`
+    expect(body.rankings.map(key).sort()).toEqual([`${ITEM}:${SUB_ACTIVE}`, `${ITEM_B}:${SUB_ACTIVE}`].sort())
   })
 })
