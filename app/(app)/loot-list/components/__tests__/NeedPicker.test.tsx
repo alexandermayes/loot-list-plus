@@ -449,3 +449,32 @@ describe('NeedPicker question sheet (D-07, D-29)', () => {
     expect(within(dialog).getByRole('alert')).toHaveTextContent('That need is already in your 5.')
   })
 })
+
+describe('NeedPicker loading (UI-SPEC E1 loading)', () => {
+  it.each([['isLoading'], ['isContentLoading']])(
+    'shows the skeleton with five row shapes and no footer while %s',
+    (flag) => {
+      setContexts({ [flag]: true })
+      const { container } = render(<NeedPicker />)
+
+      expect(screen.getByTestId('need-picker-skeleton')).toBeInTheDocument()
+      expect(screen.getAllByTestId('need-picker-skeleton-row')).toHaveLength(5)
+      expect(container.querySelector('.sticky')).toBeNull()
+      expect(screen.queryByRole('button')).toBeNull()
+      expect(screen.queryByRole('list')).toBeNull()
+    },
+  )
+
+  it('swaps the skeleton for the five rows and the footer once the list is in', () => {
+    setContexts({ isContentLoading: true })
+    const { rerender, container } = render(<NeedPicker />)
+    expect(screen.getByTestId('need-picker-skeleton')).toBeInTheDocument()
+
+    setContexts()
+    rerender(<NeedPicker />)
+
+    expect(screen.queryByTestId('need-picker-skeleton')).toBeNull()
+    expect(within(screen.getByRole('list')).getAllByRole('listitem')).toHaveLength(5)
+    expect(container.querySelector('.sticky')).not.toBeNull()
+  })
+})

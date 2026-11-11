@@ -4,6 +4,7 @@ import {
   GuildSettingsContentSkeleton,
   RaidTrackingPageSkeleton,
   LootListBracketSkeleton,
+  NeedPickerSkeleton,
 } from '../skeletons'
 
 describe('skeletons', () => {
@@ -24,5 +25,11 @@ describe('skeletons', () => {
 
     expect(container.innerHTML).not.toContain('border-l-4')
     expect(container.innerHTML).not.toContain('border-l-muted')
+  })
+
+  it('NeedPickerSkeleton renders exactly five row shapes, one for each pick of the need picker', () => {
+    const { container } = render(<NeedPickerSkeleton />)
+
+    expect(container.querySelectorAll('[data-testid="need-picker-skeleton-row"]').length).toBe(5)
   })
 })
