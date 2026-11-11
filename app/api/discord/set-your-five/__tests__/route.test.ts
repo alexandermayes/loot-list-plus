@@ -41,7 +41,11 @@ const discordIdOf = (n: number) => `8000000000000001${String(n).padStart(2, '0')
 interface Fixture {
   channelId: string | null
   activeExpansionId: string | null
-  tiers: Array<{ id: string; list_mode: string; is_guild_active: boolean }>
+  // The expansion's current_phase; null is a row with the column unset.
+  currentPhase: number | null
+  failExpansionRead?: boolean
+  // A tier without a phase sits in phase 1.
+  tiers: Array<{ id: string; list_mode: string; is_guild_active: boolean; phase?: number }>
   // One row per active character; a user with two characters has two rows.
   memberships: Array<{ user_id: string }>
   prefs: Array<{ user_id: string; discord_id: string | null }>
@@ -73,11 +77,19 @@ function makeBuilder(table: string) {
         return { data: { raid_summary_channel_id: fixture.channelId }, error: null }
       case 'guilds':
         return { data: { active_expansion_id: fixture.activeExpansionId }, error: null }
+      case 'expansions':
+        return fixture.failExpansionRead
+          ? { data: null, error: { message: 'expansion read failed' } }
+          : { data: { current_phase: fixture.currentPhase }, error: null }
       case 'raid_tiers': {
         const wantMode = call.filters.find((f) => f[0] === 'eq' && f[1] === 'list_mode')?.[2]
         const wantActive = call.filters.find((f) => f[0] === 'eq' && f[1] === 'is_guild_active')?.[2]
+        const maxPhase = call.filters.find((f) => f[0] === 'lte' && f[1] === 'phase')?.[2] as number | undefined
         const rows = fixture.tiers.filter(
-          (t) => (wantMode === undefined || t.list_mode === wantMode) && (wantActive === undefined || t.is_guild_active === wantActive),
+          (t) =>
+            (wantMode === undefined || t.list_mode === wantMode) &&
+            (wantActive === undefined || t.is_guild_active === wantActive) &&
+            (maxPhase === undefined || (t.phase ?? 1) <= maxPhase),
         )
         return { data: rows.slice(0, 1), error: null }
       }
@@ -112,6 +124,10 @@ function makeBuilder(table: string) {
   }
   builder.in = (column: string, values: unknown) => {
     call.filters.push(['in', column, values])
+    return builder
+  }
+  builder.lte = (column: string, value: unknown) => {
+    call.filters.push(['lte', column, value])
     return builder
   }
   builder.insert = (payload: unknown) => {
@@ -153,6 +169,7 @@ beforeEach(() => {
   fixture = {
     channelId: CHANNEL_ID,
     activeExpansionId: EXPANSION_ID,
+    currentPhase: 1,
     tiers: [{ id: 't-1', list_mode: 'discovery', is_guild_active: true }],
     memberships: [{ user_id: userId(1) }, { user_id: userId(2) }],
     prefs: [
@@ -299,6 +316,54 @@ describe('[D-23] the Discovery gate', () => {
     fixture.channelId = null
     const response = await POST(request())
     expect((await response.json()).error).toBe(SET_YOUR_FIVE_NO_DISCOVERY_ERROR)
+  })
+
+  // regression for WR-07 (Phase 4 review): the gate counted a Discovery tier
+  // in a phase raiders cannot open yet, so the send pointed them at a list
+  // that cannot exist.
+  describe('locked phases', () => {
+    it('answers 400 when the only Discovery tier is in a phase above the current one', async () => {
+      fixture.tiers = [
+        { id: 't-known', list_mode: 'known', is_guild_active: true, phase: 1 },
+        { id: 't-later', list_mode: 'discovery', is_guild_active: true, phase: 2 },
+      ]
+      const response = await POST(request())
+      expect(response.status).toBe(400)
+      expect((await response.json()).error).toBe(SET_YOUR_FIVE_NO_DISCOVERY_ERROR)
+      expectNoDiscordCalls()
+    })
+
+    it('sends once that phase is the current one', async () => {
+      fixture.currentPhase = 2
+      fixture.tiers = [{ id: 't-later', list_mode: 'discovery', is_guild_active: true, phase: 2 }]
+      const response = await POST(request())
+      expect(response.status).toBe(200)
+      expect(discordFetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('asks the tier table for phases at or below the current one', async () => {
+      fixture.currentPhase = 3
+      await POST(request())
+      const tierRead = calls.find((c) => c.table === 'raid_tiers')
+      expect(tierRead?.filters).toEqual(expect.arrayContaining([['lte', 'phase', 3]]))
+    })
+
+    it('reads a missing current phase as phase 1, like the tier list endpoint', async () => {
+      fixture.currentPhase = null
+      fixture.tiers = [{ id: 't-later', list_mode: 'discovery', is_guild_active: true, phase: 2 }]
+      const response = await POST(request())
+      expect(response.status).toBe(400)
+      expect((await response.json()).error).toBe(SET_YOUR_FIVE_NO_DISCOVERY_ERROR)
+    })
+
+    it('answers 500 and sends nothing when the current phase cannot be read', async () => {
+      fixture.failExpansionRead = true
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const response = await POST(request())
+      expect(response.status).toBe(500)
+      expectNoDiscordCalls()
+      errorSpy.mockRestore()
+    })
   })
 })
 

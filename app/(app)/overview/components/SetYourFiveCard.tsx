@@ -69,28 +69,35 @@ export function shouldShowSetYourFiveCard({
 export interface DiscoveryListStatusInput {
   tiers: ReadonlyArray<{ phase?: number | null; list_mode?: string | null }> | null
   tiersError: boolean
+  /** The expansion's current_phase; null reads as phase 1, as the tier list endpoint does. */
+  currentPhase: number | null
   submissions: ReadonlyArray<{ phase: number | null; status: string }> | null
   submissionsError: boolean
 }
 
 /**
  * Folds the Overview's two existing reads (guild-active tiers, the character's
- * submissions) into what the card needs. Only lists in a phase that has a
- * Discovery tier count. A draft beside a submitted list counts as submitted,
- * since the raider has already sent one in.
+ * submissions) into what the card needs. Only Discovery tiers in a phase the
+ * raider can open, at or below the expansion's current phase, count: a tier in
+ * a locked phase has no list to set, so it must not ask for one (WR-07). Only
+ * lists in such a phase count. A draft beside a submitted list counts as
+ * submitted, since the raider has already sent one in.
  */
 export function discoveryListStatus({
   tiers,
   tiersError,
+  currentPhase,
   submissions,
   submissionsError,
 }: DiscoveryListStatusInput): Pick<ShowSetYourFiveCardInput, 'hasDiscoveryTier' | 'statusError' | 'submissionStatus'> {
-  const discoveryPhases = new Set<number | null>()
+  const unlockedThrough = currentPhase ?? 1
+  const discoveryPhases = new Set<number>()
   for (const tier of tiers ?? []) {
-    if (tier.list_mode === 'discovery') discoveryPhases.add(tier.phase ?? null)
+    if (tier.list_mode !== 'discovery' || tier.phase == null || tier.phase > unlockedThrough) continue
+    discoveryPhases.add(tier.phase)
   }
 
-  const lists = (submissions ?? []).filter((sub) => discoveryPhases.has(sub.phase))
+  const lists = (submissions ?? []).filter((sub) => sub.phase != null && discoveryPhases.has(sub.phase))
   const submitted = lists.find((sub) => sub.status !== 'draft')
   const submissionStatus = submitted ? submitted.status : lists.length > 0 ? 'draft' : null
 

@@ -109,13 +109,15 @@ export default function GuildSettingsContent() {
   const eligibleNewOwners = guildMembers.filter((m) => m.user_id !== user?.id)
 
   // The Send Set your 5 row exists only for officers who can send it, in a
-  // guild whose active expansion has a guild-active Discovery tier (D-23). The
-  // tier list endpoint already returns guild-active tiers only, across phases.
+  // guild whose active expansion has a guild-active Discovery tier in a phase
+  // raiders can open (D-23). The tier list endpoint returns guild-active tiers
+  // at or below the expansion's current phase, so a Discovery tier in a locked
+  // phase does not offer a send that would point raiders at the wrong screen.
+  // regression for WR-07 (Phase 4 review).
   const canSendSetYourFive = hasPermission('manage_settings')
   const { data: raidTiersData } = useRaidTiers(
     canSendSetYourFive ? (activeGuild?.active_expansion_id ?? null) : null,
     canSendSetYourFive ? (activeGuild?.id ?? null) : null,
-    true,
   )
   const hasDiscoveryTier = (raidTiersData?.tiers ?? []).some((tier) => tier.list_mode === 'discovery')
 

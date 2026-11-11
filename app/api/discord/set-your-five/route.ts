@@ -85,8 +85,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Discovery gate (D-23): the message only makes sense when raiders have a
-    // picker to open, so a guild with no guild-active Discovery tier in its
-    // active expansion is refused before any Discord call.
+    // picker to open, so a guild with no guild-active Discovery tier in a
+    // phase at or below its active expansion's current phase is refused
+    // before any Discord call. A Discovery tier in a locked phase has no list
+    // to set, the same rule the Overview card and the guild settings row
+    // apply. regression for WR-07 (Phase 4 review).
     const { data: guild, error: guildError } = await supabase
       .from('guilds')
       .select('active_expansion_id')
@@ -97,12 +100,21 @@ export async function POST(request: NextRequest) {
 
     let hasDiscoveryTier = false
     if (expansionId) {
+      const { data: expansion, error: expansionError } = await supabase
+        .from('expansions')
+        .select('current_phase')
+        .eq('id', expansionId)
+        .single()
+      if (expansionError && !expansion) throw new Error('expansion read failed')
+      // A missing current_phase reads as phase 1, as the tier list endpoint does.
+      const currentPhase = (expansion?.current_phase as number | null | undefined) ?? 1
       const { data: tiers, error: tiersError } = await supabase
         .from('raid_tiers')
         .select('id')
         .eq('expansion_id', expansionId)
         .eq('list_mode', 'discovery')
         .eq('is_guild_active', true)
+        .lte('phase', currentPhase)
         .limit(1)
       if (tiersError) throw new Error('tier read failed')
       hasDiscoveryTier = (tiers?.length ?? 0) > 0
