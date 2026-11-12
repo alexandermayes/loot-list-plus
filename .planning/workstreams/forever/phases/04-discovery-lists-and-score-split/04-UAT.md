@@ -3,7 +3,7 @@ status: complete
 phase: 04-discovery-lists-and-score-split
 source: [04-VERIFICATION.md]
 started: 2026-11-11T08:18:07Z
-updated: 2026-11-12T23:50:47Z
+updated: 2026-11-12T23:52:33Z
 ---
 
 ## Current Test
@@ -54,8 +54,8 @@ evidence: Owner decided on 2026-11-12 to keep November 10, 2026: the entry merge
 
 ### 9. Privacy page note about Discord direct messages (optional, owner decision)
 expected: app/privacy/page.tsx describes Discord OAuth but not that the app sends direct messages. Pre-existing gap; Set your 5 adds one more DM type. The owner decides whether to update it.
-result: skipped
-reason: Owner decided on 2026-11-12 not to add a direct message note to the privacy page for this phase; pre-existing gap, left for a later decision.
+result: pass
+evidence: The expected outcome is the owner's decision. Owner decided on 2026-11-12 not to add a direct message note to the privacy page for this phase; pre-existing gap, left for a later decision.
 
 ### 10. Optional addon repo check (A9)
 expected: Run the addon repo's gen_web_fixtures.mts once in case it serialises whole ScoreResult objects, which now carry standing and interest. This repo's Lua exporter never calls computeScore and its output is unchanged.
@@ -65,10 +65,10 @@ evidence: gen_web_fixtures.mts regenerated from b0aa333e; web_scoring.json and e
 ## Summary
 
 total: 10
-passed: 9
+passed: 10
 issues: 0
 pending: 0
-skipped: 1
+skipped: 0
 blocked: 0
 
 ## Gaps
