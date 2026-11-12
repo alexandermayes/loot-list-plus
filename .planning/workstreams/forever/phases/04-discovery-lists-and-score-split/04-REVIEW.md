@@ -82,7 +82,7 @@ status: issues_found
 **Files Reviewed:** 63
 **Status:** issues_found
 
-> **Fix status (2026-11-11):** CR-01, WR-01 and WR-02 are fixed (see "Fixes applied" under each finding). WR-03 to WR-08 and IN-01 to IN-06 remain open. The frontmatter status and counts are left as reviewed.
+> **Fix status (2026-11-11):** CR-01, WR-01 and WR-02 were fixed before the Phase 4 PRs merged. WR-03 to WR-07 and IN-01 to IN-06 are fixed in quick task 261111-kgu (branch `fix/phase-4-review-warnings`, PR #511); see "Fixes applied" under each finding. WR-08 stays open as an owner decision (see "Not fixed" under it). The frontmatter status and counts are left as reviewed.
 
 | Finding | Commit | Subject |
 |---------|--------|---------|
@@ -91,6 +91,17 @@ status: issues_found
 | WR-01 | 727d2d45 | fix(04-08): enforce the need list shape at submit |
 | WR-02 | 995eea62 | fix(04-18): validate the raid summary channel id before building the bot URL |
 | WR-02 | 895a652d | fix(04-15): validate raid_summary_channel_id in the guild settings PUT |
+| WR-03 | 57e442b8 | fix(04-18): bound every Discord call of the Set your 5 send with a deadline |
+| WR-04 | a7ea36f9 | fix(04-18): reserve the Set your 5 cooldown before the channel post and fail closed |
+| WR-05 | b076867c | fix(04-18): read Set your 5 member preferences in chunks of 100 ids |
+| WR-06 | d723abc2 | fix(04-07): bound, check and de-duplicate item_ids in the master-sheet visibility route |
+| WR-07 | 33892c71 | fix(04-13): count only unlocked phases for the Set your 5 card, send row and send |
+| IN-01 | d9ef1e95 | fix(04-18): label the Set your 5 send row in the audit log |
+| IN-02 | ab6c8d55 | fix(04-19): drop the placeholder note on the Discovery lists changelog date |
+| IN-03 | 6eba6480 | fix(04-14): default a null decimal_places to 2 on the master sheet score views |
+| IN-04 | d1e8aae1 | fix(04-18): check the bot token after the permission check in the Set your 5 send |
+| IN-05 | b0329108 | fix(04-15): share one withoutLootStyle helper between the addon routes |
+| IN-06 | 4d5e701a | fix(04-18): drop the double cast on the Set your 5 DM body |
 
 ## Summary
 
@@ -195,6 +206,11 @@ if (!channelId || !SNOWFLAKE.test(channelId)) {
 
 **Fix:** Pass a deadline signal into the DM calls (`signal: AbortSignal.timeout(Math.max(0, startedAt + BUDGET - Date.now()))`) and cap `Retry-After` in `discordFetch` (for example `Math.min(waitMs, 5000)`), or skip the retry sleep when the remaining budget is smaller than the wait.
 
+**Fixes applied:**
+
+- `57e442b8` (04-18): `lib/discord.ts` `discordFetch` reads `init.signal`. Once it aborts, no further attempt is made, a Retry-After or 5xx retry wait ends at once, and the last response, if any, is handed back as it stands (a 429 stays a 429); an already aborted signal makes no request and throws its reason. Without a signal nothing changes, so the other callers keep honouring Retry-After in full. `sendDirectMessage` takes `{ signal }` and passes it to both calls. The route creates one `AbortController`, aborted 55 seconds after the start of the request (5 seconds under `maxDuration`, 10 after the no-new-DM budget) and cleared in `finally`, and passes its signal to the channel post and every DM. A DM that is not ok after the deadline counts as skipped and logs nothing; a channel post cut off by it answers the existing 502. Tests: `lib/__tests__/discord.test.ts` (new, 9 cases with fake timers) and four route cases (one signal on every call, a DM in flight at the deadline is skipped with no log, a failure before the deadline still logs, the post cut off answers 502).
+- Not done: no cap on Retry-After itself. The deadline bounds the request; cutting a Retry-After short would only earn another 429.
+
 ### WR-04: The cooldown is written best-effort and after the post, so it fails open
 
 **File:** `app/api/discord/set-your-five/route.ts:116-138,195-210`, `utils/audit/log.ts:79-95`
@@ -203,6 +219,10 @@ if (!channelId || !SNOWFLAKE.test(channelId)) {
 
 **Fix:** Insert the reservation row directly with the service client before posting, and check `error`. Delete the row (or return 5xx) if the channel post fails. That also narrows the concurrent-send window.
 
+**Fixes applied:**
+
+- `a7ea36f9` (04-18): the route inserts the `set_your_five_sends` audit row itself, before the channel post, with the insert's error checked: a failed write answers 500 with nothing sent. If the channel post fails the row is deleted again so the officer can retry at once; if that delete fails, the cooldown stands for an hour on a send that did not happen and a fixed line (`[set-your-five] cooldown release failed`, stage only) says so. `logAudit` is no longer imported by the route. The concurrent-officers race the route comment accepts is narrower (the reservation lands before the post) but not closed. Tests: the row is written before the post with fixed columns (`new_data: { posted: true }`, no recipients), a failed write sends nothing, a failed post releases the row by id, a failed release still answers 502 and logs once.
+
 ### WR-05: `PREFERENCE_CHUNK_SIZE = 500` risks overrunning the request URL
 
 **File:** `app/api/discord/set-your-five/route.ts:31,163-171`
@@ -210,6 +230,10 @@ if (!channelId || !SNOWFLAKE.test(channelId)) {
 **Issue:** Each `.in('user_id', chunk)` puts every id in the PostgREST URL. 500 UUIDs is roughly 19 KB. The visibility route in this same phase uses 100 for exactly this reason (its WR-02 comment). A guild with a few hundred active members would get a gateway or PostgREST error from `selectAllPagesOrThrow`. The route returns 500 before anything is sent, so the feature breaks for larger guilds rather than degrading.
 
 **Fix:** Use 100, matching `VISIBILITY_ID_CHUNK` and `CHUNK_SIZE` in `guild-award-refs.ts`. Share one constant.
+
+**Fixes applied:**
+
+- `b076867c` (04-18): `utils/supabase/paginate.ts` exports `IN_FILTER_CHUNK_SIZE = 100`, the one constant the finding asked for; the visibility route and `lib/loot/guild-award-refs.ts` use it in place of their own 100s and are otherwise unchanged. The Set your 5 preference lookup reads in chunks of that size. Test: 250 members produce three `user_preferences` reads of at most 100 ids that together carry every id.
 
 ### WR-06: The master-sheet visibility route has no bound or shape check on `item_ids`
 
@@ -226,6 +250,10 @@ if (!ids || ids.length > 2000 || !ids.every((id) => typeof id === 'string' && UU
 }
 ```
 
+**Fixes applied:**
+
+- `d723abc2` (04-07): after the shape check, at most 2000 ids per request (`item_ids holds more than 2000 ids`, 400), every element a UUID (`item_ids must hold item ids only`, 400) and the ids de-duplicated before the chunked reads on both the officer and the raider path. Both error strings are API-only copy, owner review pending. The bound sits above the largest request the sheet makes (a Forever phase: 435 need ids; a merged Known phase group: somewhat over 1000 items). Tests: 2001 ids answer 400 before any read, 2000 ids are served in 20 chunks, five malformed elements (number, null, object, non-UUID string, SQL fragment) answer 400 before any read, an id repeated across chunks is read once and returned once, the raider path is given the de-duplicated list.
+
 ### WR-07: The Overview "Set your 5" card counts Discovery tiers in locked phases
 
 **File:** `app/(app)/overview/components/DashboardContent.tsx:695-700,722-731`, `app/(app)/overview/components/SetYourFiveCard.tsx:82-102`
@@ -234,6 +262,10 @@ if (!ids || ids.length > 2000 || !ids.every((id) => typeof id === 'string' && UU
 
 **Fix:** Restrict `discoveryPhases` to phases at or below the expansion's `current_phase` (the Overview already has `currentExpansion`). Do the same in the `hasDiscoveryTier` check in `GuildSettingsContent.tsx`.
 
+**Fixes applied:**
+
+- `33892c71` (04-13, with the 04-18 send row and route): `discoveryListStatus` takes `currentPhase` and counts a Discovery tier only at or below it; a null `current_phase` reads as phase 1 and a tier without a phase never counts, both as the tier list endpoint does. The Overview reads `current_phase` with the `phase_deadlines` it already fetches and treats a failed read as a status error, so the card stays hidden rather than guessing (E3). `GuildSettingsContent` drops `includeAllPhases` from its `useRaidTiers` call, so the endpoint's linear unlock filter applies to the send row. The send route reads `expansions.current_phase` for the active expansion and adds `.lte('phase', current)` to its Discovery gate; a failed read answers 500 with nothing sent. Tests: five `discoveryListStatus` cases (locked phase not counted, counted once unlocked, a list in a locked phase ignored, null current phase, tier without a phase) and five route cases.
+
 ### WR-08: The default loot style flips six scoring flags that column defaults leave on, for every new guild
 
 **File:** `domain/guild/loot-style-presets.ts:92-118`, `app/api/guilds/route.ts:225-240`, `app/components/CreateGuildModal.tsx:99-103`
@@ -241,6 +273,8 @@ if (!ids || ids.length > 2000 || !ids.every((id) => typeof id === 'string' && UU
 **Issue:** `CreateGuildModal` always sends `loot_style: 'reward_attendance'` unless the officer changes it, and `POST /api/guilds` spreads that preset's knobs onto the settings insert. The preset sets `guild_rank_bonuses_enabled`, `raid_roles_overall_bonus_priority`, `single_raider_overall_bonus` and the three `*_single_item` flags to false. The baseline schema defaults them to true, and the previous insert left them at the default. The code comment in `CreateGuildModal.tsx` says leaving the picker alone "changes nothing", and research A8 (cited in the preset file) argues the flags have no effect with nothing configured. Scores are indeed identical at creation. But `single_raider_overall_bonus` also gates the per-raider bonus UI (`PriorityListTab` reads `!!s.single_raider_overall_bonus`, the raider-bonus lookup in `domain/scoring/modifiers.ts` returns nothing when it is off), and `ScoreBreakdownModal` describes that feature as "free for every guild". An officer who adds a bonus or a rank modifier later gets no effect until they find the toggle in Fine-tune. This applies to every new guild of every game, not only Forever. If the owner accepted this as D-17, record it as a known default change. Otherwise make the default preset leave those flags at their column defaults.
 
 **Fix:** Either leave the six flags out of `REWARD_ATTENDANCE` when applied at creation, or note in the summary list ("Officer bonuses: off") that this is a change from today's new-guild behaviour.
+
+**Not fixed (owner decision):** whether a new guild's six officer-bonus flags should follow the column defaults (on) or the Reward attendance preset (off) is a product default, not a code defect, and the preset's values were reviewed with the copy under D-17. Two ways to close it, for the owner to pick: (a) leave the six flags out of `REWARD_ATTENDANCE` when it is applied at creation (`app/api/guilds/route.ts`), so a new guild keeps today's defaults and the preset's "Officer bonuses: off" line changes; or (b) keep the preset as it is and record in `04-CONTEXT.md` under D-17 that every new guild now starts with officer bonuses off, with the `PriorityListTab` and `ScoreBreakdownModal` wording checked against it. Either way a one-line note in the "What this sets" list is user-facing copy for sign-off.
 
 ## Info
 
@@ -252,6 +286,10 @@ if (!ids || ids.length > 2000 || !ids.every((id) => typeof id === 'string' && UU
 
 **Fix:** Add a branch with a readable label, for example "sent Set your 5 to the guild", and a category.
 
+**Fixes applied:**
+
+- `d9ef1e95` (04-18): `describeActivity` answers `sent Set your 5 to the guild` for `set_your_five_sends` rows (DRAFT copy, owner sign-off pending) and `getCategory` files them under Members. `describeActivity`, `getCategory` and the `AuditLog` type are exported for the test; three unit tests in `app/(app)/audit-log/__tests__/describe-activity.test.ts`. Not changed: the table filter dropdown (`TABLE_OPTIONS`) does not list the new table; adding it is another copy string.
+
 ### IN-02: The update entry's date is a placeholder with a "set before merge" note
 
 **File:** `lib/updates-data.ts:16-19`
@@ -259,6 +297,10 @@ if (!ids || ids.length > 2000 || !ids.every((id) => typeof id === 'string' && UU
 **Issue:** The comment says the date `November 10, 2026` is a placeholder to set to the ship date before merge. It also says the Discord updates cron posts the newest entry publicly after merge. If it merges unchanged, the post is dated wrongly.
 
 **Fix:** Set the date at merge, or make it a checklist item in the PR description.
+
+**Fixes applied:**
+
+- `ab6c8d55` (04-19): the placeholder comment is replaced by one that says why the date stays. The entry merged on 2026-11-11 with the date `November 10, 2026`; the Discord updates cron keys its once-only post on the date slug (`updates:posted:november-10-2026`), so changing the date after the merge would post the entry a second time. If the owner wants the date corrected, check that key in Redis first; if the post has not happened yet the date can still change safely.
 
 ### IN-03: `decimalPlaces` can be null at runtime and bypasses the modal's default
 
@@ -268,6 +310,10 @@ if (!ids || ids.length > 2000 || !ids.every((id) => typeof id === 'string' && UU
 
 **Fix:** Pass `guildSettings?.decimal_places ?? 2`, matching line 1314 of the same file.
 
+**Fixes applied:**
+
+- `6eba6480` (04-14): both call sites in `MasterSheetContent.tsx` (the raid mode view and the score comparison modal) pass `guildSettings?.decimal_places ?? 2`, as the Gargul export on the same page already did. `ItemCandidateModal` and `BossSection` already defaulted the same way.
+
 ### IN-04: The Discord route answers 503 before the permission check
 
 **File:** `app/api/discord/set-your-five/route.ts:63-66`
@@ -275,6 +321,10 @@ if (!ids || ids.length > 2000 || !ids.every((id) => typeof id === 'string' && UU
 **Issue:** Any signed-in user learns whether the bot token is configured. Minor, but the order is auth, input, token, permission rather than auth, input, permission, token.
 
 **Fix:** Move the token check after `verifyPermission`.
+
+**Fixes applied:**
+
+- `d1e8aae1` (04-18): the order is auth, input, permission, then the token. Tests: a user without `manage_settings` gets 403 with the token missing; an officer gets 503 after the permission check.
 
 ### IN-05: `withoutLootStyle` is duplicated and is a denylist
 
@@ -284,6 +334,10 @@ if (!ids || ids.length > 2000 || !ids.every((id) => typeof id === 'string' && UU
 
 **Fix:** Move it to `lib/` as one function, and consider an allowlist of the fields the Lua side reads.
 
+**Fixes applied:**
+
+- `b0329108` (04-15): `lib/addon/without-loot-style.ts` holds the one copy; both addon routes import it. Behaviour and key order are unchanged, so Known guilds' payloads stay byte-identical (D-30). Four unit tests. Not changed: it is still a denylist. An allowlist of the fields the Lua side reads stays a follow-up.
+
 ### IN-06: Double cast on the Discord message body
 
 **File:** `app/api/discord/set-your-five/route.ts:221`
@@ -291,6 +345,10 @@ if (!ids || ids.length > 2000 || !ids.every((id) => typeof id === 'string' && UU
 **Issue:** `message as unknown as Record<string, unknown>` hides a type mismatch. `SetYourFiveMessage` is a plain object type, so widening `sendDirectMessage`'s `body` parameter (or `message`'s declared type) removes the cast.
 
 **Fix:** Change the `body` parameter in `lib/discord.ts` to `object` or `Record<string, unknown>` and drop the cast.
+
+**Fixes applied:**
+
+- `4d5e701a` (04-18): `sendDirectMessage`'s `body` is `object`, which every caller already satisfies, and the route passes its typed message without a cast.
 
 ---
 
