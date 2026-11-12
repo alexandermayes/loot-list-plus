@@ -16,6 +16,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { IN_FILTER_CHUNK_SIZE } from '@/utils/supabase/paginate'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type QueryClient = SupabaseClient<any, any, any>
@@ -24,7 +25,6 @@ type QueryClient = SupabaseClient<any, any, any>
 // here rather than shared so that file (about loot_items only) stays
 // untouched.
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const CHUNK_SIZE = 100
 
 /**
  * Normalizes a client-supplied raid_event_id or character_id before it is
@@ -66,8 +66,8 @@ export async function findInvalidRaidEventIds(
   const wellFormedIds = dedupedIds.filter(id => UUID_PATTERN.test(id))
   const found = new Set<string>()
 
-  for (let i = 0; i < wellFormedIds.length; i += CHUNK_SIZE) {
-    const chunk = wellFormedIds.slice(i, i + CHUNK_SIZE)
+  for (let i = 0; i < wellFormedIds.length; i += IN_FILTER_CHUNK_SIZE) {
+    const chunk = wellFormedIds.slice(i, i + IN_FILTER_CHUNK_SIZE)
     const { data, error } = await supabase
       .from('raid_events')
       .select('id')
@@ -113,8 +113,8 @@ export async function findInvalidCharacterIds(
   const wellFormedIds = dedupedIds.filter(id => UUID_PATTERN.test(id))
   const found = new Set<string>()
 
-  for (let i = 0; i < wellFormedIds.length; i += CHUNK_SIZE) {
-    const chunk = wellFormedIds.slice(i, i + CHUNK_SIZE)
+  for (let i = 0; i < wellFormedIds.length; i += IN_FILTER_CHUNK_SIZE) {
+    const chunk = wellFormedIds.slice(i, i + IN_FILTER_CHUNK_SIZE)
     const { data, error } = await supabase
       .from('character_guild_memberships')
       .select('character_id')

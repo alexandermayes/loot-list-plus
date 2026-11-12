@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { verifyPermission } from '@/utils/server-roles'
-import { selectAllPagesOrThrow } from '@/utils/supabase/paginate'
-import { logAudit } from '@/utils/audit/log'
+import { IN_FILTER_CHUNK_SIZE, selectAllPagesOrThrow } from '@/utils/supabase/paginate'
 import { discordFetch, sendDirectMessage } from '@/lib/discord'
 import {
   SET_YOUR_FIVE_COOLDOWN_ERROR,
@@ -16,19 +15,24 @@ import {
   resolveAppOrigin,
 } from '@/domain/loot/set-your-five'
 
-// Ceiling for the whole request on the host. The DM loop below keeps well
-// inside it: 5 DMs at a time and no new DM after 45 seconds (D-30), which fits
-// a guild of about a hundred members at two Discord calls each.
+// Ceiling for the whole request on the host. The DM loop below keeps inside
+// it: 5 DMs at a time, no new DM after 45 seconds (D-30), which fits a guild
+// of about a hundred members at two Discord calls each, and every Discord
+// call still in flight is cut off at 55 seconds, so a long Retry-After can
+// never run the function past the ceiling once the channel post has landed.
+// regression for WR-03 (Phase 4 review).
 export const maxDuration = 60
 
 const SET_YOUR_FIVE_DM_CONCURRENCY = 5
 const SET_YOUR_FIVE_TIME_BUDGET_MS = 45_000
+// The deadline every Discord call carries, from the start of the request:
+// past it, discordFetch stops waiting on Retry-After and makes no new attempt,
+// and the response is written with the counts so far.
+const SET_YOUR_FIVE_DEADLINE_MS = 55_000
 const SET_YOUR_FIVE_COOLDOWN_MINUTES = 60
 // The send row's audit_logs table_name ('set_your_five_sends'); the cooldown
 // reads the latest one for the guild.
 const SEND_AUDIT_TABLE = 'set_your_five_sends'
-
-const PREFERENCE_CHUNK_SIZE = 500
 
 // A Discord channel id is a snowflake: 17 to 20 digits and nothing else.
 // regression for WR-02 (Phase 4 review): the stored id is officer text and is
@@ -54,6 +58,8 @@ interface PreferenceRow {
  */
 export async function POST(request: NextRequest) {
   const startedAt = Date.now()
+  const deadline = new AbortController()
+  const deadlineTimer = setTimeout(() => deadline.abort(), SET_YOUR_FIVE_DEADLINE_MS)
   try {
     const { user, error: authError } = await getAuthenticatedUser()
     if (authError || !user) {
@@ -66,11 +72,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'guild_id is required' }, { status: 400 })
     }
 
-    const botToken = process.env.DISCORD_BOT_TOKEN
-    if (!botToken) {
-      return NextResponse.json({ error: 'Discord notifications temporarily unavailable' }, { status: 503 })
-    }
-
     const supabase = createServiceRoleClient()
 
     const { hasPermission } = await verifyPermission(supabase, user.id, guildId, 'manage_settings')
@@ -78,9 +79,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: SET_YOUR_FIVE_NOT_OFFICER_ERROR }, { status: 403 })
     }
 
+    // After the permission check, so a signed-in member cannot learn whether
+    // the bot is configured: auth, input, permission, then the token.
+    // regression for IN-04 (Phase 4 review).
+    const botToken = process.env.DISCORD_BOT_TOKEN
+    if (!botToken) {
+      return NextResponse.json({ error: 'Discord notifications temporarily unavailable' }, { status: 503 })
+    }
+
     // Discovery gate (D-23): the message only makes sense when raiders have a
-    // picker to open, so a guild with no guild-active Discovery tier in its
-    // active expansion is refused before any Discord call.
+    // picker to open, so a guild with no guild-active Discovery tier in a
+    // phase at or below its active expansion's current phase is refused
+    // before any Discord call. A Discovery tier in a locked phase has no list
+    // to set, the same rule the Overview card and the guild settings row
+    // apply. regression for WR-07 (Phase 4 review).
     const { data: guild, error: guildError } = await supabase
       .from('guilds')
       .select('active_expansion_id')
@@ -91,12 +103,21 @@ export async function POST(request: NextRequest) {
 
     let hasDiscoveryTier = false
     if (expansionId) {
+      const { data: expansion, error: expansionError } = await supabase
+        .from('expansions')
+        .select('current_phase')
+        .eq('id', expansionId)
+        .single()
+      if (expansionError && !expansion) throw new Error('expansion read failed')
+      // A missing current_phase reads as phase 1, as the tier list endpoint does.
+      const currentPhase = (expansion?.current_phase as number | null | undefined) ?? 1
       const { data: tiers, error: tiersError } = await supabase
         .from('raid_tiers')
         .select('id')
         .eq('expansion_id', expansionId)
         .eq('list_mode', 'discovery')
         .eq('is_guild_active', true)
+        .lte('phase', currentPhase)
         .limit(1)
       if (tiersError) throw new Error('tier read failed')
       hasDiscoveryTier = (tiers?.length ?? 0) > 0
@@ -167,9 +188,12 @@ export async function POST(request: NextRequest) {
       ),
     ]
 
+    // The ids go in chunks of the shared size: PostgREST carries every .in()
+    // id in the URL, and a few hundred members would overrun it in one read.
+    // regression for WR-05 (Phase 4 review).
     const discordIds: string[] = []
-    for (let i = 0; i < memberIds.length; i += PREFERENCE_CHUNK_SIZE) {
-      const chunk = memberIds.slice(i, i + PREFERENCE_CHUNK_SIZE)
+    for (let i = 0; i < memberIds.length; i += IN_FILTER_CHUNK_SIZE) {
+      const chunk = memberIds.slice(i, i + IN_FILTER_CHUNK_SIZE)
       const rows = await selectAllPagesOrThrow<PreferenceRow>('member preferences', (start, end) =>
         supabase
           .from('user_preferences')
@@ -187,6 +211,30 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Cooldown reservation (D-30): the send row is written before the channel
+    // post, with the insert's error checked, so a send can never happen
+    // without the row that throttles the next one. The row is inserted here
+    // rather than through logAudit, which swallows its insert error. Nothing
+    // about who was messaged is stored: only that a send happened.
+    // regression for WR-04 (Phase 4 review): written after the post and
+    // best-effort, the cooldown failed open.
+    const { data: sendRow, error: sendRowError } = await supabase
+      .from('audit_logs')
+      .insert({
+        guild_id: guildId,
+        table_name: SEND_AUDIT_TABLE,
+        record_id: guildId,
+        action: 'INSERT',
+        user_id: user.id,
+        old_data: null,
+        new_data: { posted: true },
+        changed_fields: null,
+      })
+      .select('id')
+      .single()
+    if (sendRowError || !sendRow) throw new Error('send row write failed')
+    const sendRowId = sendRow.id as string
+
     const message = buildSetYourFiveMessage(buildSetYourFiveUrl(resolveAppOrigin(), guildId))
 
     let channelPostOk = false
@@ -195,40 +243,39 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         headers: { Authorization: `Bot ${botToken}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(message),
+        signal: deadline.signal,
       })
       channelPostOk = posted.ok
     } catch {
       channelPostOk = false
     }
     if (!channelPostOk) {
+      // Nothing was sent, so the reservation is released and the officer can
+      // retry at once. If the release itself fails, the cooldown stands for
+      // an hour on a send that did not happen, which is the safe side.
+      const { error: releaseError } = await supabase.from('audit_logs').delete().eq('id', sendRowId)
+      if (releaseError) {
+        console.error('[set-your-five] cooldown release failed', { stage: 'channel_post' })
+      }
       return NextResponse.json({ error: SET_YOUR_FIVE_POST_FAILED_ERROR }, { status: 502 })
     }
 
-    // The row is written as soon as the channel post lands, before the DMs, so
-    // the cooldown holds even if the function is cut off mid-send. Counts of
-    // who was messaged are never stored: only that a send happened.
-    await logAudit({
-      supabase,
-      guildId,
-      tableName: SEND_AUDIT_TABLE,
-      recordId: guildId,
-      action: 'INSERT',
-      userId: user.id,
-      newData: { posted: true },
-    })
-
-    // Bounded DMs (D-30): a small worker pool, and no new DM once the budget
-    // from the start of the request is spent. Recipients never reached are
-    // counted as skipped.
+    // Bounded DMs (D-30): a small worker pool, no new DM once the budget from
+    // the start of the request is spent, and the deadline on every DM still
+    // in flight after that. Recipients never reached are counted as skipped.
     let sent = 0
     let next = 0
     const worker = async () => {
       while (next < discordIds.length) {
         if (Date.now() - startedAt >= SET_YOUR_FIVE_TIME_BUDGET_MS) return
         const discordId = discordIds[next++]
-        const outcome = await sendDirectMessage(botToken, discordId, message as unknown as Record<string, unknown>)
+        const outcome = await sendDirectMessage(botToken, discordId, message, { signal: deadline.signal })
         if (outcome.ok) {
           sent += 1
+        } else if (deadline.signal.aborted) {
+          // The deadline passed while this DM was in flight: the recipient
+          // counts as never reached, and there is nothing to log.
+          return
         } else if (outcome.status !== 403) {
           // 403 (DMs closed, no shared server, stale id) is a state of the
           // world and stays quiet. Anything else logs stage and status only,
@@ -246,5 +293,7 @@ export async function POST(request: NextRequest) {
     // Fixed message: nothing from the request or from Discord goes in the log.
     console.error('[set-your-five] unexpected failure', { stage: 'handler' })
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  } finally {
+    clearTimeout(deadlineTimer)
   }
 }

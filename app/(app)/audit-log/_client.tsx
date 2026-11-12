@@ -48,7 +48,7 @@ interface AuditData {
   [key: string]: unknown
 }
 
-interface AuditLog {
+export interface AuditLog {
   id: string
   table_name: string
   record_id: string
@@ -122,7 +122,7 @@ const CATEGORY_CONFIG: Record<AuditCategory, {
   },
 }
 
-function getCategory(tableName: string): AuditCategory {
+export function getCategory(tableName: string): AuditCategory {
   switch (tableName) {
     case 'loot_submissions': return 'submission'
     case 'loot_history': return 'loot'
@@ -133,6 +133,9 @@ function getCategory(tableName: string): AuditCategory {
     case 'blp_tracking': return 'blp'
     case 'loot_submission_items': return 'items'
     case 'donation_records': return 'donations'
+    // The Set your 5 send row (app/api/discord/set-your-five): an officer
+    // messaged the members, so it sits with the member activity.
+    case 'set_your_five_sends': return 'members'
     default: return 'settings'
   }
 }
@@ -250,7 +253,7 @@ function humanizeFieldList(fields: string[]): string {
 
 // --- Rich descriptions ---
 
-function describeActivity(log: AuditLog): { summary: string; detail?: string } {
+export function describeActivity(log: AuditLog): { summary: string; detail?: string } {
   const { table_name, action, old_data, new_data, changed_fields } = log
 
   // Submission status changes
@@ -418,6 +421,13 @@ function describeActivity(log: AuditLog): { summary: string; detail?: string } {
     if (action === 'DELETE') return { summary: 'removed item from list' }
     if (action === 'UPDATE') return { summary: 'restored item to list' }
     if (action === 'INSERT') return { summary: 'added item to list' }
+  }
+
+  // Set your 5 send: one row per send, written before the channel post.
+  // Nothing about who was messaged is stored, so there is no detail line.
+  if (table_name === 'set_your_five_sends') {
+    // DRAFT copy, owner sign-off pending (IN-01, Phase 4 review).
+    return { summary: 'sent Set your 5 to the guild' }
   }
 
   // Fallback

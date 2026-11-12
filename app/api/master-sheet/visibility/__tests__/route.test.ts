@@ -756,6 +756,98 @@ describe('need row (past the D-22 hold)', () => {
   })
 })
 
+// regression for WR-06 (Phase 4 review): the chunked reads turned one failing
+// query into an unbounded loop of service-role queries over whatever the
+// client sent, a non-string element reached Postgres as a 500, and an id
+// repeated across chunks came back as repeated ranking rows.
+describe('WR-06: item_ids is bounded, checked and de-duplicated', () => {
+  function fillerIds(count: number): string[] {
+    return Array.from({ length: count }, (_, i) => `ffffffff-0000-0000-0000-${String(i).padStart(12, '0')}`)
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(getAuthenticatedUser).mockResolvedValue({ user: { id: USER_ID }, error: null } as never)
+  })
+
+  it('answers 400 to 2001 ids before any read', async () => {
+    const { client, calls } = makeClient(baseTables())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: fillerIds(2001) }))
+
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe('item_ids holds more than 2000 ids')
+    expect(calls).toEqual([])
+  })
+
+  it('still serves 2000 ids, in 20 chunks', async () => {
+    const { client, calls } = makeClient(baseTables())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: fillerIds(2000) }))
+
+    expect(res.status).toBe(200)
+    expect(calls.filter(c => c.table === 'loot_submission_items')).toHaveLength(20)
+  })
+
+  it.each([
+    ['a number', [ITEM, 42]],
+    ['null', [ITEM, null]],
+    ['an object', [ITEM, { id: ITEM }]],
+    ['a string that is not a UUID', [ITEM, 'not-an-id']],
+    ['a SQL fragment', [ITEM, "') or 1=1 --"]],
+  ])('answers 400 before any read when an element is %s', async (_label, ids) => {
+    const { client, calls } = makeClient(baseTables())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: ids }))
+
+    expect(res.status).toBe(400)
+    expect((await res.json()).error).toBe('item_ids must hold item ids only')
+    expect(calls).toEqual([])
+  })
+
+  it('reads an id repeated across chunks once and returns its ranking once', async () => {
+    const ids = [ITEM, ...fillerIds(119), ITEM]
+    const { client, calls } = makeClient(baseTables())
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: ids }))
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    const sent = calls
+      .filter(c => c.table === 'loot_submission_items')
+      .flatMap(c => c.filters.find(f => f.type === 'in' && f.col === 'loot_item_id')!.val as string[])
+    expect(sent.filter(id => id === ITEM)).toHaveLength(1)
+    expect(sent).toHaveLength(120)
+    // The departed raider's row is still left out; the active one appears once.
+    expect(body.rankings).toHaveLength(1)
+    expect(body.rankings[0]).toMatchObject({ submission_id: SUB_ACTIVE, loot_item_id: ITEM })
+  })
+
+  it('hands the raider path the de-duplicated ids', async () => {
+    const { client, calls } = makeClient(
+      baseTables({
+        guilds: [{ id: GUILD, created_by: OTHER_USER }],
+        character_guild_memberships: [
+          { character_id: CALLER_CHAR, guild_id: GUILD, role: 'Member', membership_status: 'active', is_active: true },
+        ],
+        guild_roles: [{ guild_id: GUILD, name: 'Member', position: 0, permissions: [] }],
+      }),
+    )
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+
+    const res = await POST(request({ guild_id: GUILD, item_ids: [ITEM, ITEM, ITEM] }))
+
+    expect(res.status).toBe(200)
+    const itemReads = calls.filter(c => c.table === 'loot_items' && c.select === 'id, raid_tier_id')
+    expect(itemReads).toHaveLength(1)
+    expect(itemReads[0].filters.find(f => f.type === 'in' && f.col === 'id')?.val).toEqual([ITEM])
+  })
+})
+
 describe('WR-02: id reads go in chunks of at most 100 and a failed page answers 500', () => {
   const ITEM_B = 'aaaaaaaa-0000-0000-0000-000000000030'
   const SUB_B = 'aaaaaaaa-0000-0000-0000-000000000031'

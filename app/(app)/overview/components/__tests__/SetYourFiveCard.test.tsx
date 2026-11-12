@@ -85,7 +85,7 @@ describe('discoveryListStatus', () => {
     { phase: 1, list_mode: 'discovery' },
     { phase: 1, list_mode: 'discovery' },
   ]
-  const read = { tiersError: false, submissionsError: false }
+  const read = { tiersError: false, submissionsError: false, currentPhase: 1 }
 
   it('has no Discovery tier for a guild whose tiers are all Known', () => {
     const result = discoveryListStatus({ tiers: [{ phase: 1, list_mode: 'known' }], submissions: [], ...read })
@@ -134,6 +134,48 @@ describe('discoveryListStatus', () => {
     ['the tier read', { tiersError: true, submissionsError: false }],
     ['the submission read', { tiersError: false, submissionsError: true }],
   ])('flags an error when %s failed', (_label, errors) => {
-    expect(discoveryListStatus({ tiers: null, submissions: null, ...errors }).statusError).toBe(true)
+    expect(discoveryListStatus({ tiers: null, submissions: null, currentPhase: 1, ...errors }).statusError).toBe(true)
+  })
+
+  // regression for WR-07 (Phase 4 review): the tier read spans every phase,
+  // so a Discovery tier in a phase the raider cannot open yet asked for a
+  // list that could not exist and linked to the wrong editor.
+  describe('locked phases', () => {
+    it('does not count a Discovery tier in a phase above the current one', () => {
+      const result = discoveryListStatus({
+        tiers: [{ phase: 1, list_mode: 'known' }, { phase: 2, list_mode: 'discovery' }],
+        submissions: [],
+        ...read,
+      })
+
+      expect(result).toEqual({ hasDiscoveryTier: false, statusError: false, submissionStatus: null })
+    })
+
+    it('counts a Discovery tier once its phase is unlocked', () => {
+      const tiers = [{ phase: 1, list_mode: 'known' }, { phase: 2, list_mode: 'discovery' }]
+
+      expect(discoveryListStatus({ tiers, submissions: [], ...read, currentPhase: 2 }).hasDiscoveryTier).toBe(true)
+    })
+
+    it('ignores a list in a locked Discovery phase when judging the status', () => {
+      const result = discoveryListStatus({
+        tiers: [{ phase: 1, list_mode: 'discovery' }, { phase: 2, list_mode: 'discovery' }],
+        submissions: [{ phase: 2, status: 'approved' }],
+        ...read,
+      })
+
+      expect(result).toEqual({ hasDiscoveryTier: true, statusError: false, submissionStatus: null })
+    })
+
+    it('reads a missing current phase as phase 1, like the tier list endpoint', () => {
+      const tiers = [{ phase: 1, list_mode: 'discovery' }, { phase: 2, list_mode: 'discovery' }]
+      const result = discoveryListStatus({ tiers, submissions: [{ phase: 2, status: 'pending' }], ...read, currentPhase: null })
+
+      expect(result).toEqual({ hasDiscoveryTier: true, statusError: false, submissionStatus: null })
+    })
+
+    it('never counts a tier without a phase', () => {
+      expect(discoveryListStatus({ tiers: [{ phase: null, list_mode: 'discovery' }], submissions: [], ...read }).hasDiscoveryTier).toBe(false)
+    })
   })
 })

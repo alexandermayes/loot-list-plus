@@ -699,7 +699,7 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
             .eq('is_guild_active', true),
           supabase
             .from('expansions')
-            .select('phase_deadlines')
+            .select('phase_deadlines, current_phase')
             .eq('id', expansionId)
             .single(),
           // Start dashboard data loading in parallel — it only needs
@@ -717,14 +717,18 @@ export default function DashboardContent({ serverHeading, initialAttendance }: D
           setNoRaidTiers((tiersData || []).length === 0)
         }
 
-        // The card reads the same two results the page already has. A thrown
-        // error skips this, so the card stays hidden rather than guessing (E3).
+        // The card reads the same results the page already has: the tiers,
+        // the expansion's current phase (so a Discovery tier in a locked phase
+        // does not count, WR-07) and the character's lists. A thrown error
+        // skips this, and a failed read flags an error, so the card stays
+        // hidden rather than guessing (E3).
         if (submissionRead && activeCharacter) {
           setListStatus({
             key: `${activeGuild.id}:${activeCharacter.id}`,
             ...discoveryListStatus({
               tiers: tiersData,
-              tiersError: Boolean(tiersError),
+              tiersError: Boolean(tiersError) || Boolean(deadlineResult.error),
+              currentPhase: (deadlineResult.data?.current_phase as number | null | undefined) ?? null,
               submissions: submissionRead.submissions,
               submissionsError: submissionRead.error,
             }),

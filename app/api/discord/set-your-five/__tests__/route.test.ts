@@ -8,7 +8,6 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { getAuthenticatedUser } from '@/utils/supabase/server'
 import { verifyPermission } from '@/utils/server-roles'
 import { discordFetch, sendDirectMessage } from '@/lib/discord'
-import { logAudit } from '@/utils/audit/log'
 import {
   SET_YOUR_FIVE_COOLDOWN_ERROR,
   SET_YOUR_FIVE_NOT_OFFICER_ERROR,
@@ -23,7 +22,6 @@ vi.mock('@/utils/supabase/service-role', () => ({ createServiceRoleClient: vi.fn
 vi.mock('@/utils/supabase/server', () => ({ getAuthenticatedUser: vi.fn() }))
 vi.mock('@/utils/server-roles', () => ({ verifyPermission: vi.fn() }))
 vi.mock('@/lib/discord', () => ({ discordFetch: vi.fn(), sendDirectMessage: vi.fn() }))
-vi.mock('@/utils/audit/log', () => ({ logAudit: vi.fn() }))
 
 // Why these cases: the route messages a whole guild, so it must post once with
 // one safe link, reach each member once, and answer with counts only. Every id
@@ -33,6 +31,7 @@ const GUILD_ID = 'aaaaaaaa-0000-0000-0000-000000000001'
 const EXPANSION_ID = 'bbbbbbbb-0000-0000-0000-000000000001'
 const CHANNEL_ID = '700000000000000001'
 const SENDER_ID = 'eeeeeeee-0000-0000-0000-000000000001'
+const SEND_ROW_ID = 'dddddddd-0000-0000-0000-000000000001'
 const BOT_TOKEN = 'test-bot-token-not-real'
 const APP_URL = 'https://app.example.test'
 
@@ -42,18 +41,34 @@ const discordIdOf = (n: number) => `8000000000000001${String(n).padStart(2, '0')
 interface Fixture {
   channelId: string | null
   activeExpansionId: string | null
-  tiers: Array<{ id: string; list_mode: string; is_guild_active: boolean }>
+  // The expansion's current_phase; null is a row with the column unset.
+  currentPhase: number | null
+  failExpansionRead?: boolean
+  // A tier without a phase sits in phase 1.
+  tiers: Array<{ id: string; list_mode: string; is_guild_active: boolean; phase?: number }>
   // One row per active character; a user with two characters has two rows.
   memberships: Array<{ user_id: string }>
   prefs: Array<{ user_id: string; discord_id: string | null }>
   auditRows: Array<{ created_at: string }>
+  failSendRowInsert?: boolean
+  failSendRowDelete?: boolean
+}
+
+interface RecordedCall {
+  table: string
+  filters: Array<[string, string, unknown]>
+  op?: 'insert' | 'delete'
+  payload?: unknown
 }
 
 let fixture: Fixture
-let calls: Array<{ table: string; filters: Array<[string, string, unknown]> }>
+let calls: RecordedCall[]
+
+const sendRowWrites = () => calls.filter((c) => c.table === 'audit_logs' && c.op === 'insert')
+const sendRowReleases = () => calls.filter((c) => c.table === 'audit_logs' && c.op === 'delete')
 
 function makeBuilder(table: string) {
-  const call = { table, filters: [] as Array<[string, string, unknown]> }
+  const call: RecordedCall = { table, filters: [] }
   calls.push(call)
   let range: [number, number] | null = null
   const result = () => {
@@ -62,15 +77,31 @@ function makeBuilder(table: string) {
         return { data: { raid_summary_channel_id: fixture.channelId }, error: null }
       case 'guilds':
         return { data: { active_expansion_id: fixture.activeExpansionId }, error: null }
+      case 'expansions':
+        return fixture.failExpansionRead
+          ? { data: null, error: { message: 'expansion read failed' } }
+          : { data: { current_phase: fixture.currentPhase }, error: null }
       case 'raid_tiers': {
         const wantMode = call.filters.find((f) => f[0] === 'eq' && f[1] === 'list_mode')?.[2]
         const wantActive = call.filters.find((f) => f[0] === 'eq' && f[1] === 'is_guild_active')?.[2]
+        const maxPhase = call.filters.find((f) => f[0] === 'lte' && f[1] === 'phase')?.[2] as number | undefined
         const rows = fixture.tiers.filter(
-          (t) => (wantMode === undefined || t.list_mode === wantMode) && (wantActive === undefined || t.is_guild_active === wantActive),
+          (t) =>
+            (wantMode === undefined || t.list_mode === wantMode) &&
+            (wantActive === undefined || t.is_guild_active === wantActive) &&
+            (maxPhase === undefined || (t.phase ?? 1) <= maxPhase),
         )
         return { data: rows.slice(0, 1), error: null }
       }
       case 'audit_logs':
+        if (call.op === 'insert') {
+          return fixture.failSendRowInsert
+            ? { data: null, error: { message: 'insert failed' } }
+            : { data: { id: SEND_ROW_ID }, error: null }
+        }
+        if (call.op === 'delete') {
+          return fixture.failSendRowDelete ? { data: null, error: { message: 'delete failed' } } : { data: null, error: null }
+        }
         return { data: fixture.auditRows.slice(0, 1), error: null }
       case 'character_guild_memberships': {
         const rows = fixture.memberships.map((m) => ({ characters: { user_id: m.user_id } }))
@@ -93,6 +124,19 @@ function makeBuilder(table: string) {
   }
   builder.in = (column: string, values: unknown) => {
     call.filters.push(['in', column, values])
+    return builder
+  }
+  builder.lte = (column: string, value: unknown) => {
+    call.filters.push(['lte', column, value])
+    return builder
+  }
+  builder.insert = (payload: unknown) => {
+    call.op = 'insert'
+    call.payload = payload
+    return builder
+  }
+  builder.delete = () => {
+    call.op = 'delete'
     return builder
   }
   builder.not = () => builder
@@ -125,6 +169,7 @@ beforeEach(() => {
   fixture = {
     channelId: CHANNEL_ID,
     activeExpansionId: EXPANSION_ID,
+    currentPhase: 1,
     tiers: [{ id: 't-1', list_mode: 'discovery', is_guild_active: true }],
     memberships: [{ user_id: userId(1) }, { user_id: userId(2) }],
     prefs: [
@@ -232,6 +277,25 @@ describe('[T-04-18-01] who may send', () => {
     expectNoDiscordCalls()
     expect(calls.filter((c) => c.table !== 'guilds')).toEqual([])
   })
+
+  // regression for IN-04 (Phase 4 review): the token check ran before the
+  // permission check, so any signed-in user could learn whether the bot is
+  // configured.
+  it('refuses a user without manage_settings with 403 even when the bot token is missing', async () => {
+    vi.stubEnv('DISCORD_BOT_TOKEN', '')
+    vi.mocked(verifyPermission).mockResolvedValue({ hasPermission: false } as never)
+    const response = await POST(request())
+    expect(response.status).toBe(403)
+    expectNoDiscordCalls()
+  })
+
+  it('answers 503 to an officer when the bot token is missing, after the permission check', async () => {
+    vi.stubEnv('DISCORD_BOT_TOKEN', '')
+    const response = await POST(request())
+    expect(response.status).toBe(503)
+    expect(verifyPermission).toHaveBeenCalledTimes(1)
+    expectNoDiscordCalls()
+  })
 })
 
 describe('[D-23] the Discovery gate', () => {
@@ -272,6 +336,54 @@ describe('[D-23] the Discovery gate', () => {
     const response = await POST(request())
     expect((await response.json()).error).toBe(SET_YOUR_FIVE_NO_DISCOVERY_ERROR)
   })
+
+  // regression for WR-07 (Phase 4 review): the gate counted a Discovery tier
+  // in a phase raiders cannot open yet, so the send pointed them at a list
+  // that cannot exist.
+  describe('locked phases', () => {
+    it('answers 400 when the only Discovery tier is in a phase above the current one', async () => {
+      fixture.tiers = [
+        { id: 't-known', list_mode: 'known', is_guild_active: true, phase: 1 },
+        { id: 't-later', list_mode: 'discovery', is_guild_active: true, phase: 2 },
+      ]
+      const response = await POST(request())
+      expect(response.status).toBe(400)
+      expect((await response.json()).error).toBe(SET_YOUR_FIVE_NO_DISCOVERY_ERROR)
+      expectNoDiscordCalls()
+    })
+
+    it('sends once that phase is the current one', async () => {
+      fixture.currentPhase = 2
+      fixture.tiers = [{ id: 't-later', list_mode: 'discovery', is_guild_active: true, phase: 2 }]
+      const response = await POST(request())
+      expect(response.status).toBe(200)
+      expect(discordFetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('asks the tier table for phases at or below the current one', async () => {
+      fixture.currentPhase = 3
+      await POST(request())
+      const tierRead = calls.find((c) => c.table === 'raid_tiers')
+      expect(tierRead?.filters).toEqual(expect.arrayContaining([['lte', 'phase', 3]]))
+    })
+
+    it('reads a missing current phase as phase 1, like the tier list endpoint', async () => {
+      fixture.currentPhase = null
+      fixture.tiers = [{ id: 't-later', list_mode: 'discovery', is_guild_active: true, phase: 2 }]
+      const response = await POST(request())
+      expect(response.status).toBe(400)
+      expect((await response.json()).error).toBe(SET_YOUR_FIVE_NO_DISCOVERY_ERROR)
+    })
+
+    it('answers 500 and sends nothing when the current phase cannot be read', async () => {
+      fixture.failExpansionRead = true
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const response = await POST(request())
+      expect(response.status).toBe(500)
+      expectNoDiscordCalls()
+      errorSpy.mockRestore()
+    })
+  })
 })
 
 describe('[D-30] the 60-minute cooldown', () => {
@@ -281,7 +393,7 @@ describe('[D-30] the 60-minute cooldown', () => {
     expect(response.status).toBe(429)
     expect(await response.json()).toEqual({ error: SET_YOUR_FIVE_COOLDOWN_ERROR, retry_after_minutes: 40 })
     expectNoDiscordCalls()
-    expect(logAudit).not.toHaveBeenCalled()
+    expect(sendRowWrites()).toEqual([])
   })
 
   it('reads the latest send row for this guild only', async () => {
@@ -302,32 +414,56 @@ describe('[D-30] the 60-minute cooldown', () => {
     expect(discordFetch).toHaveBeenCalledTimes(1)
   })
 
-  it('writes the send row after the channel post, counts only', async () => {
-    await POST(request())
-    expect(logAudit).toHaveBeenCalledTimes(1)
-    expect(logAudit).toHaveBeenCalledWith({
-      supabase: expect.anything(),
-      guildId: GUILD_ID,
-      tableName: 'set_your_five_sends',
-      recordId: GUILD_ID,
-      action: 'INSERT',
-      userId: SENDER_ID,
-      newData: { posted: true },
+  // regression for WR-04 (Phase 4 review): the row used to be written after
+  // the post through logAudit, which swallows its error, so a failed insert
+  // or a function cut off between the two left the next send unthrottled.
+  it('reserves the cooldown row before the channel post, counts only, and checks the write', async () => {
+    let postedAfterWrite = false
+    vi.mocked(discordFetch).mockImplementation(async () => {
+      postedAfterWrite = sendRowWrites().length === 1
+      return { ok: true, status: 200 } as Response
     })
-    const auditOrder = vi.mocked(logAudit).mock.invocationCallOrder[0]
-    expect(vi.mocked(discordFetch).mock.invocationCallOrder[0]).toBeLessThan(auditOrder)
-    expect(vi.mocked(sendDirectMessage).mock.invocationCallOrder[0]).toBeGreaterThan(auditOrder)
+
+    await POST(request())
+
+    expect(postedAfterWrite).toBe(true)
+    expect(sendRowWrites()).toHaveLength(1)
+    expect(sendRowWrites()[0].payload).toEqual({
+      guild_id: GUILD_ID,
+      table_name: 'set_your_five_sends',
+      record_id: GUILD_ID,
+      action: 'INSERT',
+      user_id: SENDER_ID,
+      old_data: null,
+      new_data: { posted: true },
+      changed_fields: null,
+    })
+    expect(sendRowReleases()).toEqual([])
+  })
+
+  it('answers 500 and sends nothing when the cooldown row cannot be written', async () => {
+    fixture.failSendRowInsert = true
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const response = await POST(request())
+
+    expect(response.status).toBe(500)
+    expectNoDiscordCalls()
+    expect(errorSpy).toHaveBeenCalledWith('[set-your-five] unexpected failure', { stage: 'handler' })
+    errorSpy.mockRestore()
   })
 })
 
 describe('channel post failure', () => {
-  it('answers 502 with no DMs and no send row when Discord refuses the post', async () => {
+  it('answers 502 with no DMs and releases the cooldown row when Discord refuses the post', async () => {
     vi.mocked(discordFetch).mockResolvedValue({ ok: false, status: 403 } as Response)
     const response = await POST(request())
     expect(response.status).toBe(502)
     expect((await response.json()).error).toBe(SET_YOUR_FIVE_POST_FAILED_ERROR)
     expect(sendDirectMessage).not.toHaveBeenCalled()
-    expect(logAudit).not.toHaveBeenCalled()
+    expect(sendRowWrites()).toHaveLength(1)
+    expect(sendRowReleases()).toHaveLength(1)
+    expect(sendRowReleases()[0].filters).toEqual([['eq', 'id', SEND_ROW_ID]])
   })
 
   it('answers 502 the same way when the request itself throws', async () => {
@@ -335,7 +471,23 @@ describe('channel post failure', () => {
     const response = await POST(request())
     expect(response.status).toBe(502)
     expect(sendDirectMessage).not.toHaveBeenCalled()
-    expect(logAudit).not.toHaveBeenCalled()
+    expect(sendRowReleases()).toHaveLength(1)
+  })
+
+  // regression for WR-04: a reservation that cannot be released keeps the
+  // hour-long cooldown on a send that did not happen, and says so in a fixed
+  // log line rather than failing open.
+  it('still answers 502 and logs a fixed message when the cooldown row cannot be released', async () => {
+    fixture.failSendRowDelete = true
+    vi.mocked(discordFetch).mockResolvedValue({ ok: false, status: 403 } as Response)
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    const response = await POST(request())
+
+    expect(response.status).toBe(502)
+    expect(errorSpy).toHaveBeenCalledTimes(1)
+    expect(errorSpy).toHaveBeenCalledWith('[set-your-five] cooldown release failed', { stage: 'channel_post' })
+    errorSpy.mockRestore()
   })
 })
 
@@ -402,6 +554,96 @@ describe('[DISC-11 ordering] who is counted', () => {
     const response = await POST(request())
     expect(await response.json()).toEqual({ posted: true, sent: 0, skipped: 0 })
     expect(discordFetch).toHaveBeenCalledTimes(1)
+  })
+})
+
+// regression for WR-03 (Phase 4 review): every Discord call carries one
+// deadline from the start of the request, so a long Retry-After on a DM can
+// never run the function past maxDuration after the channel post has landed.
+describe('[WR-03] the request deadline', () => {
+  const DEADLINE_MS = 55_000
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('passes one abort signal to the channel post and to every DM', async () => {
+    await POST(request())
+
+    const [, init] = vi.mocked(discordFetch).mock.calls[0]
+    const signal = init?.signal
+    expect(signal).toBeInstanceOf(AbortSignal)
+    expect(signal?.aborted).toBe(false)
+    expect(sendDirectMessage).toHaveBeenCalledTimes(2)
+    for (const call of vi.mocked(sendDirectMessage).mock.calls) {
+      expect(call[3]).toEqual({ signal })
+    }
+  })
+
+  it('counts a DM still in flight at the deadline as skipped, with no error log', async () => {
+    vi.useFakeTimers()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const abortedWhenAnswered: boolean[] = []
+    vi.mocked(sendDirectMessage).mockImplementation(async (_token, _recipient, _body, options) => {
+      // Discord holds the DM until the deadline passes.
+      vi.advanceTimersByTime(DEADLINE_MS)
+      abortedWhenAnswered.push(options?.signal?.aborted ?? false)
+      return { ok: false, stage: 'send_message', status: null }
+    })
+
+    const response = await POST(request())
+
+    // The first DM was in flight at the deadline; the second never started,
+    // because the 45 second budget had passed by then. Both count as skipped.
+    expect(await response.json()).toEqual({ posted: true, sent: 0, skipped: 2 })
+    expect(abortedWhenAnswered).toEqual([true])
+    expect(sendDirectMessage).toHaveBeenCalledTimes(1)
+    expect(errorSpy).not.toHaveBeenCalled()
+    errorSpy.mockRestore()
+  })
+
+  it('still logs a DM failure that happened before the deadline', async () => {
+    vi.useFakeTimers()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(sendDirectMessage).mockResolvedValue({ ok: false, stage: 'send_message', status: 500 })
+
+    const response = await POST(request())
+
+    expect(await response.json()).toEqual({ posted: true, sent: 0, skipped: 2 })
+    expect(errorSpy).toHaveBeenCalledTimes(2)
+    errorSpy.mockRestore()
+  })
+
+  it('answers 502 when the channel post itself is cut off at the deadline', async () => {
+    vi.useFakeTimers()
+    vi.mocked(discordFetch).mockImplementation(async (_url, init) => {
+      vi.advanceTimersByTime(DEADLINE_MS)
+      expect(init?.signal?.aborted).toBe(true)
+      return { ok: false, status: 429 } as Response
+    })
+
+    const response = await POST(request())
+
+    expect(response.status).toBe(502)
+    expect(sendDirectMessage).not.toHaveBeenCalled()
+  })
+})
+
+// regression for WR-05 (Phase 4 review): 500 ids per preference read put
+// about 19 KB of UUIDs in one PostgREST URL, so a guild of a few hundred
+// members got a gateway error before anything was sent.
+describe('[WR-05] member preference reads', () => {
+  it('reads 250 members in three chunks of at most 100 ids that together carry every id', async () => {
+    manyMembers(250)
+
+    const response = await POST(request())
+
+    expect(await response.json()).toEqual({ posted: true, sent: 250, skipped: 0 })
+    const reads = calls.filter((c) => c.table === 'user_preferences')
+    expect(reads).toHaveLength(3)
+    const sent = reads.map((c) => c.filters.find((f) => f[0] === 'in' && f[1] === 'user_id')?.[2] as string[])
+    for (const chunk of sent) expect(chunk.length).toBeLessThanOrEqual(100)
+    expect(sent.flat().sort()).toEqual(Array.from({ length: 250 }, (_, i) => userId(i + 1)).sort())
   })
 })
 
