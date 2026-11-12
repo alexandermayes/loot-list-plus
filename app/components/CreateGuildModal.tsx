@@ -96,8 +96,10 @@ export function CreateGuildModal({ isOpen, onClose, onSuccess, preselectedServer
   const [realmRegion, setRealmRegion] = useState('All')
   const [realm, setRealm] = useState('')
   const [faction, setFaction] = useState<'Alliance' | 'Horde'>('Alliance')
-  // Reward attendance equals today's new-guild defaults, so leaving it alone
-  // changes nothing for an officer who skips the choice (UI-10).
+  // Reward attendance is applied when the officer skips the choice (UI-10). Its
+  // attendance and bad luck protection values match the column defaults, but it
+  // turns the six officer-bonus flags off, which the column defaults leave on;
+  // the owner kept that as the new-guild default (D-17, review finding WR-08).
   const [lootStyle, setLootStyle] = useState<LootStyleId>('reward_attendance')
   const [lootStyleOpen, setLootStyleOpen] = useState(false)
   const lootStyleRegionId = useId()
