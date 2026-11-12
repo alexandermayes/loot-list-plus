@@ -82,7 +82,7 @@ status: issues_found
 **Files Reviewed:** 63
 **Status:** issues_found
 
-> **Fix status (2026-11-11):** CR-01, WR-01 and WR-02 were fixed before the Phase 4 PRs merged. WR-03 to WR-07 and IN-01 to IN-06 are fixed in quick task 261111-kgu (branch `fix/phase-4-review-warnings`, PR #511); see "Fixes applied" under each finding. WR-08 stays open as an owner decision (see "Not fixed" under it). The frontmatter status and counts are left as reviewed.
+> **Fix status (2026-11-11):** CR-01, WR-01 and WR-02 were fixed before the Phase 4 PRs merged. WR-03 to WR-07 and IN-01 to IN-06 are fixed in quick task 261111-kgu (branch `fix/phase-4-review-warnings`, PR #511); see "Fixes applied" under each finding. WR-08 was decided by the owner on 2026-11-12: the preset stays as it is and the new-guild default is recorded under D-17 in `04-CONTEXT.md` (quick task 261112-lef; the `CreateGuildModal` comment is corrected on `fix/wr-08-create-guild-default-comment`); see "Decision" under it. The frontmatter status and counts are left as reviewed.
 
 | Finding | Commit | Subject |
 |---------|--------|---------|
@@ -275,6 +275,8 @@ if (!ids || ids.length > 2000 || !ids.every((id) => typeof id === 'string' && UU
 **Fix:** Either leave the six flags out of `REWARD_ATTENDANCE` when applied at creation, or note in the summary list ("Officer bonuses: off") that this is a change from today's new-guild behaviour.
 
 **Not fixed (owner decision):** whether a new guild's six officer-bonus flags should follow the column defaults (on) or the Reward attendance preset (off) is a product default, not a code defect, and the preset's values were reviewed with the copy under D-17. Two ways to close it, for the owner to pick: (a) leave the six flags out of `REWARD_ATTENDANCE` when it is applied at creation (`app/api/guilds/route.ts`), so a new guild keeps today's defaults and the preset's "Officer bonuses: off" line changes; or (b) keep the preset as it is and record in `04-CONTEXT.md` under D-17 that every new guild now starts with officer bonuses off, with the `PriorityListTab` and `ScoreBreakdownModal` wording checked against it. Either way a one-line note in the "What this sets" list is user-facing copy for sign-off.
+
+**Decision (2026-11-12, owner):** option (b). `REWARD_ATTENDANCE` keeps its six flags off and `POST /api/guilds` keeps applying it; `04-CONTEXT.md` D-17 now records that every new guild starts with officer bonuses off, a change from the column defaults for every game. The "Officer bonuses: off" line already in the "What this sets" list is the user-facing note and was reviewed with the copy under D-17, so no copy changes. Checked while the flag is off: `PriorityListTab` hides the raider bonuses card and `ScoreBreakdownModal` leaves the Raider Bonus term and card out, so neither claims the feature is on. The `CreateGuildModal.tsx` comment that said the default "changes nothing" is corrected on `fix/wr-08-create-guild-default-comment` (comment only, no behaviour change).
 
 ## Info
 
