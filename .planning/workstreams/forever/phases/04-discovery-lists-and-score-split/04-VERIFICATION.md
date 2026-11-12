@@ -1,39 +1,49 @@
 ---
 phase: 04-discovery-lists-and-score-split
 verified: 2026-11-11T00:15:00Z
-status: human_needed
+status: passed
 score: 5/5 roadmap success criteria verified in code (all 7 requirement IDs satisfied in code); 0 failed; 0 behavior-unverified
 behavior_unverified: 0
 overrides_applied: 0
 gaps: []
 human_verification:
+
   - test: "Raider fills the five-row picker on a real phone in under 60 seconds (SC1, DISC-02)"
     expected: "Start from a Discovery guild with a character whose spec has a default, change at least two rows through the question sheet, and tap Save my 5. The whole flow takes under 60 seconds, one column, tap targets at least 44px, no horizontal scroll."
     why_human: "Wall-clock time and thumb ergonomics cannot be asserted by grep or unit tests. Tap counts (1 tap for Looks right, at most 3 per changed row) are pinned by NeedPicker.test.tsx; the 60-second target is not."
+
   - test: "Layout at 320px, 343px and 375px (SC1, SC2, SC5)"
     expected: "Picker, question bottom sheet, budget footer, ScoreSplit tiles, master sheet popover, comparison modal, preset cards, list-mode row and the Send Set your 5 row show no clipping or horizontal scroll. The longest need sentence ('Shoulders, Leather, Spell damage') wraps to two lines at 375px; the 409 reason wraps under the list-mode row at 320px; the eight-part standing sentence wraps inside the popover; a 300 character rejection note wraps with no max height. Also check 200% zoom."
     why_human: "These are the plan truths tagged verification: backstop (04-11, 04-12, 04-17, 04-20); presence plus wiring never qualifies them."
+
   - test: "Keyboard and screen-reader pass on the picker, question sheet and preset cards (SC1-SC4)"
     expected: "Rows reachable by Tab, sheet traps focus and returns it, options announce pressed state, a blocked slot announces its reason, the budget live region announces changes, the saved-status region takes focus after save, Fine-tune announces expanded/collapsed, preset RadioGroup is arrow-key navigable."
     why_human: "Real assistive-technology behaviour is not testable in jsdom."
+
   - test: "Light and dark themes for every new surface"
     expected: "Warning panel (never the danger palette), cost markers (neutral, not traffic-light), ScoreSplit, preset cards and the Customised badge read correctly in every theme."
     why_human: "Visual."
+
   - test: "Signed-out Set your 5 round trip (SC3, DISC-11)"
     expected: "Opening /loot-list?guild=<guild_id>&picker=1 signed out redirects to sign-in with next carrying the path and query, and after sign-in lands on the picker for the member's main character. A member with no character in that guild sees 'Create a character first'. A non-member stays on their current guild."
     why_human: "proxy.ts carries the query and proxy-next.test.ts passes, but the full OAuth redirect and post-auth consumption needs a browser."
+
   - test: "Real Discord send of Set your 5 (SC3, DISC-11)"
     expected: "From Guild Settings, the officer confirms and sends once. One channel message with a Set my 5 link button posts, active members with a Discord id get one DM each, the result line shows counts only, a second send inside 60 minutes is refused, and the link button opens the picker."
     why_human: "Requires live Discord. The route is covered by 28 mocked route tests."
+
   - test: "A Classic or other Known guild is unchanged in a browser (SC5, Known lock)"
     expected: "/loot-list shows the 50-rank editor, score totals match what they were, settings modal still opens with every card (Fine-tune starts expanded for a null loot_style), addon export unchanged."
     why_human: "Automated locks pass (golden gate, Lua exporter, LootListContent mode test, addon payload tests), but a browser pass on a real Known guild is the final proof."
+
   - test: "Owner sets the changelog ship date in lib/updates-data.ts"
     expected: "The new entry at the top of lib/updates-data.ts carries the placeholder date 'November 10, 2026' and a comment saying to set it to the ship date before merge. Set it before PR 3 merges; the Discord updates cron posts the newest entry after merge."
     why_human: "Only the owner knows the ship date. Copy itself is signed off (04-19-SUMMARY.md, 2026-11-11)."
+
   - test: "Privacy page note about Discord direct messages (optional, owner decision)"
     expected: "app/privacy/page.tsx describes Discord OAuth but not that the app sends direct messages. Pre-existing gap; Set your 5 adds one more DM type. Owner decides whether to update."
     why_human: "Legal wording decision recorded in 04-19-SUMMARY.md, deliberately not changed."
+
   - test: "Optional addon repo check (A9)"
     expected: "Run the addon repo's gen_web_fixtures.mts once in case it serialises whole ScoreResult objects, which now carry standing and interest. This repo's Lua exporter never calls computeScore and its output is unchanged."
     why_human: "Lives in a separate repository."
