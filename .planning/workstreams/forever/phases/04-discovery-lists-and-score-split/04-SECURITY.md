@@ -14,7 +14,7 @@ created: 2026-11-12
 
 Register origin: authored at plan time (all 21 PLAN files carry a `<threat_model>` block; the 76 rows below are the plans' rows verbatim). Verification depth: ASVS L1 (grep and test evidence against the merged implementation at origin/main f73eea33, phase diff measured from the PR #506 merge 50a01eea). Block threshold: high. Verified by the gsd-security-auditor on 2026-11-12 after the Phase 4 UAT passed (04-UAT.md, 10 of 10); no implementation file was changed by the audit and every SUMMARY "Threat Flags" section names only registered ids.
 
-Totals: 76 threats (16 high, 33 medium, 27 low); 65 mitigate, 11 accept, 0 transfer. 75 closed (64 mitigations verified in code, 11 accepted risks recorded below). threats_open: 0 at or above high; 1 open below the threshold (T-04-07-03, medium, non-blocking; fix noted in its row).
+Totals: 76 threats (16 high, 33 medium, 27 low); 65 mitigate, 11 accept, 0 transfer. 76 closed (65 mitigations verified in code, 11 accepted risks recorded below). threats_open: 0 at or above high; 0 open below the threshold. The audit left one medium open below the threshold (T-04-07-03); quick task 261112-u5j closed it on 2026-11-12 (its evidence bullet and the audit trail below).
 
 
 ---
@@ -90,7 +90,7 @@ Totals: 76 threats (16 high, 33 medium, 27 low); 65 mitigate, 11 accept, 0 trans
 | T-04-06-03 | Information disclosure | none | low | accept | No I/O and no personal data | closed |
 | T-04-07-01 | Denial of service | over-long PostgREST URLs from 435 need ids | medium | mitigate | 100-id chunks on both reads and on the need BLP GET | closed |
 | T-04-07-02 | Repudiation | failed read shown as an empty master sheet | medium | mitigate | selectAllPagesOrThrow and the route catch answer 500; tested | closed |
-| T-04-07-03 | Tampering | officer prio on a need row | medium | mitigate | POST refuses need rows with 400 before any write; GET drops them | open — below high threshold (non-blocking) |
+| T-04-07-03 | Tampering | officer prio on a need row | medium | mitigate | POST refuses need rows with 400 before any write; GET drops them | closed |
 | T-04-07-04 | Spoofing | open redirect through next with a query | medium | mitigate | isSafeNextPath unchanged and still parses against a placeholder origin; test covers the query form | closed |
 | T-04-08-01 | Tampering | over-budget list through a direct API call | high | mitigate | checkNeedList budget refusal (422) before any write, distinct (rank, need_key) counting; tested with stacked keys | closed |
 | T-04-08-02 | Tampering | ineligible need ranked to farm BLP | medium | mitigate | eligibility refusal (422) from the server-read class and spec; drafts cannot reach approval without submit | closed |
@@ -180,7 +180,7 @@ Repo-relative paths and line numbers at origin/main f73eea33, as recorded by the
 - T-04-06-03: Accepted risk: no I/O and no personal data.
 - T-04-07-01: app/api/master-sheet/visibility/route.ts:26-32,63,308 (chunks of IN_FILTER_CHUNK_SIZE = 100 from utils/supabase/paginate.ts:11); MasterSheetContent.tsx:56,847-857 (BLP_NEED_ID_CHUNK = 100); route.test.ts:851-900.
 - T-04-07-02: selectAllPagesOrThrow at visibility/route.ts:64,309; the catch answers 500 at :412-414; test :851.
-- T-04-07-03: OPEN, non-blocking. The refusal exists only on POST /api/prio-list (route.ts:191-206 reads kind and answers 400 for a need row; GET drops need rows at :90-94). app/api/prio-list/bulk/route.ts:56-73 lets an officer with manage_loot upsert any item_id, need rows included, through the service-role client, and no database trigger refuses need rows in guild_item_priorities. Readers app/api/addon/export-string/route.ts:230-237 and app/api/addon/guild-data/route.ts:166-272 pass priority rows through unfiltered. No effect on scores found: the master sheet reads priorities only through the filtered GET and the addon item lists leave need rows out. Nothing in the app calls the bulk route. Fix: apply the same isNeedRow refusal in the bulk route before the upsert, remove the route, or add a database guard.
+- T-04-07-03: closed 2026-11-12 by quick task 261112-u5j (branch fix/t-04-07-03-need-row-priority, aac3a3af, on top of f73eea33). app/api/prio-list/bulk/route.ts:55-75 reads id and kind from loot_items for the batch's distinct item ids in chunks of IN_FILTER_CHUNK_SIZE, after the manage_loot check at :45-51 and before the upsert at :95; a failed read answers 500 at :70 and a need row answers 400 with NEED_ROW_FIXED_ERROR at :73, matching POST /api/prio-list (route.ts:192-206). app/api/addon/export-string/route.ts:234 selects loot_items (kind) on the guild_item_priorities read and :241-242 drop need-row priorities after the read and count them in the D-16 need-skip scope; app/api/addon/guild-data/route.ts:168 and :270-273,282 do the same. Tests: app/api/prio-list/bulk/__tests__/route.test.ts:118-191 (403 before any read, 400 with no upsert, 500 with no upsert, catalog-only batch upserted, chunked and de-duplicated reads, a need row in a later chunk); export-string route.test.ts:808 and guild-data route.test.ts:658 (N6: the need-row priority is left out, the read embeds kind, one warning). The route is kept rather than removed: nothing in the app, discord-bot/, companion/ or the addon repo calls it (grep for prio-list/bulk finds only its own trackApiError string), and the refusal costs one read. No database guard was added: the two prio-list routes are the app's only writers of priority rows (the delete_guild function only removes them, and lib/db.ts only types the row). The addon web fixtures (loot-list-plus-addon/tests/tools/gen_web_fixtures.mts, run against the branch) are byte-identical apart from generatedFrom: the generator reads domain/scoring and lib/addon/member-ranked-items only.
 - T-04-07-04: proxy.ts:318-321 carries the query in next; lib/post-auth-redirect.ts:29-56 (isSafeNextPath parses against a placeholder origin) unchanged in the phase; lib/__tests__/proxy-next.test.ts:51-57.
 - T-04-08-01: app/api/loot-submissions/submit/route.ts:283-301 refuses an over-budget list with 422 before the writes at :359,368; cost and key come from the server-side loot_items join (:124); route.test.ts:480,494. enforce_loot_submission_item_rules (migration 20260930000000) blocks non-officer browser writes to pending or approved lists; the review route approves only pending lists (:224).
 - T-04-08-02: Class and spec read server-side (submit/route.ts:100); ineligible needs get 422 (:302-307); test :512.
@@ -256,7 +256,8 @@ Repo-relative paths and line numbers at origin/main f73eea33, as recorded by the
 
 | Threat ID | Severity | What is missing | Suggested fix |
 |-----------|----------|-----------------|---------------|
-| T-04-07-03 | medium | The need-row refusal exists only on POST /api/prio-list; app/api/prio-list/bulk/route.ts upserts any item_id through the service-role client, and the addon export-string and guild-data routes pass priority rows through unfiltered. No score effect found; nothing in the app calls the bulk route. | Apply the same isNeedRow refusal in the bulk route before the upsert (or remove the unused route), and filter need rows in the two addon readers. |
+
+None. T-04-07-03 (medium) sat here after the 2026-11-12 audit and was closed the same day by quick task 261112-u5j; its evidence is in the Verification Evidence section.
 
 ---
 
@@ -265,6 +266,7 @@ Repo-relative paths and line numbers at origin/main f73eea33, as recorded by the
 | Audit Date | Threats Total | Closed | Open | Run By |
 |------------|---------------|--------|------|--------|
 | 2026-11-12 | 76 | 75 | 1 (below threshold, non-blocking) | gsd-security-auditor via /gsd-secure-phase 4 |
+| 2026-11-12 | 76 | 76 | 0 | quick task 261112-u5j (T-04-07-03 fix on fix/t-04-07-03-need-row-priority, PR #517, aac3a3af; evidence re-checked by grep and the route tests) |
 
 ---
 
