@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
         ? Promise.resolve([])
         : selectAllPagesOrThrow('guild_item_priorities', (start, end) =>
             supabase.from('guild_item_priorities')
-              .select('item_id, role_priorities, class_priorities, character_priorities, priority_bonuses')
+              .select('item_id, role_priorities, class_priorities, character_priorities, priority_bonuses, loot_items (kind)')
               .eq('guild_id', guildId).in('raid_tier_id', raidTierIds)
               .order('id', { ascending: true })
               .range(start, end)),
@@ -261,8 +261,16 @@ export async function GET(request: NextRequest) {
     }).filter(Boolean)
 
     // Build priorities
+    // D-03: officer prio does not apply to a need row, so a need-row priority
+    // never reaches the companion whatever route wrote it (T-04-07-03). Dropped
+    // after the read, as GET /api/prio-list does, and counted like a need BLP row.
     const priorities: Record<string, unknown> = {}
+    let needPrioritySkipped = 0
     for (const p of priorityRows) {
+      if (isNeedRow(p.loot_items)) {
+        needPrioritySkipped += 1
+        continue
+      }
       // Output key stays the loot item id (guild_item_priorities.item_id).
       priorities[p.item_id] = {
         role_priorities: p.role_priorities || {},
@@ -271,6 +279,7 @@ export async function GET(request: NextRequest) {
         priority_bonuses: p.priority_bonuses || { role: 5, class: 3, character: 2 },
       }
     }
+    noteNeedSkipped(needSkip, needPrioritySkipped)
 
     // Build BLP
     // A need row's BLP never goes out (D-14), whatever expansion it belongs to.

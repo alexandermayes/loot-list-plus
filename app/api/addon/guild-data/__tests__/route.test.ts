@@ -164,9 +164,15 @@ function resolveRows(table: string, filters: Filter[], fixture: Fixture): unknow
       return rows.filter((r: { guild_id: string }) => r.guild_id === find('guild_id'))
     case 'guild_item_priorities': {
       const tierIds = (find('raid_tier_id') as string[]) ?? []
-      return rows.filter(
-        (r: { guild_id: string; raid_tier_id: string }) => r.guild_id === find('guild_id') && tierIds.includes(r.raid_tier_id),
-      )
+      // The route embeds loot_items (kind); resolve it from the loot_items fixture.
+      return rows
+        .filter(
+          (r: { guild_id: string; raid_tier_id: string }) => r.guild_id === find('guild_id') && tierIds.includes(r.raid_tier_id),
+        )
+        .map((r: { item_id: string }) => ({
+          ...r,
+          loot_items: { kind: fixture.loot_items.find(i => i.id === r.item_id)?.kind ?? 'item' },
+        }))
     }
     case 'attendance_records': {
       const ids = (find('raid_event_id') as string[]) ?? []
@@ -647,6 +653,27 @@ describe('D-14 and DISC-06: need rows never reach the companion payload', () => 
     const res = await GET(request())
     expect(res.status).toBe(500)
     expect(trackApiError).toHaveBeenCalledTimes(1)
+  })
+
+  it('N6 a need-row priority is left out of priorities and the request warns once (D-03, T-04-07-03)', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const fixture = needFixture()
+    // Both prio-list routes refuse a need row, so this row can only predate
+    // the refusal; the companion payload must still leave it out.
+    fixture.guild_item_priorities = [
+      { guild_id: GUILD_ID, raid_tier_id: 'tier-bwl', item_id: 'li-nef', role_priorities: { tank: 4 }, priority_bonuses: null },
+      { guild_id: GUILD_ID, raid_tier_id: 'tier-bwl', item_id: 'li-need', role_priorities: { tank: 9 }, priority_bonuses: null },
+    ]
+    const { client, calls } = makeClient(fixture)
+    vi.mocked(createServiceRoleClient).mockReturnValue(client as never)
+    const res = await GET(request())
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(Object.keys(body.priorities)).toEqual(['li-nef'])
+    expect(body.priorities['li-nef'].role_priorities).toEqual({ tank: 4 })
+    expect(calls.find(c => c.table === 'guild_item_priorities')!.cols).toMatch(/loot_items \(kind\)/)
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalledWith(NEED_WARNING, { reader: 'addon-guild-data', skipped: 1 })
   })
 })
 

@@ -3,6 +3,8 @@ import { createServiceRoleClient } from '@/utils/supabase/service-role'
 import { NextResponse } from 'next/server'
 import { verifyPermission } from '@/utils/server-roles'
 import { trackApiError } from '@/utils/analytics/server'
+import { isNeedRow, NEED_ROW_FIXED_ERROR } from '@/domain/loot/item-identity'
+import { IN_FILTER_CHUNK_SIZE } from '@/utils/supabase/paginate'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -48,6 +50,28 @@ export async function POST(request: Request) {
         { error: 'Only officers can update item priorities' },
         { status: 403 }
       )
+    }
+
+    // D-03: a need row cannot carry an officer prio. POST /api/prio-list
+    // refuses one item before any write; this batch route refuses the whole
+    // batch the same way, or an officer could set here what the single route
+    // refuses (T-04-07-03). The ids are read in chunks so a large batch never
+    // overruns the URL (WR-05), and a failed read answers 500 so the check is
+    // never skipped.
+    const itemIds = Array.from(new Set((priorities as BulkPriorityUpdate[]).map(priority => priority.item_id)))
+    for (let start = 0; start < itemIds.length; start += IN_FILTER_CHUNK_SIZE) {
+      const { data: lootItems, error: lootItemsError } = await serviceSupabase
+        .from('loot_items')
+        .select('id, kind')
+        .in('id', itemIds.slice(start, start + IN_FILTER_CHUNK_SIZE))
+
+      if (lootItemsError) {
+        console.error('Error reading loot items for bulk priority:', lootItemsError)
+        return NextResponse.json({ error: 'Failed to read items' }, { status: 500 })
+      }
+      if ((lootItems || []).some((item: { kind?: string | null }) => isNeedRow(item))) {
+        return NextResponse.json({ error: NEED_ROW_FIXED_ERROR }, { status: 400 })
+      }
     }
 
     const defaultBonuses = priority_bonuses || { role: 5, class: 3, character: 2 }

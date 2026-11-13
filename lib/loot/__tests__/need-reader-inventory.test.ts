@@ -183,13 +183,13 @@ export const NEED_READERS: readonly NeedReader[] = [
     file: 'app/api/addon/export-string/route.ts',
     dispositions: ['exclude'],
     plan: '03-06',
-    note: 'import string flattens items only; need BLP and rankings skipped',
+    note: 'import string flattens items only; need BLP and rankings skipped; need-row priorities dropped after the read (T-04-07-03)',
   },
   {
     file: 'app/api/addon/guild-data/route.ts',
     dispositions: ['exclude'],
     plan: '03-06',
-    note: 'companion payload items only (wowhead_id key collision)',
+    note: 'companion payload items only (wowhead_id key collision); need-row priorities dropped after the read (T-04-07-03)',
   },
   {
     file: 'app/api/admin/analytics/route.ts',
@@ -363,6 +363,13 @@ export const NEED_READERS: readonly NeedReader[] = [
     plan: '03-17',
     note: 'rankings by id; earned-phase filter by tier',
     test: 'app/api/master-sheet/visibility/__tests__/route.test.ts',
+  },
+  {
+    file: 'app/api/prio-list/bulk/route.ts',
+    dispositions: ['guard'],
+    plan: '04-07',
+    note: 'refuses a batch holding a need row before the upsert, as POST /api/prio-list does for one item (D-03, T-04-07-03)',
+    test: 'app/api/prio-list/bulk/__tests__/route.test.ts',
   },
   {
     file: 'app/api/prio-list/route.ts',
