@@ -14,6 +14,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  local-paths:
+    name: No local paths in planning docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/check-local-paths.sh
+
   test:
     name: Test
     runs-on: ubuntu-latest
