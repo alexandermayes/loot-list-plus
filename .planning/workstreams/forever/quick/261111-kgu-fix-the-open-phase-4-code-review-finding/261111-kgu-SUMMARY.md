@@ -140,4 +140,4 @@ No em dashes in any new string.
 
 - Owner: review PR #511 (DRAFT copy in IN-01, API-only strings in WR-06), decide WR-08, merge with the admin bypass; merge the docs PR after it.
 - Then `/gsd-verify-work 4` (UAT) and Phase 5 (Drop Desk Core).
-- The two scratch worktrees can be removed once the PRs merge: `git -C /Users/alexander.mayes/Code/personal/loot-list-plus worktree remove <path>` for `.../scratchpad/wt-p4-fix` and `.../scratchpad/wt-p4-docs` under `/private/tmp/claude-502/-Users-alexander-mayes-Code-personal/ad9ee938-cc85-4c61-ab84-030eb27642cd`.
+- The two scratch worktrees can be removed once the PRs merge: `git -C <repo-root> worktree remove <path>` for `.../scratchpad/wt-p4-fix` and `.../scratchpad/wt-p4-docs` under `$SCRATCHPAD`.

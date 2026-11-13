@@ -181,7 +181,7 @@ All three commits end with the trailer `Co-Authored-By: Claude Opus 5.5 <noreply
 
 ## PR body draft
 
-Path: `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/pr-body-u8w.md` (unpushed, no PR opened; title, Summary, Changes, Tests, Deploy, and Rollback sections, ending with the Claude Code attribution line; no em dash).
+Path: `$SCRATCHPAD/pr-body-u8w.md` (unpushed, no PR opened; title, Summary, Changes, Tests, Deploy, and Rollback sections, ending with the Claude Code attribution line; no em dash).
 
 ## Handoff notes
 

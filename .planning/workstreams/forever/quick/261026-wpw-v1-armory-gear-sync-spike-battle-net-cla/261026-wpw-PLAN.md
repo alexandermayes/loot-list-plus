@@ -87,18 +87,18 @@ What already exists (verified at planning, origin/main 1b8c5b0a): sync-gear and 
 Task order: Task 1 is the spike and go/no-go gate the task description asked for, in place of a tracer, because the riskiest unknown is the external API. Task 2 is storage (migration-only branch, plus the writers on the code branch). Task 3 is the end-to-end officer-facing slice (slot rules, read route, panel).
 
 Branches and worktrees (repo convention, see `git worktree list`):
-- Main checkout /Users/alexander.mayes/Code/personal/loot-list-plus stays on gsd/quick-261026-wpw-v1-armory-gear-sync-spike-battle-net-cla and holds planning docs only.
-- /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code on branch feat/armory-item-level from origin/main holds all app code and the spike script.
-- /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-migration on branch feat/equipped-item-level-migration from origin/main holds the migration and its test only.
-- In each worktree, symlink node_modules to /Users/alexander.mayes/Code/personal/loot-list-plus/node_modules so vitest, tsc and eslint run. The shell cwd resets between Bash calls, so prefix every command with cd and an absolute path.
+- Main checkout <repo-root> stays on gsd/quick-261026-wpw-v1-armory-gear-sync-spike-battle-net-cla and holds planning docs only.
+- <worktree-root> on branch feat/armory-item-level from origin/main holds all app code and the spike script.
+- <worktree-root> on branch feat/equipped-item-level-migration from origin/main holds the migration and its test only.
+- In each worktree, symlink node_modules to node_modules so vitest, tsc and eslint run. The shell cwd resets between Bash calls, so prefix every command with cd and an absolute path.
 - Nothing is pushed and no PR is opened without the user's go-ahead. The SUMMARY lists the owner's merge steps.
 
 Output: SPIKE finding; migration and test; writers; domain slot rules and tests; read route and test; panel column and test.
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/execute-plan.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/templates/summary.md
+@.claude/gsd-core/workflows/execute-plan.md
+@.claude/gsd-core/templates/summary.md
 </execution_context>
 
 <context>
@@ -128,9 +128,9 @@ Read only the cited ranges of these larger files:
 <task type="auto">
   <name>Task 1: Spike the Battle.net Classic equipment API for per-slot item level and staleness, then gate GO / NO-GO</name>
   <files>scripts/spikes/armory-item-level-spike.ts, .planning/workstreams/forever/quick/261026-wpw-v1-armory-gear-sync-spike-battle-net-cla/261026-wpw-SPIKE.md</files>
-  <precondition>BLIZZARD_CLIENT_ID and BLIZZARD_CLIENT_SECRET are set in /Users/alexander.mayes/Code/personal/loot-list-plus/.env.local, and so is either NEXT_PUBLIC_SUPABASE_URL plus SUPABASE_SERVICE_ROLE_KEY (for --from-db sampling) or a SPIKE_CHARACTERS value supplied in the shell environment. Check this by running the script, which names any missing variable and never prints values. Never cat or print .env.local.</precondition>
+  <precondition>BLIZZARD_CLIENT_ID and BLIZZARD_CLIENT_SECRET are set in .env.local, and so is either NEXT_PUBLIC_SUPABASE_URL plus SUPABASE_SERVICE_ROLE_KEY (for --from-db sampling) or a SPIKE_CHARACTERS value supplied in the shell environment. Check this by running the script, which names any missing variable and never prints values. Never cat or print .env.local.</precondition>
   <action>
-Setup: run git fetch origin. Create the code worktree with git worktree add at /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code, new branch feat/armory-item-level from origin/main. Symlink its node_modules to the main checkout's node_modules.
+Setup: run git fetch origin. Create the code worktree with git worktree add at <worktree-root>, new branch feat/armory-item-level from origin/main. Symlink its node_modules to the main checkout's node_modules.
 
 Write scripts/spikes/armory-item-level-spike.ts in the code worktree. It is a tsx script that follows the dotenv convention of scripts/check-items.ts: dotenv.config with path.resolve(process.cwd(), '.env.local'). Behaviour:
 - Env check. If BLIZZARD_CLIENT_ID or BLIZZARD_CLIENT_SECRET is missing, print only the missing variable names and exit with code 2.
@@ -151,7 +151,7 @@ Write scripts/spikes/armory-item-level-spike.ts in the code worktree. It is a ts
 - Totals: samples tried, samples fetched (200), the overall coverage percentage of items with a level value, and median and max staleness hours.
 - Privacy self-check before printing. Serialize the report and make sure no sampled name or realm string (lowercased, length 3 or more) appears in it. If one does, print only "privacy self-check failed" and exit 3. Otherwise print the report as one JSON object to stdout. The report holds labels, numbers, booleans, status codes and key names only.
 
-Run it from the main checkout so .env.local resolves: cd /Users/alexander.mayes/Code/personal/loot-list-plus and run npx tsx with the worktree script path and --from-db 10. Read the documented API rate limits from https://develop.battle.net/documentation/guides/getting-started with WebFetch. If the fetch fails, write the limits as unverified.
+Run it from the main checkout so .env.local resolves: cd <repo-root> and run npx tsx with the worktree script path and --from-db 10. Read the documented API rate limits from https://develop.battle.net/documentation/guides/getting-started with WebFetch. If the fetch fails, write the limits as unverified.
 
 Write 261026-wpw-SPIKE.md in the quick directory in the main checkout. Sections, in this order:
 - Question.
@@ -175,7 +175,7 @@ Commits:
 The repo is public. SPIKE.md and every commit contain counts and aggregates only: no guild, character or realm names, no ids, no tokens and no URLs carrying them.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus && test -f .planning/workstreams/forever/quick/261026-wpw-v1-armory-gear-sync-spike-battle-net-cla/261026-wpw-SPIKE.md && grep -E -c '^\*\*Verdict:\*\* (GO|NO-GO|INCONCLUSIVE)$' .planning/workstreams/forever/quick/261026-wpw-v1-armory-gear-sync-spike-battle-net-cla/261026-wpw-SPIKE.md && cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code && npx eslint scripts/spikes/armory-item-level-spike.ts</automated>
+    <automated>cd <repo-root> && test -f .planning/workstreams/forever/quick/261026-wpw-v1-armory-gear-sync-spike-battle-net-cla/261026-wpw-SPIKE.md && grep -E -c '^\*\*Verdict:\*\* (GO|NO-GO|INCONCLUSIVE)$' .planning/workstreams/forever/quick/261026-wpw-v1-armory-gear-sync-spike-battle-net-cla/261026-wpw-SPIKE.md && cd <worktree-root> && npx eslint scripts/spikes/armory-item-level-spike.ts</automated>
   </verify>
   <done>The spike ran against live Battle.net Classic data and exited 0 with a JSON report that passed its own privacy self-check. SPIKE.md records the endpoint, namespace, item level field path, coverage percentage, level range, staleness numbers and rate limits, plus exactly one verdict line. The verdict count from the grep is 1. On NO-GO or INCONCLUSIVE, execution stops here and the SUMMARY says why and what the owner must do next.</done>
 </task>
@@ -187,7 +187,7 @@ The repo is public. SPIKE.md and every commit contain counts and aggregates only
   <action>
 Part A: migration-only branch (Standing Constraint 1: expand-only, its own PR, live before any code that reads it).
 
-Collision check. Run git fetch origin, then create the migration worktree with git worktree add at /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-migration, new branch feat/equipped-item-level-migration from origin/main, and symlink node_modules. Confirm that no file named supabase/migrations/20261026* exists on origin/main or on any origin branch (git log --all over that path), and that gsd/v2.0-forever-loot still adds no migration over origin/main. At planning time the newest migration on main was 20261020120000_discovery_schema.sql, no branch or Forever plan touched character_equipped_items, and there was no collision. If the 20261026120000 timestamp is taken, use the next free one and update the file name and the test constant to match.
+Collision check. Run git fetch origin, then create the migration worktree with git worktree add at <worktree-root>, new branch feat/equipped-item-level-migration from origin/main, and symlink node_modules. Confirm that no file named supabase/migrations/20261026* exists on origin/main or on any origin branch (git log --all over that path), and that gsd/v2.0-forever-loot still adds no migration over origin/main. At planning time the newest migration on main was 20261020120000_discovery_schema.sql, no branch or Forever plan touched character_equipped_items, and there was no collision. If the 20261026120000 timestamp is taken, use the next free one and update the file name and the test constant to match.
 
 Write supabase/migrations/20261026120000_equipped_item_level.sql.
 
@@ -256,7 +256,7 @@ Import route test: add one case, following the file's existing mocks. An equipme
 Do not change the delete-then-insert flow or any error copy in either route. Commit as feat(gear): store item level from Battle.net gear sync and import.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-migration && npx vitest run app/services/__tests__/equipped-item-level-migration.test.ts && npx vitest run app/services/__tests__ && cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code && npx vitest run app/api/battlenet && grep -c "item_level: readEquippedItemLevel(" app/api/battlenet/characters/sync-gear/route.ts app/api/battlenet/characters/import/route.ts && npm run typecheck</automated>
+    <automated>cd <worktree-root> && npx vitest run app/services/__tests__/equipped-item-level-migration.test.ts && npx vitest run app/services/__tests__ && cd <worktree-root> && npx vitest run app/api/battlenet && grep -c "item_level: readEquippedItemLevel(" app/api/battlenet/characters/sync-gear/route.ts app/api/battlenet/characters/import/route.ts && npm run typecheck</automated>
   </verify>
   <done>
 - The migration branch holds exactly the migration and its test, plus an optional anchoring test commit.
@@ -337,7 +337,7 @@ In ItemCandidateModal.test.tsx, extend the stubbed fetch at lines 60-73 so URLs 
 Commit as feat(loot): equipped slot rules for item level comparison (domain and its test), then as feat(master-sheet): show equipped item level in the item candidate panel (route, panel and their tests).
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code && npx vitest run domain/loot/__tests__/equipped-item-level.test.ts "app/api/guilds/[id]/equipped-item-levels" "app/(app)/master-sheet/components/__tests__/ItemCandidateModal.test.tsx" && npm run lint && npm run typecheck && npm test && git diff --quiet origin/main -- domain/scoring && test "$(git diff origin/main -- 'app/(app)/master-sheet/components/ItemCandidateModal.tsx' | grep '^+' | grep -c $'\xe2\x80\x94')" = "0"</automated>
+    <automated>cd <worktree-root> && npx vitest run domain/loot/__tests__/equipped-item-level.test.ts "app/api/guilds/[id]/equipped-item-levels" "app/(app)/master-sheet/components/__tests__/ItemCandidateModal.test.tsx" && npm run lint && npm run typecheck && npm test && git diff --quiet origin/main -- domain/scoring && test "$(git diff origin/main -- 'app/(app)/master-sheet/components/ItemCandidateModal.tsx' | grep '^+' | grep -c $'\xe2\x80\x94')" = "0"</automated>
     <human-check>Owner: run the code branch locally against a database where the migration is applied, open the master sheet as a manage_loot officer and open a ring, a trinket, a two-hand weapon, a tier token and a mount. The Equipped column shows sensible levels for synced raiders and is absent for the mount. Owner signs off the Equipped header, cell words (Empty, No ilvl, Not synced) and title copy before the code PR merges.</human-check>
   </verify>
   <done>
@@ -381,8 +381,8 @@ No package installs: dotenv, tsx, @supabase/supabase-js and @electric-sql/pglite
 
 <verification>
 - Spike: SPIKE.md has exactly one verdict line. On anything but GO, execution stopped after Task 1 and the SUMMARY records the blocked tasks and the owner's next step.
-- Migration branch: npx vitest run app/services/__tests__ passes in /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-migration; git diff --stat origin/main lists only the migration, its test and any anchored older test.
-- Code branch: npm run lint, npm run typecheck and npm test pass in /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code; git diff --quiet origin/main -- domain/scoring exits 0.
+- Migration branch: npx vitest run app/services/__tests__ passes in <worktree-root>; git diff --stat origin/main lists only the migration, its test and any anchored older test.
+- Code branch: npm run lint, npm run typecheck and npm test pass in <worktree-root>; git diff --quiet origin/main -- domain/scoring exits 0.
 - Privacy: no guild, character or realm names, ids or tokens in any committed file or commit message.
 </verification>
 
@@ -395,7 +395,7 @@ No package installs: dotenv, tsx, @supabase/supabase-js and @electric-sql/pglite
 </success_criteria>
 
 <output>
-Create /Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/forever/quick/261026-wpw-v1-armory-gear-sync-spike-battle-net-cla/261026-wpw-SUMMARY.md when done. Include:
+Create .planning/workstreams/forever/quick/261026-wpw-v1-armory-gear-sync-spike-battle-net-cla/261026-wpw-SUMMARY.md when done. Include:
 - the verdict;
 - per-branch commit lists with SHAs;
 - the final migration timestamp;

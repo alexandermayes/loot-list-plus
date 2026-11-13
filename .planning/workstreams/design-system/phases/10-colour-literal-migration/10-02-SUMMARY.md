@@ -213,7 +213,7 @@ Full before/after CSS and the raw `diff` output (87 lines: 49 removed, 19 added)
      × finds no purple, violet, pink or fuchsia class anywhere under app/(app) or app/components, excluding landing/
 
 FAIL __tests__/purple-gradient-guard.test.ts > purple-gradient guard (COLOR-07) > finds no purple, violet, pink or fuchsia class anywhere under app/(app) or app/components, excluding landing/
-AssertionError: /Users/.../app/components/Sidebar.tsx:795: <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shrink-0 border border-border" />: expected [ { …(3) } ] to have a length of +0 but got 1
+AssertionError: <home>/app/components/Sidebar.tsx:795: <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 shrink-0 border border-border" />: expected [ { …(3) } ] to have a length of +0 but got 1
 
 Test Files  1 failed (1)
      Tests  1 failed | 1 passed (2)

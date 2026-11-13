@@ -96,7 +96,7 @@ status: complete
 - **URL:** https://github.com/alexandermayes/loot-list-plus/pull/302
 - **Branch:** `fix/300-companion-auth-table` (base `main`)
 - **State:** DRAFT, migration-only, no closing keyword for #300 (says "Part of #300")
-- **Worktree:** `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wt300-table`
+- **Worktree:** `$SCRATCHPAD/wt300-table`
 
 ### PR 2 (login flow, D-02)
 
@@ -104,7 +104,7 @@ status: complete
 - **URL:** https://github.com/alexandermayes/loot-list-plus/pull/303
 - **Branch:** `fix/300-companion-auth` (base `fix/300-companion-auth-table`)
 - **State:** DRAFT, `Fixes #300`
-- **Worktree:** `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wt300`
+- **Worktree:** `$SCRATCHPAD/wt300`
 
 ## SHAs
 

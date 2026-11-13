@@ -469,7 +469,7 @@ repairs became silently inert: expected -1 to be greater than 410
  ❯ __tests__/numeral-font.test.ts (6 tests | 1 failed) 110ms
      × finds no call site where the numerals class collides with a Tailwind font-family utility 104ms
 
-AssertionError: /Users/alexander.mayes/Code/personal/loot-list-plus/app/(app)/master-sheet/components/
+AssertionError: app/(app)/master-sheet/components/
 BossSection.tsx:118: <span className="text-12 font-bold text-foreground tabular-nums font-sans">
 {explanation.total.toFixed(decimalPlaces)}</span>: expected [ { ...(3) } ] to have a length of +0 but got 1
 

@@ -51,7 +51,7 @@ Publish `/research/wow-classic-loot-systems-2026`: an anonymized product-data re
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Sprint plan (report brief and exact template)
-- `/Users/alexander.mayes/Downloads/LootList_30_Day_Search_AI_Sprint.md` §"Product-data report brief and exact template" (~line 415) — working title, slug, meta description, the recommended-dataset metric list (the candidate queries for D-01), opening-copy template, finding format (H2 claim + number sentence + officer meaning + limits paragraph), and CTA copy ("Create your guild free"). Plan copy is a starting point; user sign-off required on final wording.
+- `~/Downloads/LootList_30_Day_Search_AI_Sprint.md` §"Product-data report brief and exact template" (~line 415) — working title, slug, meta description, the recommended-dataset metric list (the candidate queries for D-01), opening-copy template, finding format (H2 claim + number sentence + officer meaning + limits paragraph), and CTA copy ("Create your guild free"). Plan copy is a starting point; user sign-off required on final wording.
 
 ### Phase 1/2 conventions this phase extends
 - `scripts/analytics/exports/README.md` — the provenance-row pattern every committed data artifact must follow

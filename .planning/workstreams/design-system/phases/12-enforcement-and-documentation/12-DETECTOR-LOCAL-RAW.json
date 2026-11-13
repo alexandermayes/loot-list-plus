@@ -1,7 +1,7 @@
 {
   "environment": "local",
   "notice": "LOCAL dev-server run. Interim evidence for ENF-05's substance only -- does NOT satisfy ENF-05, which requires the deployed pages.",
-  "detectorPath": "/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/skills/impeccable/scripts/detect.mjs",
+  "detectorPath": ".claude/skills/impeccable/scripts/detect.mjs",
   "origin": "http://localhost:3100",
   "gitHead": "97f42373596ec24dbb2abca51efd70fbb6bbbc10",
   "timestamp": "2026-09-23T16:33:26.525Z",

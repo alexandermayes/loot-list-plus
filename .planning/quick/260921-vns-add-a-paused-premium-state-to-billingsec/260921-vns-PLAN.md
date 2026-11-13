@@ -64,8 +64,8 @@ Tracer-first decomposition is deliberately not applied. Every layer this touches
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/execute-plan.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/templates/summary.md
+@.claude/gsd-core/workflows/execute-plan.md
+@.claude/gsd-core/templates/summary.md
 </execution_context>
 
 <context>
@@ -174,10 +174,10 @@ Do not touch `lib/billing/tier.ts`, `lib/billing/sync.ts` or any file outside th
 - (row with stripe_subscription_id 'sub_123') is false
   </behavior>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; npx vitest run lib/billing/__tests__/subscription-view.test.ts</automated>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; npm run typecheck</automated>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; grep -c "^import" lib/billing/subscription-view.ts || true  # expect 0 - the module must stay dependency-free</automated>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; grep -c "it(" lib/billing/__tests__/subscription-view.test.ts  # expect at least 13, one per behavior row</automated>
+    <automated>cd <repo-root> &amp;&amp; npx vitest run lib/billing/__tests__/subscription-view.test.ts</automated>
+    <automated>cd <repo-root> &amp;&amp; npm run typecheck</automated>
+    <automated>cd <repo-root> &amp;&amp; grep -c "^import" lib/billing/subscription-view.ts || true  # expect 0 - the module must stay dependency-free</automated>
+    <automated>cd <repo-root> &amp;&amp; grep -c "it(" lib/billing/__tests__/subscription-view.test.ts  # expect at least 13, one per behavior row</automated>
   </verify>
   <done>
 `lib/billing/subscription-view.ts` exists, imports nothing, and exports `BillingViewState`, `BillingSubscriptionLike`, `billingViewState` and `trialEligible`, each with an explanatory comment in the voice of `lib/billing/tier.ts`. `lib/billing/__tests__/subscription-view.test.ts` asserts all thirteen `<behavior>` rows and passes. `npm run typecheck` passes. No other file has been modified.
@@ -226,19 +226,19 @@ No em dashes anywhere - CLAUDE.md. All four strings above are a starting point p
 Modify no other file. In particular do not touch `app/api/billing/portal/route.ts` (the paused button reuses it unchanged), `app/api/billing/checkout/route.ts`, `app/components/UpgradeModal.tsx`, or `app/components/landing/PremiumPricing.tsx`.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; npm run typecheck</automated>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; npm run lint</automated>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; npx vitest run</automated>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; grep -c "stripe_subscription_id" "app/(app)/guild-settings/components/BillingSection.tsx"  # expect 2 - the interface field and the select string, in sync</automated>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; grep -c "viewState ===" "app/(app)/guild-settings/components/BillingSection.tsx"  # expect at least 3 - one guard per rendered state, no nested ternary</automated>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; grep -c "onClick={openPortal}" "app/(app)/guild-settings/components/BillingSection.tsx"  # expect 2 - Bug 1: the portal is now reachable from the paused branch as well as the Pro branch</automated>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; grep -c "UpgradeModal" "app/(app)/guild-settings/components/BillingSection.tsx"  # expect 2 - Bug 2: the import plus exactly one render site, still in the free block only</automated>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; grep -c "bg-warning/15 text-warning" "app/(app)/guild-settings/components/BillingSection.tsx"  # expect 1 - the PAUSED badge uses the house token pair, not a new literal colour</automated>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; grep -c "trialEligible" "app/(app)/guild-settings/components/BillingSection.tsx"  # expect 2 - imported and applied, never reimplemented</automated>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; grep -c "trialEligible(data)" app/hooks/usePremiumCheckout.ts  # expect 1</automated>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; grep -c "data?.stripe_subscription_id" app/hooks/usePremiumCheckout.ts || true  # expect 0 - PPS-05: the client-side rule now exists in one place only</automated>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; grep -rn "—" "app/(app)/guild-settings/components/BillingSection.tsx" || true  # expect no output - CLAUDE.md forbids em dashes</automated>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; git status --porcelain | tr '\n' '|'  # expect exactly these four and nothing else: BillingSection.tsx, usePremiumCheckout.ts, subscription-view.ts, subscription-view.test.ts</automated>
+    <automated>cd <repo-root> &amp;&amp; npm run typecheck</automated>
+    <automated>cd <repo-root> &amp;&amp; npm run lint</automated>
+    <automated>cd <repo-root> &amp;&amp; npx vitest run</automated>
+    <automated>cd <repo-root> &amp;&amp; grep -c "stripe_subscription_id" "app/(app)/guild-settings/components/BillingSection.tsx"  # expect 2 - the interface field and the select string, in sync</automated>
+    <automated>cd <repo-root> &amp;&amp; grep -c "viewState ===" "app/(app)/guild-settings/components/BillingSection.tsx"  # expect at least 3 - one guard per rendered state, no nested ternary</automated>
+    <automated>cd <repo-root> &amp;&amp; grep -c "onClick={openPortal}" "app/(app)/guild-settings/components/BillingSection.tsx"  # expect 2 - Bug 1: the portal is now reachable from the paused branch as well as the Pro branch</automated>
+    <automated>cd <repo-root> &amp;&amp; grep -c "UpgradeModal" "app/(app)/guild-settings/components/BillingSection.tsx"  # expect 2 - Bug 2: the import plus exactly one render site, still in the free block only</automated>
+    <automated>cd <repo-root> &amp;&amp; grep -c "bg-warning/15 text-warning" "app/(app)/guild-settings/components/BillingSection.tsx"  # expect 1 - the PAUSED badge uses the house token pair, not a new literal colour</automated>
+    <automated>cd <repo-root> &amp;&amp; grep -c "trialEligible" "app/(app)/guild-settings/components/BillingSection.tsx"  # expect 2 - imported and applied, never reimplemented</automated>
+    <automated>cd <repo-root> &amp;&amp; grep -c "trialEligible(data)" app/hooks/usePremiumCheckout.ts  # expect 1</automated>
+    <automated>cd <repo-root> &amp;&amp; grep -c "data?.stripe_subscription_id" app/hooks/usePremiumCheckout.ts || true  # expect 0 - PPS-05: the client-side rule now exists in one place only</automated>
+    <automated>cd <repo-root> &amp;&amp; grep -rn "—" "app/(app)/guild-settings/components/BillingSection.tsx" || true  # expect no output - CLAUDE.md forbids em dashes</automated>
+    <automated>cd <repo-root> &amp;&amp; git status --porcelain | tr '\n' '|'  # expect exactly these four and nothing else: BillingSection.tsx, usePremiumCheckout.ts, subscription-view.ts, subscription-view.test.ts</automated>
   </verify>
   <done>
 `BillingSection` renders three mutually exclusive states driven by one `billingViewState` call, plus a no-op loading state. A paused guild gets the PAUSED badge, the three-beat paragraph and a single portal button, and no route into `UpgradeModal`. A free guild's trial sentence is gated on `trialEligible`. `usePremiumCheckout` consumes the shared predicate rather than restating the rule. `npm run typecheck`, `npm run lint` and `npx vitest run` all pass. `git status --porcelain` lists exactly the four files in this plan's `files_modified`.
@@ -256,9 +256,9 @@ Then work the human-checks. They are the only way to observe the two facts the c
 The Stripe CLI is not on PATH in this environment, so the Dashboard path is primary and CLI commands are given only as an alternative. Run everything against a test-mode key.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; npm run typecheck</automated>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; npm run lint</automated>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus &amp;&amp; npx vitest run</automated>
+    <automated>cd <repo-root> &amp;&amp; npm run typecheck</automated>
+    <automated>cd <repo-root> &amp;&amp; npm run lint</automated>
+    <automated>cd <repo-root> &amp;&amp; npx vitest run</automated>
     <human-check>
 **A. A genuinely paused subscription renders the paused state (PPS-01, PPS-03)**
 

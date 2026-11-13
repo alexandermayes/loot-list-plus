@@ -75,7 +75,7 @@ actual: searches return nothing for these items in both surfaces:
 errors: none reported. Silent absence.
 reproduction: as a member or officer of a Classic Era guild, open the loot list item picker (or the officer item settings table), search "marty", "carap" or "pure" with all raids selected.
 started: reported 2026-09-26 19:01 UTC via Discord (reporter ozafy, filed as GitHub issue #273 by the feedback bot). The user called it a "new bug", so it may be a regression. Not known whether these items were ever present. Check git history of the item catalog source.
-evidence_files: reporter screenshots saved at /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/issue273/shot1.png ... shot5.png (the Discord CDN links in the issue expire around 2026-09-27).
+evidence_files: reporter screenshots saved at $SCRATCHPAD/issue273/shot1.png ... shot5.png (the Discord CDN links in the issue expire around 2026-09-27).
 
 ## Eliminated
 

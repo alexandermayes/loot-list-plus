@@ -17,7 +17,7 @@ for example `Full enchants: +2 until Oct 12. Officer bonus: +5`. No new copy: th
 `describeRaiderBonusEntries` output.
 
 ## Context
-- Work ONLY in `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357` (detached at origin/main 523e2efe).
+- Work ONLY in `<worktree-root>` (detached at origin/main 523e2efe).
   `node_modules` is a symlink to the primary install: never unlink it, never run `npm ci`/`npm install`.
 - `domain/scoring/explain.ts` `explainScore(result, configOrInput = {})`: with a full `ScoreInput` the raider bonus
   line's `detail` is `describeRaiderBonusEntries(getActiveRaiderBonusEntries(characterId, config, asOfDate))`.
@@ -138,7 +138,7 @@ Verify: `npx vitest run "app/(app)/master-sheet"` green (M1 to M5 still pass).
 
 ## Must not
 - No em dashes in code, comments, tests, commit message or PR body.
-- Do not touch the primary checkout `/Users/alexander.mayes/Code/personal/loot-list-plus`.
+- Do not touch the primary checkout `<repo-root>`.
 - Do not commit planning docs (`.planning/**`) on the code branch.
 - Do not run `npm ci` or `npm install`; do not unlink or replace the `node_modules` symlink.
 - Do not add or make required any field on `ScoreLine`; do not start setting `line.context`.

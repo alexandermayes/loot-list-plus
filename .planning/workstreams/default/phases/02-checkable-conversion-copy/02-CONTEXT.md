@@ -58,7 +58,7 @@ Every claim an officer reads on the path to signup is either verifiable or gone.
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Sprint plan (exact copy sources)
-- `/Users/alexander.mayes/Downloads/LootList_30_Day_Search_AI_Sprint.md` — the sprint plan. Relevant sections: "Signup page" (exact signup copy), "Testimonial display format" (verification line format and internal verification rule), "Replace the unsupported stats block" (approved replacement facts), "Exact positioning and site copy" (homepage metadata, product description). Plan copy is a starting point; user sign-off is required on all final wording (D-07, D-16).
+- `~/Downloads/LootList_30_Day_Search_AI_Sprint.md` — the sprint plan. Relevant sections: "Signup page" (exact signup copy), "Testimonial display format" (verification line format and internal verification rule), "Replace the unsupported stats block" (approved replacement facts), "Exact positioning and site copy" (homepage metadata, product description). Plan copy is a starting point; user sign-off is required on all final wording (D-07, D-16).
 
 ### Current copy surfaces (code)
 - `app/components/landing/LandingValueProps.tsx` — the 5 QuoteCards (name+guild attribution today) and the StatCard row including the "3+ hours" card at line ~143

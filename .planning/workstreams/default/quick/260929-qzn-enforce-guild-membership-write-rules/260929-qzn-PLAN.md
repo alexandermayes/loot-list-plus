@@ -51,7 +51,7 @@ must_haves:
       provides: "Reactivation sets role the same way the insert branch does"
     - path: "app/api/guild-roles/route.ts"
       provides: "Rename propagation keyed on the stored role name"
-    - path: "/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/pglite-qzn/scenarios-qzn.mjs"
+    - path: "$SCRATCHPAD/pglite-qzn/scenarios-qzn.mjs"
       provides: "Scratchpad-only PGlite behaviour proof (never committed); outputs saved beside it"
   key_links:
     - from: "PostgREST INSERT, upsert and UPDATE on public.character_guild_memberships (role anon or authenticated)"
@@ -79,7 +79,7 @@ Purpose: is_guild_officer, is_guild_master, verifyPermission and the officer RLS
 
 Output: one migration plus its shape test, two small route changes with new route tests, and a scratchpad-only PGlite proof. Local commits only in WT; the orchestrator reviews, pushes and opens the PR together with 260929-qg0.
 
-Work location: WT = /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wtms (branch fix/membership-write-rules, from origin/main 77afa063, node_modules symlinked). Every repo path below is relative to WT. Do not touch local main, the wt-phase06 worktree or the wtls worktree.
+Work location: WT = $SCRATCHPAD/wtms (branch fix/membership-write-rules, from origin/main 77afa063, node_modules symlinked). Every repo path below is relative to WT. Do not touch local main, the wt-phase06 worktree or the wtls worktree.
 
 ## Decisions (locked unless an OD below changes them)
 
@@ -109,14 +109,14 @@ No new user-facing text. D-07's lookup-error response has no error text, so Role
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/execute-plan.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/templates/summary.md
+@.claude/gsd-core/workflows/execute-plan.md
+@.claude/gsd-core/templates/summary.md
 </execution_context>
 
 <context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/default/STATE.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/CLAUDE.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/default/quick/260929-qg0-enforce-loot-list-status-rules/260929-qg0-PLAN.md
+@.planning/workstreams/default/STATE.md
+@.claude/CLAUDE.md
+@.planning/workstreams/default/quick/260929-qg0-enforce-loot-list-status-rules/260929-qg0-PLAN.md
 
 Source files (WT-relative):
 - supabase/migrations/20260929180000_enforce_loot_history_guild_refs.sql (pattern to follow)
@@ -128,7 +128,7 @@ Source files (WT-relative):
 - app/(app)/guild-settings/components/RoleManager.tsx (insert 93-109, PUT call 133-150, position swap 200-230)
 - utils/server-roles.ts (verifyOfficerPermissions, verifyRoleChangePermissions)
 - app/api/guilds/__tests__/route.test.ts (route-test pattern: node environment header, vi.mock of server and service-role modules, recording fake client)
-- Scratchpad harness model: /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/pglite-313/scenarios-313.mjs (splitSql, pick, asUser, asAnon, asService, expectOk, expectErr; its WT constant points at wt313, which no longer exists)
+- Scratchpad harness model: $SCRATCHPAD/pglite-313/scenarios-313.mjs (splitSql, pick, asUser, asAnon, asService, expectOk, expectErr; its WT constant points at wt313, which no longer exists)
 
 ## Investigation findings (verified in WT at 77afa063)
 
@@ -186,7 +186,7 @@ Tracer scenarios: (a) control before the migration, inside BEGIN and ROLLBACK: M
 Commit (D-10, D-11): stage only the migration; message for example "fix(guilds): membership rows are written by the server; a user session can only leave a guild" with the trailer.
   </action>
   <verify>
-    <automated>cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/pglite-qzn && node scenarios-qzn.mjs > run-output-qzn-task1.txt 2>&1 && ! grep -q '^FAIL' run-output-qzn-task1.txt && grep -q '^PASS' run-output-qzn-task1.txt</automated>
+    <automated>cd $SCRATCHPAD/pglite-qzn && node scenarios-qzn.mjs > run-output-qzn-task1.txt 2>&1 && ! grep -q '^FAIL' run-output-qzn-task1.txt && grep -q '^PASS' run-output-qzn-task1.txt</automated>
   </verify>
   <done>The migration file exists with the membership function, trigger, comments, REVOKE and the policy drop(s); the PGlite tracer run exits 0 with zero FAIL lines and shows the pre-migration control, the accepted leave with its auto-reject, and 42501 for each refused own-row write, insert and upsert, with is_guild_officer, is_guild_master and the guilds UPDATE staying officer-only; baseline-qzn-vitest.txt and baseline-qzn-tsc.txt exist; one local commit on fix/membership-write-rules.</done>
 </task>
@@ -221,7 +221,7 @@ Scope: if Task 2 runs long, the executor may split it into two commits: first th
 Commit (D-10, D-11): stage the migration and the shape test; message for example "fix(guilds): keep guild roles at or above officer level and guild ownership server-managed" with the trailer.
   </action>
   <verify>
-    <automated>cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wtms && npx vitest run app/services/__tests__/guild-membership-write-rules-migration.test.ts && cd ../pglite-qzn && node scenarios-qzn.mjs > run-output-qzn.txt 2>&1 && ! grep -q '^FAIL' run-output-qzn.txt && grep -q '^PASS' run-output-qzn.txt && cd parse && node parse-qzn.mjs > ../parse-output-qzn.txt 2>&1 && ! grep -q 'ERROR' ../parse-output-qzn.txt && grep -q '^OK ' ../parse-output-qzn.txt</automated>
+    <automated>cd $SCRATCHPAD/wtms && npx vitest run app/services/__tests__/guild-membership-write-rules-migration.test.ts && cd ../pglite-qzn && node scenarios-qzn.mjs > run-output-qzn.txt 2>&1 && ! grep -q '^FAIL' run-output-qzn.txt && grep -q '^PASS' run-output-qzn.txt && cd parse && node parse-qzn.mjs > ../parse-output-qzn.txt 2>&1 && ! grep -q 'ERROR' ../parse-output-qzn.txt && grep -q '^OK ' ../parse-output-qzn.txt</automated>
   </verify>
   <done>The shape test passes; every PGlite scenario above passes, including the pre-migration control, idempotent re-apply and rollback; every statement parses with libpg-query and parse-qzn.mjs exits 0 with no ERROR line; a second local commit exists (or two, if the scope split was used); the "executor verifies first" result and any deviation are recorded for the SUMMARY.</done>
 </task>
@@ -249,7 +249,7 @@ Full verification (every step gates on its exit code, chained with &&, as in ver
 Commit (D-10, D-11): stage the four task files; message for example "fix(guilds): role renames follow the stored role name and rejoining a guild assigns the default role" with the trailer. Do not push. Do not open a PR.
   </action>
   <verify>
-    <automated>cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wtms && npx vitest run app/api/guild-roles "app/api/characters/[id]/guilds" app/services/__tests__/guild-membership-write-rules-migration.test.ts && npx eslint --max-warnings 0 app/api/guild-roles "app/api/characters/[id]/guilds" app/services/__tests__/guild-membership-write-rules-migration.test.ts > ../final-qzn-eslint.txt 2>&1 && npx vitest run > ../final-qzn-vitest.txt 2>&1 && npx tsc --noEmit > ../final-qzn-tsc.txt 2>&1 && git rev-parse --verify origin/main > /dev/null && git diff origin/main...HEAD -U0 > ../final-qzn-diff.txt && ADDED=$(grep '^+' ../final-qzn-diff.txt | grep -v '^+++') && [ -n "$ADDED" ] && MSGS=$(git log origin/main..HEAD --format=%B) && [ -n "$MSGS" ] && EMDASH=$(printf '\342\200\224') && ! printf '%s\n%s\n' "$ADDED" "$MSGS" | grep -qF "$EMDASH" && ! printf '%s\n%s\n' "$ADDED" "$MSGS" | grep -Eiq 'vuln|xploit|attac[k]|escalat[i]|self.?promo|advisor[y]'</automated>
+    <automated>cd $SCRATCHPAD/wtms && npx vitest run app/api/guild-roles "app/api/characters/[id]/guilds" app/services/__tests__/guild-membership-write-rules-migration.test.ts && npx eslint --max-warnings 0 app/api/guild-roles "app/api/characters/[id]/guilds" app/services/__tests__/guild-membership-write-rules-migration.test.ts > ../final-qzn-eslint.txt 2>&1 && npx vitest run > ../final-qzn-vitest.txt 2>&1 && npx tsc --noEmit > ../final-qzn-tsc.txt 2>&1 && git rev-parse --verify origin/main > /dev/null && git diff origin/main...HEAD -U0 > ../final-qzn-diff.txt && ADDED=$(grep '^+' ../final-qzn-diff.txt | grep -v '^+++') && [ -n "$ADDED" ] && MSGS=$(git log origin/main..HEAD --format=%B) && [ -n "$MSGS" ] && EMDASH=$(printf '\342\200\224') && ! printf '%s\n%s\n' "$ADDED" "$MSGS" | grep -qF "$EMDASH" && ! printf '%s\n%s\n' "$ADDED" "$MSGS" | grep -Eiq 'vuln|xploit|attac[k]|escalat[i]|self.?promo|advisor[y]'</automated>
   </verify>
   <done>PUT /api/guild-roles propagates renames from the stored name only, and POST /api/characters/[id]/guilds reactivates with the insert branch's role; their new tests pass; the full vitest run and tsc both exit 0 and eslint exits 0 with no warnings on the changed files; the guarded text gates pass on a non-empty diff; at least three local commits on fix/membership-write-rules (four if Task 2 used the scope split), nothing pushed, no PR, no planning files in WT.</done>
 </task>
@@ -296,7 +296,7 @@ Commit (D-10, D-11): stage the four task files; message for example "fix(guilds)
 </success_criteria>
 
 <output>
-Create /Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/default/quick/260929-qzn-enforce-guild-membership-write-rules/260929-qzn-SUMMARY.md when done (in the main checkout, not in WT). Include: every commit hash, the final rule list, the PGlite pass counts and timings, the baseline versus final vitest and tsc counts, the "executor verifies first" result, any deviation (including a Task 2 split), the legacy custom-role note from D-04, and the OD-1 follow-up (and OD-2 or OD-3 if declined) in neutral wording (D-10).
+Create .planning/workstreams/default/quick/260929-qzn-enforce-guild-membership-write-rules/260929-qzn-SUMMARY.md when done (in the main checkout, not in WT). Include: every commit hash, the final rule list, the PGlite pass counts and timings, the baseline versus final vitest and tsc counts, the "executor verifies first" result, any deviation (including a Task 2 split), the legacy custom-role note from D-04, and the OD-1 follow-up (and OD-2 or OD-3 if declined) in neutral wording (D-10).
 
 Also include a "Joined-branch proof note" for the orchestrator's combined run with 260929-qg0. OD-3 drops "Users can delete own character memberships", so on the joined branch a raider's own-session DELETE of a membership row removes 0 rows and leaves that raider's loot lists unchanged; qg0's matrix scenario that expects that DELETE to auto-reject lists must instead expect 0 rows deleted and unchanged lists. Leaving through the user-session UPDATE of is_active to false still auto-rejects the raider's pending and approved lists, and the service-role DELETE paths (account deletion, character deletion cascade) still fire the auto-reject, so those qg0 expectations are unchanged.
 </output>

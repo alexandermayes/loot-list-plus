@@ -4,7 +4,7 @@
 **Files analyzed:** 26 (new and modified)
 **Analogs found:** 22 / 26 (4 partial or none: zod schema, golden file snapshot, retry script, stateful fake)
 
-All paths are relative to `/Users/alexander.mayes/Code/personal/loot-list-plus`. Excerpts were read this session. Line numbers are from the files as they exist on `gsd/v2.0-forever-loot`.
+All paths are relative to `<repo-root>`. Excerpts were read this session. Line numbers are from the files as they exist on `gsd/v2.0-forever-loot`.
 
 ## File Classification
 

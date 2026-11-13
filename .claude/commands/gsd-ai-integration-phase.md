@@ -22,9 +22,9 @@ Flow: Select Framework → Research Docs → Research Domain → Design Eval Str
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/ai-integration-phase.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/ai-frameworks.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/ai-evals.md
+@.claude/gsd-core/workflows/ai-integration-phase.md
+@.claude/gsd-core/references/ai-frameworks.md
+@.claude/gsd-core/references/ai-evals.md
 </execution_context>
 
 <context>

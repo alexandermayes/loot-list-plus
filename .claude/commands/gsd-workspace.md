@@ -29,10 +29,10 @@ Mode routing:
 </routing>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/new-workspace.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/list-workspaces.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/remove-workspace.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/ui-brand.md
+@.claude/gsd-core/workflows/new-workspace.md
+@.claude/gsd-core/workflows/list-workspaces.md
+@.claude/gsd-core/workflows/remove-workspace.md
+@.claude/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>

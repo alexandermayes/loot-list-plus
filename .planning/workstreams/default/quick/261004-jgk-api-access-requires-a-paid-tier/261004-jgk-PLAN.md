@@ -64,7 +64,7 @@ must_haves:
     - path: "app/(app)/reserve/_client.tsx"
       provides: "C-4 notice and hidden Create run buttons when reserve_access is false"
       contains: "reserve_access"
-    - path: "/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/pr-body-jgk.md"
+    - path: "$SCRATCHPAD/pr-body-jgk.md"
       provides: "Neutral PR body draft with the split, open decisions and copy"
   key_links:
     - from: "PATCH run, awards POST and DELETE, sign-ups PATCH and DELETE"
@@ -210,19 +210,19 @@ Source coverage:
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/execute-plan.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/templates/summary.md
+@.claude/gsd-core/workflows/execute-plan.md
+@.claude/gsd-core/templates/summary.md
 </execution_context>
 
 <context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/default/STATE.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/CLAUDE.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.planning/todos/pending/2026-10-04-put-api-access-behind-paid-tiers.md
+@.planning/workstreams/default/STATE.md
+@.claude/CLAUDE.md
+@.planning/todos/pending/2026-10-04-put-api-access-behind-paid-tiers.md
 
 Paths (shell state does not persist between Bash calls; always use these absolute paths; the Bash tool runs zsh, so run every verify block as bash -c with the block in single quotes; the blocks below contain no single quote):
-- MAIN = /Users/alexander.mayes/Code/personal/loot-list-plus. Only the SUMMARY is written here, at MAIN/.planning/workstreams/default/quick/261004-jgk-api-access-requires-a-paid-tier/261004-jgk-SUMMARY.md. Never edit code here.
-- WT = /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/wtpaid, branch feat/api-access-paid-tier from origin/main 9f239c40, node_modules symlinked, clean. ALL code work happens here. Repo paths in this plan are WT-relative.
-- SP = /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad. Baselines, final outputs and the PR body draft go here. SP/new-fails.sh compares FAIL lines (usage, from WT: sh SP/new-fails.sh <baseline> <final>; the final file's first line must be HEAD=<current HEAD>, both files end with an EXIT= line).
+- MAIN = <repo-root>. Only the SUMMARY is written here, at MAIN/.planning/workstreams/default/quick/261004-jgk-api-access-requires-a-paid-tier/261004-jgk-SUMMARY.md. Never edit code here.
+- WT = $SCRATCHPAD/wtpaid, branch feat/api-access-paid-tier from origin/main 9f239c40, node_modules symlinked, clean. ALL code work happens here. Repo paths in this plan are WT-relative.
+- SP = $SCRATCHPAD. Baselines, final outputs and the PR body draft go here. SP/new-fails.sh compares FAIL lines (usage, from WT: sh SP/new-fails.sh <baseline> <final>; the final file's first line must be HEAD=<current HEAD>, both files end with an EXIT= line).
 
 Facts the planner verified in WT at 9f239c40. Executor: re-check any line number with grep before quoting it.
 
@@ -269,7 +269,7 @@ Step D, implement D-01 in utils/feature-gate.ts exactly as specified in the obje
 Step E, run the two test files plus app/api/reserve-runs/__tests__/route.test.ts and app/api/reserve-runs/[id]/duplicate/__tests__/route.test.ts (they mock requireReserveAccess and must still pass), then npx tsc --noEmit. Commit in WT with explicit paths and a message such as "feat(reserve-runs): one server-side Premium gate, enforced on run edits" whose body names guildHasPaidAccess and the rule (the run's guild, or for a run with no guild its creator's guilds, needs Premium or reserve grandfathering), ending with the trailer line "Co-Authored-By: Claude Opus 5.5 &lt;noreply@anthropic.com&gt;".
   </action>
   <verify>
-    <automated>bash -c 'cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/wtpaid && grep -q "^EXIT=" ../baseline-jgk-vitest.txt && grep -q "^EXIT=" ../baseline-jgk-tsc.txt && npx vitest run utils/__tests__/feature-gate.test.ts "app/api/reserve-runs/[id]/__tests__/route.test.ts" app/api/reserve-runs/__tests__/route.test.ts "app/api/reserve-runs/[id]/duplicate/__tests__/route.test.ts" && npx tsc --noEmit && grep -q "export async function guildHasPaidAccess" utils/feature-gate.ts && grep -q "export async function requireReserveRunPremium" utils/feature-gate.ts && grep -q "guild_api" utils/feature-gate.ts && grep -q "requireReserveRunPremium(serviceSupabase, run, .manager.)" "app/api/reserve-runs/[id]/route.ts" && grep -q "Upgrade your guild to create new runs." utils/feature-gate.ts && git log -1 --format=%B | grep -q "^Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>$"'</automated>
+    <automated>bash -c 'cd $SCRATCHPAD/wtpaid && grep -q "^EXIT=" ../baseline-jgk-vitest.txt && grep -q "^EXIT=" ../baseline-jgk-tsc.txt && npx vitest run utils/__tests__/feature-gate.test.ts "app/api/reserve-runs/[id]/__tests__/route.test.ts" app/api/reserve-runs/__tests__/route.test.ts "app/api/reserve-runs/[id]/duplicate/__tests__/route.test.ts" && npx tsc --noEmit && grep -q "export async function guildHasPaidAccess" utils/feature-gate.ts && grep -q "export async function requireReserveRunPremium" utils/feature-gate.ts && grep -q "guild_api" utils/feature-gate.ts && grep -q "requireReserveRunPremium(serviceSupabase, run, .manager.)" "app/api/reserve-runs/[id]/route.ts" && grep -q "Upgrade your guild to create new runs." utils/feature-gate.ts && git log -1 --format=%B | grep -q "^Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>$"'</automated>
   </verify>
   <done>Baselines are saved in SP and were taken before any edit. utils/feature-gate.ts holds the one shared gate with strict reads, the 'guild_api' key and the run-owner rule; its unit tests cover tiers, grandfathering, read errors and runs with no guild. PATCH /api/reserve-runs/[id] refuses every kind of manager with C-2 on a run whose owner has no reserve access, makes no write, and works unchanged for Premium and grandfathered guilds; DELETE and GET stay open. tsc is clean and the work is committed with the trailer.</done>
 </task>
@@ -289,7 +289,7 @@ Then implement D-03 in both route files: import requireReserveRunPremium from '@
 Run the two test files and tsc. Commit with explicit paths and a message such as "feat(reserve-runs): awards and sign-up edits need the run's guild to have Premium" ending with the trailer line "Co-Authored-By: Claude Opus 5.5 &lt;noreply@anthropic.com&gt;".
   </action>
   <verify>
-    <automated>bash -c 'cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/wtpaid && npx vitest run "app/api/reserve-runs/[id]/awards/__tests__/route.test.ts" "app/api/reserve-runs/[id]/submissions/[subId]/__tests__/route.test.ts" && npx tsc --noEmit && test "$(grep -c "requireReserveRunPremium(" "app/api/reserve-runs/[id]/awards/route.ts")" -eq 2 && test "$(grep -c "requireReserveRunPremium(" "app/api/reserve-runs/[id]/submissions/[subId]/route.ts")" -eq 2 && git log -1 --format=%B | grep -q "^Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>$"'</automated>
+    <automated>bash -c 'cd $SCRATCHPAD/wtpaid && npx vitest run "app/api/reserve-runs/[id]/awards/__tests__/route.test.ts" "app/api/reserve-runs/[id]/submissions/[subId]/__tests__/route.test.ts" && npx tsc --noEmit && test "$(grep -c "requireReserveRunPremium(" "app/api/reserve-runs/[id]/awards/route.ts")" -eq 2 && test "$(grep -c "requireReserveRunPremium(" "app/api/reserve-runs/[id]/submissions/[subId]/route.ts")" -eq 2 && git log -1 --format=%B | grep -q "^Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>$"'</automated>
   </verify>
   <done>Logging or removing an award and editing or removing a sign-up are refused with the gate's answer, before any read or write, when the run's owner has no reserve access, for every kind of manager; the sign-up route has its first tests; tsc is clean; committed with the trailer.</done>
 </task>
@@ -315,7 +315,7 @@ PR body draft at SP/pr-body-jgk.md (neutral, specific, no em dash, ending with t
 SUMMARY at MAIN/.planning/workstreams/default/quick/261004-jgk-api-access-requires-a-paid-tier/261004-jgk-SUMMARY.md using the summary template: baseline and final counts with any pre-existing FAIL lines verbatim, the three commits, the investigation findings (context facts 1 and 2, with the per-surface path counts and what a free guild sees today), the split, the open decisions table with blank Resolution, the COPY block and which lines the user approved, edited or rejected, the follow-ups, and a note that the Reserve page notice was checked by tests and tsc, not in a browser. Do not edit STATE.md, ROADMAP.md or the todo; the orchestrator files the planning docs.
   </action>
   <verify>
-    <automated>bash -c 'cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/wtpaid && npx vitest run "app/api/reserve-runs/join/[token]/__tests__/route.test.ts" app/api/reserve-runs/__tests__/route.test.ts && npx tsc --noEmit && grep -q "requireReserveRunPremium(serviceSupabase, run, .guest.)" "app/api/reserve-runs/join/[token]/route.ts" && grep -q "reserve_access === false" "app/(app)/reserve/_client.tsx" && grep -q "Reserve runs need LootList+ Premium" "app/(app)/reserve/_client.tsx" && test "$(head -1 ../final-jgk-vitest.txt)" = "HEAD=$(git rev-parse HEAD)" && sh ../new-fails.sh ../baseline-jgk-vitest.txt ../final-jgk-vitest.txt && test "$(git diff --name-only origin/main...HEAD | wc -l | tr -d " ")" -eq 13 && test -z "$(git status --short)" && ! git diff origin/main...HEAD | grep "^+" | grep -q "$(printf "\xe2\x80\x94")" && ! git log origin/main..HEAD --format=%B | grep -q "$(printf "\xe2\x80\x94")" && test "$(git log origin/main..HEAD --format=%H | wc -l | tr -d " ")" -eq "$(git log origin/main..HEAD --format=%B | grep -c "^Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>$")" && test -f ../pr-body-jgk.md && ! grep -q "$(printf "\xe2\x80\x94")" ../pr-body-jgk.md && test -f /Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/default/quick/261004-jgk-api-access-requires-a-paid-tier/261004-jgk-SUMMARY.md'</automated>
+    <automated>bash -c 'cd $SCRATCHPAD/wtpaid && npx vitest run "app/api/reserve-runs/join/[token]/__tests__/route.test.ts" app/api/reserve-runs/__tests__/route.test.ts && npx tsc --noEmit && grep -q "requireReserveRunPremium(serviceSupabase, run, .guest.)" "app/api/reserve-runs/join/[token]/route.ts" && grep -q "reserve_access === false" "app/(app)/reserve/_client.tsx" && grep -q "Reserve runs need LootList+ Premium" "app/(app)/reserve/_client.tsx" && test "$(head -1 ../final-jgk-vitest.txt)" = "HEAD=$(git rev-parse HEAD)" && sh ../new-fails.sh ../baseline-jgk-vitest.txt ../final-jgk-vitest.txt && test "$(git diff --name-only origin/main...HEAD | wc -l | tr -d " ")" -eq 13 && test -z "$(git status --short)" && ! git diff origin/main...HEAD | grep "^+" | grep -q "$(printf "\xe2\x80\x94")" && ! git log origin/main..HEAD --format=%B | grep -q "$(printf "\xe2\x80\x94")" && test "$(git log origin/main..HEAD --format=%H | wc -l | tr -d " ")" -eq "$(git log origin/main..HEAD --format=%B | grep -c "^Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>$")" && test -f ../pr-body-jgk.md && ! grep -q "$(printf "\xe2\x80\x94")" ../pr-body-jgk.md && test -f .planning/workstreams/default/quick/261004-jgk-api-access-requires-a-paid-tier/261004-jgk-SUMMARY.md'</automated>
   </verify>
   <done>Guest sign-ups on a run whose owner has no reserve access are refused with C-3 and nothing written, while the join page still loads; the list returns reserve_access and the Reserve page shows C-4 without Create run buttons only when it is false; the full suite shows no new FAIL line; tsc and eslint are clean; exactly the 13 planned files changed across three commits with the trailer; the PR body draft and the SUMMARY carry the split, the open decisions, the copy and the follow-ups; nothing is pushed.</done>
 </task>
@@ -361,5 +361,5 @@ SUMMARY at MAIN/.planning/workstreams/default/quick/261004-jgk-api-access-requir
 </success_criteria>
 
 <output>
-Create /Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/default/quick/261004-jgk-api-access-requires-a-paid-tier/261004-jgk-SUMMARY.md when done, and the PR body draft at /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/pr-body-jgk.md.
+Create .planning/workstreams/default/quick/261004-jgk-api-access-requires-a-paid-tier/261004-jgk-SUMMARY.md when done, and the PR body draft at $SCRATCHPAD/pr-body-jgk.md.
 </output>

@@ -222,8 +222,8 @@ Run query 1 and 2 before merging the migration PR; run query 3 after its deploy.
 
 ## PR body drafts
 
-- App PR: `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/pr-body-gxi-app.md`
-- Migration-only PR: `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/pr-body-gxi.md`
+- App PR: `$SCRATCHPAD/pr-body-gxi-app.md`
+- Migration-only PR: `$SCRATCHPAD/pr-body-gxi.md`
 
 ## Publication note
 
@@ -305,5 +305,5 @@ None - no external service configuration required. The production count queries 
 - FOUND: `supabase/migrations/20261004040000_loot_item_officer_notes_officers_only.sql`
 - FOUND: commit `c0ab3ef4` in `git log --oneline --all` (branch `fix/loot-item-officer-notes`)
 - FOUND: commit `1fd099d5` in `git log --oneline --all` (branch `fix/loot-item-officer-notes`)
-- FOUND: `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/pr-body-gxi-app.md`
-- FOUND: `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/pr-body-gxi.md`
+- FOUND: `$SCRATCHPAD/pr-body-gxi-app.md`
+- FOUND: `$SCRATCHPAD/pr-body-gxi.md`

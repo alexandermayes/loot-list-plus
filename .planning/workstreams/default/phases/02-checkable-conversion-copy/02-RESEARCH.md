@@ -380,7 +380,7 @@ No existing test file covers `LandingValueProps.tsx`, `LoginPage.tsx`, or any ma
 - `next.config.ts` — confirmed no host-based rewrite/middleware exists for domain routing
 - `vitest.config.ts`, `package.json` — test framework baseline
 - Git history: `069c61c` ("Remove em dashes from all user-facing copy... #253") — confirmed manual sweep, no lint rule
-- `/Users/alexander.mayes/Downloads/LootList_30_Day_Search_AI_Sprint.md` — exact copy sources for signup, testimonial format, stats replacement, positioning (per canonical_refs)
+- `~/Downloads/LootList_30_Day_Search_AI_Sprint.md` — exact copy sources for signup, testimonial format, stats replacement, positioning (per canonical_refs)
 
 ### Secondary (MEDIUM confidence)
 - `~/.claude/.../memory/prod-sql-via-management-api.md` — 28 days old per its own system-reminder; cross-verified against current `scripts/deploy-migrations.sh` and `.github/workflows/deploy-migrations.yml` this session and found consistent (same project ref `zjnhjstbqekudlsozsvi`, same env var names)

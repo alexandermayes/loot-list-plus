@@ -74,7 +74,7 @@ actuals:
 
 Addon 1.1.0 built locally: the web-parity ScoreEngine ported byte for byte, 60 luajit tests (43 checked against fixtures generated from the website's own scoring code), best-unawarded-rank selection with counts since the last import, per-award ids the server accepts, Role bonus and Raider bonus breakdown lines, version 1.1.0 with the signed-off changelog, a hand-share zip; this repo drops its stale addon/ copy and shows AP-2 on the admin page. Nothing pushed.
 
-Paths: ADDON = SCRATCH/addon-repo (branch feat/addon-1.1.0 from 0c67406), WT = SCRATCH/wtaddon (branch chore/remove-in-repo-addon-copy, fast-forwarded to origin/main f87a359c before any change), SCRATCH = /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad.
+Paths: ADDON = SCRATCH/addon-repo (branch feat/addon-1.1.0 from 0c67406), WT = SCRATCH/wtaddon (branch chore/remove-in-repo-addon-copy, fast-forwarded to origin/main f87a359c before any change), SCRATCH = $SCRATCHPAD.
 
 ## Commits
 

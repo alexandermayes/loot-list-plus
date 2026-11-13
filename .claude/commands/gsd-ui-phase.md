@@ -21,8 +21,8 @@ Flow: Validate → Research UI → Verify UI-SPEC → Done
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/ui-phase.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/ui-brand.md
+@.claude/gsd-core/workflows/ui-phase.md
+@.claude/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>

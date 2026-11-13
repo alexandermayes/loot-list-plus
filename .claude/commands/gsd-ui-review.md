@@ -19,8 +19,8 @@ Output: {phase_num}-UI-REVIEW.md
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/ui-review.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/ui-brand.md
+@.claude/gsd-core/workflows/ui-review.md
+@.claude/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>

@@ -128,7 +128,7 @@ Migration PR #468 CI: Test, Analyze (javascript-typescript), Analyze (actions), 
 
 ## Worktrees to detach after merge
 
-`git worktree remove` (not folder deletion; each holds a `node_modules` symlink): `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-lock-migration` and `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-lock-code`; then the two `feat/` branches locally and on origin.
+`git worktree remove` (not folder deletion; each holds a `node_modules` symlink): `<worktree-root>` and `<worktree-root>`; then the two `feat/` branches locally and on origin.
 
 ## Follow-ups (D8 and gaps)
 

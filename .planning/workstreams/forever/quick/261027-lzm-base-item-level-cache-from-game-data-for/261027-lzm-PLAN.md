@@ -98,8 +98,8 @@ Requirements (quick task scope):
 - DELIVERY-R1: nothing pushed, the SUMMARY carries the merge order, the owner's probe command, worktrees to detach and the open follow-up.
 
 What exists (verified at planning, origin/main 1b8c5b0a, `git fetch origin` run 2026-10-27):
-- feat/equipped-item-level-migration at 8e865ed6 in /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-migration: 82221093 test anchor, 8e865ed6 migration 20261026120000_equipped_item_level.sql (12 statements) and its test.
-- feat/armory-item-level at 8f75416a in /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code: a11e3d86 probe, 46ea1f6a writers, db7d4dca domain, f7f511ce link-battlenet writer, 8f75416a route and panel. Each writer's insert map has `item_level: readEquippedItemLevel(item)`.
+- feat/equipped-item-level-migration at 8e865ed6 in <worktree-root>: 82221093 test anchor, 8e865ed6 migration 20261026120000_equipped_item_level.sql (12 statements) and its test.
+- feat/armory-item-level at 8f75416a in <worktree-root>: a11e3d86 probe, 46ea1f6a writers, db7d4dca domain, f7f511ce link-battlenet writer, 8f75416a route and panel. Each writer's insert map has `item_level: readEquippedItemLevel(item)`.
 - Newest migration on origin/main is 20261020120000_discovery_schema.sql. No ref (local or origin) has any supabase/migrations/20261027* file and no planning doc reserves one.
 - No route test exists for sync-gear or link-battlenet (grep of every test file for either path found none). The ItemCandidateModal test does not assert the header title string (it finds the header by its text, Equipped).
 - tsconfig.json includes every **/*.ts, so `npm run typecheck` covers scripts/spikes.
@@ -107,7 +107,7 @@ What exists (verified at planning, origin/main 1b8c5b0a, `git fetch origin` run 
 Task layout and worktrees:
 - Task 1 runs in the migration worktree; Task 2 runs in the code worktree. They touch different worktrees and may run in parallel.
 - Task 3 runs in the code worktree after Task 2 commits (same branch, one task per worktree at a time).
-- The main checkout /Users/alexander.mayes/Code/personal/loot-list-plus stays on gsd/quick-261027-lzm-base-item-level-cache-from-game-data-for and receives only the SUMMARY.
+- The main checkout <repo-root> stays on gsd/quick-261027-lzm-base-item-level-cache-from-game-data-for and receives only the SUMMARY.
 - No tracer task: the coordinator fixed three tasks across two worktrees that run in parallel, so no single task can wire the database and the code together. The end-to-end proof is the owner's probe (Task 3) plus the post-merge human check listed in the SUMMARY, the same approach 261026-wpw took with its spike.
 - Task 2 touches 9 files, above the usual 5-file split line. The coordinator fixed this split, and 6 of the 9 edits are one to five lines each (three call sites, one export keyword, one type entry, one copy string).
 
@@ -123,8 +123,8 @@ Rules for every task:
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/execute-plan.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/templates/summary.md
+@.claude/gsd-core/workflows/execute-plan.md
+@.claude/gsd-core/templates/summary.md
 </execution_context>
 
 <context>
@@ -164,7 +164,7 @@ Task 3 (code worktree):
 <task type="auto" tdd="true">
   <name>Task 1: item_base_levels migration and its shape plus PGlite test, on the migration branch</name>
   <files>supabase/migrations/20261027120000_item_base_levels.sql, app/services/__tests__/item-base-levels-migration.test.ts, supabase/migrations/20261026120000_equipped_item_level.sql</files>
-  <precondition>/Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-migration is on feat/equipped-item-level-migration at 8e865ed6 with a clean tree and a node_modules symlink (git -C that path status --short --branch shows no changes; git -C that path rev-parse --short HEAD prints 8e865ed6).</precondition>
+  <precondition><worktree-root> is on feat/equipped-item-level-migration at 8e865ed6 with a clean tree and a node_modules symlink (git -C that path status --short --branch shows no changes; git -C that path rev-parse --short HEAD prints 8e865ed6).</precondition>
   <behavior>
     - Shape: the file exists, its timestamp is unique in supabase/migrations and greater than the constant 20261026120000 (anchored, never a live directory scan, #309).
     - Shape: exactly 7 executable statements, in this order: CREATE TABLE IF NOT EXISTS item_base_levels; DROP CONSTRAINT IF EXISTS item_base_levels_item_level_range; ADD CONSTRAINT item_base_levels_item_level_range CHECK (item_level BETWEEN 1 AND 1999); ENABLE ROW LEVEL SECURITY; REVOKE ALL ON TABLE FROM PUBLIC, anon, authenticated; GRANT ALL ON TABLE TO service_role; COMMENT ON TABLE.
@@ -213,7 +213,7 @@ Commits on feat/equipped-item-level-migration, in this order:
 Each message ends with the Co-Authored-By line from the objective.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-migration && npx vitest run app/services/__tests__/item-base-levels-migration.test.ts app/services/__tests__/equipped-item-level-migration.test.ts && npx vitest run app/services/__tests__ && npx eslint app/services/__tests__/item-base-levels-migration.test.ts && npm run typecheck && test "$(git diff origin/main...HEAD | grep '^+' | grep -c $'\xe2\x80\x94')" = "0" && test -z "$(git log --remotes --format=%h -- 'supabase/migrations/20261027*')" && test "$(git log --format=%h origin/main..HEAD -- 'supabase/migrations/20261027*' | wc -l | tr -d ' ')" = "1"</automated>
+    <automated>cd <worktree-root> && npx vitest run app/services/__tests__/item-base-levels-migration.test.ts app/services/__tests__/equipped-item-level-migration.test.ts && npx vitest run app/services/__tests__ && npx eslint app/services/__tests__/item-base-levels-migration.test.ts && npm run typecheck && test "$(git diff origin/main...HEAD | grep '^+' | grep -c $'\xe2\x80\x94')" = "0" && test -z "$(git log --remotes --format=%h -- 'supabase/migrations/20261027*')" && test "$(git log --format=%h origin/main..HEAD -- 'supabase/migrations/20261027*' | wc -l | tr -d ' ')" = "1"</automated>
   </verify>
   <done>
 - The new test passes every behavior bullet; equipped-item-level-migration.test.ts still passes after the comment correction; the whole app/services/__tests__ directory passes; eslint and typecheck are clean.
@@ -226,7 +226,7 @@ Each message ends with the Co-Authored-By line from the objective.
 <task type="auto" tdd="true">
   <name>Task 2: resolveBaseItemLevels helper, the three writers, types and the header title, on the code branch</name>
   <files>lib/battlenet-item-levels.ts, lib/__tests__/battlenet-item-levels.test.ts, lib/battlenet.ts, lib/database.types.ts, app/api/battlenet/characters/sync-gear/route.ts, app/api/battlenet/characters/import/route.ts, app/api/battlenet/characters/import/__tests__/route.test.ts, app/api/characters/[id]/link-battlenet/route.ts, app/(app)/master-sheet/components/ItemCandidateModal.tsx</files>
-  <precondition>/Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code is on feat/armory-item-level at 8f75416a with a clean tree and a node_modules symlink (git -C that path rev-parse --short HEAD prints 8f75416a).</precondition>
+  <precondition><worktree-root> is on feat/armory-item-level at 8f75416a with a clean tree and a node_modules symlink (git -C that path rev-parse --short HEAD prints 8f75416a).</precondition>
   <behavior>
     - Cache hit: ids all present in item_base_levels resolve from the cache, fetch is never called and nothing is upserted.
     - Miss: a missing id is fetched once from https://us.api.blizzard.com/data/wow/item/{id}?locale=en_US with headers Authorization Bearer {token} and Battlenet-Namespace static-classic-us; a top-level level of 489 lands in the Map and is upserted as one row with wowhead_id, item_level 489 and an ISO fetched_at, with onConflict wowhead_id.
@@ -281,7 +281,7 @@ Leave every other string as is. In the JSDoc above it, add that the title says B
 Run the targeted tests, then the full checks in the verify block. Commit everything in one commit on feat/armory-item-level: feat(gear): resolve equipped item level from Game Data base levels. The body lists the helper, the three writers, the types and the header title, and states the code PR merges only after both migrations are live and the probe confirms the level field. End with the Co-Authored-By line.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code && npx vitest run lib/__tests__/battlenet-item-levels.test.ts app/api/battlenet "app/(app)/master-sheet/components/__tests__/ItemCandidateModal.test.tsx" && ( for f in app/api/battlenet/characters/sync-gear/route.ts app/api/battlenet/characters/import/route.ts "app/api/characters/[id]/link-battlenet/route.ts"; do test "$(grep -c -F 'baseLevels.get(item.item.id)' "$f")" = "1" || exit 1; done ) && grep -c -F "Base item level of what this player has equipped" "app/(app)/master-sheet/components/ItemCandidateModal.tsx" && npm run lint && npm run typecheck && npm test && git diff --quiet origin/main -- domain/scoring && test "$(git diff origin/main...HEAD | grep '^+' | grep -c $'\xe2\x80\x94')" = "0"</automated>
+    <automated>cd <worktree-root> && npx vitest run lib/__tests__/battlenet-item-levels.test.ts app/api/battlenet "app/(app)/master-sheet/components/__tests__/ItemCandidateModal.test.tsx" && ( for f in app/api/battlenet/characters/sync-gear/route.ts app/api/battlenet/characters/import/route.ts "app/api/characters/[id]/link-battlenet/route.ts"; do test "$(grep -c -F 'baseLevels.get(item.item.id)' "$f")" = "1" || exit 1; done ) && grep -c -F "Base item level of what this player has equipped" "app/(app)/master-sheet/components/ItemCandidateModal.tsx" && npm run lint && npm run typecheck && npm test && git diff --quiet origin/main -- domain/scoring && test "$(git diff origin/main...HEAD | grep '^+' | grep -c $'\xe2\x80\x94')" = "0"</automated>
     <human-check>Owner: sign off the header title "Base item level of what this player has equipped in the slot this item fills, from their last Battle.net gear sync" before the code PR merges (Standing Constraint 2). The rest of the Equipped copy is unchanged and still awaits the sign-off recorded in 261026-wpw.</human-check>
   </verify>
   <done>
@@ -331,7 +331,7 @@ The agent must not run the probe with real credentials, pull env files or read p
 
 The owner's command, to be written verbatim into the SUMMARY. Run it from the main checkout, where tsx resolves through node_modules; it pulls production env to a temporary file outside the repo, runs the probe, then removes the file:
 
-cd /Users/alexander.mayes/Code/personal/loot-list-plus && vercel env pull /tmp/llp-prod.env --environment=production --yes && node --env-file=/tmp/llp-prod.env --import tsx /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code/scripts/spikes/item-base-level-spike.ts; rm -f /tmp/llp-prod.env
+cd <repo-root> && vercel env pull /tmp/llp-prod.env --environment=production --yes && node --env-file=/tmp/llp-prod.env --import tsx scripts/spikes/item-base-level-spike.ts; rm -f /tmp/llp-prod.env
 
 Optional prefix for other items: SPIKE_ITEM_IDS="id1,id2,id3" before node. Add SPIKE_REGION=eu for EU. The owner pastes the printed JSON back. It contains no names. Building does not wait on the probe; merging the code PR does. Expected result: levelFieldPresentOnAll true, with levels in the MoP raid range.
 
@@ -340,7 +340,7 @@ Commit on feat/armory-item-level: chore(spike): Game Data base item level probe,
 Then write the SUMMARY described in the output section, in the main checkout.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code && npx eslint scripts/spikes/item-base-level-spike.ts && npm run typecheck && ( out="$(env -u BLIZZARD_CLIENT_ID -u BLIZZARD_CLIENT_SECRET node --import tsx scripts/spikes/item-base-level-spike.ts 2>&1)"; test $? -eq 2 && printf '%s' "$out" | grep -q BLIZZARD_CLIENT_ID ) && ( out="$(env -u BLIZZARD_CLIENT_ID -u BLIZZARD_CLIENT_SECRET SPIKE_ITEM_IDS=abc node --import tsx scripts/spikes/item-base-level-spike.ts 2>&1)"; test $? -eq 2 && printf '%s' "$out" | grep -q SPIKE_ITEM_IDS && ! printf '%s' "$out" | grep -q BLIZZARD_CLIENT_ID ) && test "$(git diff origin/main...HEAD -- scripts/spikes/item-base-level-spike.ts | grep '^+' | grep -c $'\xe2\x80\x94')" = "0"</automated>
+    <automated>cd <worktree-root> && npx eslint scripts/spikes/item-base-level-spike.ts && npm run typecheck && ( out="$(env -u BLIZZARD_CLIENT_ID -u BLIZZARD_CLIENT_SECRET node --import tsx scripts/spikes/item-base-level-spike.ts 2>&1)"; test $? -eq 2 && printf '%s' "$out" | grep -q BLIZZARD_CLIENT_ID ) && ( out="$(env -u BLIZZARD_CLIENT_ID -u BLIZZARD_CLIENT_SECRET SPIKE_ITEM_IDS=abc node --import tsx scripts/spikes/item-base-level-spike.ts 2>&1)"; test $? -eq 2 && printf '%s' "$out" | grep -q SPIKE_ITEM_IDS && ! printf '%s' "$out" | grep -q BLIZZARD_CLIENT_ID ) && test "$(git diff origin/main...HEAD -- scripts/spikes/item-base-level-spike.ts | grep '^+' | grep -c $'\xe2\x80\x94')" = "0"</automated>
     <human-check>Owner: run the command above from the main checkout and paste the JSON. The code PR merges only when levelFieldPresentOnAll is true. If it is false, the SUMMARY's merge order stops before the code PR and the field path in readBaseItemLevel is revisited.</human-check>
   </verify>
   <done>
@@ -383,13 +383,13 @@ No package installs: @supabase/supabase-js, tsx and @electric-sql/pglite are alr
 </threat_model>
 
 <verification>
-Migration worktree /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-migration:
+Migration worktree <worktree-root>:
 - npx vitest run app/services/__tests__ passes.
 - npx eslint on the new test is clean, and npm run typecheck is clean.
 - git diff --stat origin/main...HEAD lists only the two migrations, their tests and the earlier anchor test (82221093).
 - Zero added lines contain the UTF-8 bytes e2 80 94.
 
-Code worktree /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code:
+Code worktree <worktree-root>:
 - The targeted vitest runs pass.
 - npm run lint reports 0 errors, npm run typecheck is clean and npm test passes.
 - git diff --quiet origin/main -- domain/scoring exits 0.
@@ -414,14 +414,14 @@ Nothing pushed, no PR opened.
 </success_criteria>
 
 <output>
-Create /Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/forever/quick/261027-lzm-base-item-level-cache-from-game-data-for/261027-lzm-SUMMARY.md in the main checkout. Do not commit or push it; the quick workflow handles the docs commit. It must list:
+Create .planning/workstreams/forever/quick/261027-lzm-base-item-level-cache-from-game-data-for/261027-lzm-SUMMARY.md in the main checkout. Do not commit or push it; the quick workflow handles the docs commit. It must list:
 - Commits per branch with SHAs, oldest first: feat/equipped-item-level-migration (82221093, 8e865ed6, then this task's commits) and feat/armory-item-level (a11e3d86 through 8f75416a, then this task's commits). Include the final migration timestamp and any anchored older test.
 - The owner's probe command, verbatim from Task 3, plus the optional SPIKE_ITEM_IDS and SPIKE_REGION prefixes, and the rule that the code PR merges only on levelFieldPresentOnAll true.
 - Merge order:
   1. Push feat/equipped-item-level-migration and open one migration-only PR carrying both 20261026120000 and 20261027120000. Merge with --admin on a non-raid day and confirm the deploy about 12 seconds after merge.
   2. Push feat/armory-item-level and open the code PR. Merge only after the owner's copy sign-off (the new header title plus the 261026-wpw Equipped copy) and after the probe confirms the level field. Then run the 261026-wpw human check: as a manage_loot officer, open a ring, a trinket, a two-hand weapon, a tier token and a mount on the master sheet.
   3. Push the gsd/quick branches and open the docs PR.
-- The worktrees to detach after merge, with the git worktree command, not by deleting folders (each holds a node_modules symlink): /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code and /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-migration.
+- The worktrees to detach after merge, with the git worktree command, not by deleting folders (each holds a node_modules symlink): <worktree-root> and <worktree-root>.
 - Test gaps: no sync-gear or link-battlenet route test exists, so only the import route test covers the writer change. Say whether the modal test needed a change.
 - Discretion items the owner may veto: the comment-only correction to 20261026120000 (Task 1 Step 4); the explicit GRANT ALL to service_role; the 3 s request timeout and 100 ms batch pause; the probe's 20-id cap.
 - The open follow-up, out of scope here: when a character returns 404 during a sync, keep the last stored rows rather than delete them (the 261026-wpw sample had 4 of 10 characters no longer resolving).

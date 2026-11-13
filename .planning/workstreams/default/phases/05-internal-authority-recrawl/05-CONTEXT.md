@@ -57,7 +57,7 @@ Requirements: LINK-01, LINK-02.
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Sprint plan (source of the requirements and acceptance wording)
-- `/Users/alexander.mayes/Downloads/LootList_30_Day_Search_AI_Sprint.md` §"Prioritized implementation backlog" row 14, §"September 13–19: Connect and distribute", §"Technical acceptance checklist" — descriptive anchors (not "learn more"), sitemap contains only canonical URLs with accurate lastmod, URL Inspection confirms rendered HTML, recrawl requests once per materially changed URL after deployment.
+- `~/Downloads/LootList_30_Day_Search_AI_Sprint.md` §"Prioritized implementation backlog" row 14, §"September 13–19: Connect and distribute", §"Technical acceptance checklist" — descriptive anchors (not "learn more"), sitemap contains only canonical URLs with accurate lastmod, URL Inspection confirms rendered HTML, recrawl requests once per materially changed URL after deployment.
 
 ### Prior-phase contracts this phase must respect
 - `.planning/phases/04-verified-guild-case-study/04-PUBLISH-RUNBOOK.md` — steps 3 to 5: the case study's own atomic sitemap/robots commit, additive contextual link sweep, and one-time recrawl. Phase 5 replaces its step-5 table with a pointer to the single recrawl log (D-15) and otherwise leaves it as the owner of case-study linking (D-08).

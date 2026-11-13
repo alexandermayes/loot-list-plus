@@ -88,7 +88,7 @@ Run `npm run lint`, `npm run typecheck`, `npx vitest run app/api/addon` and the 
 <name>Addon: live boss and instance name on every award</name>
 <files>Modules/LootDistribution.lua, Modules/LootHook.lua, Core/VersionCompat.lua, tests/harness.lua, tests/run.lua, tests/test_live_context.lua, CHANGELOG.md</files>
 <action>
-Work in the clone at /Users/alexander.mayes/Code/personal/loot-list-plus-addon on a new branch fix/319-live-boss-and-instance from origin/main (currently aa3915d).
+Work in the clone at <addon-checkout> on a new branch fix/319-live-boss-and-instance from origin/main (currently aa3915d).
 
 Core/VersionCompat.lua: add `function VC:GetLiveInstanceName()` returning GetInstanceInfo()'s name when the instance type is "raid" or "party", else nil (open world and nil names give nil). Guard `type(GetInstanceInfo) == "function"`.
 

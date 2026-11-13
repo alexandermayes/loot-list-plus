@@ -187,13 +187,13 @@ def cluster_query(q: str) -> str:
 
 ### Pitfall 3: The sprint plan doesn't say which AI products to test
 **What goes wrong:** A plan just says "run the AI-answer test" without picking concrete surfaces, and the runbook ends up vague enough that a future run isn't actually repeatable — defeating the phase's stated goal ("so any future run is repeatable without re-reading the sprint plan").
-**Why it happens:** The sprint plan's "Weekly Google and AI-answer test set" section gives the six exact prompts and the fields to record, but never names ChatGPT/Perplexity/Google AI Overview/Gemini explicitly for that weekly loop (it references ChatGPT and OAI-SearchBot elsewhere, in the context of crawler access, not the weekly diagnostic) `[VERIFIED: /Users/alexander.mayes/Downloads/LootList_30_Day_Search_AI_Sprint.md:630-641, read this session — the section contains no surface list]`.
+**Why it happens:** The sprint plan's "Weekly Google and AI-answer test set" section gives the six exact prompts and the fields to record, but never names ChatGPT/Perplexity/Google AI Overview/Gemini explicitly for that weekly loop (it references ChatGPT and OAI-SearchBot elsewhere, in the context of crawler access, not the weekly diagnostic) `[VERIFIED: ~/Downloads/LootList_30_Day_Search_AI_Sprint.md:630-641, read this session — the section contains no surface list]`.
 **How to avoid:** Pick and hard-code a small fixed set of surfaces in the runbook (recommend: Google AI Overview via a logged-out/incognito google.com search, ChatGPT via chatgpt.com's temporary/no-memory chat mode, and Perplexity.ai logged out — see Open Questions) and record that choice as an explicit assumption, not an implicit one.
 **Warning signs:** Week-over-week log entries with an inconsistent or missing `ai_surface` value, making the Phase 6 comparison impossible to do cleanly.
 
 ### Pitfall 4: A query can match more than one cluster keyword list
 **What goes wrong:** A query like `"classic loot spreadsheet"` contains both an expansion keyword (`classic`) and a problem keyword (`loot spreadsheet`); without a defined precedence, two runs of the clustering logic (or two different people extending it later) could classify it differently, silently changing the cluster percentages reported to the user.
-**Why it happens:** The sprint plan states the four cluster keyword lists but never addresses overlap `[VERIFIED: /Users/alexander.mayes/Downloads/LootList_30_Day_Search_AI_Sprint.md:622-627, read this session]`.
+**Why it happens:** The sprint plan states the four cluster keyword lists but never addresses overlap `[VERIFIED: ~/Downloads/LootList_30_Day_Search_AI_Sprint.md:622-627, read this session]`.
 **How to avoid:** Fix an explicit precedence order in code (recommended: brand > competitor > problem > expansion > unclustered, matching business priority — brand queries matter most to identify) and document the choice in a code comment, so it's a stated decision rather than an accident of dict iteration order.
 **Warning signs:** Cluster totals across the four buckets plus "unclustered" don't sum to the total query count, or re-running the classifier on the same data produces different totals.
 
@@ -318,12 +318,12 @@ def export_csv(rows, cluster_fn, path):
 ## Sources
 
 ### Primary (HIGH confidence)
-- `/Users/alexander.mayes/Code/loot-list-plus/scripts/analytics/pull-gsc.py` — read in full this session
-- `/Users/alexander.mayes/Code/loot-list-plus/scripts/analytics/gsc-auth.py` — read in full this session
-- `/Users/alexander.mayes/Code/loot-list-plus/scripts/analytics/pull-posthog.py` — read in full this session (context/convention only, unrelated to this phase's deliverables)
-- `/Users/alexander.mayes/Code/loot-list-plus/.gitignore` — read in full this session; verified empirically with `git check-ignore -v` against six candidate paths
-- `/Users/alexander.mayes/Downloads/LootList_30_Day_Search_AI_Sprint.md` — read in full this session (six prompts, cluster keyword lists, all "exact copy" sections)
-- `/Users/alexander.mayes/Code/loot-list-plus/.planning/REQUIREMENTS.md`, `.planning/STATE.md`, `.planning/ROADMAP.md`, `.planning/config.json` — read in full this session
+- `scripts/analytics/pull-gsc.py` — read in full this session
+- `scripts/analytics/gsc-auth.py` — read in full this session
+- `scripts/analytics/pull-posthog.py` — read in full this session (context/convention only, unrelated to this phase's deliverables)
+- `.gitignore` — read in full this session; verified empirically with `git check-ignore -v` against six candidate paths
+- `~/Downloads/LootList_30_Day_Search_AI_Sprint.md` — read in full this session (six prompts, cluster keyword lists, all "exact copy" sections)
+- `.planning/REQUIREMENTS.md`, `.planning/STATE.md`, `.planning/ROADMAP.md`, `.planning/config.json` — read in full this session
 
 ### Secondary (MEDIUM confidence)
 - Google Search Console API `searchAnalytics.query` rowLimit/dataState behavior — WebSearch this session, corroborated by `developers.google.com/webmaster-tools/v1/how-tos/all-your-data`

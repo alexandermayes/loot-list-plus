@@ -108,7 +108,7 @@ The header has Problem, Fix, Why triggers, Security, Error contract and Rollback
 | Em dash gate (added lines + commit messages, including bb820ab3) | n/a | pass |
 | Wording gate (D-12 regex, added lines + commit messages, including bb820ab3) | n/a | pass |
 
-Output files are in the scratchpad root (`/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/`).
+Output files are in the scratchpad root (`$SCRATCHPAD/`).
 
 ### PGlite proof (scratchpad only, never committed)
 

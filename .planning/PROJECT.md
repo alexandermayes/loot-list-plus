@@ -13,7 +13,7 @@ An officer who lands on the site immediately understands the category, trusts ch
 - **Customer**: WoW Classic guild officers (free core plan); guilds needing multi-team support (Premium, $4.99/mo or $39/yr per guild)
 - **Revenue model**: Per-guild Premium subscription via Stripe (live since 2026-08-26)
 - **Success metric**: 7-day activated guilds per weekly acquisition cohort
-- **Strategy notes**: Full sprint plan at `/Users/alexander.mayes/Downloads/LootList_30_Day_Search_AI_Sprint.md` (exact copy, event schemas, acceptance criteria — read before doing sprint work)
+- **Strategy notes**: Full sprint plan at `~/Downloads/LootList_30_Day_Search_AI_Sprint.md` (exact copy, event schemas, acceptance criteria — read before doing sprint work)
 
 ## Requirements
 

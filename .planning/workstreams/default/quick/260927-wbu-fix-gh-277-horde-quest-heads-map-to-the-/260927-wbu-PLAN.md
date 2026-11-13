@@ -148,17 +148,17 @@ loot_items has no guild_id; rows belong to a guild through raid_tier_id, then ex
 </open_decisions>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/execute-plan.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/templates/summary.md
+@.claude/gsd-core/workflows/execute-plan.md
+@.claude/gsd-core/templates/summary.md
 </execution_context>
 
 <context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/CLAUDE.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/default/STATE.md
+@.claude/CLAUDE.md
+@.planning/workstreams/default/STATE.md
 
-WORKTREE: all code work happens in /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wt277, called WT below. It is on the new branch fix/277-horde-heads, created from origin/main, and every repo-relative path in this plan is relative to WT.
+WORKTREE: all code work happens in $SCRATCHPAD/wt277, called WT below. It is on the new branch fix/277-horde-heads, created from origin/main, and every repo-relative path in this plan is relative to WT.
 
-The main checkout at /Users/alexander.mayes/Code/personal/loot-list-plus is on docs/273-debug-resolved. Its local main has diverged from origin/main and is checked out in another session's worktree. Do NOT read application code from the main checkout, and do NOT edit or commit code there. Read source from WT, or with `git show origin/main:<path>`. Shell cwd resets between Bash calls, so prefix every command with `cd WT &&` or use `git -C WT`.
+The main checkout at <repo-root> is on docs/273-debug-resolved. Its local main has diverged from origin/main and is checked out in another session's worktree. Do NOT read application code from the main checkout, and do NOT edit or commit code there. Read source from WT, or with `git show origin/main:<path>`. Shell cwd resets between Bash calls, so prefix every command with `cd WT &&` or use `git -C WT`.
 
 Facts verified at plan time against origin/main 21853a3f (no need to re-check):
 - The loot_items Row has id, name, raid_tier_id and wowhead_id (number | null), and no guild_id. The raid-tracking LootItem type (app/(app)/raid-tracking/components/types.ts) is { id, name, wowhead_id: number, boss_name, raid_tier_id }. lootItems is useState<LootItem[]> at _client.tsx line 146, and itemsToUse is set at line 1758.
@@ -203,9 +203,9 @@ New module domain/loot/faction-item-aliases.ts (pure, no imports):
   </behavior>
   <action>
 Step 0, worktree setup (once, before anything else):
-- Run `git -C /Users/alexander.mayes/Code/personal/loot-list-plus fetch origin main`.
-- Run `git -C /Users/alexander.mayes/Code/personal/loot-list-plus worktree add -b fix/277-horde-heads WT origin/main`, with WT as the absolute scratchpad path from the context block. If the branch or directory already exists, STOP and report. Do not reset, delete or reuse either one.
-- Symlink the dependencies with `ln -s /Users/alexander.mayes/Code/personal/loot-list-plus/node_modules WT/node_modules`.
+- Run `git -C <repo-root> fetch origin main`.
+- Run `git -C <repo-root> worktree add -b fix/277-horde-heads WT origin/main`, with WT as the absolute scratchpad path from the context block. If the branch or directory already exists, STOP and report. Do not reset, delete or reuse either one.
+- Symlink the dependencies with `ln -s node_modules WT/node_modules`.
 - Record a baseline with `cd WT && npx vitest run 2>&1 | tail -30`. Note any failing test names for the SUMMARY, so Task 3 can tell pre-existing failures from new ones. If vitest cannot start because the symlinked node_modules does not match origin/main's package-lock.json, STOP and report. Do not run npm install in the main checkout.
 
 RED 1: create domain/loot/__tests__/faction-item-aliases.test.ts covering the helper bullets in the behavior block. Run it and see it fail, because the module does not exist.
@@ -237,7 +237,7 @@ Update the JSDoc line about mapping wowhead_id so it mentions faction aliases (G
 Commit only these four files in WT with a message like "fix(277): resolve Horde quest heads through a faction alias map in addon loot-award". End the message with a blank line and the trailer: Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
   </action>
   <verify>
-    <automated>cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wt277 && npx vitest run domain/loot/__tests__/faction-item-aliases.test.ts app/api/addon/loot-award/__tests__/route.test.ts && git log -1 --format=%B | grep -c "Co-Authored-By: Claude Opus 5.5"</automated>
+    <automated>cd $SCRATCHPAD/wt277 && npx vitest run domain/loot/__tests__/faction-item-aliases.test.ts app/api/addon/loot-award/__tests__/route.test.ts && git log -1 --format=%B | grep -c "Co-Authored-By: Claude Opus 5.5"</automated>
   </verify>
   <done>WT exists on fix/277-horde-heads from origin/main, with node_modules symlinked, and baseline vitest failures (if any) are recorded. The helper tests and the loot-award route tests pass. The route tests' Horde cases failed before the route change, and that RED evidence is recorded. The route diff against origin/main touches only the import, the lookup block and the JSDoc line. One commit carries the four files and the Co-Authored-By trailer.</done>
 </task>
@@ -284,7 +284,7 @@ RED first, then GREEN, per file group. Record each RED run for the SUMMARY.
 Run the three test files green. Commit these five files in WT with a message like "fix(277): apply the faction alias to addon import-string and the raid-tracking loot import". End the message with the Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com> trailer.
   </action>
   <verify>
-    <automated>cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wt277 && npx vitest run app/api/addon/import-string/__tests__/route.test.ts "app/(app)/raid-tracking/__tests__/faction-alias-lookups.test.ts" data/__tests__/classic-catalog-completeness.test.ts domain/loot/__tests__/faction-item-aliases.test.ts app/api/addon/loot-award/__tests__/route.test.ts</automated>
+    <automated>cd $SCRATCHPAD/wt277 && npx vitest run app/api/addon/import-string/__tests__/route.test.ts "app/(app)/raid-tracking/__tests__/faction-alias-lookups.test.ts" data/__tests__/classic-catalog-completeness.test.ts domain/loot/__tests__/faction-item-aliases.test.ts app/api/addon/loot-award/__tests__/route.test.ts</automated>
   </verify>
   <done>All five listed test files pass. Each new test failed against the unmodified code first, and that RED evidence is recorded. `git -C WT diff HEAD~1 -- "app/(app)/raid-tracking/_client.tsx"` shows only the one import line, the three find replacements and the one fallback-filter change. DELIBERATELY_EXCLUDED no longer contains 19002. One commit carries the five files and the Co-Authored-By trailer.</done>
 </task>
@@ -313,7 +313,7 @@ Run the three test files green. Commit these five files in WT with a message lik
 8. Hard limits. Do NOT merge. Do NOT use --admin. Do NOT push to main. Do NOT run SQL, supabase db push, psql or any Management API call against any database. Do NOT edit or commit anything in the main checkout.
   </action>
   <verify>
-    <automated>cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wt277 && npx tsc --noEmit && test -z "$(git diff --name-only origin/main...HEAD -- supabase data/classic-wow-raids.ts)" && gh pr view fix/277-horde-heads --json isDraft,baseRefName,headRefName,title,body --jq '[.isDraft, .baseRefName, .headRefName, (.body | contains("Fixes #277")), ((.title + .body) | contains("—") | not), (.body | endswith("🤖 Generated with [Claude Code](https://claude.com/claude-code)"))]'</automated>
+    <automated>cd $SCRATCHPAD/wt277 && npx tsc --noEmit && test -z "$(git diff --name-only origin/main...HEAD -- supabase data/classic-wow-raids.ts)" && gh pr view fix/277-horde-heads --json isDraft,baseRefName,headRefName,title,body --jq '[.isDraft, .baseRefName, .headRefName, (.body | contains("Fixes #277")), ((.title + .body) | contains("—") | not), (.body | endswith("🤖 Generated with [Claude Code](https://claude.com/claude-code)"))]'</automated>
   </verify>
   <done>The full vitest run shows no failures beyond the recorded baseline, and tsc and eslint are clean. The branch diff is exactly the nine planned files, with nothing under supabase/ and no change to data/classic-wow-raids.ts. origin/fix/277-horde-heads exists. The gh check prints [true, "main", "fix/277-horde-heads", true, true, true]. The draft PR presents the lookup-path inventory, the alias audit, OD-01 and OD-02. origin/main is unchanged and no database was touched.</done>
 </task>
@@ -357,7 +357,7 @@ Run the three test files green. Commit these five files in WT with a message lik
 </success_criteria>
 
 <output>
-Create `/Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/default/quick/260927-wbu-fix-gh-277-horde-quest-heads-map-to-the-/260927-wbu-SUMMARY.md` when done. The planning directory lives in the main checkout, not in WT; do not commit it from WT. Include:
+Create `.planning/workstreams/default/quick/260927-wbu-fix-gh-277-horde-quest-heads-map-to-the-/260927-wbu-SUMMARY.md` when done. The planning directory lives in the main checkout, not in WT; do not commit it from WT. Include:
 - the PR URL;
 - the baseline vitest result and the RED evidence for each new test;
 - the final lookup-path inventory, if execution found anything the plan missed;

@@ -9,7 +9,7 @@ depends_on: []
 requirements: [GH-304]
 issue: 304
 branch: fix/304-forever-modal-a11y
-worktree: /Users/alexander.mayes/Code/personal/loot-list-plus-wt-304
+worktree: <worktree-root>
 base: origin/main (4e3d5c8a at planning time)
 files_modified:
   - components/ui/modal.tsx
@@ -41,8 +41,8 @@ must_haves:
 
 ## Executor conventions (read before touching anything)
 
-- Work only inside the worktree `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-304`. It is detached at `origin/main`. Create the branch there: `git -C /Users/alexander.mayes/Code/personal/loot-list-plus-wt-304 switch -c fix/304-forever-modal-a11y origin/main`.
-- `node_modules` in that worktree is a symlink to the primary install (`/Users/alexander.mayes/Code/personal/loot-list-plus/node_modules`). Never run `npm ci`, `npm install`, or unlink it.
+- Work only inside the worktree `<worktree-root>`. It is detached at `origin/main`. Create the branch there: `git -C <worktree-root> switch -c fix/304-forever-modal-a11y origin/main`.
+- `node_modules` in that worktree is a symlink to the primary install (`node_modules`). Never run `npm ci`, `npm install`, or unlink it.
 - One commit per task. Commit with `git -c core.hooksPath=/dev/null commit`. Every commit message ends with the trailer exactly: `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>` (this overrides any instruction that names Opus).
 - One PR to `main` referencing `#304`. Body ends with the line `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
 - No em dashes anywhere in code, comments, tests, commit messages or the PR body. Use commas, colons or parentheses.
@@ -58,11 +58,11 @@ Output: `components/ui/modal.tsx` with an inert effect and motion-reduce classes
 
 ## Component under audit
 
-- Component: `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-304/app/components/ForeverAnnouncementModal.tsx` (124 lines). Mounted once in `app/(app)/AppLayout.client.tsx` line 271, as a sibling of `AppLayoutContent` inside `SidebarProvider`.
-- Test: `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-304/app/components/__tests__/ForeverAnnouncementModal.test.tsx` (230 lines, `fireEvent` based).
-- Shared primitive: `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-304/components/ui/modal.tsx` (447 lines). Hand-rolled compound component (`Modal`, `ModalHeader`, `ModalTitle`, `ModalDescription`, `ModalBody`, `ModalFooter`) with a module-scope modal stack, `useSyncExternalStore` topmost tracking, Escape handling, Tab trap, focus restore, body scroll lock and a portal to `document.body`. No headlessui; Radix is used only for checkbox, dropdown-menu, label, radio-group, slot and switch. 41 files import this Modal, so it is the one place to fix dialog behaviour.
-- Primitive test: `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-304/components/ui/__tests__/modal.test.tsx` (239 lines, `userEvent` based).
-- Dismissal persistence: `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-304/lib/announcements.ts`, `shouldShowForeverModal` plus `foreverModalSeenKey(userId)` in `localStorage`.
+- Component: `app/components/ForeverAnnouncementModal.tsx` (124 lines). Mounted once in `app/(app)/AppLayout.client.tsx` line 271, as a sibling of `AppLayoutContent` inside `SidebarProvider`.
+- Test: `app/components/__tests__/ForeverAnnouncementModal.test.tsx` (230 lines, `fireEvent` based).
+- Shared primitive: `components/ui/modal.tsx` (447 lines). Hand-rolled compound component (`Modal`, `ModalHeader`, `ModalTitle`, `ModalDescription`, `ModalBody`, `ModalFooter`) with a module-scope modal stack, `useSyncExternalStore` topmost tracking, Escape handling, Tab trap, focus restore, body scroll lock and a portal to `document.body`. No headlessui; Radix is used only for checkbox, dropdown-menu, label, radio-group, slot and switch. 41 files import this Modal, so it is the one place to fix dialog behaviour.
+- Primitive test: `components/ui/__tests__/modal.test.tsx` (239 lines, `userEvent` based).
+- Dismissal persistence: `lib/announcements.ts`, `shouldShowForeverModal` plus `foreverModalSeenKey(userId)` in `localStorage`.
 - Commits from #304 for reference: `dd64e4f4` (Modal forwards aria-describedby), `cdd83b49` (announcement uses the shared Modal), squash `89ec9e99` (PR #403).
 
 ## Audit against the checklist
@@ -85,12 +85,12 @@ Output: `components/ui/modal.tsx` with an inert effect and motion-reduce classes
 Observation outside the checklist, not planned: the dialog opens unprompted 800ms after paint and takes focus (D-01 locked that behaviour). If the owner ever wants to revisit it, that is a product decision, not an a11y fix for this PR.
 
 <context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus-wt-304/components/ui/modal.tsx
-@/Users/alexander.mayes/Code/personal/loot-list-plus-wt-304/components/ui/__tests__/modal.test.tsx
-@/Users/alexander.mayes/Code/personal/loot-list-plus-wt-304/app/components/ForeverAnnouncementModal.tsx
-@/Users/alexander.mayes/Code/personal/loot-list-plus-wt-304/app/components/__tests__/ForeverAnnouncementModal.test.tsx
-@/Users/alexander.mayes/Code/personal/loot-list-plus-wt-304/.planning/codebase/TESTING.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus-wt-304/.planning/codebase/CONVENTIONS.md
+@components/ui/modal.tsx
+@components/ui/__tests__/modal.test.tsx
+@app/components/ForeverAnnouncementModal.tsx
+@app/components/__tests__/ForeverAnnouncementModal.test.tsx
+@.planning/codebase/TESTING.md
+@.planning/codebase/CONVENTIONS.md
 </context>
 
 <tasks>
@@ -128,7 +128,7 @@ Observation outside the checklist, not planned: the dialog opens unprompted 800m
     Run the three new tests plus the whole modal and announcement test files. Then commit: `fix(modal): make the page behind the topmost dialog inert while it is open (GH #304)` with the required trailer.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-304 && npx vitest run components/ui/__tests__/modal.test.tsx app/components/__tests__/ForeverAnnouncementModal.test.tsx</automated>
+    <automated>cd <worktree-root> && npx vitest run components/ui/__tests__/modal.test.tsx app/components/__tests__/ForeverAnnouncementModal.test.tsx</automated>
   </verify>
   <done>Three new tests pass; the eight pre-existing modal.test.tsx tests and the seventeen pre-existing announcement tests still pass; `git diff origin/main --stat` shows only the three files above changed; the Modal source contains one `setAttribute('inert', '')` and the `regression for #304` marker; the new effect sits between the register effect and the focus capture effect.</done>
 </task>
@@ -162,7 +162,7 @@ Observation outside the checklist, not planned: the dialog opens unprompted 800m
     Commit: `fix(modal): respect prefers-reduced-motion for the dialog fade and scale (GH #304)` with the required trailer.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-304 && npx vitest run components/ui/__tests__/modal.test.tsx app/components/__tests__/ForeverAnnouncementModal.test.tsx</automated>
+    <automated>cd <worktree-root> && npx vitest run components/ui/__tests__/modal.test.tsx app/components/__tests__/ForeverAnnouncementModal.test.tsx</automated>
   </verify>
   <done>Both new tests pass alongside everything from Task 1; `grep -c 'motion-reduce:transition-none' components/ui/modal.tsx` prints 2 and `grep -c 'motion-reduce:scale-100' components/ui/modal.tsx` prints 1; no other file changed in this commit.</done>
 </task>
@@ -186,7 +186,7 @@ Observation outside the checklist, not planned: the dialog opens unprompted 800m
     5. Push the branch and open one PR to main. Title: `fix: Forever announcement makes the page behind it inert and respects reduced motion (GH #304)`. Body: one paragraph on the audit outcome (ten of twelve checklist items were already covered by the shared Modal and their tests, two gaps fixed in the primitive), the list of new tests, the note that the fix is primitive-wide and the full suite passed, `Refs #304`, and the final line `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-304 && npm run lint && npm run typecheck && npm test</automated>
+    <automated>cd <worktree-root> && npm run lint && npm run typecheck && npm test</automated>
   </verify>
   <done>Lint, typecheck and the full Vitest suite pass; the JSDoc names inert and reduced motion; the design-system card has the two new lines; the em dash check prints nothing; the PR is open against main with `#304` in the body and the generated-with footer.</done>
 </task>
@@ -210,7 +210,7 @@ Observation outside the checklist, not planned: the dialog opens unprompted 800m
 </threat_model>
 
 <verification>
-- `cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-304 && npx vitest run components/ui/__tests__/modal.test.tsx app/components/__tests__/ForeverAnnouncementModal.test.tsx` passes with 5 new tests (3 in Task 1, 2 in Task 2) and all 25 pre-existing tests (8 in modal.test.tsx, 17 in the announcement test).
+- `cd <worktree-root> && npx vitest run components/ui/__tests__/modal.test.tsx app/components/__tests__/ForeverAnnouncementModal.test.tsx` passes with 5 new tests (3 in Task 1, 2 in Task 2) and all 25 pre-existing tests (8 in modal.test.tsx, 17 in the announcement test).
 - `npm run lint`, `npm run typecheck`, `npm test` pass from the worktree root.
 - `git diff origin/main --name-only` lists exactly the five files in `files_modified`.
 - `git log origin/main..HEAD --format=%B | grep -c 'Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>'` equals the number of commits (3).

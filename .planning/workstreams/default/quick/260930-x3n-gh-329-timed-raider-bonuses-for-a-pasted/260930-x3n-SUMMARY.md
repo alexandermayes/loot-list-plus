@@ -65,7 +65,7 @@ actuals:
 
 Officers can paste a raid list and give everyone matched one bonus for This week, Next week or custom dates, with a reason. Entries carry start dates, reasons and a shared batch id inside the existing JSONB, one inclusive-window rule drives both the web score and the addon export, and the server rejects malformed maps with a 400. Raiders see each bonus's reason and end date.
 
-All work is in WT `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wtbonus` on `feat/329-timed-raider-bonuses` (base origin/main 4a085a4f). It is committed locally only: nothing pushed, no PR.
+All work is in WT `$SCRATCHPAD/wtbonus` on `feat/329-timed-raider-bonuses` (base origin/main 4a085a4f). It is committed locally only: nothing pushed, no PR.
 
 ## Commits
 
@@ -188,7 +188,7 @@ None beyond the plan's threat model. T-329-01, 02, 03 and 04 are mitigated as pl
 
 ## PR body draft
 
-`/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/pr-x3n-body.md`
+`$SCRATCHPAD/pr-x3n-body.md`
 
 ## Self-Check: PASSED
 

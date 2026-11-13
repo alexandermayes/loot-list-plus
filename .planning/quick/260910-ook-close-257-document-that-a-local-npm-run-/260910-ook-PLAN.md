@@ -38,8 +38,8 @@ Output: a short `### Building locally` subsection in README.md and one atomic co
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/workflows/execute-plan.md
-@/Users/alexander.mayes/Code/loot-list-plus/.claude/gsd-core/templates/summary.md
+@.claude/gsd-core/workflows/execute-plan.md
+@.claude/gsd-core/templates/summary.md
 </execution_context>
 
 <context>

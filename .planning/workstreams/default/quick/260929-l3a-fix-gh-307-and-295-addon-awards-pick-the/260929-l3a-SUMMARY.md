@@ -58,7 +58,7 @@ Addon and companion awards for items in two raid tiers are filed under the tier 
 - **Draft PR #322:** https://github.com/alexandermayes/loot-list-plus/pull/322
 - Base `main`, head `fix/307-295-addon-award-matching`, state OPEN, draft true.
 - Body carries `Refs #307` and `Fixes #295` on their own lines (GitHub lists only #295 as a closing issue), no em dashes, ends with the Claude Code line, and says the companion change needs a companion app release. Follow-ups #319, #320 and #321 are under "Not in this PR".
-- Worktree: `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wt307`, from origin/main 49c06c1c.
+- Worktree: `$SCRATCHPAD/wt307`, from origin/main 49c06c1c.
 
 ## Commits
 

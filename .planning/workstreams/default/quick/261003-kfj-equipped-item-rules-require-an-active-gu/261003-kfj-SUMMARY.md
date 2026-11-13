@@ -195,7 +195,7 @@ No FLAKY lines reported by `new-fails.sh`.
 
 ## PR Body Draft
 
-`/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/pr-body-kfj.md`
+`$SCRATCHPAD/pr-body-kfj.md`
 
 ## Production Catalog Queries (read-only; the user runs these in the Supabase SQL editor, never the executor)
 
@@ -251,7 +251,7 @@ All claimed files and commits verified present:
 - `app/services/__tests__/active-guild-membership-policies-migration.test.ts` (modified)  -  FOUND
 - Commit `2f226474`  -  FOUND in `git log --oneline af3af380..HEAD`
 - Commit `9fc3a83b`  -  FOUND in `git log --oneline af3af380..HEAD`
-- `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/pr-body-kfj.md`  -  FOUND, non-empty, no em dash
+- `$SCRATCHPAD/pr-body-kfj.md`  -  FOUND, non-empty, no em dash
 
 ## Self-Check: PASSED
 

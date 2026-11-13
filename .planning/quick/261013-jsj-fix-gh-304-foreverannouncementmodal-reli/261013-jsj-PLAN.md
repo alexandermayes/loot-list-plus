@@ -5,10 +5,10 @@ type: execute
 wave: 1
 depends_on: []
 files_modified:
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/components/ui/modal.tsx
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/components/ui/__tests__/modal.test.tsx
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/app/components/ForeverAnnouncementModal.tsx
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/app/components/__tests__/ForeverAnnouncementModal.test.tsx
+  - components/ui/modal.tsx
+  - components/ui/__tests__/modal.test.tsx
+  - app/components/ForeverAnnouncementModal.tsx
+  - app/components/__tests__/ForeverAnnouncementModal.test.tsx
 autonomous: true
 requirements:
   - GH-304
@@ -30,15 +30,15 @@ must_haves:
     - "Modal accepts an optional aria-describedby and forwards it to its dialog container; when not passed the attribute is absent, so every other Modal consumer is unchanged"
     - "Approved user-facing copy (title, two paragraphs, CTA, dismiss label) and analytics events are byte-for-byte unchanged"
   artifacts:
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/components/ui/modal.tsx"
+    - path: "components/ui/modal.tsx"
       provides: "ModalProps with optional aria-describedby forwarded to ModalContainer"
       contains: "aria-describedby={ariaDescribedBy}"
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/components/ui/__tests__/modal.test.tsx"
+    - path: "components/ui/__tests__/modal.test.tsx"
       provides: "Test that aria-describedby reaches the dialog element and is absent when omitted"
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/app/components/ForeverAnnouncementModal.tsx"
+    - path: "app/components/ForeverAnnouncementModal.tsx"
       provides: "Announcement rendered directly inside Modal with no nested dialog, no local focus trap, no manual focus restore"
       contains: "aria-describedby={bodyId}"
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/app/components/__tests__/ForeverAnnouncementModal.test.tsx"
+    - path: "app/components/__tests__/ForeverAnnouncementModal.test.tsx"
       provides: "17 tests: single named and described dialog, initial focus on Not now, Tab wrap, focus return, plus the 13 unchanged tests"
   key_links:
     - from: "ForeverAnnouncementModal.tsx"
@@ -65,7 +65,7 @@ Locked constraints carried into every task:
 - TypeScript strict, 2-space indent, trailing commas, `import type` for type-only imports. Comments explain why and cite GH #304.
 - Do not touch app/(app)/AppLayout.client.tsx (it mounts the component with no props; nothing changes there).
 - Do not commit anything under .planning/, do not push, do not open a PR.
-- Work only inside /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357. Never read or write /Users/alexander.mayes/Code/personal/loot-list-plus (another session is committing there).
+- Work only inside <worktree-root>. Never read or write <repo-root> (another session is committing there).
 
 Decomposition note: this quick task uses the orchestrator-defined two-task split (primitive passthrough, then consumer) instead of a tracer task. Task 1 is a strictly additive primitive change proven by a DOM test; Task 2 is the consumer change that exercises it end to end through the real Modal.
 </objective>
@@ -75,10 +75,10 @@ Quick-task execution in a git worktree. The gsd-core workflow files are not pres
 </execution_context>
 
 <context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/components/ui/modal.tsx
-@/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/components/ui/__tests__/modal.test.tsx
-@/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/app/components/ForeverAnnouncementModal.tsx
-@/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/app/components/__tests__/ForeverAnnouncementModal.test.tsx
+@components/ui/modal.tsx
+@components/ui/__tests__/modal.test.tsx
+@app/components/ForeverAnnouncementModal.tsx
+@app/components/__tests__/ForeverAnnouncementModal.test.tsx
 
 Facts verified at planning time (2026-10-13):
 - Branch is fix/304-forever-modal-dialog, working tree clean, HEAD 523e2efe.
@@ -93,10 +93,10 @@ Facts verified at planning time (2026-10-13):
 
 <task type="auto" tdd="true">
   <name>Task 1: Modal forwards an optional aria-describedby to its dialog container</name>
-  <files>/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/components/ui/modal.tsx, /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/components/ui/__tests__/modal.test.tsx</files>
+  <files>components/ui/modal.tsx, components/ui/__tests__/modal.test.tsx</files>
   <read_first>
-    - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/components/ui/modal.tsx (ModalProps interface around line 227, Modal destructure around line 236, ModalContainer JSX around line 414)
-    - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/components/ui/__tests__/modal.test.tsx (first test, for the render pattern and imports)
+    - components/ui/modal.tsx (ModalProps interface around line 227, Modal destructure around line 236, ModalContainer JSX around line 414)
+    - components/ui/__tests__/modal.test.tsx (first test, for the render pattern and imports)
   </read_first>
   <behavior>
     - New test "forwards aria-describedby to the dialog element when passed, and omits it otherwise": render an open Modal with aria-describedby set to the string modal-description, containing a ModalHeader (showCloseButton false) with a ModalTitle "Modal heading" and a ModalBody with id modal-description and the plain text "Body copy". Assert the element from getByRole('dialog') has attribute aria-describedby equal to modal-description and toHaveAccessibleDescription('Body copy'). Then use the `rerender` returned by render to render the same tree without the aria-describedby prop and assert the dialog does not have an aria-describedby attribute (proves existing consumers are unaffected).
@@ -115,7 +115,7 @@ Facts verified at planning time (2026-10-13):
     Commit only these two files with `git add` naming both paths explicitly (never `git add -A` or `git add .`). Commit message subject: feat(modal): forward aria-describedby to the dialog container (GH #304). Body, one or two sentences: Modal now accepts an optional aria-describedby and puts it on its role=dialog container, so a consumer can describe the dialog without nesting a second dialog element. Additive; consumers that omit it render no attribute. End the message with the trailer `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>` as directed by the orchestrator (if the executor's own attribution reminder names a different model, use that reminder's trailer instead).
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357 && npx vitest run components/ui/__tests__/modal.test.tsx && test "$(grep -c 'aria-describedby={ariaDescribedBy}' components/ui/modal.tsx)" = "1" && test "$(git diff 523e2efe -U0 -- components/ui/modal.tsx components/ui/__tests__/modal.test.tsx | grep '^+' | grep -c '—')" = "0"</automated>
+    <automated>cd <worktree-root> && npx vitest run components/ui/__tests__/modal.test.tsx && test "$(grep -c 'aria-describedby={ariaDescribedBy}' components/ui/modal.tsx)" = "1" && test "$(git diff 523e2efe -U0 -- components/ui/modal.tsx components/ui/__tests__/modal.test.tsx | grep '^+' | grep -c '—')" = "0"</automated>
   </verify>
   <done>
     modal.test.tsx has 8 tests and all pass; the new test failed before the modal.tsx change and passes after. modal.tsx contains exactly one aria-describedby={ariaDescribedBy}; ModalProps declares the optional "aria-describedby" string. No added line contains an em dash. One commit on fix/304-forever-modal-dialog touching only these two files.
@@ -124,10 +124,10 @@ Facts verified at planning time (2026-10-13):
 
 <task type="auto" tdd="true">
   <name>Task 2: ForeverAnnouncementModal relies on Modal for dialog role, name, focus trap and focus restore</name>
-  <files>/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/app/components/ForeverAnnouncementModal.tsx, /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/app/components/__tests__/ForeverAnnouncementModal.test.tsx</files>
+  <files>app/components/ForeverAnnouncementModal.tsx, app/components/__tests__/ForeverAnnouncementModal.test.tsx</files>
   <read_first>
-    - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/app/components/ForeverAnnouncementModal.tsx (whole file, 186 lines)
-    - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/app/components/__tests__/ForeverAnnouncementModal.test.tsx (whole file; tests at lines 71-75 and 77-90 are the ones touched or relied on)
+    - app/components/ForeverAnnouncementModal.tsx (whole file, 186 lines)
+    - app/components/__tests__/ForeverAnnouncementModal.test.tsx (whole file; tests at lines 71-75 and 77-90 are the ones touched or relied on)
   </read_first>
   <behavior>
     - Replace the test "focuses the dialog container after open" with "focuses the Not now button after open": render with delayMs 0, await findByRole('dialog', { name: APPROVED.title }), get the button named APPROVED.dismiss, then await waitFor(() => expect(dismissButton).toHaveFocus()).
@@ -163,7 +163,7 @@ Facts verified at planning time (2026-10-13):
     Commit only the two files of this task with `git add` naming both paths explicitly. Commit message subject: fix(forever-modal): use the shared Modal dialog instead of nesting a second one (GH #304). Body, two or three sentences: the announcement rendered its own dialog element, Tab trap and focus restore inside Modal, and its ModalTitle id override left Modal's real dialog without an accessible name. It now renders its header, body and footer straight into Modal, which names it by the title, describes it by the body via aria-describedby, focuses Not now on open and restores focus on close. End with the same Co-Authored-By trailer rule as Task 1.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357 && npx vitest run app/components/__tests__/ForeverAnnouncementModal.test.tsx components/ui/__tests__/modal.test.tsx && npm run typecheck && npx eslint app/components/ForeverAnnouncementModal.tsx app/components/__tests__/ForeverAnnouncementModal.test.tsx components/ui/modal.tsx components/ui/__tests__/modal.test.tsx && test "$(grep -vE '^[[:space:]]*(//|\*|/\*)' app/components/ForeverAnnouncementModal.tsx | grep -cE 'getFocusableElements|previousFocusRef|dialogRef|handleKeyDown|titleId|role="dialog"|aria-modal|tabIndex')" = "0" && test "$(grep -c 'aria-describedby={bodyId}' app/components/ForeverAnnouncementModal.tsx)" = "1" && test "$(grep -c '<ModalTitle>{TITLE}</ModalTitle>' app/components/ForeverAnnouncementModal.tsx)" = "1" && test "$(git diff 523e2efe -U0 -- app/components/ForeverAnnouncementModal.tsx app/components/__tests__/ForeverAnnouncementModal.test.tsx components/ui/modal.tsx components/ui/__tests__/modal.test.tsx | grep '^+' | grep -c '—')" = "0" && git diff 523e2efe --stat</automated>
+    <automated>cd <worktree-root> && npx vitest run app/components/__tests__/ForeverAnnouncementModal.test.tsx components/ui/__tests__/modal.test.tsx && npm run typecheck && npx eslint app/components/ForeverAnnouncementModal.tsx app/components/__tests__/ForeverAnnouncementModal.test.tsx components/ui/modal.tsx components/ui/__tests__/modal.test.tsx && test "$(grep -vE '^[[:space:]]*(//|\*|/\*)' app/components/ForeverAnnouncementModal.tsx | grep -cE 'getFocusableElements|previousFocusRef|dialogRef|handleKeyDown|titleId|role="dialog"|aria-modal|tabIndex')" = "0" && test "$(grep -c 'aria-describedby={bodyId}' app/components/ForeverAnnouncementModal.tsx)" = "1" && test "$(grep -c '<ModalTitle>{TITLE}</ModalTitle>' app/components/ForeverAnnouncementModal.tsx)" = "1" && test "$(git diff 523e2efe -U0 -- app/components/ForeverAnnouncementModal.tsx app/components/__tests__/ForeverAnnouncementModal.test.tsx components/ui/modal.tsx components/ui/__tests__/modal.test.tsx | grep '^+' | grep -c '—')" = "0" && git diff 523e2efe --stat</automated>
   </verify>
   <done>
     ForeverAnnouncementModal.test.tsx has 17 tests and modal.test.tsx has 8; all 25 pass, and the SUMMARY records that the single-dialog and Not-now-focus tests failed before the component change. ForeverAnnouncementModal.tsx renders ModalHeader/ModalBody/ModalFooter directly inside Modal with aria-describedby={bodyId}, ModalTitle has no id, and outside comments no line has the removed helpers, refs, the role/aria-modal/tabIndex wrapper attributes, or titleId. Approved copy constants are unchanged (git diff shows no change to the TITLE, PARAGRAPH_1, PARAGRAPH_2, CTA_LABEL or DISMISS_LABEL lines). typecheck and eslint are clean. No added line in either commit contains an em dash. Two commits total on fix/304-forever-modal-dialog, touching exactly the four planned files; nothing under .planning/ committed; nothing pushed.
@@ -189,7 +189,7 @@ Facts verified at planning time (2026-10-13):
 </threat_model>
 
 <verification>
-From /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357:
+From <worktree-root>:
 - `npx vitest run app/components/__tests__/ForeverAnnouncementModal.test.tsx components/ui/__tests__/modal.test.tsx` passes 25 tests (17 + 8).
 - `npm run typecheck` exits 0.
 - `npx eslint app/components/ForeverAnnouncementModal.tsx app/components/__tests__/ForeverAnnouncementModal.test.tsx components/ui/modal.tsx components/ui/__tests__/modal.test.tsx` exits 0.
@@ -207,5 +207,5 @@ From /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357:
 </success_criteria>
 
 <output>
-Create /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/.planning/quick/261013-jsj-fix-gh-304-foreverannouncementmodal-reli/261013-jsj-SUMMARY.md when done (do not commit it). Include: the two commit hashes and subjects, the RED results for both tasks (which tests failed before each change), final test counts, typecheck and eslint results, the CTA focus-restore behaviour note from Task 2, and any deviation from this plan. No em dashes.
+Create .planning/quick/261013-jsj-fix-gh-304-foreverannouncementmodal-reli/261013-jsj-SUMMARY.md when done (do not commit it). Include: the two commit hashes and subjects, the RED results for both tasks (which tests failed before each change), final test counts, typecheck and eslint results, the CTA focus-restore behaviour note from Task 2, and any deviation from this plan. No em dashes.
 </output>

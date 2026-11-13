@@ -179,7 +179,7 @@ Per Task 3's `<action>`, the guard was proven non-vacuous before shipping. `app/
    × finds no max-w-3xl mx-auto / max-w-4xl mx-auto wrapper literal on the eleven named call sites 69ms
 
  FAIL __tests__/prose-measure.test.ts > prose-measure guard (TYPE-04) > finds no max-w-3xl mx-auto / max-w-4xl mx-auto wrapper literal on the eleven named call sites
-AssertionError: /Users/alexander.mayes/Code/personal/loot-list-plus/app/blog/guild-recruitment-guide-find-raiders-who-stay/page.tsx:128: <div className="max-w-3xl mx-auto">: expected [ { …(3) } ] to have a length of +0 but got 1
+AssertionError: app/blog/guild-recruitment-guide-find-raiders-who-stay/page.tsx:128: <div className="max-w-3xl mx-auto">: expected [ { …(3) } ] to have a length of +0 but got 1
 
 - Expected
 + Received

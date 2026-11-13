@@ -13,7 +13,7 @@ Remove the two uncalled SECURITY DEFINER functions `public.update_guild_icon` an
 
 ## Context
 
-- WT = `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357` (detached at origin/main 523e2efe). All commands run from WT. Never touch `/Users/alexander.mayes/Code/personal/loot-list-plus`. `WT/node_modules` is a symlink to the primary install: never unlink it, never run `npm ci` or `npm install`.
+- WT = `<worktree-root>` (detached at origin/main 523e2efe). All commands run from WT. Never touch `<repo-root>`. `WT/node_modules` is a symlink to the primary install: never unlink it, never run `npm ci` or `npm install`.
 - Definitions: `supabase/migrations/20260101000000_baseline_schema.sql` lines 1124-1195 (owner-only check, comment says only the guild creator can call). Baseline grants at 4559-4567.
 - `supabase/migrations/20260930000200_tighten_function_execute_grants.sql` lines 92-95 (REVOKE/GRANT, service_role only) and 163 (search_path pin on update_guild_info). Forward-only; it and `app/services/__tests__/function-execute-grants-migration.test.ts` stay untouched. That test reads only its own file, plus a scan of later migrations for CREATE FUNCTION without REVOKE (the new file has no CREATE, so it stays green).
 - Only app reference: `lib/database.types.ts` lines 2385-2399. No later migration, policy, trigger or view references either function (grep confirmed), so a drop without CASCADE succeeds.
@@ -109,7 +109,7 @@ Verify GREEN (all from WT):
 
 - No em dashes in any file (migration, test, commit message, PR body). Use plain hyphens or commas.
 - Do not edit any pushed migration, including `20260101000000_baseline_schema.sql` and `20260930000200_tighten_function_execute_grants.sql`, or `function-execute-grants-migration.test.ts`.
-- Do not touch the primary checkout `/Users/alexander.mayes/Code/personal/loot-list-plus`.
+- Do not touch the primary checkout `<repo-root>`.
 - Do not commit planning docs (anything under `.planning/`) on the code branch.
 - Do not run `npm ci` or `npm install`, and do not unlink or replace `WT/node_modules`.
 - Do not use CASCADE, do not change any other function, grant or policy, and do not regenerate `lib/database.types.ts` wholesale.

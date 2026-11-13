@@ -169,7 +169,7 @@ Recorded before any page edit, from the first run of `__tests__/design-system-pa
      × finds no "data-score" anywhere in the page (className, selector, code, or prose) 3ms
 
  FAIL __tests__/design-system-page-absence.test.ts > design-system page absence guard (ENF-03, D-12) > finds no "data-score" anywhere in the page (className, selector, code, or prose)
-AssertionError: /Users/alexander.mayes/Code/personal/loot-list-plus/app/(app)/design-system/_client.tsx:1801: <p>Applied globally to <code className="text-accent">td</code>, <code className="text-accent">th</code>, and <code className="text-accent">[data-score]</code>.</p>: expected [ { …(3) } ] to have a length of +0 but got 1
+AssertionError: app/(app)/design-system/_client.tsx:1801: <p>Applied globally to <code className="text-accent">td</code>, <code className="text-accent">th</code>, and <code className="text-accent">[data-score]</code>.</p>: expected [ { …(3) } ] to have a length of +0 but got 1
 
  Test Files  1 failed (1)
       Tests  1 failed | 9 passed (10)
