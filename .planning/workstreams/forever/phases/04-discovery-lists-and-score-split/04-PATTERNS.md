@@ -4,7 +4,7 @@
 **Files analyzed:** 58 (new and modified, from 04-CONTEXT.md, 04-RESEARCH.md and the 04-UI-SPEC.md component inventory)
 **Analogs found:** 44 / 58 with a usable analog (14 with no close analog or analog located but not excerpted; see "Gaps")
 
-Worktree root: `/private/tmp/claude-502/-Users-alexander-mayes-Code-personal/591e5540-0b79-4b47-9b72-98c27efb51f3/scratchpad/wt-phase-04`. All paths below are relative to it.
+Worktree root: the phase worktree (local path omitted). All paths below are relative to it.
 
 ## File Classification
 
