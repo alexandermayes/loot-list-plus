@@ -86,8 +86,8 @@ Side note from the sample: the 10 sampled characters last logged in about 9 to 1
 
 | Branch | Where | Commits (oldest first) | Content |
 |---|---|---|---|
-| `feat/armory-item-level` (from origin/main 1b8c5b0a) | `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code`, checked out at 8f75416a | a11e3d86 probe; 46ea1f6a writers and types; db7d4dca domain rules; f7f511ce link-battlenet writer; 8f75416a route, panel and tests | probe script plus Tasks 2B and 3; unmerged |
-| `feat/equipped-item-level-migration` (from origin/main 1b8c5b0a) | `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-migration` | 82221093 test anchor; 8e865ed6 migration | migration `20261026120000_equipped_item_level.sql` and its PGlite test; unmerged |
+| `feat/armory-item-level` (from origin/main 1b8c5b0a) | `<worktree-root>`, checked out at 8f75416a | a11e3d86 probe; 46ea1f6a writers and types; db7d4dca domain rules; f7f511ce link-battlenet writer; 8f75416a route, panel and tests | probe script plus Tasks 2B and 3; unmerged |
+| `feat/equipped-item-level-migration` (from origin/main 1b8c5b0a) | `<worktree-root>` | 82221093 test anchor; 8e865ed6 migration | migration `20261026120000_equipped_item_level.sql` and its PGlite test; unmerged |
 | `gsd/quick-261026-wpw-v1-armory-gear-sync-spike-battle-net-cla` | main checkout | bbb8522a, d0cf7e80, bdad5f3c, 655620db, then this commit | PLAN, SPIKE, SUMMARY, STATE |
 
 Migration timestamp `20261026120000`: no `supabase/migrations/20261026*` on origin/main or any origin branch at build time; newest on main is `20261020120000_discovery_schema.sql`. Anchored older test: `app/services/__tests__/discovery-schema-pglite.test.ts` (82221093) asserted the Discovery migration was the newest file on disk; it now asserts the file is present, with a #309 comment, the same fix quick task 261003-kfj made.
@@ -129,8 +129,8 @@ Both sessions' agents are finished; nothing else touches these branches until th
 
 ## Worktrees to detach after the decision
 
-- `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code`
-- `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-migration`
+- `<worktree-root>`
+- `<worktree-root>`
 
 Both contain a `node_modules` symlink to the main checkout; detach them with the git worktree command rather than deleting the folders.
 

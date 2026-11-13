@@ -62,7 +62,7 @@ Base item level per wowhead id, cached in a new service-role-only table and fill
 
 ## Commits (oldest first, nothing pushed)
 
-Branch `feat/equipped-item-level-migration` (worktree `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-migration`):
+Branch `feat/equipped-item-level-migration` (worktree `<worktree-root>`):
 
 | SHA | Subject |
 |-----|---------|
@@ -73,7 +73,7 @@ Branch `feat/equipped-item-level-migration` (worktree `/Users/alexander.mayes/Co
 
 Final migration timestamp: **20261027120000** (unique across origin/main and every ref; orders after 20261026120000). No older test needed anchoring in this task: the whole `app/services/__tests__` directory passed without it, so there is no separate anchoring commit (82221093 from the predecessor remains the only one).
 
-Branch `feat/armory-item-level` (worktree `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code`):
+Branch `feat/armory-item-level` (worktree `<worktree-root>`):
 
 | SHA | Subject |
 |-----|---------|
@@ -92,7 +92,7 @@ Every commit of this task ends with `Co-Authored-By: Claude Fable 5.1 <noreply@a
 Run from the main checkout. It pulls production env to a temporary file outside the repo, runs the probe, then removes the file:
 
 ```
-cd /Users/alexander.mayes/Code/personal/loot-list-plus && vercel env pull /tmp/llp-prod.env --environment=production --yes && node --env-file=/tmp/llp-prod.env --import tsx /Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code/scripts/spikes/item-base-level-spike.ts; rm -f /tmp/llp-prod.env
+cd <repo-root> && vercel env pull /tmp/llp-prod.env --environment=production --yes && node --env-file=/tmp/llp-prod.env --import tsx scripts/spikes/item-base-level-spike.ts; rm -f /tmp/llp-prod.env
 ```
 
 Optional prefixes, placed before `node`: `SPIKE_ITEM_IDS="id1,id2,id3"` (positive integers, deduped, 20 at most; default is one Tier 14, one Tier 15 and one Tier 16 Heroic raid item) and `SPIKE_REGION=eu` (default `us`). Paste the printed JSON back; it contains no names. Expected: `levelFieldPresentOnAll: true` with levels in the MoP raid range.
@@ -113,8 +113,8 @@ Exit codes: 2 bad input or missing variables (names only), 3 privacy self-check 
 
 Use the git worktree command, not deleting folders (each holds a node_modules symlink):
 
-- `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-code`
-- `/Users/alexander.mayes/Code/personal/loot-list-plus-wt-ilvl-migration`
+- `<worktree-root>`
+- `<worktree-root>`
 
 ## Verification (real results)
 

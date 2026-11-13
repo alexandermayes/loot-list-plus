@@ -21,9 +21,9 @@ Three modes:
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/undo.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/ui-brand.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/gate-prompts.md
+@.claude/gsd-core/workflows/undo.md
+@.claude/gsd-core/references/ui-brand.md
+@.claude/gsd-core/references/gate-prompts.md
 </execution_context>
 
 <context>

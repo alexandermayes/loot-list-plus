@@ -476,7 +476,7 @@ A bare `root.findall("url")` (no namespace prefix) silently returns an empty lis
 - `scripts/analytics/pull-gsc.py`, `scripts/analytics/gsc-auth.py`, `scripts/analytics/log-ai-answer.py`, `scripts/analytics/ai-answer-log.csv`, `scripts/analytics/RUNBOOK.md` — read directly this session
 - `.planning/phases/04-verified-guild-case-study/04-PUBLISH-RUNBOOK.md`, `04-SECURITY.md`, `04-COPY-DRAFT.md` — read directly this session
 - `.planning/phases/03-anonymized-product-data-report/03-COPY-DRAFT.md` — read directly this session
-- `/Users/alexander.mayes/Downloads/LootList_30_Day_Search_AI_Sprint.md` — read directly this session (backlog row 14, schedule section, technical acceptance checklist)
+- `~/Downloads/LootList_30_Day_Search_AI_Sprint.md` — read directly this session (backlog row 14, schedule section, technical acceptance checklist)
 - `tsconfig.json`, `vitest.config.ts`, `next.config.ts`, `.git/hooks/pre-push`, `.git/hooks/pre-commit`, `.github/workflows/ci.yml`, `eslint.config.mjs` — read directly this session
 - `git log`, `git diff --stat`, `git rev-list --count`, `git merge-base` against `origin/main..main` — run directly this session
 - `npm run typecheck`, `npm run lint`, `npx vitest run` — run directly this session

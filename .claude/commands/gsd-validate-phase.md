@@ -23,7 +23,7 @@ Output: updated VALIDATION.md + generated test files.
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/validate-phase.md
+@.claude/gsd-core/workflows/validate-phase.md
 </execution_context>
 
 <context>

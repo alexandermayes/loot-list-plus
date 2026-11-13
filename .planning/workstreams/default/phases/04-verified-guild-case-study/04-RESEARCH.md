@@ -256,7 +256,7 @@ Quote block:
   Verified LootList+ customer - Interviewed {Month Year} - [Guild or
   Warcraft Logs profile]
 ```
-*Source: `/Users/alexander.mayes/Downloads/LootList_30_Day_Search_AI_Sprint.md` lines 470-514 and 393-401 (read this session — the user's own sprint plan doc, referenced by CLAUDE.md/STATE.md as the canonical source for this milestone's exact copy templates). Every `{token}` must resolve from the guild's written interview approval, never a placeholder value carried into a shipped page.*
+*Source: `~/Downloads/LootList_30_Day_Search_AI_Sprint.md` lines 470-514 and 393-401 (read this session — the user's own sprint plan doc, referenced by CLAUDE.md/STATE.md as the canonical source for this milestone's exact copy templates). Every `{token}` must resolve from the guild's written interview approval, never a placeholder value carried into a shipped page.*
 
 ### The ten required interview questions (verbatim -- do not paraphrase when the user conducts the interview)
 ```
@@ -377,7 +377,7 @@ No external tool/service dependency beyond what's already installed and verified
 - `.planning/phases/03-anonymized-product-data-report/03-PATTERNS.md`, `03-06-SUMMARY.md`, `03-01-PLAN.md`, `03-05-PLAN.md`, `03-06-PLAN.md` -- publish/robots/sitemap/copy-fidelity conventions
 - `app/research/wow-classic-loot-systems-2026/page.tsx` (full file), `app/research/wow-classic-loot-systems-2026/__tests__/page.test.tsx`, `app/sitemap.ts`, `app/__tests__/sitemap.test.ts`, `app/about/page.tsx`, `app/components/landing/LandingValueProps.tsx`, `app/components/landing/LandingCTA.tsx`, `app/components/landing/LandingNav.tsx`, `app/components/landing/BlogTracker.tsx` -- all read in full or in relevant part this session
 - `.planning/phases/02-checkable-conversion-copy/02-CONTEXT.md`, `02-RESEARCH.md`, `02-COPY-DRAFT.md`, `02-UI-SPEC.md`, `02-VERIFICATION.md`, `02-SECURITY.md` -- D-03/D-04/D-05 verification-line and no-structured-data decisions
-- `/Users/alexander.mayes/Downloads/LootList_30_Day_Search_AI_Sprint.md` (lines 78-120, 393-514, 655-705) -- the sprint plan's exact case-study template, ten interview questions, and "what not to do" list; referenced by CLAUDE.md and STATE.md as the canonical copy source for this milestone
+- `~/Downloads/LootList_30_Day_Search_AI_Sprint.md` (lines 78-120, 393-514, 655-705) -- the sprint plan's exact case-study template, ten interview questions, and "what not to do" list; referenced by CLAUDE.md and STATE.md as the canonical copy source for this milestone
 - `package.json`, `tsconfig.json` -- verified dependency versions and `resolveJsonModule: true`
 
 ### Secondary (MEDIUM confidence)

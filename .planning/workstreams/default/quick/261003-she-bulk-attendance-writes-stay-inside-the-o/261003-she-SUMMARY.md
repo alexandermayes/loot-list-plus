@@ -194,7 +194,7 @@ App-only PR, no migration, independent of the 261003-m45 migration PR (either ca
 
 ## PR Body Draft
 
-`/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/pr-body-she.md`
+`$SCRATCHPAD/pr-body-she.md`
 
 ## Handoff Notes
 
@@ -261,7 +261,7 @@ None beyond the two deviations above.
 - Commit `53f82056`: FOUND
 - Commit `203aa9d3`: FOUND
 - Commit `5e28c6d1`: FOUND
-- `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/pr-body-she.md`: FOUND, non-empty, no em dash
+- `$SCRATCHPAD/pr-body-she.md`: FOUND, non-empty, no em dash
 
 ## Self-Check: PASSED
 

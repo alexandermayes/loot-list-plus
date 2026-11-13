@@ -158,7 +158,7 @@ The red run's FAIL set matched exactly the expected new-rule labels (`0US-RUN-1`
 
 ## PR body draft
 
-`/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/pr-body-0us.md`
+`$SCRATCHPAD/pr-body-0us.md`
 
 ## Production count queries
 
@@ -272,4 +272,4 @@ None - no external service configuration required. The production count queries 
 - FOUND: `supabase/migrations/20261004010000_reserve_run_rules.sql`
 - FOUND: `app/services/__tests__/reserve-run-rules-migration.test.ts`
 - FOUND: commit `a0eca365` in `git log --oneline --all` (branch `fix/reserve-run-rules`)
-- FOUND: `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/pr-body-0us.md`
+- FOUND: `$SCRATCHPAD/pr-body-0us.md`

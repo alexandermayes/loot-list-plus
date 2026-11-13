@@ -5,21 +5,21 @@ type: execute
 wave: 1
 depends_on: []
 files_modified:
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/api-client.ts
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/addon-format.ts
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/stuck-entries.ts
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/sync-status.ts
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/sync-engine.ts
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/index.ts
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/preload/index.ts
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/renderer/App.tsx
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/renderer/components/SyncStatus.tsx
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/renderer/components/PendingQueue.tsx
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/README.md
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/__tests__/api-client.test.ts
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/__tests__/addon-format.test.ts
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/__tests__/stuck-entries.test.ts
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/__tests__/sync-status.test.ts
+  - companion/src/main/api-client.ts
+  - companion/src/main/addon-format.ts
+  - companion/src/main/stuck-entries.ts
+  - companion/src/main/sync-status.ts
+  - companion/src/main/sync-engine.ts
+  - companion/src/main/index.ts
+  - companion/src/preload/index.ts
+  - companion/src/renderer/App.tsx
+  - companion/src/renderer/components/SyncStatus.tsx
+  - companion/src/renderer/components/PendingQueue.tsx
+  - companion/README.md
+  - companion/src/main/__tests__/api-client.test.ts
+  - companion/src/main/__tests__/addon-format.test.ts
+  - companion/src/main/__tests__/stuck-entries.test.ts
+  - companion/src/main/__tests__/sync-status.test.ts
 autonomous: true
 requirements:
   - GH-320
@@ -40,21 +40,21 @@ must_haves:
     - "The user can remove parked entries from the SavedVariables file through a tray menu item and a renderer button; the removed raw entries are appended to cleared-entries.jsonl in userData first, and the action is refused while a pass is running"
     - "A pass in which every request is accepted still ends with pendingAwards 0, pendingAttendance 0, parkedAwards 0, parkedAttendance 0 and lastError null; a pass whose guild-data fetch throws still writes nothing to the SavedVariables file"
   artifacts:
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/api-client.ts"
+    - path: "companion/src/main/api-client.ts"
       provides: "SubmitOutcome { status, error } per submitted index on SubmitResult.outcomes"
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/stuck-entries.ts"
+    - path: "companion/src/main/stuck-entries.ts"
       provides: "classifyRejection, MAX_PERMANENT_ATTEMPTS, StuckStoreData, stuckKey, partitionPending, recordOutcomes, pruneStore, parkedEntries, readStuckStore, writeStuckStore, appendClearedLog"
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/addon-format.ts"
+    - path: "companion/src/main/addon-format.ts"
       provides: "exported pendingAwardIdentity / pendingAttendanceIdentity and removePendingEntries"
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/sync-status.ts"
+    - path: "companion/src/main/sync-status.ts"
       provides: "SyncStatus.parkedAwards / parkedAttendance, describeParked, describeStuck"
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/sync-engine.ts"
+    - path: "companion/src/main/sync-engine.ts"
       provides: "SyncConfig.stateDir, syncNow partition and record steps, clearParkedEntries()"
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/index.ts"
+    - path: "companion/src/main/index.ts"
       provides: "stateDir from app.getPath('userData'), tray menu rebuilt on every status event with a Clear stuck entries item, IPC sync:clearStuck"
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/renderer/components/PendingQueue.tsx"
+    - path: "companion/src/renderer/components/PendingQueue.tsx"
       provides: "Will not be retried section with counts and the Clear stuck entries button"
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/__tests__/stuck-entries.test.ts"
+    - path: "companion/src/main/__tests__/stuck-entries.test.ts"
       provides: "B1-B9: classification, attempt counting, parking, partition, prune, store round trip, cleared log"
   key_links:
     - from: "sync-engine.ts syncNow"
@@ -101,7 +101,7 @@ Out of scope, flag in SUMMARY and PR body, do not implement:
 </design_decisions>
 
 <execution_context>
-Worktree only: every path is under /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320. Start by confirming it is detached at origin/main (`git -C <worktree> status -sb`), then `git fetch origin` and `git switch -c fix/320-companion-stuck-entry-backoff origin/main`. Never read or write anything under /Users/alexander.mayes/Code/personal/loot-list-plus (another session works there). The worktree has no gsd-core; follow this plan directly.
+Worktree only: every path is under <worktree-root>. Start by confirming it is detached at origin/main (`git -C <worktree> status -sb`), then `git fetch origin` and `git switch -c fix/320-companion-stuck-entry-backoff origin/main`. Never read or write anything under <repo-root> (another session works there). The worktree has no gsd-core; follow this plan directly.
 
 Environment facts (verified while planning):
 - `companion/node_modules` and the root `node_modules` are symlinks to the primary checkout's installs and resolve. Never run `npm ci`, `npm install` or `unlink` on them. Check once with `test -e companion/node_modules/typescript/package.json && test -e node_modules/vitest/package.json`.
@@ -114,7 +114,7 @@ Project rules: TypeScript strict, 2-space indent, trailing commas in multi-line 
 </execution_context>
 
 <context>
-Read once each before starting (all under /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320):
+Read once each before starting (all under <worktree-root>):
 - companion/src/main/sync-engine.ts (SyncConfig 23-29, class doc 33-52, syncNow 110-175, writeSyncResult 220-231, readPendingFromSavedVars 233-240, startFileWatcher 242-276)
 - companion/src/main/api-client.ts (SubmitResult 46-57, submitAwards 124-154, submitAttendance 160-196)
 - companion/src/main/addon-format.ts (PendingPair 41-44, SentPending 49-52, identities 164-176, withoutSent 182-196, applyGuildDataToSavedVars 223-237)
@@ -128,7 +128,7 @@ Read once each before starting (all under /Users/alexander.mayes/Code/personal/l
 
 Server facts (read, do not change): app/api/addon/loot-award/route.ts returns 400 for missing guild_id/wowhead_id/character_name, 404 for an unknown item, 500 for lookup or insert failures, 200 with `data.already_recorded` for a repeat; an unknown character name is NOT rejected (saved unlinked). app/api/addon/attendance/route.ts returns 400 for missing fields, 500 when no event could be created; unmatched names are counted, not rejected. lib/addon/sync-tokens.ts returns 401 for a missing/invalid/expired token, 403 for a cross-guild token or a non-officer, 500 for a token lookup failure.
 
-Addon facts (read-only repo /Users/alexander.mayes/Code/personal/loot-list-plus-addon): Core/DB.lua 70-79 documents the pending entry shapes; Modules/Sync.lua 67-78 exports both pending lists wholesale; Sync:ToJSON at 367 serializes every key. Nothing in the addon reads a field the companion might add, and nothing is added by this plan.
+Addon facts (read-only repo <addon-checkout>): Core/DB.lua 70-79 documents the pending entry shapes; Modules/Sync.lua 67-78 exports both pending lists wholesale; Sync:ToJSON at 367 serializes every key. Nothing in the addon reads a field the companion might add, and nothing is added by this plan.
 
 Existing test ids (do not reuse): addon-format P1-P5, R1-R3, C1-C5, W1-W4, S1-S10; api-client A1-A3; sync-status D1-D6, T1-T6.
 </context>
@@ -138,12 +138,12 @@ Existing test ids (do not reuse): addon-format P1-P5, R1-R3, C1-C5, W1-W4, S1-S1
 <task type="auto" tdd="true">
   <name>Task 1: ApiClient reports a per-entry status and error next to the accepted indices (GH #320)</name>
   <files>
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/api-client.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/__tests__/api-client.test.ts
+    companion/src/main/api-client.ts,
+    companion/src/main/__tests__/api-client.test.ts
   </files>
   <read_first>
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/api-client.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/__tests__/api-client.test.ts
+    companion/src/main/api-client.ts,
+    companion/src/main/__tests__/api-client.test.ts
   </read_first>
   <precondition>`test -e companion/node_modules/typescript/package.json && test -e node_modules/vitest/package.json` succeeds from the worktree root, and `npx vitest run companion` passes before any edit (record the count).</precondition>
   <behavior>
@@ -161,7 +161,7 @@ GREEN: in api-client.ts add `export interface SubmitOutcome { status: number | n
 Commit: `fix(companion): report a per-entry status and error from submitAwards and submitAttendance (GH #320)` with the trailer.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320 && npx vitest run companion/src/main/__tests__/api-client.test.ts && (cd companion && npm run typecheck) && npx eslint companion/src/main/api-client.ts companion/src/main/__tests__/api-client.test.ts</automated>
+    <automated>cd <worktree-root> && npx vitest run companion/src/main/__tests__/api-client.test.ts && (cd companion && npm run typecheck) && npx eslint companion/src/main/api-client.ts companion/src/main/__tests__/api-client.test.ts</automated>
   </verify>
   <done>A1-A5 pass (5 tests in the file), companion typecheck and eslint on the two files are clean, one commit on the branch.</done>
 </task>
@@ -169,14 +169,14 @@ Commit: `fix(companion): report a per-entry status and error from submitAwards a
 <task type="auto" tdd="true">
   <name>Task 2: Rejection policy and the userData stuck-entry store, plus identity exports and removePendingEntries (GH #320)</name>
   <files>
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/stuck-entries.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/addon-format.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/__tests__/stuck-entries.test.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/__tests__/addon-format.test.ts
+    companion/src/main/stuck-entries.ts,
+    companion/src/main/addon-format.ts,
+    companion/src/main/__tests__/stuck-entries.test.ts,
+    companion/src/main/__tests__/addon-format.test.ts
   </files>
   <read_first>
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/addon-format.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/__tests__/addon-format.test.ts
+    companion/src/main/addon-format.ts,
+    companion/src/main/__tests__/addon-format.test.ts
   </read_first>
   <behavior>
     addon-format.test.ts (new describe `pending identities and removePendingEntries (GH #320 follow-up)` placed after the acceptedEntries describe; S11 goes inside the existing applyGuildDataToSavedVars describe so it can use savedFile/awardB/night):
@@ -218,7 +218,7 @@ Also export the file names as constants: `STUCK_STORE_FILE = 'stuck-entries.json
 Commit: `fix(companion): classify rejections and track permanent ones in a userData store (GH #320)` with the trailer.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320 && npx vitest run companion/src/main/__tests__/stuck-entries.test.ts companion/src/main/__tests__/addon-format.test.ts && (cd companion && npm run typecheck) && npx eslint companion/src/main/stuck-entries.ts companion/src/main/addon-format.ts companion/src/main/__tests__/stuck-entries.test.ts companion/src/main/__tests__/addon-format.test.ts</automated>
+    <automated>cd <worktree-root> && npx vitest run companion/src/main/__tests__/stuck-entries.test.ts companion/src/main/__tests__/addon-format.test.ts && (cd companion && npm run typecheck) && npx eslint companion/src/main/stuck-entries.ts companion/src/main/addon-format.ts companion/src/main/__tests__/stuck-entries.test.ts companion/src/main/__tests__/addon-format.test.ts</automated>
   </verify>
   <done>B1-B9, I1, I2 and S11 pass alongside the 27 existing addon-format tests (P1-P5, R1-R3, C1-C5, W1-W4, S1-S10); companion typecheck and eslint on the four files are clean; one commit on the branch.</done>
 </task>
@@ -226,14 +226,14 @@ Commit: `fix(companion): classify rejections and track permanent ones in a userD
 <task type="auto" tdd="true">
   <name>Task 3: SyncEngine parks entries after 3 permanent rejections, reports parked counts, and can clear them (GH #320)</name>
   <files>
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/sync-status.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/sync-engine.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/__tests__/sync-status.test.ts
+    companion/src/main/sync-status.ts,
+    companion/src/main/sync-engine.ts,
+    companion/src/main/__tests__/sync-status.test.ts
   </files>
   <read_first>
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/sync-engine.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/sync-status.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/__tests__/sync-status.test.ts
+    companion/src/main/sync-engine.ts,
+    companion/src/main/sync-status.ts,
+    companion/src/main/__tests__/sync-status.test.ts
   </read_first>
   <precondition>Tasks 1 and 2 are committed on the branch (SubmitResult.outcomes and stuck-entries.ts exist).</precondition>
   <behavior>
@@ -262,7 +262,7 @@ GREEN, sync-engine.ts:
 Commit: `fix(companion): park entries after 3 permanent rejections and let the engine clear them (GH #320)` with the trailer.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320 && npx vitest run companion && (cd companion && npm run typecheck) && npx eslint companion/src/main/sync-engine.ts companion/src/main/sync-status.ts companion/src/main/__tests__/sync-status.test.ts</automated>
+    <automated>cd <worktree-root> && npx vitest run companion && (cd companion && npm run typecheck) && npx eslint companion/src/main/sync-engine.ts companion/src/main/sync-status.ts companion/src/main/__tests__/sync-status.test.ts</automated>
   </verify>
   <done>The whole companion suite passes (baseline + A4, A5, B1-B9, I1, I2, S11, D7-D11, T7), companion typecheck is clean (sync-engine.ts compiles against the new SubmitResult, store and status shapes), eslint on the three files is clean, one commit on the branch.</done>
 </task>
@@ -270,17 +270,17 @@ Commit: `fix(companion): park entries after 3 permanent rejections and let the e
 <task type="auto">
   <name>Task 4: Tray, IPC, preload and renderer show parked entries and offer Clear stuck entries (GH #320)</name>
   <files>
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/index.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/preload/index.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/renderer/App.tsx,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/renderer/components/SyncStatus.tsx,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/renderer/components/PendingQueue.tsx
+    companion/src/main/index.ts,
+    companion/src/preload/index.ts,
+    companion/src/renderer/App.tsx,
+    companion/src/renderer/components/SyncStatus.tsx,
+    companion/src/renderer/components/PendingQueue.tsx
   </files>
   <read_first>
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/main/index.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/preload/index.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/renderer/App.tsx,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/src/renderer/components/PendingQueue.tsx
+    companion/src/main/index.ts,
+    companion/src/preload/index.ts,
+    companion/src/renderer/App.tsx,
+    companion/src/renderer/components/PendingQueue.tsx
   </read_first>
   <precondition>Task 3 is committed (SyncEngine.clearParkedEntries, SyncConfig.stateDir and the parked status fields exist).</precondition>
   <action>
@@ -303,7 +303,7 @@ Keep every string exactly as written here; they are listed for owner sign-off in
 Commit: `fix(companion): show parked entries in the tray and renderer with a Clear stuck entries action (GH #320)` with the trailer.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion && npm run typecheck && cd .. && npx eslint companion/src/main/index.ts companion/src/preload/index.ts companion/src/renderer/App.tsx companion/src/renderer/components/SyncStatus.tsx companion/src/renderer/components/PendingQueue.tsx && npx vitest run companion</automated>
+    <automated>cd companion && npm run typecheck && cd .. && npx eslint companion/src/main/index.ts companion/src/preload/index.ts companion/src/renderer/App.tsx companion/src/renderer/components/SyncStatus.tsx companion/src/renderer/components/PendingQueue.tsx && npx vitest run companion</automated>
   </verify>
   <done>Companion typecheck (main, preload, renderer) is clean, eslint on the five files is clean, the companion suite still passes, one commit on the branch. The tray menu is rebuilt on every status event and has an enabled "Clear stuck entries" item only when parked entries exist; the renderer shows a "Will not be retried" card with the button.</done>
 </task>
@@ -311,10 +311,10 @@ Commit: `fix(companion): show parked entries in the tray and renderer with a Cle
 <task type="auto">
   <name>Task 5: README paragraph, full verification, and the PR (GH #320)</name>
   <files>
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/README.md
+    companion/README.md
   </files>
   <read_first>
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320/companion/README.md
+    companion/README.md
   </read_first>
   <precondition>Tasks 1-4 are committed on fix/320-companion-stuck-entry-backoff.</precondition>
   <action>
@@ -329,7 +329,7 @@ Push the branch and open ONE PR to main with `gh pr create --base main --head fi
 Write SUMMARY.md next to this PLAN.md in the scratchpad (not inside any git checkout) with: branch, commit list with hashes, verification results, the sign-off string list, deviations, flags. Then report back.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320 && npm run lint && npm run typecheck && (cd companion && npm run typecheck) && npx vitest run companion && test -z "$(git diff --name-only origin/main..HEAD | xargs grep -ln $'\xe2\x80\x94')" && gh pr view --json url -q .url</automated>
+    <automated>cd <worktree-root> && npm run lint && npm run typecheck && (cd companion && npm run typecheck) && npx vitest run companion && test -z "$(git diff --name-only origin/main..HEAD | xargs grep -ln $'\xe2\x80\x94')" && gh pr view --json url -q .url</automated>
   </verify>
   <done>All four check commands clean, no em dash bytes in touched files or commit messages, five commits on the branch, one open PR to main referencing #320 with the required closing line, SUMMARY.md written in the scratchpad.</done>
 </task>
@@ -388,7 +388,7 @@ Every new describe block title ends with `(GH #320 follow-up)` so the suite read
 </threat_model>
 
 <verification>
-From /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320 on branch fix/320-companion-stuck-entry-backoff:
+From <worktree-root> on branch fix/320-companion-stuck-entry-backoff:
 - `npm run lint` clean
 - `npm run typecheck` clean (root; does not cover companion)
 - `cd companion && npm run typecheck` clean (main, preload, renderer)
@@ -408,5 +408,5 @@ From /Users/alexander.mayes/Code/personal/loot-list-plus-wt-320 on branch fix/32
 </success_criteria>
 
 <output>
-Write `SUMMARY.md` next to this file in the scratchpad (/private/tmp/claude-502/-Users-alexander-mayes-Code-personal-loot-list-plus/3a423c1f-0a32-45cd-8cde-77c0a14c7e60/scratchpad/plans/261016-lcr-follow-up-to-gh-320-companion-stops-retr/SUMMARY.md), never inside a git checkout. The orchestrator handles any planning-docs PR.
+Write `SUMMARY.md` next to this file in the scratchpad ($SCRATCHPAD/plans/261016-lcr-follow-up-to-gh-320-companion-stops-retr/SUMMARY.md), never inside a git checkout. The orchestrator handles any planning-docs PR.
 </output>

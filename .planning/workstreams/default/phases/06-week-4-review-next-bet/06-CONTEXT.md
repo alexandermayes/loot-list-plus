@@ -57,7 +57,7 @@ An internal, evidence-backed written review (`06-REVIEW.md`) that closes the Sea
 - `.planning/workstreams/default/ROADMAP.md` §Phase 6: goal, 4 success criteria, dependencies on Phases 1 and 5
 - `.planning/workstreams/default/REQUIREMENTS.md`: MEAS-03
 - `.planning/PROJECT.md`: core value metric (7-day activated guilds per weekly cohort, +30% target), privacy and copy constraints
-- `/Users/alexander.mayes/Downloads/LootList_30_Day_Search_AI_Sprint.md` §"September 20–24: Measure and choose the next bet", item 15 in the plan table, the §GSC query groups ("Review queries with meaningful impressions and positions 4–20. Improve the page already earning impressions before creating a new page"), and §"Weekly Google and AI-answer test set" (the 6 verbatim prompts)
+- `~/Downloads/LootList_30_Day_Search_AI_Sprint.md` §"September 20–24: Measure and choose the next bet", item 15 in the plan table, the §GSC query groups ("Review queries with meaningful impressions and positions 4–20. Improve the page already earning impressions before creating a new page"), and §"Weekly Google and AI-answer test set" (the 6 verbatim prompts)
 
 ### Baseline and AI-answer instruments (Phase 1)
 - `.planning/workstreams/default/phases/01-measurement-baseline-ai-answer-log/01-CONTEXT.md`: D-01 (3 surfaces, 18 cells), D-02 (human-run, never fabricated), D-03 (partial data labelled, never approximated)

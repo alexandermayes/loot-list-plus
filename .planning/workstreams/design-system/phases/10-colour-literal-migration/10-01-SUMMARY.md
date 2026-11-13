@@ -216,10 +216,10 @@ Guard was first confirmed **green** against the committed (post-Task-2) state of
      × finds no numeric rgb()/rgba() call in the faction toggle
 
 FAIL __tests__/faction-color-literals.test.ts > faction-color-literal guard (COLOR-04) > finds no Tailwind blue/red palette colour class in the faction toggle
-AssertionError: /Users/.../app/(app)/guild-settings/components/GuildSettingsContent.tsx:566: ? 'border-blue-500 bg-blue-500/20': expected [ { …(3) } ] to have a length of +0 but got 1
+AssertionError: <home>/app/(app)/guild-settings/components/GuildSettingsContent.tsx:566: ? 'border-blue-500 bg-blue-500/20': expected [ { …(3) } ] to have a length of +0 but got 1
 
 FAIL __tests__/faction-color-literals.test.ts > faction-color-literal guard (COLOR-04) > finds no numeric rgb()/rgba() call in the faction toggle
-AssertionError: /Users/.../app/(app)/guild-settings/components/GuildSettingsContent.tsx:603: border-color: rgb(59, 130, 246);: expected [ { …(3) } ] to have a length of +0 but got 1
+AssertionError: <home>/app/(app)/guild-settings/components/GuildSettingsContent.tsx:603: border-color: rgb(59, 130, 246);: expected [ { …(3) } ] to have a length of +0 but got 1
 
 Test Files  1 failed (1)
      Tests  2 failed | 1 passed (3)

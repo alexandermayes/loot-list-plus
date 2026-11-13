@@ -125,17 +125,17 @@ Output: branches fix/300-companion-auth-table and fix/300-companion-auth, each w
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/execute-plan.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/templates/summary.md
+@.claude/gsd-core/workflows/execute-plan.md
+@.claude/gsd-core/templates/summary.md
 </execution_context>
 
 <context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/CLAUDE.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/default/STATE.md
+@.claude/CLAUDE.md
+@.planning/workstreams/default/STATE.md
 
 Names used below (the shell does not keep variables between Bash calls, so spell the full paths in commands):
-- REPO = /Users/alexander.mayes/Code/personal/loot-list-plus (main checkout, on docs/273-debug-resolved; planning docs only)
-- SCR = /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad
+- REPO = <repo-root> (main checkout, on docs/273-debug-resolved; planning docs only)
+- SCR = $SCRATCHPAD
 - WT_TABLE = SCR/wt300-table (new worktree, new branch fix/300-companion-auth-table from origin/main)
 - WT = SCR/wt300 (new worktree, new branch fix/300-companion-auth from fix/300-companion-auth-table)
 - PGL = SCR/pglite-300 (scratchpad-only PGlite harness)
@@ -295,7 +295,7 @@ Verify, commit, PR:
 - gh pr create --draft --base main --head fix/300-companion-auth-table --title "feat(db): add addon_auth_codes table for companion app login (#300)" --body-file SCR/pr300-table-body.md. Record the PR number for Task 3.
   </action>
   <verify>
-    <automated>cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wt300-table && npx vitest run app/services/__tests__/addon-auth-codes-migration.test.ts && npx tsc --noEmit && npx eslint app/services/__tests__/addon-auth-codes-migration.test.ts && test "$(git diff --name-only origin/main...HEAD | tr '\n' ' ')" = "app/services/__tests__/addon-auth-codes-migration.test.ts supabase/migrations/20260928180000_create_addon_auth_codes.sql " && test "$(git log origin/main..HEAD --format=%H | wc -l | tr -d ' ')" = "$(git log origin/main..HEAD --format=%B | grep -c '^Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>$')" && node /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/pglite-300/scenarios.mjs && gh pr view fix/300-companion-auth-table --json isDraft,baseRefName,title,body --jq '[.isDraft, (.baseRefName == "main"), ((.title + " " + .body) | test("(?i)(fix(e[sd])?|close[sd]?|resolve[sd]?) #300") | not), ((.title + .body) | contains("—") | not), (.body | rtrimstr("\n") | endswith("🤖 Generated with [Claude Code](https://claude.com/claude-code)"))] | all' | grep -qx true</automated>
+    <automated>cd $SCRATCHPAD/wt300-table && npx vitest run app/services/__tests__/addon-auth-codes-migration.test.ts && npx tsc --noEmit && npx eslint app/services/__tests__/addon-auth-codes-migration.test.ts && test "$(git diff --name-only origin/main...HEAD | tr '\n' ' ')" = "app/services/__tests__/addon-auth-codes-migration.test.ts supabase/migrations/20260928180000_create_addon_auth_codes.sql " && test "$(git log origin/main..HEAD --format=%H | wc -l | tr -d ' ')" = "$(git log origin/main..HEAD --format=%B | grep -c '^Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>$')" && node $SCRATCHPAD/pglite-300/scenarios.mjs && gh pr view fix/300-companion-auth-table --json isDraft,baseRefName,title,body --jq '[.isDraft, (.baseRefName == "main"), ((.title + " " + .body) | test("(?i)(fix(e[sd])?|close[sd]?|resolve[sd]?) #300") | not), ((.title + .body) | contains("—") | not), (.body | rtrimstr("\n") | endswith("🤖 Generated with [Claude Code](https://claude.com/claude-code)"))] | all' | grep -qx true</automated>
   </verify>
   <done>WT_TABLE is on fix/300-companion-auth-table with exactly two changed files in one trailer-bearing commit. The shape test passes, and each of the four mutants made it fail. PGlite S1-S10 all print PASS. The full suite, tsc and eslint pass against the baseline. The branch is pushed, and a DRAFT PR against main exists with no closing keyword for #300, no em dash, and the Claude Code last line. Its number is recorded. Nothing is merged and no real database was touched.</done>
 </task>
@@ -355,7 +355,7 @@ H. Tests: lib/addon/__tests__/fake-addon-db.ts (not a test file). It is an in-me
 Commit in two or three focused commits (for example: lib helpers plus tests; auth routes plus attendance plus e2e; picker plus CSP), each ending with the trailer. Do not push yet.
   </action>
   <verify>
-    <automated>cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wt300 && npx vitest run lib/addon app/api/addon/auth app/companion && npx tsc --noEmit && npx eslint lib/addon app/api/addon/auth app/companion app/api/addon/attendance/route.ts next.config.ts && grep -v '^[[:space:]]*//' next.config.ts | grep -c "form-action 'self' lootlistplus:" | grep -qx 1</automated>
+    <automated>cd $SCRATCHPAD/wt300 && npx vitest run lib/addon app/api/addon/auth app/companion && npx tsc --noEmit && npx eslint lib/addon app/api/addon/auth app/companion app/api/addon/attendance/route.ts next.config.ts && grep -v '^[[:space:]]*//' next.config.ts | grep -c "form-action 'self' lootlistplus:" | grep -qx 1</automated>
   </verify>
   <done>The tracer path works end to end in tests: authorize GET, picker, consent POST 303 with a code, token exchange, and Bearer on /api/addon/attendance. Every PKCE, Bearer-helper and picker behaviour above passes and was observed failing first. The page shows only signed-off copy. CSP form-action allows lootlistplus:. tsc and eslint are clean. There are two or three commits, each with the trailer, not pushed.</done>
 </task>
@@ -386,7 +386,7 @@ Commit in two or three focused commits (for example: lib helpers plus tests; aut
 10. Write REPO/.planning/workstreams/default/quick/260928-iom-fix-gh-300-companion-app-oauth-pkce-logi/260928-iom-SUMMARY.md (planning docs only; do not commit code in REPO). Include both PR numbers, the baselines, the mutants, the PGlite output, the merge-tree result and the copy as shipped.
   </action>
   <verify>
-    <automated>cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wt300 && npx vitest run && npx tsc --noEmit && npx eslint $(git diff --name-only origin/fix/300-companion-auth-table...HEAD -- '*.ts' '*.tsx') && test "$(git diff --name-only origin/fix/300-companion-auth-table...HEAD | wc -l | tr -d ' ')" = "19" && test -z "$(git diff --name-only origin/fix/300-companion-auth-table...HEAD -- supabase companion addon package.json package-lock.json app/api/addon/import-string app/api/addon/guild-data/__tests__ app/api/addon/export-string/__tests__)" && test "$(git diff origin/fix/300-companion-auth-table...HEAD -- app/api/addon/guild-data/route.ts | grep -c '^[-+][^-+]')" -le 20 && test "$(git diff origin/fix/300-companion-auth-table...HEAD -- app/api/addon/export-string/route.ts | grep -c '^[-+][^-+]')" -le 18 && test "$(git log origin/fix/300-companion-auth-table..HEAD --format=%H | wc -l | tr -d ' ')" = "$(git log origin/fix/300-companion-auth-table..HEAD --format=%B | grep -c '^Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>$')" && gh pr view fix/300-companion-auth --json isDraft,baseRefName,title,body --jq '[.isDraft, (.baseRefName == "fix/300-companion-auth-table"), (.body | contains("Fixes #300")), ((.title + .body) | contains("—") | not), (.body | rtrimstr("\n") | endswith("🤖 Generated with [Claude Code](https://claude.com/claude-code)"))] | all' | grep -qx true</automated>
+    <automated>cd $SCRATCHPAD/wt300 && npx vitest run && npx tsc --noEmit && npx eslint $(git diff --name-only origin/fix/300-companion-auth-table...HEAD -- '*.ts' '*.tsx') && test "$(git diff --name-only origin/fix/300-companion-auth-table...HEAD | wc -l | tr -d ' ')" = "19" && test -z "$(git diff --name-only origin/fix/300-companion-auth-table...HEAD -- supabase companion addon package.json package-lock.json app/api/addon/import-string app/api/addon/guild-data/__tests__ app/api/addon/export-string/__tests__)" && test "$(git diff origin/fix/300-companion-auth-table...HEAD -- app/api/addon/guild-data/route.ts | grep -c '^[-+][^-+]')" -le 20 && test "$(git diff origin/fix/300-companion-auth-table...HEAD -- app/api/addon/export-string/route.ts | grep -c '^[-+][^-+]')" -le 18 && test "$(git log origin/fix/300-companion-auth-table..HEAD --format=%H | wc -l | tr -d ' ')" = "$(git log origin/fix/300-companion-auth-table..HEAD --format=%B | grep -c '^Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>$')" && gh pr view fix/300-companion-auth --json isDraft,baseRefName,title,body --jq '[.isDraft, (.baseRefName == "fix/300-companion-auth-table"), (.body | contains("Fixes #300")), ((.title + .body) | contains("—") | not), (.body | rtrimstr("\n") | endswith("🤖 Generated with [Claude Code](https://claude.com/claude-code)"))] | all' | grep -qx true</automated>
     <human-check>After both PRs merge and deploy (user-run, not the executor): in a dev build of the companion, click Login, sign in with Discord in the popup, pick a guild on the "Choose a guild to sync" page, and confirm the companion shows the guild name, a sync completes, and one addon loot award appears in that guild's loot history. Then call /api/addon/guild-data with the same token and another guild's id, and confirm a 403.</human-check>
   </verify>
   <done>All four addon routes use authenticateAddonRequest plus authorizeAddonGuild, and the wiring tests prove the guild scope and officer check on each. guild-data and export-string diffs are limited to the import lines, the two auth blocks and the one doc line. POST /api/addon/sync-token issues through issueSyncToken with unchanged responses. The auth endpoints are in the Upstash 'auth' bucket. The full suite (against the baseline), tsc and eslint pass. There are exactly 19 files changed against the table branch. The branch is pushed, and a DRAFT PR 2 against fix/300-companion-auth-table contains "Fixes #300", the merge-tree result and the signed-off copy, with no em dash and the Claude Code last line. The SUMMARY is written. Nothing is merged, --admin is not used, main is untouched and no real database was queried.</done>
@@ -440,5 +440,5 @@ Commit in two or three focused commits (for example: lib helpers plus tests; aut
 </success_criteria>
 
 <output>
-Create /Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/default/quick/260928-iom-fix-gh-300-companion-app-oauth-pkce-logi/260928-iom-SUMMARY.md when done.
+Create .planning/workstreams/default/quick/260928-iom-fix-gh-300-companion-app-oauth-pkce-logi/260928-iom-SUMMARY.md when done.
 </output>

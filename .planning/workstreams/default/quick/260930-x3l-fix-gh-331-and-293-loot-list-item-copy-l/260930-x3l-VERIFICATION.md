@@ -30,7 +30,7 @@ human_verification:
 **Verified:** 2026-10-01
 **Status:** human_needed (every automated check passed; four UI flows still need a person)
 **Re-verification:** No, initial verification
-**Code:** WT `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wtdup`, branch `fix/331-293-item-copy-limits`, HEAD 75ea2713, merge-base origin/main 01d4eb0a, 4 commits, no upstream (not pushed). The working tree was clean before and after verification.
+**Code:** WT `$SCRATCHPAD/wtdup`, branch `fix/331-293-item-copy-limits`, HEAD 75ea2713, merge-base origin/main 01d4eb0a, 4 commits, no upstream (not pushed). The working tree was clean before and after verification.
 
 ## Goal Achievement
 

@@ -136,7 +136,7 @@ Diff: exactly one removed line, confirmed by `git diff HEAD~1 -- app/globals.css
 **Red mode 1 — reintroducing the deleted selector fails the absence assertion, naming the file and line:**
 ```
 FAIL __tests__/data-score-absence.test.ts > data-score absence guard (SURF-02) > finds no [data-score] selector in app/globals.css
-AssertionError: /Users/alexander.mayes/Code/personal/loot-list-plus/app/globals.css:364: [data-score],: expected [ { …(3) } ] to have a length of +0 but got 1
+AssertionError: app/globals.css:364: [data-score],: expected [ { …(3) } ] to have a length of +0 but got 1
 ```
 
 **Red mode 2 — deleting the whole rule block fails both survival assertions:**

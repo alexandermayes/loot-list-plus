@@ -19,8 +19,8 @@ Routes to the profile-user workflow which orchestrates the full flow: consent ga
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/profile-user.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/references/ui-brand.md
+@.claude/gsd-core/workflows/profile-user.md
+@.claude/gsd-core/references/ui-brand.md
 </execution_context>
 
 <context>

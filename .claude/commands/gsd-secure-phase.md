@@ -23,7 +23,7 @@ Output: updated SECURITY.md.
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/secure-phase.md
+@.claude/gsd-core/workflows/secure-phase.md
 </execution_context>
 
 <context>

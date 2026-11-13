@@ -78,7 +78,7 @@ After the migration: anon can execute 10 functions, authenticated 14, service_ro
 | npx tsc --noEmit | clean (exit 0) | clean (exit 0) |
 | eslint on the new test file | n/a | clean (exit 0) |
 
-The known intermittent 5s timeout in `__tests__/quality-brand-token-parity.test.ts` did not appear in either run. Output files: SP/baseline-wcr-vitest.txt, SP/baseline-wcr-tsc.txt, SP/final-wcr-vitest.txt, SP/final-wcr-tsc.txt, SP/final-wcr-eslint.txt, where SP = /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad.
+The known intermittent 5s timeout in `__tests__/quality-brand-token-parity.test.ts` did not appear in either run. Output files: SP/baseline-wcr-vitest.txt, SP/baseline-wcr-tsc.txt, SP/final-wcr-vitest.txt, SP/final-wcr-tsc.txt, SP/final-wcr-eslint.txt, where SP = $SCRATCHPAD.
 
 ### PGlite proof (0 FAIL in every run)
 

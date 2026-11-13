@@ -99,7 +99,7 @@ Legacy note (D-04): a custom role at position 50 or above, which the current UI 
 | npx eslint --max-warnings 0 (changed files) | n/a | exit 0, no output |
 | Text gates (added lines and commit messages, guarded non-empty diff) | n/a | no em dash, vocabulary gate clean |
 
-Output files (scratchpad = `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad`):
+Output files (scratchpad = `$SCRATCHPAD`):
 - `baseline-qzn-vitest.txt`, `baseline-qzn-tsc.txt`
 - `final-qzn-vitest.txt`, `final-qzn-tsc.txt`, `final-qzn-eslint.txt`, `final-qzn-diff.txt`
 

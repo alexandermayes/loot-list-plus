@@ -136,7 +136,7 @@ if args.start != WINDOW_START or args.end != WINDOW_END:
 ### WR-02: `resolve_output_path`'s traversal guard doesn't confine output to `OUTPUT_DIR` for absolute paths
 
 **File:** `scripts/analytics/research_report.py:523-534`
-**Issue:** The function only rejects a literal `..` path segment and only joins onto `OUTPUT_DIR` when the given path has no separator at all. An absolute path (e.g. `--json /tmp/whatever.json` or, worse, a typo like `--json /Users/shared/aggregates.json`) contains no `..` segment and already contains `os.sep`, so it passes through untouched — the function's own docstring ("reuses gsc_export.resolve_export_path's guard shape... rejects a `..` path segment") implies stronger confinement than it actually provides.
+**Issue:** The function only rejects a literal `..` path segment and only joins onto `OUTPUT_DIR` when the given path has no separator at all. An absolute path (e.g. `--json /tmp/whatever.json` or, worse, a typo like `--json /<users-dir>/shared/aggregates.json`) contains no `..` segment and already contains `os.sep`, so it passes through untouched — the function's own docstring ("reuses gsc_export.resolve_export_path's guard shape... rejects a `..` path segment") implies stronger confinement than it actually provides.
 **Fix:**
 ```python
 def resolve_output_path(path):

@@ -137,7 +137,7 @@ All five Open Decisions (OD-1 through OD-5) resolved to option A as recommended;
 
 **Stripe port instantiation (D-01):** confirmed directly. `getStripe()`'s real `Stripe` instance is passed straight into `endGuildBillingBeforeDelete` in both `app/api/guilds/route.ts` and `app/api/guilds/delete/route.ts` with no cast and no two-line adapter object. `npx tsc --noEmit` accepted it as-is, the same finding quick task 260921-w4u made for `StripeResumePort`.
 
-**PR body:** `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/d08e3d4d-0791-40f5-b5d0-31ab44981efd/scratchpad/pr-body-gxl.md`.
+**PR body:** `$SCRATCHPAD/pr-body-gxl.md`.
 
 ## Deviations from Plan
 

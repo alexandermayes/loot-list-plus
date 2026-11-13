@@ -122,15 +122,15 @@ I compared each catalog's top-level raid names with EXPANSION_PHASES by exact st
 </audit_findings>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/execute-plan.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/templates/summary.md
+@.claude/gsd-core/workflows/execute-plan.md
+@.claude/gsd-core/templates/summary.md
 </execution_context>
 
 <context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/CLAUDE.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/default/STATE.md
+@.claude/CLAUDE.md
+@.planning/workstreams/default/STATE.md
 
-WORKTREE (all code work happens here): /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wt279 (abbreviated WT below), on new branch fix/279-aq20-phase created from origin/main. Every repo-relative path in this plan is relative to WT. The main checkout at /Users/alexander.mayes/Code/personal/loot-list-plus is on docs/273-debug-resolved, based on a local main that has diverged by hundreds of commits and is checked out in another session's worktree. Do NOT read application code from it and do NOT edit or commit code there. Read source from WT (or with `git show origin/main:<path>`). Shell cwd resets between Bash calls, so prefix every command with `cd WT &&` or use `git -C WT`.
+WORKTREE (all code work happens here): $SCRATCHPAD/wt279 (abbreviated WT below), on new branch fix/279-aq20-phase created from origin/main. Every repo-relative path in this plan is relative to WT. The main checkout at <repo-root> is on docs/273-debug-resolved, based on a local main that has diverged by hundreds of commits and is checked out in another session's worktree. Do NOT read application code from it and do NOT edit or commit code there. Read source from WT (or with `git show origin/main:<path>`). Shell cwd resets between Bash calls, so prefix every command with `cd WT &&` or use `git -C WT`.
 
 Facts verified at plan time against origin/main f1c9beee (no need to re-check):
 - data/expansion-phases.ts: `EXPANSION_PHASES.classic` holds six entries shaped as phase, name, raids. The Phase 4 entry's raids array is the single orphan string (double-quoted, because of the apostrophe). The neighbouring Phase 5 entry is "Temple of Ahn'Qiraj". Exports: EXPANSION_PHASES, getExpansionSlug(expansionName) (maps 'Classic' and 'Classic WoW' to 'classic', and 'The Burning Crusade', 'Wrath of the Lich King', 'Cataclysm', 'Mists of Pandaria' to tbc, wrath, cata, mop; no 'Forever' key), getExpansionPhases, getMaxPhase. No test imports this file today.
@@ -165,9 +165,9 @@ New migration: supabase/migrations/20260927120000_backfill_aq20_raid_tier_phase.
   </behavior>
   <action>
 Step 0, worktree setup (once, before anything else):
-- Run `git -C /Users/alexander.mayes/Code/personal/loot-list-plus fetch origin main`.
-- Run `git -C /Users/alexander.mayes/Code/personal/loot-list-plus worktree add -b fix/279-aq20-phase WT origin/main`, with WT as the absolute scratchpad path from the context block. If the branch or directory already exists, STOP and report. Do not reset, delete or reuse it.
-- Symlink the dependencies: `ln -s /Users/alexander.mayes/Code/personal/loot-list-plus/node_modules WT/node_modules`.
+- Run `git -C <repo-root> fetch origin main`.
+- Run `git -C <repo-root> worktree add -b fix/279-aq20-phase WT origin/main`, with WT as the absolute scratchpad path from the context block. If the branch or directory already exists, STOP and report. Do not reset, delete or reuse it.
+- Symlink the dependencies: `ln -s node_modules WT/node_modules`.
 - Confirm the latest migration with `git -C WT ls-tree --name-only HEAD supabase/migrations/`. If anything sorts after 20260926233000_add_classic_missing_loot.sql, choose a later UTC timestamp and use that file name everywhere this plan says 20260927120000_backfill_aq20_raid_tier_phase.sql.
 - Record a baseline with `cd WT && npx vitest run 2>&1 | tail -30`. Note any failing test names in the SUMMARY so Task 3 can tell pre-existing failures from new ones. If vitest cannot start because the symlinked node_modules does not match origin/main's package-lock.json, STOP and report. Do not run npm install inside the main checkout.
 
@@ -211,7 +211,7 @@ Do not run any of these queries, the migration, supabase db push, scripts/run-sq
 Run the test file until it is green. Commit only the three files in WT, with the message "fix(279): seed Ruins of Ahn'Qiraj into Classic Phase 4 and backfill existing tiers" and a body of 2-4 lines, ending with the exact trailer line from the orchestrator brief: Co-Authored-By, then Claude Opus 5.5, then noreply@anthropic.com wrapped in angle brackets (write real angle brackets in the commit, not HTML entities)
   </action>
   <verify>
-    <automated>cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wt279 && npx vitest run app/services/__tests__/aq20-phase-backfill-migration.test.ts</automated>
+    <automated>cd $SCRATCHPAD/wt279 && npx vitest run app/services/__tests__/aq20-phase-backfill-migration.test.ts</automated>
   </verify>
   <done>The worktree exists on fix/279-aq20-phase from origin/main, with node_modules symlinked. The new test file failed before the fix and passes after it. data/expansion-phases.ts differs from origin/main only in the Phase 4 raid name and the one comment (`git -C WT diff origin/main -- data/expansion-phases.ts` shows exactly that). The migration is one comment-documented UPDATE with three commented verification queries. One commit on fix/279-aq20-phase carries the Co-Authored-By trailer. Baseline vitest failures, if any, are recorded.</done>
 </task>
@@ -249,7 +249,7 @@ Mutation check (not committed):
 Commit the test file with the message "test(279): require every seeded raid to resolve to a phase" and the same Co-Authored-By trailer as Task 1.
   </action>
   <verify>
-    <automated>cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wt279 && npx vitest run app/services/__tests__/raid-phase-coverage.test.ts && git status --porcelain data/</automated>
+    <automated>cd $SCRATCHPAD/wt279 && npx vitest run app/services/__tests__/raid-phase-coverage.test.ts && git status --porcelain data/</automated>
   </verify>
   <done>The coverage test passes on the fixed data. The mutation check showed it failing on the reverted name (the SUMMARY records which it blocks failed). data/ is clean after the restore. A second commit carries the trailer. INTENTIONALLY_UNPHASED_RAIDS is empty with its explanatory comment.</done>
 </task>
@@ -266,7 +266,7 @@ All commands run in WT.
 3. Run `npx eslint data/expansion-phases.ts app/services/__tests__/aq20-phase-backfill-migration.test.ts app/services/__tests__/raid-phase-coverage.test.ts`. eslint does not lint .sql files, so leave the migration out of this command.
 4. Do NOT apply the migration anywhere: no supabase db push, no scripts/run-sql.ts, no psql, and no Supabase Management API call.
 5. Push only the fix branch: `git -C WT push -u origin fix/279-aq20-phase`. Never push to main, never merge, never pass --admin.
-6. Write the PR body to /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/pr279-body.md. Keep it concise, in plain voice, with no em dashes. Sections:
+6. Write the PR body to $SCRATCHPAD/pr279-body.md. Keep it concise, in plain voice, with no em dashes. Sections:
    - Summary: the Phase 4 name mismatch and its effect. Include that Phase 4 could not be selected at all and that AQ20 had no toggle.
    - "Fixes #279" on its own line.
    - What changed: the data fix, the migration (phase only, idempotent) and the two tests.
@@ -280,7 +280,7 @@ All commands run in WT.
 8. Record the PR URL in the SUMMARY.
   </action>
   <verify>
-    <automated>cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wt279 && npx tsc --noEmit && npx eslint data/expansion-phases.ts app/services/__tests__/aq20-phase-backfill-migration.test.ts app/services/__tests__/raid-phase-coverage.test.ts && gh pr view fix/279-aq20-phase --json isDraft,baseRefName,headRefName,body --jq '[.isDraft, .baseRefName, .headRefName, (.body | contains("Fixes #279"))]'</automated>
+    <automated>cd $SCRATCHPAD/wt279 && npx tsc --noEmit && npx eslint data/expansion-phases.ts app/services/__tests__/aq20-phase-backfill-migration.test.ts app/services/__tests__/raid-phase-coverage.test.ts && gh pr view fix/279-aq20-phase --json isDraft,baseRefName,headRefName,body --jq '[.isDraft, .baseRefName, .headRefName, (.body | contains("Fixes #279"))]'</automated>
   </verify>
   <done>Full vitest shows no failures beyond the recorded baseline; tsc and eslint are clean. origin/fix/279-aq20-phase exists. The draft PR against main contains "Fixes #279", presents OD-01 and OD-02, has no em dashes, and ends with the Claude Code line; gh prints [true, "main", "fix/279-aq20-phase", true]. origin/main is unchanged by this task, and no database was touched.</done>
 </task>
@@ -323,5 +323,5 @@ No package installs: the supply-chain legitimacy gate does not apply.
 </success_criteria>
 
 <output>
-Create `/Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/default/quick/260927-sos-fix-gh-279-aq20-phase-name-so-ruins-of-a/260927-sos-SUMMARY.md` when done. The planning directory lives in the main checkout, not in the worktree; do not commit it from the worktree. Include the PR URL, the baseline test result, the mutation-check result, the final migration file name, and OD-01 restated as still open.
+Create `.planning/workstreams/default/quick/260927-sos-fix-gh-279-aq20-phase-name-so-ruins-of-a/260927-sos-SUMMARY.md` when done. The planning directory lives in the main checkout, not in the worktree; do not commit it from the worktree. Include the PR URL, the baseline test result, the mutation-check result, the final migration file name, and OD-01 restated as still open.
 </output>

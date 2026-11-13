@@ -15,13 +15,13 @@ tech-stack:
   patterns: ["merge-only integration, hunk-by-hunk resolution, scripted both-direction preservation check, plumbing squash via temporary GIT_INDEX_FILE + commit-tree"]
 key-files:
   created:
-    - /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/sync-checks/preserve.mjs
-    - /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/sync-checks/resolutions.md
-    - /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/sync-checks/squash-msg.txt
-    - /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/sync-checks/squash-verify.txt
-    - /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/sync-checks/scan-results.txt
-    - /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/sync-checks/pr-body.md
-    - /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/sync-checks/push-result.txt
+    - $SCRATCHPAD/sync-checks/preserve.mjs
+    - $SCRATCHPAD/sync-checks/resolutions.md
+    - $SCRATCHPAD/sync-checks/squash-msg.txt
+    - $SCRATCHPAD/sync-checks/squash-verify.txt
+    - $SCRATCHPAD/sync-checks/scan-results.txt
+    - $SCRATCHPAD/sync-checks/pr-body.md
+    - $SCRATCHPAD/sync-checks/push-result.txt
   modified:
     - (worktree, M) .planning/workstreams/default/STATE.md, the 15 conflicted files and 4 conformance files
     - (S tree only, plumbing) .gitignore, scripts/analytics/exports/README.md (origin's blob), 2 ud3 planning docs (redacted), 9 exports removed
@@ -211,7 +211,7 @@ git archive sync/local-main-2026-09-28 \
   scripts/analytics/exports/posthog-cta-funnel-2026-08-24_2026-09-24.csv \
   scripts/analytics/exports/posthog-dashboard-events-2036463_2036466.txt \
   scripts/analytics/exports/posthog-traffic-smoke-2026-08-24_2026-09-24.csv \
-  | tar -x -C /Users/alexander.mayes/Code/personal/loot-list-plus
+  | tar -x -C <repo-root>
 ```
 
 ## After merge (post-merge reset steps, as in PR section 10)

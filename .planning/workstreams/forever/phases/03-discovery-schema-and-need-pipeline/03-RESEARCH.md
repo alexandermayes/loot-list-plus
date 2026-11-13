@@ -774,7 +774,7 @@ const ItemLink = memo(function ItemLink(props: ItemLinkProps) {
 |------------|------------|-----------|---------|----------|
 | Node.js | tests, scripts | yes | v22.23.0 | CI uses Node 20; PGlite has no engines constraint |
 | npm | install | yes | 10.9.8 | - |
-| Supabase CLI | `npm run gen:types` | yes (`/Users/alexander.mayes/.local/bin/supabase`) | 2.108.0 | hand-edit types (A11) |
+| Supabase CLI | `npm run gen:types` | yes (`~/.local/bin/supabase`) | 2.108.0 | hand-edit types (A11) |
 | Docker | `supabase db reset` (local) | client present; daemon not confirmed | client 29.8.2 | PGlite harness replaces the local reset evidence |
 | gh CLI | merge, workflow check | yes | 2.95.0 | - |
 | @electric-sql/pglite | DISC-12 test | spiked from a scratch dir (not in the repo) | 0.5.8 | house pattern (contract test + scratchpad proof) |

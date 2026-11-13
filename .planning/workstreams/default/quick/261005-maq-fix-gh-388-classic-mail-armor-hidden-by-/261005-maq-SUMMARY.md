@@ -161,13 +161,13 @@ No flaky lines recorded beyond the baseline's 9-file timeout batch, which did no
 
 ## PR Body Drafts
 
-- App PR: `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/331da5ac-3e3c-42a8-a81a-1d8985a423b4/scratchpad/pr-body-388.md` ("Fixes #388", "Refs #276").
-- Migration PR (OD-1 B): `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/331da5ac-3e3c-42a8-a81a-1d8985a423b4/scratchpad/pr-body-388-migration.md` ("Refs #388").
+- App PR: `$SCRATCHPAD/pr-body-388.md` ("Fixes #388", "Refs #276").
+- Migration PR (OD-1 B): `$SCRATCHPAD/pr-body-388-migration.md` ("Refs #388").
 - Migration file (WTM, unpushed): `supabase/migrations/20261005120000_correct_stored_classic_armor_types.sql`.
 
 ## Read-Only Check Query for the User (OD-1 B)
 
-Before deciding whether to open the migration PR, run this in the Supabase SQL editor (file: `/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/331da5ac-3e3c-42a8-a81a-1d8985a423b4/scratchpad/check-388-stored-armor-types.sql`, 341 tuples, read-only, returns item ids/types/counts only, no guild data):
+Before deciding whether to open the migration PR, run this in the Supabase SQL editor (file: `$SCRATCHPAD/check-388-stored-armor-types.sql`, 341 tuples, read-only, returns item ids/types/counts only, no guild data):
 
 ```sql
 SELECT v.wowhead_id, li.armor_type AS stored, v.armor_type AS package_type, count(*) AS row_count

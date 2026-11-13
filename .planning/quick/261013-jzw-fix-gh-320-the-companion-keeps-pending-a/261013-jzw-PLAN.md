@@ -5,13 +5,13 @@ type: execute
 wave: 1
 depends_on: []
 files_modified:
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/addon-format.ts
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/api-client.ts
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/sync-engine.ts
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/sync-status.ts
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/__tests__/addon-format.test.ts
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/__tests__/api-client.test.ts
-  - /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/__tests__/sync-status.test.ts
+  - companion/src/main/addon-format.ts
+  - companion/src/main/api-client.ts
+  - companion/src/main/sync-engine.ts
+  - companion/src/main/sync-status.ts
+  - companion/src/main/__tests__/addon-format.test.ts
+  - companion/src/main/__tests__/api-client.test.ts
+  - companion/src/main/__tests__/sync-status.test.ts
 autonomous: true
 requirements:
   - GH-320
@@ -32,17 +32,17 @@ must_haves:
     - "A pass whose guild-data fetch throws still writes nothing, so every pending entry stays (companion 1.1.0 behaviour, unchanged)"
     - "The request-to-entry pairing survives non-record entries in the pending lists: request index i always maps back to the raw entry it was built from"
   artifacts:
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/addon-format.ts"
+    - path: "companion/src/main/addon-format.ts"
       provides: "PendingPair<T>, toPendingAwardPairs, toPendingAttendancePairs, acceptedEntries; toPendingAwardRequests / toPendingAttendanceRequests reimplemented on the pairs"
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/api-client.ts"
+    - path: "companion/src/main/api-client.ts"
       provides: "SubmitResult { processed, errors, accepted: number[] } returned by submitAwards and submitAttendance"
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/sync-status.ts"
+    - path: "companion/src/main/sync-status.ts"
       provides: "Pure SyncStatus type, describeRejected(awards, attendance), statusText(status)"
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/sync-engine.ts"
+    - path: "companion/src/main/sync-engine.ts"
       provides: "syncNow clears only accepted entries and reports stuck counts"
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/__tests__/api-client.test.ts"
+    - path: "companion/src/main/__tests__/api-client.test.ts"
       provides: "A1-A3: accepted indices for ok / 500 / thrown / already_recorded"
-    - path: "/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/__tests__/sync-status.test.ts"
+    - path: "companion/src/main/__tests__/sync-status.test.ts"
       provides: "D1-D6 sentence cases and T1-T6 tray text cases"
   key_links:
     - from: "sync-engine.ts syncNow"
@@ -71,22 +71,22 @@ Scope fences (from the caller's decided direction):
 </objective>
 
 <execution_context>
-Worktree only: every path is under /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357 on branch fix/320-companion-keep-rejected. Never read or write anything under /Users/alexander.mayes/Code/personal/loot-list-plus (another session commits there). The worktree has no .claude/ or gsd-core; there is no execute-plan workflow file to load, so follow this plan directly.
+Worktree only: every path is under <worktree-root> on branch fix/320-companion-keep-rejected. Never read or write anything under <repo-root> (another session commits there). The worktree has no .claude/ or gsd-core; there is no execute-plan workflow file to load, so follow this plan directly.
 
 Project rules: TypeScript strict, 2-space indent, trailing commas in multi-line literals, `import type` for type-only imports, relative imports inside companion (never `@/`), comments explain why and cite GH #320, no em dashes anywhere (code, comments, test names, commit messages, SUMMARY). Companion tests run in the ROOT vitest suite and start with the line `// @vitest-environment node`; companion/tsconfig.json excludes __tests__, and the root tsconfig excludes companion, so test files are not typechecked by either tsc run.
 </execution_context>
 
 <context>
 Read once each before starting (all absolute):
-- /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/sync-engine.ts (syncNow lines 105-156, getStatusText 165-170, readPendingFromSavedVars 217-224, class doc 34-47, SyncStatus 26-32)
-- /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/api-client.ts (submitAwards 106-134, submitAttendance 136-168)
-- /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/addon-format.ts (request mappers 44-88, SentPending 31-36, withoutSent 120-138, applyGuildDataToSavedVars doc 149-163)
-- /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/__tests__/addon-format.test.ts (style reference; 22 tests: P1-P5, C1-C5, W1-W4, S1-S8; savedFile, awardA, awardB, night and guildDataLua live inside the applyGuildDataToSavedVars describe)
+- companion/src/main/sync-engine.ts (syncNow lines 105-156, getStatusText 165-170, readPendingFromSavedVars 217-224, class doc 34-47, SyncStatus 26-32)
+- companion/src/main/api-client.ts (submitAwards 106-134, submitAttendance 136-168)
+- companion/src/main/addon-format.ts (request mappers 44-88, SentPending 31-36, withoutSent 120-138, applyGuildDataToSavedVars doc 149-163)
+- companion/src/main/__tests__/addon-format.test.ts (style reference; 22 tests: P1-P5, C1-C5, W1-W4, S1-S8; savedFile, awardA, awardB, night and guildDataLua live inside the applyGuildDataToSavedVars describe)
 
 Facts the executor can rely on (verified while planning):
 - Only sync-engine.ts calls submitAwards / submitAttendance / toPendingAwardRequests / toPendingAttendanceRequests. Nothing imports SyncStatus from sync-engine.ts (index.ts imports only SyncEngine; the renderer duplicates the type in App.tsx and SyncStatus.tsx, which stay untouched).
 - api-client.ts has only a type import from addon-format.ts, so the root vitest suite can import ApiClient without loading Electron, chokidar or fs.
-- companion/node_modules in this worktree is a DANGLING SYMLINK to /Users/alexander.mayes/Code/personal/loot-list-plus/companion/node_modules (which does not exist). Root node_modules is a symlink to the main checkout's node_modules and works for vitest and eslint (read only). companion/node_modules is gitignored (.gitignore line 6), so a real install there is never committed.
+- companion/node_modules in this worktree is a DANGLING SYMLINK to companion/node_modules (which does not exist). Root node_modules is a symlink to the main checkout's node_modules and works for vitest and eslint (read only). companion/node_modules is gitignored (.gitignore line 6), so a real install there is never committed.
 - Root eslint.config.mjs does not ignore companion/, so `npx eslint <companion files>` from the root lints them.
 - None of the four existing files contains an em dash today (byte check returned 0 for each).
 </context>
@@ -96,15 +96,15 @@ Facts the executor can rely on (verified while planning):
 <task type="auto" tdd="true">
   <name>Task 1: Pending pairs keep each raw entry next to its request, and ApiClient reports which requests were accepted (GH #320)</name>
   <files>
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/addon-format.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/api-client.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/__tests__/addon-format.test.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/__tests__/api-client.test.ts
+    companion/src/main/addon-format.ts,
+    companion/src/main/api-client.ts,
+    companion/src/main/__tests__/addon-format.test.ts,
+    companion/src/main/__tests__/api-client.test.ts
   </files>
   <read_first>
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/addon-format.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/api-client.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/__tests__/addon-format.test.ts
+    companion/src/main/addon-format.ts,
+    companion/src/main/api-client.ts,
+    companion/src/main/__tests__/addon-format.test.ts
   </read_first>
   <behavior>
     - R1: toPendingAwardPairs(raw)[0].entry is the same object as raw[0] (toBe), and its request equals toPendingAwardRequests(raw)[0]; toPendingAttendancePairs(rawNights)[0].entry toBe rawNights[0] and its request equals { raid_date, raid_name, attended }.
@@ -128,7 +128,7 @@ Step 3, GREEN, api-client.ts. Add `export interface SubmitResult { processed: nu
 Step 4. Run the verify commands. Then commit only these four files with explicit paths (never `git add -A` or `git add .`; never stage .planning/). Commit message subject: `fix(companion): pending pairs keep raw entries and submits report accepted indices (GH #320)`, a short body saying why (the sync engine needs to know which raw entry each accepted request came from), and the final line `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`. No em dashes in the message.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357 && npx vitest run companion/src/main/__tests__/addon-format.test.ts companion/src/main/__tests__/api-client.test.ts && (cd companion && npx tsc --noEmit) && npx eslint companion/src/main/addon-format.ts companion/src/main/api-client.ts companion/src/main/__tests__/addon-format.test.ts companion/src/main/__tests__/api-client.test.ts && ! LC_ALL=C grep -n $'\xe2\x80\x94' companion/src/main/addon-format.ts companion/src/main/api-client.ts companion/src/main/__tests__/addon-format.test.ts companion/src/main/__tests__/api-client.test.ts</automated>
+    <automated>cd <worktree-root> && npx vitest run companion/src/main/__tests__/addon-format.test.ts companion/src/main/__tests__/api-client.test.ts && (cd companion && npx tsc --noEmit) && npx eslint companion/src/main/addon-format.ts companion/src/main/api-client.ts companion/src/main/__tests__/addon-format.test.ts companion/src/main/__tests__/api-client.test.ts && ! LC_ALL=C grep -n $'\xe2\x80\x94' companion/src/main/addon-format.ts companion/src/main/api-client.ts companion/src/main/__tests__/addon-format.test.ts companion/src/main/__tests__/api-client.test.ts</automated>
   </verify>
   <acceptance_criteria>
     - vitest reports 27 passed, 0 failed for the two files (24 in addon-format.test.ts: the 22 existing plus R1 and R2; 3 in api-client.test.ts: A1 to A3).
@@ -145,14 +145,14 @@ Step 4. Run the verify commands. Then commit only these four files with explicit
 <task type="auto" tdd="true">
   <name>Task 2: syncNow clears only accepted entries and shows the stuck counts (GH #320)</name>
   <files>
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/addon-format.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/sync-engine.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/sync-status.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/__tests__/addon-format.test.ts,
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/__tests__/sync-status.test.ts
+    companion/src/main/addon-format.ts,
+    companion/src/main/sync-engine.ts,
+    companion/src/main/sync-status.ts,
+    companion/src/main/__tests__/addon-format.test.ts,
+    companion/src/main/__tests__/sync-status.test.ts
   </files>
   <read_first>
-    /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/companion/src/main/sync-engine.ts
+    companion/src/main/sync-engine.ts
   </read_first>
   <behavior>
     - R3 acceptedEntries: with pairs from three distinct award records a, b, c: acceptedEntries(pairs, [2, 0]) gives [c, a] (each toBe the raw object, in the order of the accepted list); acceptedEntries(pairs, [5, -1, 1.5, 1]) gives [b] (out-of-range and non-integer indices ignored); acceptedEntries(pairs, [1, 1]) gives [b] once; acceptedEntries(pairs, []) gives [].
@@ -187,7 +187,7 @@ Step 4, GREEN, sync-engine.ts.
 Step 5. Run the verify commands (full companion suite, typecheck, eslint on every touched file, em dash check). Commit only these five files with explicit paths (never stage .planning/). Subject: `fix(companion): keep pending awards and attendance the server rejected and show the stuck counts (GH #320)`, a short why-body, and the final line `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`. No em dashes. Do not push and do not open a PR.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357 && npx vitest run companion && (cd companion && npx tsc --noEmit) && npx eslint companion/src/main/addon-format.ts companion/src/main/api-client.ts companion/src/main/sync-engine.ts companion/src/main/sync-status.ts companion/src/main/__tests__/addon-format.test.ts companion/src/main/__tests__/api-client.test.ts companion/src/main/__tests__/sync-status.test.ts && ! LC_ALL=C grep -n $'\xe2\x80\x94' companion/src/main/addon-format.ts companion/src/main/api-client.ts companion/src/main/sync-engine.ts companion/src/main/sync-status.ts companion/src/main/__tests__/addon-format.test.ts companion/src/main/__tests__/api-client.test.ts companion/src/main/__tests__/sync-status.test.ts && ! git log -2 --format=%B | LC_ALL=C grep -n $'\xe2\x80\x94'</automated>
+    <automated>cd <worktree-root> && npx vitest run companion && (cd companion && npx tsc --noEmit) && npx eslint companion/src/main/addon-format.ts companion/src/main/api-client.ts companion/src/main/sync-engine.ts companion/src/main/sync-status.ts companion/src/main/__tests__/addon-format.test.ts companion/src/main/__tests__/api-client.test.ts companion/src/main/__tests__/sync-status.test.ts && ! LC_ALL=C grep -n $'\xe2\x80\x94' companion/src/main/addon-format.ts companion/src/main/api-client.ts companion/src/main/sync-engine.ts companion/src/main/sync-status.ts companion/src/main/__tests__/addon-format.test.ts companion/src/main/__tests__/api-client.test.ts companion/src/main/__tests__/sync-status.test.ts && ! git log -2 --format=%B | LC_ALL=C grep -n $'\xe2\x80\x94'</automated>
   </verify>
   <acceptance_criteria>
     - `npx vitest run companion` reports 40 passed, 0 failed across 3 files (addon-format.test.ts 26: the 22 existing plus R1, R2, R3, S9; api-client.test.ts 3; sync-status.test.ts 11: D1 to D6 and T1 to T6).
@@ -226,7 +226,7 @@ Step 5. Run the verify commands (full companion suite, typecheck, eslint on ever
 </threat_model>
 
 <verification>
-From /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357:
+From <worktree-root>:
 1. `npx vitest run companion` gives 40 passed, 0 failed.
 2. `cd companion && npx tsc --noEmit` gives no errors beyond the Step 0 baseline.
 3. `npx eslint` on the seven touched companion files exits 0.
@@ -242,7 +242,7 @@ From /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357:
 </success_criteria>
 
 <output>
-Create /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/.planning/quick/261013-jzw-fix-gh-320-the-companion-keeps-pending-a/261013-jzw-SUMMARY.md when done (do NOT commit it). Include:
+Create .planning/quick/261013-jzw-fix-gh-320-the-companion-keeps-pending-a/261013-jzw-SUMMARY.md when done (do NOT commit it). Include:
 - The two commit hashes and subjects, and the final test counts per file.
 - Whether companion/node_modules had to be reinstalled (dangling symlink replaced by a local `npm ci --ignore-scripts`, gitignored) and the typecheck baseline.
 - Caveat: an entry the server always rejects (for example a 404 "No loot item found") now retries every pass; no backoff by decision; candidate follow-up.

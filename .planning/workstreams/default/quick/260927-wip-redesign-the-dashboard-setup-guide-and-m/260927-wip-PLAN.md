@@ -68,16 +68,16 @@ Output: redesigned SetupGuide.tsx with a new component test; a two-export additi
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/execute-plan.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/templates/summary.md
+@.claude/gsd-core/workflows/execute-plan.md
+@.claude/gsd-core/templates/summary.md
 </execution_context>
 
 <context>
 Code worktree (all paths below are relative to it; run every command from it):
-/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/8235b620-ae38-4661-a5c0-23f69fed77f3/scratchpad/wt-setup-guide
+$SCRATCHPAD/wt-setup-guide
 (branch feat/setup-guide-redesign, based on origin/main 21853a3f)
 
-Do NOT read or touch /Users/alexander.mayes/Code/personal/loot-list-plus (main checkout, another session). Use only Tailwind classes and tokens that exist on origin/main (for example text-[11px], text-foreground-secondary, text-muted-foreground, bg-success, text-success-foreground, bg-accent, ring-ring). No local-main-only design-system tokens.
+Do NOT read or touch <repo-root> (main checkout, another session). Use only Tailwind classes and tokens that exist on origin/main (for example text-[11px], text-foreground-secondary, text-muted-foreground, bg-success, text-success-foreground, bg-accent, ring-ring). No local-main-only design-system tokens.
 
 @app/(app)/overview/components/SetupGuide.tsx
 @app/(app)/overview/components/DashboardContent.tsx (lines 367-375 state, 640-722 loadData, 1837-1845 heroReady, 1974-1982 SetupGuide render, 2030-2471 cards)
@@ -85,7 +85,7 @@ Do NOT read or touch /Users/alexander.mayes/Code/personal/loot-list-plus (main c
 @domain/expansion/__tests__/game.test.ts
 @app/components/NoRaidsEmptyState.tsx
 @app/(app)/reserve/components/__tests__/CreateReserveRunModal.test.tsx (mocking pattern: vi.hoisted state, supabase client, GuildContext, next/navigation, stubbed fetch)
-@/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/8235b620-ae38-4661-a5c0-23f69fed77f3/scratchpad/wt-phase06/.planning/workstreams/default/quick/260926-lj6-separate-wow-forever-from-the-classic-ex/260926-lj6-SUMMARY.md (SetupGuide already drops the expansion step for Forever)
+@$SCRATCHPAD/wt-phase06/.planning/workstreams/default/quick/260926-lj6-separate-wow-forever-from-the-classic-ex/260926-lj6-SUMMARY.md (SetupGuide already drops the expansion step for Forever)
 
 Contrast facts (app/globals.css on origin/main), card = bg-background-elevated:
 - light: card #ffffff; text-foreground-secondary and text-muted-foreground are both #574f49 (about 8:1, AA).
@@ -263,5 +263,5 @@ Human check (user, local dev or preview deploy), at 390px and 1440px wide, in da
 </success_criteria>
 
 <output>
-Create `.planning/workstreams/default/quick/260927-wip-redesign-the-dashboard-setup-guide-and-m/260927-wip-SUMMARY.md` in the planning worktree (/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/8235b620-ae38-4661-a5c0-23f69fed77f3/scratchpad/wt-phase06) when done. Do not commit planning files from the code worktree.
+Create `.planning/workstreams/default/quick/260927-wip-redesign-the-dashboard-setup-guide-and-m/260927-wip-SUMMARY.md` in the planning worktree ($SCRATCHPAD/wt-phase06) when done. Do not commit planning files from the code worktree.
 </output>

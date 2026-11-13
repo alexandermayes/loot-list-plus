@@ -46,7 +46,7 @@ must_haves:
     - path: "app/services/__tests__/function-execute-grants-migration.test.ts"
       provides: "Shape test: statement whitelist (function REVOKE and GRANT, the four ALTER FUNCTION ... SET search_path, the one DROP POLICY IF EXISTS), exact per-function role sets, signature cross-check against the defining migrations, and the future-migration PUBLIC ratchet"
       contains: "findUnrevokedPublicFunctions"
-    - path: "/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/pglite-wcr/scenarios-wcr.mjs"
+    - path: "$SCRATCHPAD/pglite-wcr/scenarios-wcr.mjs"
       provides: "Scratchpad-only PGlite proof (never committed); run outputs saved beside it"
   key_links:
     - from: "PostgREST POST /rest/v1/rpc/<name> with the anon key or a user JWT (roles anon, authenticated)"
@@ -82,7 +82,7 @@ Purpose: Postgres gives EXECUTE on every new function to PUBLIC, and anon and au
 
 Output: one migration (function grants, one DROP POLICY IF EXISTS, four ALTER FUNCTION ... SET search_path), its vitest shape test, and a scratchpad-only PGlite proof. Local commits in WT only; the orchestrator reviews, pushes and opens the PR.
 
-Work location: WT = /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wtfx (branch fix/function-execute-grants from origin/main 77afa063, node_modules symlinked). Every repo path below is relative to WT. SP = /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad. Do not touch local main, wt-phase06, wtls or wtms.
+Work location: WT = $SCRATCHPAD/wtfx (branch fix/function-execute-grants from origin/main 77afa063, node_modules symlinked). Every repo path below is relative to WT. SP = $SCRATCHPAD. Do not touch local main, wt-phase06, wtls or wtms.
 
 Requirements (quick task):
 - WCR-R1: service-role-only and uncalled functions (class a) are not executable by PUBLIC, anon or authenticated.
@@ -120,13 +120,13 @@ Requirements (quick task):
 </objective>
 
 <execution_context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/workflows/execute-plan.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/gsd-core/templates/summary.md
+@.claude/gsd-core/workflows/execute-plan.md
+@.claude/gsd-core/templates/summary.md
 </execution_context>
 
 <context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/CLAUDE.md
-@/Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/default/STATE.md
+@.claude/CLAUDE.md
+@.planning/workstreams/default/STATE.md
 
 Read first (in WT):
 - supabase/migrations/20260722000001_lock_down_definer_rpc_grants.sql (the intent to restore; statement style)
@@ -266,7 +266,7 @@ Step 3, shape test (per D-01): create app/services/__tests__/function-execute-gr
 Run the harness and the test, then commit in WT (stage only the two repo files), for example "fix(db): revoke the PUBLIC EXECUTE default so six functions are service-role only", with the trailer. Do not push.
   </action>
   <verify>
-    <automated>cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/pglite-wcr && node scenarios-wcr.mjs > run-output-wcr-task1.txt 2>&1 && ! grep -q '^FAIL' run-output-wcr-task1.txt && grep -q '^PASS' run-output-wcr-task1.txt && cd ../wtfx && npx vitest run app/services/__tests__/function-execute-grants-migration.test.ts && git log -1 --format=%B | grep -q 'Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>'</automated>
+    <automated>cd $SCRATCHPAD/pglite-wcr && node scenarios-wcr.mjs > run-output-wcr-task1.txt 2>&1 && ! grep -q '^FAIL' run-output-wcr-task1.txt && grep -q '^PASS' run-output-wcr-task1.txt && cd ../wtfx && npx vitest run app/services/__tests__/function-execute-grants-migration.test.ts && git log -1 --format=%B | grep -q 'Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>'</automated>
   </verify>
   <done>Baselines are saved. The six functions are service-role only in PGlite: aclexplode shows only service_role besides the owner, anon and authenticated get 42501, and service_role passes the EXECUTE check. The pre-migration control shows the PUBLIC entry was the cause. The shape test passes for the six-function file. One local commit with the trailer; nothing pushed.</done>
 </task>
@@ -303,7 +303,7 @@ Real-parser check: write SP/pg-parse-289/parse-wcr.mjs, which imports parse from
 Run everything, then commit (stage only the two repo files), for example "fix(db): set explicit EXECUTE grants on every public function by caller", with the trailer. Do not push.
   </action>
   <verify>
-    <automated>cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/pglite-wcr && node scenarios-wcr.mjs > run-output-wcr.txt 2>&1 && ! grep -q '^FAIL' run-output-wcr.txt && test "$(grep -c '^PASS' run-output-wcr.txt)" -ge 100 && cd ../pg-parse-289 && node parse-wcr.mjs > parse-output-wcr.txt 2>&1 && cd ../wtfx && npx vitest run app/services/__tests__/function-execute-grants-migration.test.ts && git log -1 --format=%B | grep -q 'Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>'</automated>
+    <automated>cd $SCRATCHPAD/pglite-wcr && node scenarios-wcr.mjs > run-output-wcr.txt 2>&1 && ! grep -q '^FAIL' run-output-wcr.txt && test "$(grep -c '^PASS' run-output-wcr.txt)" -ge 100 && cd ../pg-parse-289 && node parse-wcr.mjs > parse-output-wcr.txt 2>&1 && cd ../wtfx && npx vitest run app/services/__tests__/function-execute-grants-migration.test.ts && git log -1 --format=%B | grep -q 'Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>'</automated>
   </verify>
   <done>The migration restates grants for all 40 class a to e functions in 72 statements. PGlite proves the before and after ACLs for all 42 functions, the 42501 and pass outcomes per role and class, that the real policies still run for anon and authenticated, that the three triggers still fire, and that re-applying is a no-op. It also records the OD-01 default-privilege evidence. libpg-query confirms the file is 72 function GRANT and REVOKE statements. The shape test, with the signature cross-check and the ratchet, passes. Second local commit with the trailer.</done>
 </task>
@@ -335,10 +335,10 @@ Full regression (compare with Task 1 baselines): npx vitest run for the whole su
 
 Text gates (per D-09) over the lines this branch adds (git diff origin/main...HEAD, added lines only) and the commit messages: no em dash character, and the vocabulary gate in verify. If a gate fails, reword and amend the latest commit or add a fixup commit (never rewrite pushed history; nothing is pushed). Confirm git status in WT is clean, that there are exactly three (or four, with a fixup) commits ahead of origin/main, all with the trailer, and that no planning file exists in WT.
 
-SUMMARY: create /Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/default/quick/260929-wcr-tighten-database-function-execute-grants/260929-wcr-SUMMARY.md in the main checkout, not in WT. Include: the commit hashes; the class counts and the final grants table; PGlite PASS counts and any recorded deviation; the libpg-query result; baseline versus final vitest and tsc counts; the catalog queries (as run) with the instruction to run them in production before and after the deploy; the OD resolutions as applied (all four accepted on 2026-09-29); the D-11 re-verification of every guild_invite_codes call site and client, plus the is_invite_code_valid move to class a; the D-12 before-and-after results; any flagged item from the re-verification; and the follow-ups in neutral wording without detail. The follow-ups are: auth.uid()-bound helpers replacing get_user_guild_ids (OD-02); moving the redeem_invite_code call to the service-role client and then revoking authenticated (OD-04); and dropping the uncalled update_guild_icon and update_guild_info.
+SUMMARY: create .planning/workstreams/default/quick/260929-wcr-tighten-database-function-execute-grants/260929-wcr-SUMMARY.md in the main checkout, not in WT. Include: the commit hashes; the class counts and the final grants table; PGlite PASS counts and any recorded deviation; the libpg-query result; baseline versus final vitest and tsc counts; the catalog queries (as run) with the instruction to run them in production before and after the deploy; the OD resolutions as applied (all four accepted on 2026-09-29); the D-11 re-verification of every guild_invite_codes call site and client, plus the is_invite_code_valid move to class a; the D-12 before-and-after results; any flagged item from the re-verification; and the follow-ups in neutral wording without detail. The follow-ups are: auth.uid()-bound helpers replacing get_user_guild_ids (OD-02); moving the redeem_invite_code call to the service-role client and then revoking authenticated (OD-04); and dropping the uncalled update_guild_icon and update_guild_info.
   </action>
   <verify>
-    <automated>cd /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/pglite-wcr && node scenarios-wcr.mjs > run-output-wcr.txt 2>&1 && ! grep -q '^FAIL' run-output-wcr.txt && grep -q 'guild_invite_codes' run-output-wcr.txt && grep -q 'search_path' run-output-wcr.txt && node catalog-wcr.mjs > catalog-output-wcr.txt 2>&1 && ! grep -q '^FAIL' catalog-output-wcr.txt && cd ../pg-parse-289 && node parse-wcr.mjs > parse-output-wcr.txt 2>&1 && cd ../wtfx && npx vitest run app/services/__tests__/function-execute-grants-migration.test.ts && npx eslint app/services/__tests__/function-execute-grants-migration.test.ts > ../final-wcr-eslint.txt 2>&1 && npx vitest run > ../final-wcr-vitest.txt 2>&1 && npx tsc --noEmit > ../final-wcr-tsc.txt 2>&1 && ADDED=$(git diff origin/main...HEAD -U0 | grep '^+' | grep -v '^+++') && MSGS=$(git log origin/main..HEAD --format=%B) && EMDASH=$(printf '\342\200\224') && ! printf '%s\n%s\n' "$ADDED" "$MSGS" | grep -qF "$EMDASH" && ! printf '%s\n%s\n' "$ADDED" "$MSGS" | grep -Eiq 'vul[n]|xploi[t]|attac[k]|escala[t]|advisor[y]' && test -z "$(git status --porcelain)" && test -f /Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/default/quick/260929-wcr-tighten-database-function-execute-grants/260929-wcr-SUMMARY.md</automated>
+    <automated>cd $SCRATCHPAD/pglite-wcr && node scenarios-wcr.mjs > run-output-wcr.txt 2>&1 && ! grep -q '^FAIL' run-output-wcr.txt && grep -q 'guild_invite_codes' run-output-wcr.txt && grep -q 'search_path' run-output-wcr.txt && node catalog-wcr.mjs > catalog-output-wcr.txt 2>&1 && ! grep -q '^FAIL' catalog-output-wcr.txt && cd ../pg-parse-289 && node parse-wcr.mjs > parse-output-wcr.txt 2>&1 && cd ../wtfx && npx vitest run app/services/__tests__/function-execute-grants-migration.test.ts && npx eslint app/services/__tests__/function-execute-grants-migration.test.ts > ../final-wcr-eslint.txt 2>&1 && npx vitest run > ../final-wcr-vitest.txt 2>&1 && npx tsc --noEmit > ../final-wcr-tsc.txt 2>&1 && ADDED=$(git diff origin/main...HEAD -U0 | grep '^+' | grep -v '^+++') && MSGS=$(git log origin/main..HEAD --format=%B) && EMDASH=$(printf '\342\200\224') && ! printf '%s\n%s\n' "$ADDED" "$MSGS" | grep -qF "$EMDASH" && ! printf '%s\n%s\n' "$ADDED" "$MSGS" | grep -Eiq 'vul[n]|xploi[t]|attac[k]|escala[t]|advisor[y]' && test -z "$(git status --porcelain)" && test -f .planning/workstreams/default/quick/260929-wcr-tighten-database-function-execute-grants/260929-wcr-SUMMARY.md</automated>
   </verify>
   <done>The migration has 77 statements, confirmed by the shape test and libpg-query. In PGlite: client roles read 0 invite code rows, the invite flow still works through the service role and redeem_invite_code, is_invite_code_valid is service-role only, and the four functions have search_path pinned with identical results before and after. The catalog queries run in PGlite and return the expected 42-row table (10, 14 and 42 true, every definer row pinned), the default-privilege rows, no rows for query 3, and no invite code policy after the migration. The full vitest run shows no regression against baseline-wcr-vitest.txt, and tsc and eslint are clean. Both text gates pass. WT is clean with three or four local commits carrying the trailer, nothing is pushed, there is no PR, and no planning files are in WT. The SUMMARY is written in the main checkout.</done>
 </task>
@@ -389,5 +389,5 @@ No package installs: the proof reuses existing scratchpad node_modules (PGlite i
 </success_criteria>
 
 <output>
-Create /Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/default/quick/260929-wcr-tighten-database-function-execute-grants/260929-wcr-SUMMARY.md when done (main checkout, not WT), with the contents listed in Task 3.
+Create .planning/workstreams/default/quick/260929-wcr-tighten-database-function-execute-grants/260929-wcr-SUMMARY.md when done (main checkout, not WT), with the contents listed in Task 3.
 </output>

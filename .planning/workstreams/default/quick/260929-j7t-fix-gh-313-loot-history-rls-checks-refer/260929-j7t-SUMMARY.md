@@ -51,7 +51,7 @@ A SECURITY DEFINER BEFORE INSERT OR UPDATE trigger on public.loot_history now re
 ## Delivery
 
 - **PR:** #317, https://github.com/alexandermayes/loot-list-plus/pull/317 (DRAFT, base main, head fix/313-loot-history-rls, "Fixes #313", no em dash, ends with the Claude Code line). Not merged. No --admin. Nothing pushed to main. No SQL run against any real database.
-- **Worktree:** /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/wt313 (from origin/main 54ef64a8, node_modules symlinked, not staged).
+- **Worktree:** $SCRATCHPAD/wt313 (from origin/main 54ef64a8, node_modules symlinked, not staged).
 - **Branch diff:** exactly the two repo files (483 insertions).
 
 | Commit | Message |
@@ -115,7 +115,7 @@ No client-side (RLS-subject) code writes loot_history. Every browser call is a S
 
 ## PGlite proof
 
-The harness is scratchpad only: /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad/pglite-313/scenarios-313.mjs, with output in run-output-313.txt (plus run2 and run3). It uses @electric-sql/pglite 0.5.8 (PostgreSQL 18.3), symlinked from pglite-289, with nothing installed. It runs the real WT migration file, with baseline statements extracted verbatim at run time (35 statements).
+The harness is scratchpad only: $SCRATCHPAD/pglite-313/scenarios-313.mjs, with output in run-output-313.txt (plus run2 and run3). It uses @electric-sql/pglite 0.5.8 (PostgreSQL 18.3), symlinked from pglite-289, with nothing installed. It runs the real WT migration file, with baseline statements extracted verbatim at run time (35 statements).
 
 **Result: 85/85 PASS on all three runs.** Counts per group:
 

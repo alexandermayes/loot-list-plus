@@ -475,7 +475,7 @@ def apply_floor(segment_counts: dict[str, int], floor: int = 10) -> dict[str, in
 - `app/blog/dkp-is-dead-what-classic-guilds-use-in-2026/page.tsx`, `app/blog/page.tsx`, `app/about/page.tsx` — article layout, metadata, JSON-LD pattern
 - `app/sitemap.ts` — sitemap entry structure
 - `tsconfig.json` — `resolveJsonModule: true` confirmation
-- `/Users/alexander.mayes/Downloads/LootList_30_Day_Search_AI_Sprint.md` §"Product-data report brief and exact template" — working title, slug, meta description, recommended-dataset list, opening-copy and finding-format templates (quoted in full below)
+- `~/Downloads/LootList_30_Day_Search_AI_Sprint.md` §"Product-data report brief and exact template" — working title, slug, meta description, recommended-dataset list, opening-copy and finding-format templates (quoted in full below)
 - macOS Keychain — `security find-generic-password -s "Supabase CLI"` entry confirmed present this session (secret value not read or displayed)
 
 ### Secondary (MEDIUM confidence)

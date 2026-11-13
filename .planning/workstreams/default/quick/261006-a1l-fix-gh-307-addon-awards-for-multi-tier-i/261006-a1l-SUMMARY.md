@@ -201,7 +201,7 @@ After Task 2, the after-scan confirms catalog counts unchanged (`classic: unique
 
 ## PR body draft
 
-`/private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/331da5ac-3e3c-42a8-a81a-1d8985a423b4/scratchpad/pr-body-307.md` - title "Addon export awards for items in two raids match the live boss and instance name", uses "Refs #307" (OD-2), names #319 and #322, no internal OD labels, ends with the Claude Code generation line.
+`$SCRATCHPAD/pr-body-307.md` - title "Addon export awards for items in two raids match the live boss and instance name", uses "Refs #307" (OD-2), names #319 and #322, no internal OD labels, ends with the Claude Code generation line.
 
 ## Handoff notes
 

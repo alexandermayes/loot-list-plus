@@ -51,7 +51,7 @@ Ship a reusable case-study page template rendering at `/customers/{guild-slug}` 
 - `.planning/phases/04-verified-guild-case-study/04-VALIDATION.md` — validation contract: vitest sampling, per-task verification map, Wave 0 requirements, manual-only verifications.
 
 ### Sprint plan (content source)
-- `/Users/alexander.mayes/Downloads/LootList_30_Day_Search_AI_Sprint.md` §case-study template (~lines 470–514) and §ten interview questions (~lines 501–514) — the exact `{token}` template and the questions quoted verbatim in 04-RESEARCH.md. Plan copy is a starting point; user sign-off required on all visible wording.
+- `~/Downloads/LootList_30_Day_Search_AI_Sprint.md` §case-study template (~lines 470–514) and §ten interview questions (~lines 501–514) — the exact `{token}` template and the questions quoted verbatim in 04-RESEARCH.md. Plan copy is a starting point; user sign-off required on all visible wording.
 
 ### Prior-phase decisions this phase inherits
 - `.planning/phases/02-checkable-conversion-copy/02-CONTEXT.md` — D-03/D-04 verification-line format (the public proof pattern this page echoes), D-05 no Review/AggregateRating schema (binding here too).

@@ -142,7 +142,7 @@ None beyond the plan's threat model (T-tv5-01 to T-tv5-08 mitigations are in pla
 - SCRATCH/pr-tv5-migration-body.md (migration-only PR; merge with --admin; confirm Deploy Migrations green before the app PR)
 - SCRATCH/pr-tv5-body.md (app PR; depends on the migration PR)
 
-SCRATCH = /private/tmp/claude-501/-Users-alexander-mayes-Code-personal-loot-list-plus/231d8fc6-02b5-498f-83b0-d947fb328259/scratchpad
+SCRATCH = $SCRATCHPAD
 
 ## Human checks after deploy
 

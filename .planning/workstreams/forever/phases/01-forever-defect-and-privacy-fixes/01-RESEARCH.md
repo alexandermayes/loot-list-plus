@@ -49,7 +49,7 @@ No CONTEXT.md exists for this phase (the user chose to plan without discuss-phas
 
 ## Project Constraints (from CLAUDE.md)
 
-Source: `/Users/alexander.mayes/Code/personal/loot-list-plus/.claude/CLAUDE.md` (read this session).
+Source: `.claude/CLAUDE.md` (read this session).
 
 - **GSD workflow:** all repo edits start through a GSD command (`/gsd-execute-phase` for this phase). No direct edits outside a GSD workflow.
 - **Planning docs never go on `main` directly.** Code goes on its own `fix/...` branch and PR; planning docs ride a `gsd/quick-*` or milestone branch and a docs-only PR. (Current branch `gsd/v2.0-forever-loot` is a milestone branch, not `main`.)
@@ -543,7 +543,7 @@ All seven questions are resolved (owner answers recorded 2026-10-13; the rest re
 | Property | Value |
 |----------|-------|
 | Framework | Vitest 4.1.0 (`globals: true`, default env jsdom; route tests opt into `// @vitest-environment node`) |
-| Config file | `/Users/alexander.mayes/Code/personal/loot-list-plus/vitest.config.ts` (+ `vitest.setup.ts`) |
+| Config file | `vitest.config.ts` (+ `vitest.setup.ts`) |
 | Quick run command | `npx vitest run <paths>` |
 | Full suite command | `npm run test` (= `vitest run`) |
 | Type gate | `npm run typecheck` (`tsc --noEmit`); locally filter stale `.next` errors, see Pitfall 10 |
@@ -612,7 +612,7 @@ All seven questions are resolved (owner answers recorded 2026-10-13; the rest re
 ## Sources
 
 ### Primary (HIGH confidence, files read this session)
-- `/Users/alexander.mayes/Code/personal/loot-list-plus/.planning/workstreams/forever/{REQUIREMENTS,ROADMAP,STATE,MILESTONE-BRIEF}.md`, `.planning/research/SUMMARY.md`, `.planning/todos/pending/2026-09-28-fix-five-defects-found-in-the-forever-loot-code-review.md`, `.planning/config.json`, `.claude/CLAUDE.md`
+- `.planning/workstreams/forever/{REQUIREMENTS,ROADMAP,STATE,MILESTONE-BRIEF}.md`, `.planning/research/SUMMARY.md`, `.planning/todos/pending/2026-09-28-fix-five-defects-found-in-the-forever-loot-code-review.md`, `.planning/config.json`, `.claude/CLAUDE.md`
 - `app/api/loot-history/bulk/route.ts` (full) and `__tests__/route.test.ts` (fake client, POST and PATCH suites)
 - `app/api/addon/{guild-data,export-string,loot-award}/route.ts`, the first two with their tests; `lib/loot/loot-history-rows.ts`; `utils/blp/recompute.ts`; `supabase/migrations/20260609000001_blp_recompute_from_history.sql`, `20260721000001_add_blp_reset_anchor.sql` (header), `20261003230000_blp_and_reserve_award_rules.sql` (header)
 - `app/api/bot/{priority,score}/route.ts`, `app/api/bot/_helpers.ts`, `app/api/bot/priority/__tests__/route.test.ts`; `discord-bot/{interactions.js,interactions.test.mjs,lootlist-api.js,package.json}`; `companion/src/main/api-client.ts`, `companion/package.json`

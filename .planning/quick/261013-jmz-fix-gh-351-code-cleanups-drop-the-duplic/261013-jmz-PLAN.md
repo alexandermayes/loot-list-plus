@@ -58,16 +58,16 @@ Output: two edited routes, one extended test file, two commits on fix/351-server
 </objective>
 
 <execution_context>
-All work happens in the git worktree /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357 on branch fix/351-server-cleanups (forked from origin/main). Every path below is relative to that worktree. Do NOT read or write anything under /Users/alexander.mayes/Code/personal/loot-list-plus (another session is committing there). The worktree has no .claude/ or gsd-core directory; proceed without them.
+All work happens in the git worktree <worktree-root> on branch fix/351-server-cleanups (forked from origin/main). Every path below is relative to that worktree. Do NOT read or write anything under <repo-root> (another session is committing there). The worktree has no .claude/ or gsd-core directory; proceed without them.
 
 Project rules: TypeScript strict, 2-space indent, trailing commas, `import type` for type-only imports, comments explain why and cite the GH issue, no em dashes anywhere (comments, test names, commit messages, SUMMARY).
 </execution_context>
 
 <context>
-@/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/.planning/workstreams/default/STATE.md (read only, do not edit)
-@/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/app/api/guilds/route.ts
-@/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/app/api/guilds/__tests__/route.test.ts
-@/Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/app/api/user/delete-account/route.ts
+@.planning/workstreams/default/STATE.md (read only, do not edit)
+@app/api/guilds/route.ts
+@app/api/guilds/__tests__/route.test.ts
+@app/api/user/delete-account/route.ts
 
 Facts verified at planning time (2026-10-13, worktree HEAD 523e2efe):
 - Trigger: supabase/migrations/20260101000000_baseline_schema.sql line 2990 creates trigger create_guild_default_roles AFTER INSERT ON guilds, executing create_default_guild_roles() (lines 125-137, SECURITY DEFINER), which inserts Guild Master '#ff8000' 100, Officer '#fbbf24' 50, Member '#a1a1a1' 0, all is_default true. No later migration drops the trigger or function; 20260930000100_enforce_guild_membership_write_rules.sql line 33 documents it as the source of the default roles.
@@ -88,7 +88,7 @@ Test harness shape (app/api/guilds/__tests__/route.test.ts):
 <task type="tracer" tdd="true">
   <name>Task 1: POST /api/guilds stops inserting default roles the trigger already creates (GH #351)</name>
   <files>app/api/guilds/__tests__/route.test.ts, app/api/guilds/route.ts</files>
-  <precondition>`git -C /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357 branch --show-current` prints fix/351-server-cleanups and `git status --short -- app/` is empty.</precondition>
+  <precondition>`git -C <worktree-root> branch --show-current` prints fix/351-server-cleanups and `git status --short -- app/` is empty.</precondition>
   <behavior>
     - A successful POST /api/guilds (Classic expansion, realm Arugal, no discord_server_id) returns 200, and neither the user-session client nor the service-role client is ever asked for the guild_roles table.
     - The same request still reaches the steps that follow the removed block: the user client records guild_settings and the service client records guild_invite_codes, which proves the table recorder works and the route did not stop early.
@@ -107,7 +107,7 @@ Leave the guild_settings insert above and the invite-code insert below untouched
 Commit on fix/351-server-cleanups, staging only the two files by explicit path (never git add -A or git add .; .planning/ must stay uncommitted). Message subject: "fix(guilds): drop the duplicate default roles insert on guild create (GH #351)". Body: one or two sentences saying the create_guild_default_roles trigger already inserts Member, Officer and Guild Master when the guild row is inserted, so the route's own insert always failed on unique_role_per_guild and logged an error on every guild creation, plus a sentence noting the new regression test. End the message with the attribution trailer your harness attribution reminder specifies; the orchestrator specified "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>", and if your own harness reminder names a different trailer, the harness reminder wins. No em dashes in the message. Do not push.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357 && npx vitest run app/api/guilds && test "$(grep -cE "\.from\('guild_roles'\)" app/api/guilds/route.ts)" = 0 && test "$(grep -c 'rolesError' app/api/guilds/route.ts)" = 0 && grep -q 'create_guild_default_roles' app/api/guilds/route.ts && grep -q 'GH #351' app/api/guilds/route.ts && grep -q 'fromCalls' app/api/guilds/__tests__/route.test.ts && grep -q 'GH #351' app/api/guilds/__tests__/route.test.ts && npx eslint app/api/guilds/route.ts app/api/guilds/__tests__/route.test.ts</automated>
+    <automated>cd <worktree-root> && npx vitest run app/api/guilds && test "$(grep -cE "\.from\('guild_roles'\)" app/api/guilds/route.ts)" = 0 && test "$(grep -c 'rolesError' app/api/guilds/route.ts)" = 0 && grep -q 'create_guild_default_roles' app/api/guilds/route.ts && grep -q 'GH #351' app/api/guilds/route.ts && grep -q 'fromCalls' app/api/guilds/__tests__/route.test.ts && grep -q 'GH #351' app/api/guilds/__tests__/route.test.ts && npx eslint app/api/guilds/route.ts app/api/guilds/__tests__/route.test.ts</automated>
   </verify>
   <done>
     - The new test was observed failing against the unchanged route, then passing after the removal.
@@ -135,7 +135,7 @@ Run the checks in <verify>. If `npm run typecheck` reports errors, confirm none 
 Commit on fix/351-server-cleanups, staging only this file by explicit path. Message subject: "fix(account): stop deleting loot_submission_items by a missing character_id column (GH #351)". Body: one or two sentences saying loot_submission_items has no character_id column, so the step always failed with 42703 and logged an error on every account deletion, and the rows are removed by ON DELETE CASCADE from the loot_submissions delete, so nothing is left behind. End with the same attribution trailer rule as Task 1. No em dashes. Do not push and do not open a PR.
   </action>
   <verify>
-    <automated>cd /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357 && test "$(grep -cE "\.from\('loot_submission_items'\)" app/api/user/delete-account/route.ts)" = 0 && test "$(grep -c 'submissionItemsError' app/api/user/delete-account/route.ts)" = 0 && test "$(grep -oE '// [0-9]+\.' app/api/user/delete-account/route.ts | tr -dc '0-9\n' | paste -sd, -)" = "1,2,3,4,5,6,7,8,9,10" && grep -q 'loot_submission_items_submission_id_fkey' app/api/user/delete-account/route.ts && grep -q 'GH #351' app/api/user/delete-account/route.ts && npx eslint app/api/user/delete-account/route.ts && npm run typecheck</automated>
+    <automated>cd <worktree-root> && test "$(grep -cE "\.from\('loot_submission_items'\)" app/api/user/delete-account/route.ts)" = 0 && test "$(grep -c 'submissionItemsError' app/api/user/delete-account/route.ts)" = 0 && test "$(grep -oE '// [0-9]+\.' app/api/user/delete-account/route.ts | tr -dc '0-9\n' | paste -sd, -)" = "1,2,3,4,5,6,7,8,9,10" && grep -q 'loot_submission_items_submission_id_fkey' app/api/user/delete-account/route.ts && grep -q 'GH #351' app/api/user/delete-account/route.ts && npx eslint app/api/user/delete-account/route.ts && npm run typecheck</automated>
   </verify>
   <done>
     - app/api/user/delete-account/route.ts has no query against loot_submission_items and no submission items error variable.
@@ -168,7 +168,7 @@ Commit on fix/351-server-cleanups, staging only this file by explicit path. Mess
 </threat_model>
 
 <verification>
-Run from /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357:
+Run from <worktree-root>:
 - `npx vitest run app/api/guilds` passes (83 tests, 7 files)
 - `npm run typecheck` reports no error in the three touched files
 - `npx eslint app/api/guilds/route.ts app/api/user/delete-account/route.ts app/api/guilds/__tests__/route.test.ts` is clean
@@ -184,5 +184,5 @@ Run from /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357:
 </success_criteria>
 
 <output>
-Create /Users/alexander.mayes/Code/personal/loot-list-plus-wt-357/.planning/quick/261013-jmz-fix-gh-351-code-cleanups-drop-the-duplic/261013-jmz-SUMMARY.md when done (do not commit it). Record both commit hashes, the red then green test observation from Task 1, the final test count, and any pre-existing typecheck errors outside the touched files.
+Create .planning/quick/261013-jmz-fix-gh-351-code-cleanups-drop-the-duplic/261013-jmz-SUMMARY.md when done (do not commit it). Record both commit hashes, the red then green test observation from Task 1, the final test count, and any pre-existing typecheck errors outside the touched files.
 </output>
