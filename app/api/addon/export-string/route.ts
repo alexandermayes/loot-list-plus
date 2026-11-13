@@ -227,14 +227,19 @@ export async function GET(request: NextRequest) {
     // guild and raid tier, never by the full item id list (URL length,
     // Pitfall 3); a guild with no raid tiers reads nothing. Paged and ordered
     // by the primary key so a large guild is never cut at the 1000-row cap.
-    const priorities = raidTierIds.length === 0
+    const priorityRows = raidTierIds.length === 0
       ? []
       : await selectAllPagesOrThrow('guild_item_priorities', (start, end) =>
           supabase.from('guild_item_priorities')
-            .select('item_id, role_priorities, class_priorities, character_priorities, priority_bonuses')
+            .select('item_id, role_priorities, class_priorities, character_priorities, priority_bonuses, loot_items (kind)')
             .eq('guild_id', guildId).in('raid_tier_id', raidTierIds)
             .order('id', { ascending: true })
             .range(start, end))
+    // D-03: officer prio does not apply to a need row, so a need-row priority
+    // never reaches the addon whatever route wrote it (T-04-07-03). Dropped
+    // after the read, as GET /api/prio-list does, and counted like a need BLP row.
+    const priorities = priorityRows.filter(row => !isNeedRow(row.loot_items))
+    noteNeedSkipped(needSkip, priorityRows.length - priorities.length)
 
     // BLP (FIX-02: the table is blp_tracking), paged the same way.
     const blpRows = await selectAllPagesOrThrow('blp_tracking', (start, end) =>
