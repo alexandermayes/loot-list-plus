@@ -2,9 +2,9 @@
   "source": "https://wago.tools/db2/{table}/csv?build={build}",
   "product": "wowf",
   "buildPrefix": "1.60.",
-  "build": "1.60.1.70888",
-  "fetchedAt": "2026-11-10T19:16:41.682Z",
-  "sha256": "bfd8ee4c7f828698386eedc78e2d95be66fccb4d133a46362d9198ed23710663",
+  "build": "1.60.1.70938",
+  "fetchedAt": "2026-11-16T15:44:45.087Z",
+  "sha256": "e104b5e4b16e3ae27acf19fa0655301b73d5ef123f6baa1d4d9ad27fa3563be8",
   "tables": {
     "DungeonEncounter": [
       {
